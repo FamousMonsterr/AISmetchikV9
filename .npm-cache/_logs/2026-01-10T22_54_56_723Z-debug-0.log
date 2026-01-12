@@ -1,0 +1,1158 @@
+0 verbose cli /usr/local/Cellar/node/25.2.1/bin/node /usr/local/bin/npm
+1 info using npm@11.6.4
+2 info using node@v25.2.1
+3 silly config load:file:/usr/local/lib/node_modules/npm/npmrc
+4 silly config load:file:/Users/timofey/Downloads/download (1)/.npmrc
+5 silly config load:file:/Users/timofey/.npmrc
+6 silly config load:file:/usr/local/etc/npmrc
+7 verbose title npm install
+8 verbose argv "install" "--cache" "./.npm-cache" "--no-audit" "--no-fund" "--force"
+9 verbose logfile logs-max:10 dir:/Users/timofey/Downloads/download (1)/.npm-cache/_logs/2026-01-10T22_54_56_723Z-
+10 verbose logfile /Users/timofey/Downloads/download (1)/.npm-cache/_logs/2026-01-10T22_54_56_723Z-debug-0.log
+11 warn using --force Recommended protections disabled.
+12 silly logfile done cleaning log files
+13 silly packumentCache heap:4496293888 maxSize:1124073472 maxEntrySize:562036736
+14 silly idealTree buildDeps
+15 silly fetch manifest firebase-admin@^12.5.0
+16 silly packumentCache full:https://registry.npmjs.org/firebase-admin cache-miss
+17 http cache https://registry.npmjs.org/firebase-admin 24ms (cache hit)
+18 silly packumentCache full:https://registry.npmjs.org/firebase-admin set size:716837 disposed:false
+19 silly fetch manifest mongodb@^6.13.0
+20 silly packumentCache full:https://registry.npmjs.org/mongodb cache-miss
+21 http cache https://registry.npmjs.org/mongodb 47ms (cache hit)
+22 silly packumentCache full:https://registry.npmjs.org/mongodb set size:3946094 disposed:false
+23 silly fetch manifest @aws-sdk/credential-providers@^3.188.0
+24 silly packumentCache full:https://registry.npmjs.org/@aws-sdk%2fcredential-providers cache-miss
+25 http cache https://registry.npmjs.org/@aws-sdk%2fcredential-providers 756ms (cache hit)
+26 silly packumentCache full:https://registry.npmjs.org/@aws-sdk%2fcredential-providers set size:1814555 disposed:false
+27 silly fetch manifest @mongodb-js/zstd@^1.1.0 || ^2.0.0
+28 silly packumentCache full:https://registry.npmjs.org/@mongodb-js%2fzstd cache-miss
+29 http cache https://registry.npmjs.org/@mongodb-js%2fzstd 8ms (cache hit)
+30 silly packumentCache full:https://registry.npmjs.org/@mongodb-js%2fzstd set size:99210 disposed:false
+31 silly fetch manifest gcp-metadata@^5.2.0
+32 silly packumentCache full:https://registry.npmjs.org/gcp-metadata cache-miss
+33 http cache https://registry.npmjs.org/gcp-metadata 4ms (cache hit)
+34 silly packumentCache full:https://registry.npmjs.org/gcp-metadata set size:191448 disposed:false
+35 silly fetch manifest kerberos@^2.0.1
+36 silly packumentCache full:https://registry.npmjs.org/kerberos cache-miss
+37 http cache https://registry.npmjs.org/kerberos 3ms (cache hit)
+38 silly packumentCache full:https://registry.npmjs.org/kerberos set size:117635 disposed:false
+39 silly fetch manifest mongodb-client-encryption@>=6.0.0 <7
+40 silly packumentCache full:https://registry.npmjs.org/mongodb-client-encryption cache-miss
+41 http cache https://registry.npmjs.org/mongodb-client-encryption 4ms (cache hit)
+42 silly packumentCache full:https://registry.npmjs.org/mongodb-client-encryption set size:262485 disposed:false
+43 silly fetch manifest snappy@^7.3.2
+44 silly packumentCache full:https://registry.npmjs.org/snappy cache-miss
+45 http cache https://registry.npmjs.org/snappy 4ms (cache hit)
+46 silly packumentCache full:https://registry.npmjs.org/snappy set size:185121 disposed:false
+47 silly fetch manifest socks@^2.7.1
+48 silly packumentCache full:https://registry.npmjs.org/socks cache-miss
+49 http cache https://registry.npmjs.org/socks 4ms (cache hit)
+50 silly packumentCache full:https://registry.npmjs.org/socks set size:168523 disposed:false
+51 silly fetch manifest next-auth@^4.24.11
+52 silly packumentCache full:https://registry.npmjs.org/next-auth cache-miss
+53 http cache https://registry.npmjs.org/next-auth 13ms (cache hit)
+54 silly packumentCache full:https://registry.npmjs.org/next-auth set size:3623524 disposed:false
+55 silly fetch manifest @auth/core@0.34.3
+56 silly packumentCache full:https://registry.npmjs.org/@auth%2fcore cache-miss
+57 http cache https://registry.npmjs.org/@auth%2fcore 4ms (cache hit)
+58 silly packumentCache full:https://registry.npmjs.org/@auth%2fcore set size:375031 disposed:false
+59 silly fetch manifest @simplewebauthn/browser@^9.0.1
+60 silly packumentCache full:https://registry.npmjs.org/@simplewebauthn%2fbrowser cache-miss
+61 http cache https://registry.npmjs.org/@simplewebauthn%2fbrowser 4ms (cache hit)
+62 silly packumentCache full:https://registry.npmjs.org/@simplewebauthn%2fbrowser set size:177539 disposed:false
+63 silly fetch manifest @simplewebauthn/server@^9.0.2
+64 silly packumentCache full:https://registry.npmjs.org/@simplewebauthn%2fserver cache-miss
+65 http cache https://registry.npmjs.org/@simplewebauthn%2fserver 3ms (cache hit)
+66 silly packumentCache full:https://registry.npmjs.org/@simplewebauthn%2fserver set size:275630 disposed:false
+67 silly fetch manifest nodemailer@^7.0.7
+68 silly packumentCache full:https://registry.npmjs.org/nodemailer cache-miss
+69 http cache https://registry.npmjs.org/nodemailer 4ms (cache hit)
+70 silly packumentCache full:https://registry.npmjs.org/nodemailer set size:555947 disposed:false
+71 silly fetch manifest next@14.2.35
+72 silly packumentCache full:https://registry.npmjs.org/next cache-miss
+73 http cache https://registry.npmjs.org/next 118ms (cache hit)
+74 silly packumentCache full:https://registry.npmjs.org/next set size:28374446 disposed:false
+75 silly fetch manifest @opentelemetry/api@^1.1.0
+76 silly packumentCache full:https://registry.npmjs.org/@opentelemetry%2fapi cache-miss
+77 http cache https://registry.npmjs.org/@opentelemetry%2fapi 8ms (cache hit)
+78 silly packumentCache full:https://registry.npmjs.org/@opentelemetry%2fapi set size:455567 disposed:false
+79 silly fetch manifest @playwright/test@^1.41.2
+80 silly packumentCache full:https://registry.npmjs.org/@playwright%2ftest cache-miss
+81 http cache https://registry.npmjs.org/@playwright%2ftest 38ms (cache hit)
+82 silly packumentCache full:https://registry.npmjs.org/@playwright%2ftest set size:8608545 disposed:false
+83 silly fetch manifest react@18.3.1
+84 silly packumentCache full:https://registry.npmjs.org/react cache-miss
+85 http cache https://registry.npmjs.org/react 31ms (cache hit)
+86 silly packumentCache full:https://registry.npmjs.org/react set size:6366570 disposed:false
+87 silly fetch manifest react-dom@18.3.1
+88 silly packumentCache full:https://registry.npmjs.org/react-dom cache-miss
+89 http cache https://registry.npmjs.org/react-dom 39ms (cache hit)
+90 silly packumentCache full:https://registry.npmjs.org/react-dom set size:8382055 disposed:false
+91 silly fetch manifest sass@^1.3.0
+92 silly packumentCache full:https://registry.npmjs.org/sass cache-miss
+93 http cache https://registry.npmjs.org/sass 9ms (cache hit)
+94 silly packumentCache full:https://registry.npmjs.org/sass set size:719969 disposed:false
+95 silly fetch manifest bcryptjs@^2.4.3
+96 silly packumentCache full:https://registry.npmjs.org/bcryptjs cache-miss
+97 http cache https://registry.npmjs.org/bcryptjs 7ms (cache hit)
+98 silly packumentCache full:https://registry.npmjs.org/bcryptjs set size:80409 disposed:false
+99 silly placeDep ROOT bcryptjs@2.4.3 OK for: ai-smetchik-v3-gemini@0.1.0 want: ^2.4.3
+100 silly placeDep ROOT firebase-admin@12.7.0 OK for: ai-smetchik-v3-gemini@0.1.0 want: ^12.5.0
+101 silly placeDep ROOT mongodb@6.21.0 OK for: ai-smetchik-v3-gemini@0.1.0 want: ^6.13.0
+102 silly placeDep ROOT next-auth@4.24.13 OK for: ai-smetchik-v3-gemini@0.1.0 want: ^4.24.11
+103 silly placeDep ROOT nodemailer@7.0.12 OK for: ai-smetchik-v3-gemini@0.1.0 want: ^7.0.7
+104 silly fetch manifest jwks-rsa@^3.1.0
+105 silly packumentCache full:https://registry.npmjs.org/jwks-rsa cache-miss
+106 silly fetch manifest node-forge@^1.3.1
+107 silly packumentCache full:https://registry.npmjs.org/node-forge cache-miss
+108 silly fetch manifest @types/node@^22.0.1
+109 silly packumentCache full:https://registry.npmjs.org/@types%2fnode cache-miss
+110 silly fetch manifest jsonwebtoken@^9.0.0
+111 silly packumentCache full:https://registry.npmjs.org/jsonwebtoken cache-miss
+112 silly fetch manifest @fastify/busboy@^3.0.0
+113 silly packumentCache full:https://registry.npmjs.org/@fastify%2fbusboy cache-miss
+114 silly fetch manifest farmhash-modern@^1.1.0
+115 silly packumentCache full:https://registry.npmjs.org/farmhash-modern cache-miss
+116 silly fetch manifest @google-cloud/storage@^7.7.0
+117 silly packumentCache full:https://registry.npmjs.org/@google-cloud%2fstorage cache-miss
+118 http cache https://registry.npmjs.org/farmhash-modern 25ms (cache hit)
+119 silly packumentCache full:https://registry.npmjs.org/farmhash-modern set size:15739 disposed:false
+120 silly fetch manifest @google-cloud/firestore@^7.7.0
+121 silly packumentCache full:https://registry.npmjs.org/@google-cloud%2ffirestore cache-miss
+122 http cache https://registry.npmjs.org/@fastify%2fbusboy 27ms (cache hit)
+123 silly packumentCache full:https://registry.npmjs.org/@fastify%2fbusboy set size:62317 disposed:false
+124 silly fetch manifest bson@^6.10.4
+125 silly packumentCache full:https://registry.npmjs.org/bson cache-miss
+126 http cache https://registry.npmjs.org/jwks-rsa 33ms (cache hit)
+127 silly packumentCache full:https://registry.npmjs.org/jwks-rsa set size:203582 disposed:false
+128 silly fetch manifest @mongodb-js/saslprep@^1.3.0
+129 silly packumentCache full:https://registry.npmjs.org/@mongodb-js%2fsaslprep cache-miss
+130 http cache https://registry.npmjs.org/jsonwebtoken 35ms (cache hit)
+131 silly packumentCache full:https://registry.npmjs.org/jsonwebtoken set size:183606 disposed:false
+132 silly fetch manifest mongodb-connection-string-url@^3.0.2
+133 silly packumentCache full:https://registry.npmjs.org/mongodb-connection-string-url cache-miss
+134 http cache https://registry.npmjs.org/@google-cloud%2fstorage 38ms (cache hit)
+135 silly packumentCache full:https://registry.npmjs.org/@google-cloud%2fstorage set size:933908 disposed:false
+136 silly fetch manifest @panva/hkdf@^1.0.2
+137 silly packumentCache full:https://registry.npmjs.org/@panva%2fhkdf cache-miss
+138 http cache https://registry.npmjs.org/node-forge 53ms (cache hit)
+139 silly packumentCache full:https://registry.npmjs.org/node-forge set size:391006 disposed:false
+140 silly fetch manifest cookie@^0.7.0
+141 silly packumentCache full:https://registry.npmjs.org/cookie cache-miss
+142 http cache https://registry.npmjs.org/@google-cloud%2ffirestore 50ms (cache hit)
+143 silly packumentCache full:https://registry.npmjs.org/@google-cloud%2ffirestore set size:710122 disposed:false
+144 silly fetch manifest jose@^4.15.5
+145 silly packumentCache full:https://registry.npmjs.org/jose cache-miss
+146 http cache https://registry.npmjs.org/@mongodb-js%2fsaslprep 53ms (cache hit)
+147 silly packumentCache full:https://registry.npmjs.org/@mongodb-js%2fsaslprep set size:87321 disposed:false
+148 silly fetch manifest oauth@^0.9.15
+149 silly packumentCache full:https://registry.npmjs.org/oauth cache-miss
+150 http cache https://registry.npmjs.org/bson 60ms (cache hit)
+151 silly packumentCache full:https://registry.npmjs.org/bson set size:566884 disposed:false
+152 silly fetch manifest openid-client@^5.4.0
+153 silly packumentCache full:https://registry.npmjs.org/openid-client cache-miss
+154 http cache https://registry.npmjs.org/@types%2fnode 128ms (cache hit)
+155 silly packumentCache full:https://registry.npmjs.org/@types%2fnode set size:10765460 disposed:false
+156 silly fetch manifest preact@^10.6.3
+157 silly packumentCache full:https://registry.npmjs.org/preact cache-miss
+158 http cache https://registry.npmjs.org/mongodb-connection-string-url 223ms (cache hit)
+159 silly packumentCache full:https://registry.npmjs.org/mongodb-connection-string-url set size:123838 disposed:false
+160 silly fetch manifest preact-render-to-string@^5.1.19
+161 silly packumentCache full:https://registry.npmjs.org/preact-render-to-string cache-miss
+162 http cache https://registry.npmjs.org/@panva%2fhkdf 220ms (cache hit)
+163 silly packumentCache full:https://registry.npmjs.org/@panva%2fhkdf set size:22482 disposed:false
+164 silly fetch manifest uuid@^8.3.2
+165 silly packumentCache full:https://registry.npmjs.org/uuid cache-miss
+166 http cache https://registry.npmjs.org/cookie 216ms (cache hit)
+167 silly packumentCache full:https://registry.npmjs.org/cookie set size:72891 disposed:false
+168 http cache https://registry.npmjs.org/oauth 190ms (cache hit)
+169 silly packumentCache full:https://registry.npmjs.org/oauth set size:45115 disposed:false
+170 http cache https://registry.npmjs.org/jose 198ms (cache hit)
+171 silly packumentCache full:https://registry.npmjs.org/jose set size:1390941 disposed:false
+172 http cache https://registry.npmjs.org/openid-client 207ms (cache hit)
+173 silly packumentCache full:https://registry.npmjs.org/openid-client set size:718846 disposed:false
+174 http cache https://registry.npmjs.org/preact 64ms (cache hit)
+175 silly packumentCache full:https://registry.npmjs.org/preact set size:1777656 disposed:false
+176 http cache https://registry.npmjs.org/preact-render-to-string 80ms (cache hit)
+177 silly packumentCache full:https://registry.npmjs.org/preact-render-to-string set size:517995 disposed:false
+178 http cache https://registry.npmjs.org/uuid 85ms (cache hit)
+179 silly packumentCache full:https://registry.npmjs.org/uuid set size:224608 disposed:false
+180 silly placeDep ROOT @fastify/busboy@3.2.0 OK for: firebase-admin@12.7.0 want: ^3.0.0
+181 silly placeDep ROOT @google-cloud/firestore@7.11.6 OK for: firebase-admin@12.7.0 want: ^7.7.0
+182 silly placeDep ROOT @google-cloud/storage@7.18.0 OK for: firebase-admin@12.7.0 want: ^7.7.0
+183 silly placeDep node_modules/firebase-admin @types/node@22.19.5 OK for: firebase-admin@12.7.0 want: ^22.0.1
+184 silly placeDep ROOT farmhash-modern@1.1.0 OK for: firebase-admin@12.7.0 want: ^1.1.0
+185 silly placeDep ROOT jsonwebtoken@9.0.3 OK for: firebase-admin@12.7.0 want: ^9.0.0
+186 silly placeDep ROOT jwks-rsa@3.2.0 OK for: firebase-admin@12.7.0 want: ^3.1.0
+187 silly placeDep ROOT node-forge@1.3.3 OK for: firebase-admin@12.7.0 want: ^1.3.1
+188 silly fetch manifest google-gax@^4.3.3
+189 silly packumentCache full:https://registry.npmjs.org/google-gax cache-miss
+190 silly fetch manifest @opentelemetry/api@^1.3.0
+191 silly packumentCache full:https://registry.npmjs.org/@opentelemetry%2fapi cache-hit
+192 silly fetch manifest functional-red-black-tree@^1.0.1
+193 silly packumentCache full:https://registry.npmjs.org/functional-red-black-tree cache-miss
+194 silly fetch manifest @google-cloud/paginator@^5.0.0
+195 silly packumentCache full:https://registry.npmjs.org/@google-cloud%2fpaginator cache-miss
+196 silly fetch manifest @google-cloud/projectify@^4.0.0
+197 silly packumentCache full:https://registry.npmjs.org/@google-cloud%2fprojectify cache-miss
+198 silly fetch manifest @google-cloud/promisify@<4.1.0
+199 silly packumentCache full:https://registry.npmjs.org/@google-cloud%2fpromisify cache-miss
+200 silly fetch manifest abort-controller@^3.0.0
+201 silly packumentCache full:https://registry.npmjs.org/abort-controller cache-miss
+202 silly fetch manifest async-retry@^1.3.3
+203 silly packumentCache full:https://registry.npmjs.org/async-retry cache-miss
+204 http cache https://registry.npmjs.org/@google-cloud%2fpaginator 12ms (cache hit)
+205 silly packumentCache full:https://registry.npmjs.org/@google-cloud%2fpaginator set size:87127 disposed:false
+206 silly fetch manifest duplexify@^4.1.3
+207 silly packumentCache full:https://registry.npmjs.org/duplexify cache-miss
+208 http cache https://registry.npmjs.org/functional-red-black-tree 14ms (cache hit)
+209 silly packumentCache full:https://registry.npmjs.org/functional-red-black-tree set size:12580 disposed:false
+210 silly fetch manifest gaxios@^6.0.2
+211 silly packumentCache full:https://registry.npmjs.org/gaxios cache-miss
+212 http cache https://registry.npmjs.org/@google-cloud%2fprojectify 16ms (cache hit)
+213 silly packumentCache full:https://registry.npmjs.org/@google-cloud%2fprojectify set size:62571 disposed:false
+214 silly fetch manifest google-auth-library@^9.6.3
+215 silly packumentCache full:https://registry.npmjs.org/google-auth-library cache-miss
+216 http cache https://registry.npmjs.org/abort-controller 17ms (cache hit)
+217 silly packumentCache full:https://registry.npmjs.org/abort-controller set size:47272 disposed:false
+218 silly fetch manifest html-entities@^2.5.2
+219 silly packumentCache full:https://registry.npmjs.org/html-entities cache-miss
+220 http cache https://registry.npmjs.org/google-gax 26ms (cache hit)
+221 silly packumentCache full:https://registry.npmjs.org/google-gax set size:2055354 disposed:false
+222 silly fetch manifest mime@^3.0.0
+223 silly packumentCache full:https://registry.npmjs.org/mime cache-miss
+224 http cache https://registry.npmjs.org/@google-cloud%2fpromisify 48ms (cache hit)
+225 silly packumentCache full:https://registry.npmjs.org/@google-cloud%2fpromisify set size:68494 disposed:false
+226 silly fetch manifest retry-request@^7.0.0
+227 silly packumentCache full:https://registry.npmjs.org/retry-request cache-miss
+228 http cache https://registry.npmjs.org/async-retry 61ms (cache hit)
+229 silly packumentCache full:https://registry.npmjs.org/async-retry set size:52084 disposed:false
+230 silly fetch manifest teeny-request@^9.0.0
+231 silly packumentCache full:https://registry.npmjs.org/teeny-request cache-miss
+232 http cache https://registry.npmjs.org/html-entities 55ms (cache hit)
+233 silly packumentCache full:https://registry.npmjs.org/html-entities set size:145148 disposed:false
+234 silly fetch manifest uuid@^8.0.0
+235 silly packumentCache full:https://registry.npmjs.org/uuid cache-hit
+236 silly fetch manifest jws@^4.0.1
+237 silly packumentCache full:https://registry.npmjs.org/jws cache-miss
+238 http cache https://registry.npmjs.org/duplexify 66ms (cache hit)
+239 silly packumentCache full:https://registry.npmjs.org/duplexify set size:73064 disposed:false
+240 silly fetch manifest lodash.once@^4.0.0
+241 silly packumentCache full:https://registry.npmjs.org/lodash.once cache-miss
+242 http cache https://registry.npmjs.org/gaxios 68ms (cache hit)
+243 silly packumentCache full:https://registry.npmjs.org/gaxios set size:341801 disposed:false
+244 silly fetch manifest lodash.includes@^4.3.0
+245 silly packumentCache full:https://registry.npmjs.org/lodash.includes cache-miss
+246 http cache https://registry.npmjs.org/google-auth-library 71ms (cache hit)
+247 silly packumentCache full:https://registry.npmjs.org/google-auth-library set size:717468 disposed:false
+248 silly fetch manifest lodash.isnumber@^3.0.3
+249 silly packumentCache full:https://registry.npmjs.org/lodash.isnumber cache-miss
+250 http cache https://registry.npmjs.org/retry-request 46ms (cache hit)
+251 silly packumentCache full:https://registry.npmjs.org/retry-request set size:88328 disposed:false
+252 silly fetch manifest lodash.isstring@^4.0.1
+253 silly packumentCache full:https://registry.npmjs.org/lodash.isstring cache-miss
+254 http cache https://registry.npmjs.org/mime 53ms (cache hit)
+255 silly packumentCache full:https://registry.npmjs.org/mime set size:119236 disposed:false
+256 silly fetch manifest lodash.isboolean@^3.0.3
+257 silly packumentCache full:https://registry.npmjs.org/lodash.isboolean cache-miss
+258 http cache https://registry.npmjs.org/teeny-request 38ms (cache hit)
+259 silly packumentCache full:https://registry.npmjs.org/teeny-request set size:170160 disposed:false
+260 silly fetch manifest lodash.isinteger@^4.0.4
+261 silly packumentCache full:https://registry.npmjs.org/lodash.isinteger cache-miss
+262 http cache https://registry.npmjs.org/lodash.once 32ms (cache hit)
+263 silly packumentCache full:https://registry.npmjs.org/lodash.once set size:23407 disposed:false
+264 silly fetch manifest lodash.isplainobject@^4.0.6
+265 silly packumentCache full:https://registry.npmjs.org/lodash.isplainobject cache-miss
+266 http cache https://registry.npmjs.org/jws 37ms (cache hit)
+267 silly packumentCache full:https://registry.npmjs.org/jws set size:48919 disposed:false
+268 silly fetch manifest jose@^4.15.4
+269 silly packumentCache full:https://registry.npmjs.org/jose cache-miss
+270 http cache https://registry.npmjs.org/lodash.isnumber 20ms (cache hit)
+271 silly packumentCache full:https://registry.npmjs.org/lodash.isnumber set size:21368 disposed:false
+272 silly fetch manifest limiter@^1.1.5
+273 silly packumentCache full:https://registry.npmjs.org/limiter cache-miss
+274 http cache https://registry.npmjs.org/lodash.includes 33ms (cache hit)
+275 silly packumentCache full:https://registry.npmjs.org/lodash.includes set size:27594 disposed:false
+276 silly fetch manifest lru-memoizer@^2.2.0
+277 silly packumentCache full:https://registry.npmjs.org/lru-memoizer cache-miss
+278 http cache https://registry.npmjs.org/lodash.isstring 21ms (cache hit)
+279 silly packumentCache full:https://registry.npmjs.org/lodash.isstring set size:21368 disposed:false
+280 silly fetch manifest @types/express@^4.17.20
+281 silly packumentCache full:https://registry.npmjs.org/@types%2fexpress cache-miss
+282 http cache https://registry.npmjs.org/lodash.isboolean 19ms (cache hit)
+283 silly packumentCache full:https://registry.npmjs.org/lodash.isboolean set size:21437 disposed:false
+284 silly fetch manifest @types/jsonwebtoken@^9.0.4
+285 silly packumentCache full:https://registry.npmjs.org/@types%2fjsonwebtoken cache-miss
+286 http cache https://registry.npmjs.org/lodash.isinteger 18ms (cache hit)
+287 silly packumentCache full:https://registry.npmjs.org/lodash.isinteger set size:10827 disposed:false
+288 http cache https://registry.npmjs.org/lodash.isplainobject 15ms (cache hit)
+289 silly packumentCache full:https://registry.npmjs.org/lodash.isplainobject set size:38531 disposed:false
+290 http cache https://registry.npmjs.org/limiter 14ms (cache hit)
+291 silly packumentCache full:https://registry.npmjs.org/limiter set size:39581 disposed:false
+292 http cache https://registry.npmjs.org/jose 19ms (cache hit)
+293 silly packumentCache full:https://registry.npmjs.org/jose set size:1390941 disposed:false
+294 http cache https://registry.npmjs.org/@types%2fexpress 27ms (cache hit)
+295 silly packumentCache full:https://registry.npmjs.org/@types%2fexpress set size:111364 disposed:false
+296 http cache https://registry.npmjs.org/lru-memoizer 33ms (cache hit)
+297 silly packumentCache full:https://registry.npmjs.org/lru-memoizer set size:57712 disposed:false
+298 http cache https://registry.npmjs.org/@types%2fjsonwebtoken 32ms (cache hit)
+299 silly packumentCache full:https://registry.npmjs.org/@types%2fjsonwebtoken set size:129919 disposed:false
+300 silly placeDep ROOT @opentelemetry/api@1.9.0 OK for: @google-cloud/firestore@7.11.6 want: ^1.3.0
+301 silly placeDep ROOT functional-red-black-tree@1.0.1 OK for: @google-cloud/firestore@7.11.6 want: ^1.0.1
+302 silly placeDep ROOT google-gax@4.6.1 OK for: @google-cloud/firestore@7.11.6 want: ^4.3.3
+303 silly fetch manifest uuid@^9.0.1
+304 silly packumentCache full:https://registry.npmjs.org/uuid cache-hit
+305 silly fetch manifest duplexify@^4.0.0
+306 silly packumentCache full:https://registry.npmjs.org/duplexify cache-hit
+307 silly fetch manifest @types/long@^4.0.0
+308 silly packumentCache full:https://registry.npmjs.org/@types%2flong cache-miss
+309 silly fetch manifest @grpc/grpc-js@^1.10.9
+310 silly packumentCache full:https://registry.npmjs.org/@grpc%2fgrpc-js cache-miss
+311 silly fetch manifest google-auth-library@^9.3.0
+312 silly packumentCache full:https://registry.npmjs.org/google-auth-library cache-hit
+313 silly fetch manifest proto3-json-serializer@^2.0.2
+314 silly packumentCache full:https://registry.npmjs.org/proto3-json-serializer cache-miss
+315 http cache https://registry.npmjs.org/proto3-json-serializer 6ms (cache hit)
+316 silly packumentCache full:https://registry.npmjs.org/proto3-json-serializer set size:83221 disposed:false
+317 http cache https://registry.npmjs.org/@grpc%2fgrpc-js 12ms (cache hit)
+318 silly packumentCache full:https://registry.npmjs.org/@grpc%2fgrpc-js set size:658277 disposed:false
+319 http cache https://registry.npmjs.org/@types%2flong 17ms (cache hit)
+320 silly packumentCache full:https://registry.npmjs.org/@types%2flong set size:28711 disposed:false
+321 silly placeDep ROOT @google-cloud/paginator@5.0.2 OK for: @google-cloud/storage@7.18.0 want: ^5.0.0
+322 silly placeDep ROOT @google-cloud/projectify@4.0.0 OK for: @google-cloud/storage@7.18.0 want: ^4.0.0
+323 silly placeDep ROOT @google-cloud/promisify@4.0.0 OK for: @google-cloud/storage@7.18.0 want: <4.1.0
+324 silly placeDep ROOT abort-controller@3.0.0 OK for: @google-cloud/storage@7.18.0 want: ^3.0.0
+325 silly placeDep ROOT async-retry@1.3.3 OK for: @google-cloud/storage@7.18.0 want: ^1.3.3
+326 silly placeDep ROOT duplexify@4.1.3 OK for: @google-cloud/storage@7.18.0 want: ^4.1.3
+327 silly placeDep ROOT gaxios@6.7.1 OK for: @google-cloud/storage@7.18.0 want: ^6.0.2
+328 silly placeDep ROOT google-auth-library@9.15.1 OK for: @google-cloud/storage@7.18.0 want: ^9.6.3
+329 silly placeDep ROOT html-entities@2.6.0 OK for: @google-cloud/storage@7.18.0 want: ^2.5.2
+330 silly placeDep node_modules/@google-cloud/storage mime@3.0.0 OK for: @google-cloud/storage@7.18.0 want: ^3.0.0
+331 silly placeDep ROOT retry-request@7.0.2 OK for: @google-cloud/storage@7.18.0 want: ^7.0.0
+332 silly placeDep ROOT teeny-request@9.0.0 OK for: @google-cloud/storage@7.18.0 want: ^9.0.0
+333 silly placeDep node_modules/@google-cloud/storage uuid@8.3.2 OK for: @google-cloud/storage@7.18.0 want: ^8.0.0
+334 silly fetch manifest arrify@^2.0.0
+335 silly packumentCache full:https://registry.npmjs.org/arrify cache-miss
+336 silly fetch manifest event-target-shim@^5.0.0
+337 silly packumentCache full:https://registry.npmjs.org/event-target-shim cache-miss
+338 silly fetch manifest retry@0.13.1
+339 silly packumentCache full:https://registry.npmjs.org/retry cache-miss
+340 silly fetch manifest readable-stream@^3.1.1
+341 silly packumentCache full:https://registry.npmjs.org/readable-stream cache-miss
+342 silly fetch manifest stream-shift@^1.0.2
+343 silly packumentCache full:https://registry.npmjs.org/stream-shift cache-miss
+344 silly fetch manifest is-stream@^2.0.0
+345 silly packumentCache full:https://registry.npmjs.org/is-stream cache-miss
+346 silly fetch manifest https-proxy-agent@^7.0.1
+347 silly packumentCache full:https://registry.npmjs.org/https-proxy-agent cache-miss
+348 http cache https://registry.npmjs.org/arrify 18ms (cache hit)
+349 silly packumentCache full:https://registry.npmjs.org/arrify set size:11862 disposed:false
+350 silly fetch manifest jws@^4.0.0
+351 silly packumentCache full:https://registry.npmjs.org/jws cache-hit
+352 silly fetch manifest gtoken@^7.0.0
+353 silly packumentCache full:https://registry.npmjs.org/gtoken cache-miss
+354 http cache https://registry.npmjs.org/readable-stream 19ms (cache hit)
+355 silly packumentCache full:https://registry.npmjs.org/readable-stream set size:261096 disposed:false
+356 silly fetch manifest gcp-metadata@^6.1.0
+357 silly packumentCache full:https://registry.npmjs.org/gcp-metadata cache-hit
+358 silly fetch manifest ecdsa-sig-formatter@^1.0.11
+359 silly packumentCache full:https://registry.npmjs.org/ecdsa-sig-formatter cache-miss
+360 http cache https://registry.npmjs.org/event-target-shim 29ms (cache hit)
+361 silly packumentCache full:https://registry.npmjs.org/event-target-shim set size:103601 disposed:false
+362 silly fetch manifest uuid@^9.0.0
+363 silly packumentCache full:https://registry.npmjs.org/uuid cache-hit
+364 silly fetch manifest stream-events@^1.0.5
+365 silly packumentCache full:https://registry.npmjs.org/stream-events cache-miss
+366 http cache https://registry.npmjs.org/retry 118ms (cache hit)
+367 silly packumentCache full:https://registry.npmjs.org/retry set size:31161 disposed:false
+368 silly fetch manifest http-proxy-agent@^5.0.0
+369 silly packumentCache full:https://registry.npmjs.org/http-proxy-agent cache-miss
+370 http cache https://registry.npmjs.org/stream-shift 121ms (cache hit)
+371 silly packumentCache full:https://registry.npmjs.org/stream-shift set size:8066 disposed:false
+372 silly fetch manifest https-proxy-agent@^5.0.0
+373 silly packumentCache full:https://registry.npmjs.org/https-proxy-agent cache-miss
+374 http cache https://registry.npmjs.org/https-proxy-agent 122ms (cache hit)
+375 silly packumentCache full:https://registry.npmjs.org/https-proxy-agent set size:76241 disposed:false
+376 http cache https://registry.npmjs.org/is-stream 125ms (cache hit)
+377 silly packumentCache full:https://registry.npmjs.org/is-stream set size:18582 disposed:false
+378 http cache https://registry.npmjs.org/gtoken 116ms (cache hit)
+379 silly packumentCache full:https://registry.npmjs.org/gtoken set size:155604 disposed:false
+380 http cache https://registry.npmjs.org/stream-events 101ms (cache hit)
+381 silly packumentCache full:https://registry.npmjs.org/stream-events set size:12460 disposed:false
+382 http cache https://registry.npmjs.org/ecdsa-sig-formatter 111ms (cache hit)
+383 silly packumentCache full:https://registry.npmjs.org/ecdsa-sig-formatter set size:23546 disposed:false
+384 http cache https://registry.npmjs.org/https-proxy-agent 15ms (cache hit)
+385 silly packumentCache full:https://registry.npmjs.org/https-proxy-agent set size:76241 disposed:false
+386 silly packumentCache full:https://registry.npmjs.org/https-proxy-agent dispose
+387 http cache https://registry.npmjs.org/http-proxy-agent 20ms (cache hit)
+388 silly packumentCache full:https://registry.npmjs.org/http-proxy-agent set size:50096 disposed:false
+389 silly placeDep ROOT arrify@2.0.1 OK for: @google-cloud/paginator@5.0.2 want: ^2.0.0
+390 silly placeDep ROOT event-target-shim@5.0.1 OK for: abort-controller@3.0.0 want: ^5.0.0
+391 silly placeDep ROOT retry@0.13.1 OK for: async-retry@1.3.3 want: 0.13.1
+392 silly placeDep node_modules/duplexify readable-stream@3.6.2 OK for: duplexify@4.1.3 want: ^3.1.1
+393 silly placeDep ROOT stream-shift@1.0.3 OK for: duplexify@4.1.3 want: ^1.0.2
+394 silly placeDep ROOT https-proxy-agent@7.0.6 OK for: gaxios@6.7.1 want: ^7.0.1
+395 silly placeDep ROOT is-stream@2.0.1 OK for: gaxios@6.7.1 want: ^2.0.0
+396 silly placeDep node_modules/gaxios uuid@9.0.1 OK for: gaxios@6.7.1 want: ^9.0.1
+397 silly fetch manifest agent-base@^7.1.2
+398 silly packumentCache full:https://registry.npmjs.org/agent-base cache-miss
+399 http cache https://registry.npmjs.org/agent-base 6ms (cache hit)
+400 silly packumentCache full:https://registry.npmjs.org/agent-base set size:67460 disposed:false
+401 silly placeDep ROOT ecdsa-sig-formatter@1.0.11 OK for: google-auth-library@9.15.1 want: ^1.0.11
+402 silly placeDep ROOT gcp-metadata@6.1.1 OK for: google-auth-library@9.15.1 want: ^6.1.0
+403 silly placeDep ROOT gtoken@7.1.0 OK for: google-auth-library@9.15.1 want: ^7.0.0
+404 silly placeDep ROOT jws@4.0.1 OK for: google-auth-library@9.15.1 want: ^4.0.0
+405 silly fetch manifest json-bigint@^1.0.0
+406 silly packumentCache full:https://registry.npmjs.org/json-bigint cache-miss
+407 silly fetch manifest google-logging-utils@^0.0.2
+408 silly packumentCache full:https://registry.npmjs.org/google-logging-utils cache-miss
+409 silly fetch manifest jwa@^2.0.1
+410 silly packumentCache full:https://registry.npmjs.org/jwa cache-miss
+411 http cache https://registry.npmjs.org/json-bigint 6ms (cache hit)
+412 silly packumentCache full:https://registry.npmjs.org/json-bigint set size:36963 disposed:false
+413 http cache https://registry.npmjs.org/google-logging-utils 7ms (cache hit)
+414 silly packumentCache full:https://registry.npmjs.org/google-logging-utils set size:21694 disposed:false
+415 http cache https://registry.npmjs.org/jwa 8ms (cache hit)
+416 silly packumentCache full:https://registry.npmjs.org/jwa set size:39956 disposed:false
+417 silly placeDep ROOT google-logging-utils@0.0.2 OK for: gcp-metadata@6.1.1 want: ^0.0.2
+418 silly placeDep ROOT json-bigint@1.0.0 OK for: gcp-metadata@6.1.1 want: ^1.0.0
+419 silly fetch manifest bignumber.js@^9.0.0
+420 silly packumentCache full:https://registry.npmjs.org/bignumber.js cache-miss
+421 http cache https://registry.npmjs.org/bignumber.js 4ms (cache hit)
+422 silly packumentCache full:https://registry.npmjs.org/bignumber.js set size:123203 disposed:false
+423 silly placeDep node_modules/google-gax @grpc/grpc-js@1.14.3 OK for: google-gax@4.6.1 want: ^1.10.9
+424 silly placeDep ROOT @types/long@4.0.2 OK for: google-gax@4.6.1 want: ^4.0.0
+425 silly placeDep ROOT proto3-json-serializer@2.0.2 OK for: google-gax@4.6.1 want: ^2.0.2
+426 silly placeDep node_modules/google-gax uuid@9.0.1 OK for: google-gax@4.6.1 want: ^9.0.1
+427 silly fetch manifest @grpc/proto-loader@^0.8.0
+428 silly packumentCache full:https://registry.npmjs.org/@grpc%2fproto-loader cache-miss
+429 silly fetch manifest @js-sdsl/ordered-map@^4.4.2
+430 silly packumentCache full:https://registry.npmjs.org/@js-sdsl%2fordered-map cache-miss
+431 http cache https://registry.npmjs.org/@grpc%2fproto-loader 5ms (cache hit)
+432 silly packumentCache full:https://registry.npmjs.org/@grpc%2fproto-loader set size:215394 disposed:false
+433 http cache https://registry.npmjs.org/@js-sdsl%2fordered-map 8ms (cache hit)
+434 silly packumentCache full:https://registry.npmjs.org/@js-sdsl%2fordered-map set size:63788 disposed:false
+435 silly placeDep ROOT agent-base@7.1.4 OK for: https-proxy-agent@7.0.6 want: ^7.1.2
+436 silly placeDep ROOT bignumber.js@9.3.1 OK for: json-bigint@1.0.0 want: ^9.0.0
+437 silly placeDep ROOT lodash.includes@4.3.0 OK for: jsonwebtoken@9.0.3 want: ^4.3.0
+438 silly placeDep ROOT lodash.isboolean@3.0.3 OK for: jsonwebtoken@9.0.3 want: ^3.0.3
+439 silly placeDep ROOT lodash.isinteger@4.0.4 OK for: jsonwebtoken@9.0.3 want: ^4.0.4
+440 silly placeDep ROOT lodash.isnumber@3.0.3 OK for: jsonwebtoken@9.0.3 want: ^3.0.3
+441 silly placeDep ROOT lodash.isplainobject@4.0.6 OK for: jsonwebtoken@9.0.3 want: ^4.0.6
+442 silly placeDep ROOT lodash.isstring@4.0.1 OK for: jsonwebtoken@9.0.3 want: ^4.0.1
+443 silly placeDep ROOT lodash.once@4.1.1 OK for: jsonwebtoken@9.0.3 want: ^4.0.0
+444 silly placeDep ROOT @types/express@4.17.25 OK for: jwks-rsa@3.2.0 want: ^4.17.20
+445 silly placeDep ROOT @types/jsonwebtoken@9.0.10 OK for: jwks-rsa@3.2.0 want: ^9.0.4
+446 silly placeDep node_modules/jwks-rsa jose@4.15.9 OK for: jwks-rsa@3.2.0 want: ^4.15.4
+447 silly placeDep ROOT limiter@1.1.5 OK for: jwks-rsa@3.2.0 want: ^1.1.5
+448 silly placeDep ROOT lru-memoizer@2.3.0 OK for: jwks-rsa@3.2.0 want: ^2.2.0
+449 silly fetch manifest @types/qs@*
+450 silly packumentCache full:https://registry.npmjs.org/@types%2fqs cache-miss
+451 silly fetch manifest @types/body-parser@*
+452 silly packumentCache full:https://registry.npmjs.org/@types%2fbody-parser cache-miss
+453 silly fetch manifest @types/serve-static@^1
+454 silly packumentCache full:https://registry.npmjs.org/@types%2fserve-static cache-miss
+455 silly fetch manifest @types/express-serve-static-core@^4.17.33
+456 silly packumentCache full:https://registry.npmjs.org/@types%2fexpress-serve-static-core cache-miss
+457 silly fetch manifest lru-cache@6.0.0
+458 silly packumentCache full:https://registry.npmjs.org/lru-cache cache-miss
+459 silly fetch manifest lodash.clonedeep@^4.5.0
+460 silly packumentCache full:https://registry.npmjs.org/lodash.clonedeep cache-miss
+461 http cache https://registry.npmjs.org/@types%2fqs 10ms (cache hit)
+462 silly packumentCache full:https://registry.npmjs.org/@types%2fqs set size:79370 disposed:false
+463 http cache https://registry.npmjs.org/@types%2fbody-parser 12ms (cache hit)
+464 silly packumentCache full:https://registry.npmjs.org/@types%2fbody-parser set size:59466 disposed:false
+465 http cache https://registry.npmjs.org/@types%2fserve-static 13ms (cache hit)
+466 silly packumentCache full:https://registry.npmjs.org/@types%2fserve-static set size:70859 disposed:false
+467 http cache https://registry.npmjs.org/lru-cache 15ms (cache hit)
+468 silly packumentCache full:https://registry.npmjs.org/lru-cache set size:406394 disposed:false
+469 http cache https://registry.npmjs.org/@types%2fexpress-serve-static-core 20ms (cache hit)
+470 silly packumentCache full:https://registry.npmjs.org/@types%2fexpress-serve-static-core set size:264345 disposed:false
+471 http cache https://registry.npmjs.org/lodash.clonedeep 23ms (cache hit)
+472 silly packumentCache full:https://registry.npmjs.org/lodash.clonedeep set size:48192 disposed:false
+473 silly placeDep ROOT @types/body-parser@1.19.6 OK for: @types/express@4.17.25 want: *
+474 silly placeDep ROOT @types/express-serve-static-core@4.19.8 OK for: @types/express@4.17.25 want: ^4.17.33
+475 silly placeDep ROOT @types/qs@6.14.0 OK for: @types/express@4.17.25 want: *
+476 silly placeDep ROOT @types/serve-static@1.15.10 OK for: @types/express@4.17.25 want: ^1
+477 silly fetch manifest @types/connect@*
+478 silly packumentCache full:https://registry.npmjs.org/@types%2fconnect cache-miss
+479 silly fetch manifest @types/send@*
+480 silly packumentCache full:https://registry.npmjs.org/@types%2fsend cache-miss
+481 silly fetch manifest @types/range-parser@*
+482 silly packumentCache full:https://registry.npmjs.org/@types%2frange-parser cache-miss
+483 silly fetch manifest @types/send@<1
+484 silly packumentCache full:https://registry.npmjs.org/@types%2fsend cache-miss
+485 silly fetch manifest @types/http-errors@*
+486 silly packumentCache full:https://registry.npmjs.org/@types%2fhttp-errors cache-miss
+487 http cache https://registry.npmjs.org/@types%2frange-parser 8ms (cache hit)
+488 silly packumentCache full:https://registry.npmjs.org/@types%2frange-parser set size:15278 disposed:false
+489 http cache https://registry.npmjs.org/@types%2fsend 9ms (cache hit)
+490 silly packumentCache full:https://registry.npmjs.org/@types%2fsend set size:29985 disposed:false
+491 http cache https://registry.npmjs.org/@types%2fconnect 11ms (cache hit)
+492 silly packumentCache full:https://registry.npmjs.org/@types%2fconnect set size:31512 disposed:false
+493 http cache https://registry.npmjs.org/@types%2fsend 10ms (cache hit)
+494 silly packumentCache full:https://registry.npmjs.org/@types%2fsend set size:29985 disposed:false
+495 silly packumentCache full:https://registry.npmjs.org/@types%2fsend dispose
+496 http cache https://registry.npmjs.org/@types%2fhttp-errors 11ms (cache hit)
+497 silly packumentCache full:https://registry.npmjs.org/@types%2fhttp-errors set size:48994 disposed:false
+498 silly placeDep ROOT @types/connect@3.4.38 OK for: @types/body-parser@1.19.6 want: *
+499 silly placeDep ROOT @types/range-parser@1.2.7 OK for: @types/express-serve-static-core@4.19.8 want: *
+500 silly placeDep ROOT @types/send@1.2.1 OK for: @types/express-serve-static-core@4.19.8 want: *
+501 silly placeDep ROOT @types/http-errors@2.0.5 OK for: @types/serve-static@1.15.10 want: *
+502 silly placeDep node_modules/@types/serve-static @types/send@0.17.6 OK for: @types/serve-static@1.15.10 want: <1
+503 silly fetch manifest @types/mime@^1
+504 silly packumentCache full:https://registry.npmjs.org/@types%2fmime cache-miss
+505 http cache https://registry.npmjs.org/@types%2fmime 4ms (cache hit)
+506 silly packumentCache full:https://registry.npmjs.org/@types%2fmime set size:43242 disposed:false
+507 silly placeDep ROOT jwa@2.0.1 OK for: jws@4.0.1 want: ^2.0.1
+508 silly fetch manifest buffer-equal-constant-time@^1.0.1
+509 silly packumentCache full:https://registry.npmjs.org/buffer-equal-constant-time cache-miss
+510 http cache https://registry.npmjs.org/buffer-equal-constant-time 6ms (cache hit)
+511 silly packumentCache full:https://registry.npmjs.org/buffer-equal-constant-time set size:4390 disposed:false
+512 silly placeDep ROOT buffer-equal-constant-time@1.0.1 OK for: jwa@2.0.1 want: ^1.0.1
+513 silly placeDep ROOT lodash.clonedeep@4.5.0 OK for: lru-memoizer@2.3.0 want: ^4.5.0
+514 silly placeDep node_modules/lru-memoizer lru-cache@6.0.0 OK for: lru-memoizer@2.3.0 want: 6.0.0
+515 silly fetch manifest yallist@^4.0.0
+516 silly packumentCache full:https://registry.npmjs.org/yallist cache-miss
+517 http cache https://registry.npmjs.org/yallist 4ms (cache hit)
+518 silly packumentCache full:https://registry.npmjs.org/yallist set size:34610 disposed:false
+519 silly placeDep ROOT @mongodb-js/saslprep@1.4.4 OK for: mongodb@6.21.0 want: ^1.3.0
+520 silly placeDep ROOT bson@6.10.4 OK for: mongodb@6.21.0 want: ^6.10.4
+521 silly placeDep ROOT gcp-metadata@5.3.0 REPLACE for: mongodb@6.21.0 want: ^5.2.0
+522 silly placeDep ROOT mongodb-connection-string-url@3.0.2 OK for: mongodb@6.21.0 want: ^3.0.2
+523 silly fetch manifest sparse-bitfield@^3.0.3
+524 silly packumentCache full:https://registry.npmjs.org/sparse-bitfield cache-miss
+525 silly fetch manifest gaxios@^5.0.0
+526 silly packumentCache full:https://registry.npmjs.org/gaxios cache-hit
+527 silly fetch manifest whatwg-url@^14.1.0 || ^13.0.0
+528 silly packumentCache full:https://registry.npmjs.org/whatwg-url cache-miss
+529 silly fetch manifest @types/whatwg-url@^11.0.2
+530 silly packumentCache full:https://registry.npmjs.org/@types%2fwhatwg-url cache-miss
+531 http cache https://registry.npmjs.org/sparse-bitfield 8ms (cache hit)
+532 silly packumentCache full:https://registry.npmjs.org/sparse-bitfield set size:18366 disposed:false
+533 http cache https://registry.npmjs.org/whatwg-url 8ms (cache hit)
+534 silly packumentCache full:https://registry.npmjs.org/whatwg-url set size:165406 disposed:false
+535 http cache https://registry.npmjs.org/@types%2fwhatwg-url 10ms (cache hit)
+536 silly packumentCache full:https://registry.npmjs.org/@types%2fwhatwg-url set size:25750 disposed:false
+537 silly placeDep ROOT sparse-bitfield@3.0.3 OK for: @mongodb-js/saslprep@1.4.4 want: ^3.0.3
+538 silly fetch manifest memory-pager@^1.0.2
+539 silly packumentCache full:https://registry.npmjs.org/memory-pager cache-miss
+540 http cache https://registry.npmjs.org/memory-pager 5ms (cache hit)
+541 silly packumentCache full:https://registry.npmjs.org/memory-pager set size:21090 disposed:false
+542 silly placeDep node_modules/gcp-metadata gaxios@5.1.3 OK for: gcp-metadata@5.3.0 want: ^5.0.0
+543 silly placeDep node_modules/google-auth-library gcp-metadata@6.1.1 OK for: google-auth-library@9.15.1 want: ^6.1.0
+544 silly placeDep ROOT @types/whatwg-url@11.0.5 OK for: mongodb-connection-string-url@3.0.2 want: ^11.0.2
+545 silly placeDep node_modules/mongodb-connection-string-url whatwg-url@14.2.0 OK for: mongodb-connection-string-url@3.0.2 want: ^14.1.0 || ^13.0.0
+546 silly fetch manifest @types/webidl-conversions@*
+547 silly packumentCache full:https://registry.npmjs.org/@types%2fwebidl-conversions cache-miss
+548 silly fetch manifest tr46@^5.1.0
+549 silly packumentCache full:https://registry.npmjs.org/tr46 cache-miss
+550 silly fetch manifest webidl-conversions@^7.0.0
+551 silly packumentCache full:https://registry.npmjs.org/webidl-conversions cache-miss
+552 http cache https://registry.npmjs.org/@types%2fwebidl-conversions 5ms (cache hit)
+553 silly packumentCache full:https://registry.npmjs.org/@types%2fwebidl-conversions set size:22935 disposed:false
+554 http cache https://registry.npmjs.org/webidl-conversions 5ms (cache hit)
+555 silly packumentCache full:https://registry.npmjs.org/webidl-conversions set size:46073 disposed:false
+556 http cache https://registry.npmjs.org/tr46 8ms (cache hit)
+557 silly packumentCache full:https://registry.npmjs.org/tr46 set size:47377 disposed:false
+558 silly placeDep ROOT @types/webidl-conversions@7.0.3 OK for: @types/whatwg-url@11.0.5 want: *
+559 silly placeDep ROOT @panva/hkdf@1.2.1 OK for: next-auth@4.24.13 want: ^1.0.2
+560 silly placeDep ROOT cookie@0.7.2 OK for: next-auth@4.24.13 want: ^0.7.0
+561 silly placeDep node_modules/next-auth jose@4.15.9 OK for: next-auth@4.24.13 want: ^4.15.5
+562 silly placeDep ROOT oauth@0.9.15 OK for: next-auth@4.24.13 want: ^0.9.15
+563 silly placeDep ROOT openid-client@5.7.1 OK for: next-auth@4.24.13 want: ^5.4.0
+564 silly placeDep ROOT preact@10.28.2 OK for: next-auth@4.24.13 want: ^10.6.3
+565 silly placeDep ROOT preact-render-to-string@5.2.6 OK for: next-auth@4.24.13 want: ^5.1.19
+566 silly placeDep node_modules/next-auth uuid@8.3.2 OK for: next-auth@4.24.13 want: ^8.3.2
+567 silly fetch manifest jose@^4.15.9
+568 silly packumentCache full:https://registry.npmjs.org/jose cache-miss
+569 silly fetch manifest lru-cache@^6.0.0
+570 silly packumentCache full:https://registry.npmjs.org/lru-cache cache-hit
+571 silly fetch manifest object-hash@^2.2.0
+572 silly packumentCache full:https://registry.npmjs.org/object-hash cache-miss
+573 silly fetch manifest oidc-token-hash@^5.0.3
+574 silly packumentCache full:https://registry.npmjs.org/oidc-token-hash cache-miss
+575 silly fetch manifest pretty-format@^3.8.0
+576 silly packumentCache full:https://registry.npmjs.org/pretty-format cache-miss
+577 http cache https://registry.npmjs.org/jose 10ms (cache hit)
+578 silly packumentCache full:https://registry.npmjs.org/jose set size:1390941 disposed:false
+579 http cache https://registry.npmjs.org/oidc-token-hash 26ms (cache hit)
+580 silly packumentCache full:https://registry.npmjs.org/oidc-token-hash set size:37230 disposed:false
+581 http cache https://registry.npmjs.org/pretty-format 29ms (cache hit)
+582 silly packumentCache full:https://registry.npmjs.org/pretty-format set size:591748 disposed:false
+583 http cache https://registry.npmjs.org/object-hash 37ms (cache hit)
+584 silly packumentCache full:https://registry.npmjs.org/object-hash set size:100564 disposed:false
+585 silly placeDep node_modules/openid-client jose@4.15.9 OK for: openid-client@5.7.1 want: ^4.15.9
+586 silly placeDep node_modules/openid-client lru-cache@6.0.0 OK for: openid-client@5.7.1 want: ^6.0.0
+587 silly placeDep node_modules/openid-client object-hash@2.2.0 OK for: openid-client@5.7.1 want: ^2.2.0
+588 silly placeDep ROOT oidc-token-hash@5.2.0 OK for: openid-client@5.7.1 want: ^5.0.3
+589 silly placeDep ROOT pretty-format@3.8.0 OK for: preact-render-to-string@5.2.6 want: ^3.8.0
+590 silly placeDep ROOT memory-pager@1.5.0 OK for: sparse-bitfield@3.0.3 want: ^1.0.2
+591 silly placeDep ROOT http-proxy-agent@5.0.0 OK for: teeny-request@9.0.0 want: ^5.0.0
+592 silly placeDep node_modules/teeny-request https-proxy-agent@5.0.1 OK for: teeny-request@9.0.0 want: ^5.0.0
+593 silly placeDep ROOT stream-events@1.0.5 OK for: teeny-request@9.0.0 want: ^1.0.5
+594 silly placeDep node_modules/teeny-request uuid@9.0.1 OK for: teeny-request@9.0.0 want: ^9.0.0
+595 silly fetch manifest @tootallnate/once@2
+596 silly packumentCache full:https://registry.npmjs.org/@tootallnate%2fonce cache-miss
+597 silly fetch manifest agent-base@6
+598 silly packumentCache full:https://registry.npmjs.org/agent-base cache-hit
+599 silly fetch manifest agent-base@6
+600 silly packumentCache full:https://registry.npmjs.org/agent-base cache-hit
+601 silly fetch manifest stubs@^3.0.0
+602 silly packumentCache full:https://registry.npmjs.org/stubs cache-miss
+603 http cache https://registry.npmjs.org/@tootallnate%2fonce 6ms (cache hit)
+604 silly packumentCache full:https://registry.npmjs.org/@tootallnate%2fonce set size:19864 disposed:false
+605 http cache https://registry.npmjs.org/stubs 6ms (cache hit)
+606 silly packumentCache full:https://registry.npmjs.org/stubs set size:9388 disposed:false
+607 silly placeDep ROOT @tootallnate/once@2.0.0 OK for: http-proxy-agent@5.0.0 want: 2
+608 silly placeDep node_modules/http-proxy-agent agent-base@6.0.2 OK for: http-proxy-agent@5.0.0 want: 6
+609 silly placeDep ROOT stubs@3.0.0 OK for: stream-events@1.0.5 want: ^3.0.0
+610 silly placeDep ROOT @types/mime@1.3.5 OK for: @types/send@0.17.6 want: ^1
+611 silly placeDep node_modules/gcp-metadata https-proxy-agent@5.0.1 OK for: gaxios@5.1.3 want: ^5.0.0
+612 silly placeDep node_modules/gcp-metadata agent-base@6.0.2 OK for: https-proxy-agent@5.0.1 want: 6
+613 silly placeDep ROOT google-logging-utils@0.0.2 OK for: gcp-metadata@6.1.1 want: ^0.0.2
+614 silly placeDep node_modules/google-gax/node_modules/@grpc/grpc-js @grpc/proto-loader@0.8.0 OK for: @grpc/grpc-js@1.14.3 want: ^0.8.0
+615 silly placeDep ROOT @js-sdsl/ordered-map@4.4.2 OK for: @grpc/grpc-js@1.14.3 want: ^4.4.2
+616 silly placeDep ROOT yallist@4.0.0 OK for: lru-cache@6.0.0 want: ^4.0.0
+617 silly placeDep node_modules/mongodb-connection-string-url tr46@5.1.1 OK for: whatwg-url@14.2.0 want: ^5.1.0
+618 silly placeDep node_modules/mongodb-connection-string-url webidl-conversions@7.0.0 OK for: whatwg-url@14.2.0 want: ^7.0.0
+619 silly placeDep node_modules/teeny-request agent-base@6.0.2 OK for: https-proxy-agent@5.0.1 want: 6
+620 silly reify mark retired [
+620 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/acorn',
+620 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/.bin/acorn'
+620 silly reify ]
+621 silly reify mark retired [
+621 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/abort-controller'
+621 silly reify ]
+622 silly reify mark retired [ '/Users/timofey/Downloads/download (1)/node_modules/agent-base' ]
+623 silly reify mark retired [ '/Users/timofey/Downloads/download (1)/node_modules/arrify' ]
+624 silly reify mark retired [ '/Users/timofey/Downloads/download (1)/node_modules/async-retry' ]
+625 silly reify mark retired [ '/Users/timofey/Downloads/download (1)/node_modules/bcryptjs' ]
+626 silly reify mark retired [ '/Users/timofey/Downloads/download (1)/node_modules/bignumber.js' ]
+627 silly reify mark retired [
+627 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/browserslist',
+627 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/.bin/browserslist'
+627 silly reify ]
+628 silly reify mark retired [
+628 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/buffer-equal-constant-time'
+628 silly reify ]
+629 silly reify mark retired [ '/Users/timofey/Downloads/download (1)/node_modules/bson' ]
+630 silly reify mark retired [ '/Users/timofey/Downloads/download (1)/node_modules/cookie' ]
+631 silly reify mark retired [
+631 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/crc-32',
+631 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/.bin/crc32'
+631 silly reify ]
+632 silly reify mark retired [
+632 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/cssesc',
+632 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/.bin/cssesc'
+632 silly reify ]
+633 silly reify mark retired [ '/Users/timofey/Downloads/download (1)/node_modules/duplexify' ]
+634 silly reify mark retired [
+634 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/ecdsa-sig-formatter'
+634 silly reify ]
+635 silly reify mark retired [
+635 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/eslint',
+635 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/.bin/eslint'
+635 silly reify ]
+636 silly reify mark retired [
+636 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/eslint-plugin-import/node_modules/semver',
+636 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/eslint-plugin-import/node_modules/.bin/semver'
+636 silly reify ]
+637 silly reify mark retired [
+637 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/eslint-plugin-react/node_modules/resolve',
+637 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/eslint-plugin-react/node_modules/.bin/resolve'
+637 silly reify ]
+638 silly reify mark retired [
+638 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/eslint-plugin-react/node_modules/semver',
+638 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/eslint-plugin-react/node_modules/.bin/semver'
+638 silly reify ]
+639 silly reify mark retired [
+639 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/event-target-shim'
+639 silly reify ]
+640 silly reify mark retired [
+640 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/farmhash-modern'
+640 silly reify ]
+641 silly reify mark retired [
+641 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/fast-xml-parser',
+641 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/.bin/fxparser'
+641 silly reify ]
+642 silly reify mark retired [ '/Users/timofey/Downloads/download (1)/node_modules/firebase-admin' ]
+643 silly reify mark retired [
+643 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/functional-red-black-tree'
+643 silly reify ]
+644 silly reify mark retired [ '/Users/timofey/Downloads/download (1)/node_modules/gaxios' ]
+645 silly reify mark retired [
+645 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/glob',
+645 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/.bin/glob'
+645 silly reify ]
+646 silly reify mark retired [
+646 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/google-auth-library'
+646 silly reify ]
+647 silly reify mark retired [
+647 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/google-logging-utils'
+647 silly reify ]
+648 silly reify mark retired [ '/Users/timofey/Downloads/download (1)/node_modules/google-gax' ]
+649 silly reify mark retired [ '/Users/timofey/Downloads/download (1)/node_modules/gtoken' ]
+650 silly reify mark retired [
+650 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/http-proxy-agent'
+650 silly reify ]
+651 silly reify mark retired [ '/Users/timofey/Downloads/download (1)/node_modules/html-entities' ]
+652 silly reify mark retired [
+652 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/https-proxy-agent'
+652 silly reify ]
+653 silly reify mark retired [
+653 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/is-docker',
+653 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/.bin/is-docker'
+653 silly reify ]
+654 silly reify mark retired [ '/Users/timofey/Downloads/download (1)/node_modules/is-stream' ]
+655 silly reify mark retired [
+655 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/jiti',
+655 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/.bin/jiti'
+655 silly reify ]
+656 silly reify mark retired [
+656 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/js-yaml',
+656 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/.bin/js-yaml'
+656 silly reify ]
+657 silly reify mark retired [ '/Users/timofey/Downloads/download (1)/node_modules/json-bigint' ]
+658 silly reify mark retired [ '/Users/timofey/Downloads/download (1)/node_modules/jsonwebtoken' ]
+659 silly reify mark retired [
+659 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/json5',
+659 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/.bin/json5'
+659 silly reify ]
+660 silly reify mark retired [ '/Users/timofey/Downloads/download (1)/node_modules/jwa' ]
+661 silly reify mark retired [ '/Users/timofey/Downloads/download (1)/node_modules/jws' ]
+662 silly reify mark retired [ '/Users/timofey/Downloads/download (1)/node_modules/jwks-rsa' ]
+663 silly reify mark retired [ '/Users/timofey/Downloads/download (1)/node_modules/limiter' ]
+664 silly reify mark retired [
+664 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/lodash.clonedeep'
+664 silly reify ]
+665 silly reify mark retired [
+665 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/lodash.isboolean'
+665 silly reify ]
+666 silly reify mark retired [
+666 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/lodash.includes'
+666 silly reify ]
+667 silly reify mark retired [
+667 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/lodash.isinteger'
+667 silly reify ]
+668 silly reify mark retired [
+668 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/lodash.isnumber'
+668 silly reify ]
+669 silly reify mark retired [
+669 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/lodash.isstring'
+669 silly reify ]
+670 silly reify mark retired [ '/Users/timofey/Downloads/download (1)/node_modules/lodash.once' ]
+671 silly reify mark retired [
+671 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/loose-envify',
+671 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/.bin/loose-envify'
+671 silly reify ]
+672 silly reify mark retired [ '/Users/timofey/Downloads/download (1)/node_modules/lru-memoizer' ]
+673 silly reify mark retired [
+673 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/lodash.isplainobject'
+673 silly reify ]
+674 silly reify mark retired [ '/Users/timofey/Downloads/download (1)/node_modules/memory-pager' ]
+675 silly reify mark retired [
+675 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/mime',
+675 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/.bin/mime'
+675 silly reify ]
+676 silly reify mark retired [
+676 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/mongodb-connection-string-url'
+676 silly reify ]
+677 silly reify mark retired [ '/Users/timofey/Downloads/download (1)/node_modules/mongodb' ]
+678 silly reify mark retired [
+678 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/nanoid',
+678 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/.bin/nanoid'
+678 silly reify ]
+679 silly reify mark retired [
+679 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/napi-postinstall',
+679 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/.bin/napi-postinstall'
+679 silly reify ]
+680 silly reify mark retired [
+680 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/next',
+680 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/.bin/next'
+680 silly reify ]
+681 silly reify mark retired [ '/Users/timofey/Downloads/download (1)/node_modules/next-auth' ]
+682 silly reify mark retired [ '/Users/timofey/Downloads/download (1)/node_modules/node-forge' ]
+683 silly reify mark retired [ '/Users/timofey/Downloads/download (1)/node_modules/nodemailer' ]
+684 silly reify mark retired [ '/Users/timofey/Downloads/download (1)/node_modules/oauth' ]
+685 silly reify mark retired [ '/Users/timofey/Downloads/download (1)/node_modules/openid-client' ]
+686 silly reify mark retired [
+686 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/oidc-token-hash'
+686 silly reify ]
+687 silly reify mark retired [
+687 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/patch-package',
+687 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/.bin/patch-package'
+687 silly reify ]
+688 silly reify mark retired [
+688 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/postcss/node_modules/nanoid',
+688 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/postcss/node_modules/.bin/nanoid'
+688 silly reify ]
+689 silly reify mark retired [ '/Users/timofey/Downloads/download (1)/node_modules/pretty-format' ]
+690 silly reify mark retired [
+690 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/preact-render-to-string'
+690 silly reify ]
+691 silly reify mark retired [
+691 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/proto3-json-serializer'
+691 silly reify ]
+692 silly reify mark retired [ '/Users/timofey/Downloads/download (1)/node_modules/preact' ]
+693 silly reify mark retired [
+693 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/request/node_modules/uuid',
+693 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/request/node_modules/.bin/uuid'
+693 silly reify ]
+694 silly reify mark retired [
+694 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/resolve',
+694 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/.bin/resolve'
+694 silly reify ]
+695 silly reify mark retired [ '/Users/timofey/Downloads/download (1)/node_modules/retry' ]
+696 silly reify mark retired [ '/Users/timofey/Downloads/download (1)/node_modules/retry-request' ]
+697 silly reify mark retired [
+697 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/rimraf',
+697 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/.bin/rimraf'
+697 silly reify ]
+698 silly reify mark retired [
+698 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/semver',
+698 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/.bin/semver'
+698 silly reify ]
+699 silly reify mark retired [
+699 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/sparse-bitfield'
+699 silly reify ]
+700 silly reify mark retired [ '/Users/timofey/Downloads/download (1)/node_modules/stream-events' ]
+701 silly reify mark retired [ '/Users/timofey/Downloads/download (1)/node_modules/stream-shift' ]
+702 silly reify mark retired [
+702 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/sucrase',
+702 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/.bin/sucrase',
+702 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/.bin/sucrase-node'
+702 silly reify ]
+703 silly reify mark retired [
+703 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/tailwindcss',
+703 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/.bin/tailwind',
+703 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/.bin/tailwindcss'
+703 silly reify ]
+704 silly reify mark retired [ '/Users/timofey/Downloads/download (1)/node_modules/teeny-request' ]
+705 silly reify mark retired [
+705 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/terser',
+705 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/.bin/terser'
+705 silly reify ]
+706 silly reify mark retired [
+706 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/tldts',
+706 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/.bin/tldts'
+706 silly reify ]
+707 silly reify mark retired [
+707 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/tsconfig-paths/node_modules/json5',
+707 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/tsconfig-paths/node_modules/.bin/json5'
+707 silly reify ]
+708 silly reify mark retired [
+708 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/typescript',
+708 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/.bin/tsc',
+708 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/.bin/tsserver'
+708 silly reify ]
+709 silly reify mark retired [
+709 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/update-browserslist-db',
+709 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/.bin/update-browserslist-db'
+709 silly reify ]
+710 silly reify mark retired [
+710 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/uuid',
+710 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/.bin/uuid'
+710 silly reify ]
+711 silly reify mark retired [
+711 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/webpack',
+711 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/.bin/webpack'
+711 silly reify ]
+712 silly reify mark retired [
+712 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/which',
+712 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/.bin/node-which'
+712 silly reify ]
+713 silly reify mark retired [
+713 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/xlsx',
+713 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/.bin/xlsx'
+713 silly reify ]
+714 silly reify mark retired [ '/Users/timofey/Downloads/download (1)/node_modules/yallist' ]
+715 silly reify mark retired [
+715 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/xml-js',
+715 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/.bin/xml-js'
+715 silly reify ]
+716 silly reify mark retired [
+716 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/yaml',
+716 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/.bin/yaml'
+716 silly reify ]
+717 silly reify mark retired [
+717 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/@aws-sdk/xml-builder/node_modules/fast-xml-parser',
+717 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/@aws-sdk/xml-builder/node_modules/.bin/fxparser'
+717 silly reify ]
+718 silly reify mark retired [
+718 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/@cypress/request/node_modules/uuid',
+718 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/@cypress/request/node_modules/.bin/uuid'
+718 silly reify ]
+719 silly reify mark retired [
+719 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/@fastify/busboy'
+719 silly reify ]
+720 silly reify mark retired [ '/Users/timofey/Downloads/download (1)/node_modules/stubs' ]
+721 silly reify mark retired [
+721 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/@google-cloud/firestore'
+721 silly reify ]
+722 silly reify mark retired [
+722 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/@google-cloud/paginator'
+722 silly reify ]
+723 silly reify mark retired [
+723 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/@grpc/proto-loader',
+723 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/.bin/proto-loader-gen-types'
+723 silly reify ]
+724 silly reify mark retired [
+724 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/@google-cloud/projectify'
+724 silly reify ]
+725 silly reify mark retired [
+725 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/@google-cloud/storage'
+725 silly reify ]
+726 silly reify mark retired [
+726 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/@google-cloud/promisify'
+726 silly reify ]
+727 silly reify mark retired [
+727 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/@js-sdsl/ordered-map'
+727 silly reify ]
+728 silly reify mark retired [
+728 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/@mongodb-js/saslprep'
+728 silly reify ]
+729 silly reify mark retired [ '/Users/timofey/Downloads/download (1)/node_modules/@panva/hkdf' ]
+730 silly reify mark retired [
+730 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/@opentelemetry/api'
+730 silly reify ]
+731 silly reify mark retired [
+731 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/@tootallnate/once'
+731 silly reify ]
+732 silly reify mark retired [ '/Users/timofey/Downloads/download (1)/node_modules/@types/connect' ]
+733 silly reify mark retired [
+733 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/@types/body-parser'
+733 silly reify ]
+734 silly reify mark retired [ '/Users/timofey/Downloads/download (1)/node_modules/@types/express' ]
+735 silly reify mark retired [
+735 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/@types/express-serve-static-core'
+735 silly reify ]
+736 silly reify mark retired [
+736 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/@types/http-errors'
+736 silly reify ]
+737 silly reify mark retired [ '/Users/timofey/Downloads/download (1)/node_modules/@types/long' ]
+738 silly reify mark retired [
+738 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/@types/jsonwebtoken'
+738 silly reify ]
+739 silly reify mark retired [ '/Users/timofey/Downloads/download (1)/node_modules/@types/mime' ]
+740 silly reify mark retired [ '/Users/timofey/Downloads/download (1)/node_modules/@types/qs' ]
+741 silly reify mark retired [
+741 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/@types/range-parser'
+741 silly reify ]
+742 silly reify mark retired [ '/Users/timofey/Downloads/download (1)/node_modules/@types/send' ]
+743 silly reify mark retired [
+743 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/@types/serve-static'
+743 silly reify ]
+744 silly reify mark retired [
+744 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/@types/webidl-conversions'
+744 silly reify ]
+745 silly reify mark retired [
+745 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/@types/whatwg-url'
+745 silly reify ]
+746 silly reify mark retired [
+746 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/sshpk',
+746 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/.bin/sshpk-verify',
+746 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/.bin/sshpk-sign',
+746 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/.bin/sshpk-conv'
+746 silly reify ]
+747 silly reify moves {
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/acorn': '/Users/timofey/Downloads/download (1)/node_modules/.acorn-qOpAz568',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/.bin/acorn': '/Users/timofey/Downloads/download (1)/node_modules/.bin/.acorn-D5dbtmI4',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/abort-controller': '/Users/timofey/Downloads/download (1)/node_modules/.abort-controller-MxwScTQW',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/agent-base': '/Users/timofey/Downloads/download (1)/node_modules/.agent-base-W5VoM1fi',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/arrify': '/Users/timofey/Downloads/download (1)/node_modules/.arrify-h6dhQA9q',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/async-retry': '/Users/timofey/Downloads/download (1)/node_modules/.async-retry-pH7csTAM',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/bcryptjs': '/Users/timofey/Downloads/download (1)/node_modules/.bcryptjs-MrOImaEk',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/bignumber.js': '/Users/timofey/Downloads/download (1)/node_modules/.bignumber.js-s1afgA3W',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/browserslist': '/Users/timofey/Downloads/download (1)/node_modules/.browserslist-mbPGIzhY',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/.bin/browserslist': '/Users/timofey/Downloads/download (1)/node_modules/.bin/.browserslist-vCe3GXc9',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/buffer-equal-constant-time': '/Users/timofey/Downloads/download (1)/node_modules/.buffer-equal-constant-time-k7k5fHIY',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/bson': '/Users/timofey/Downloads/download (1)/node_modules/.bson-HNoGwCef',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/cookie': '/Users/timofey/Downloads/download (1)/node_modules/.cookie-SKl1ViWT',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/crc-32': '/Users/timofey/Downloads/download (1)/node_modules/.crc-32-MkhUokFs',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/.bin/crc32': '/Users/timofey/Downloads/download (1)/node_modules/.bin/.crc32-Ih9SGNFu',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/cssesc': '/Users/timofey/Downloads/download (1)/node_modules/.cssesc-hApb1gO2',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/.bin/cssesc': '/Users/timofey/Downloads/download (1)/node_modules/.bin/.cssesc-9RkpXPaJ',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/duplexify': '/Users/timofey/Downloads/download (1)/node_modules/.duplexify-JDKRr3C4',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/ecdsa-sig-formatter': '/Users/timofey/Downloads/download (1)/node_modules/.ecdsa-sig-formatter-oR5fZYOW',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/eslint': '/Users/timofey/Downloads/download (1)/node_modules/.eslint-F5qosZWi',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/.bin/eslint': '/Users/timofey/Downloads/download (1)/node_modules/.bin/.eslint-5o2ctnr4',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/eslint-plugin-import/node_modules/semver': '/Users/timofey/Downloads/download (1)/node_modules/eslint-plugin-import/node_modules/.semver-IR2hn2uW',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/eslint-plugin-import/node_modules/.bin/semver': '/Users/timofey/Downloads/download (1)/node_modules/eslint-plugin-import/node_modules/.bin/.semver-32rUSdeH',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/eslint-plugin-react/node_modules/resolve': '/Users/timofey/Downloads/download (1)/node_modules/eslint-plugin-react/node_modules/.resolve-hs8aPx7j',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/eslint-plugin-react/node_modules/.bin/resolve': '/Users/timofey/Downloads/download (1)/node_modules/eslint-plugin-react/node_modules/.bin/.resolve-EVdiUdn6',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/eslint-plugin-react/node_modules/semver': '/Users/timofey/Downloads/download (1)/node_modules/eslint-plugin-react/node_modules/.semver-lXrn3efG',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/eslint-plugin-react/node_modules/.bin/semver': '/Users/timofey/Downloads/download (1)/node_modules/eslint-plugin-react/node_modules/.bin/.semver-MiBaGgla',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/event-target-shim': '/Users/timofey/Downloads/download (1)/node_modules/.event-target-shim-bdfUSWyO',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/farmhash-modern': '/Users/timofey/Downloads/download (1)/node_modules/.farmhash-modern-5TqE84WT',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/fast-xml-parser': '/Users/timofey/Downloads/download (1)/node_modules/.fast-xml-parser-UdkARzTD',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/.bin/fxparser': '/Users/timofey/Downloads/download (1)/node_modules/.bin/.fxparser-dXlQ6LAN',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/firebase-admin': '/Users/timofey/Downloads/download (1)/node_modules/.firebase-admin-6ePW6b0y',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/functional-red-black-tree': '/Users/timofey/Downloads/download (1)/node_modules/.functional-red-black-tree-Gp7NHTlj',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/gaxios': '/Users/timofey/Downloads/download (1)/node_modules/.gaxios-oO0D36zQ',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/glob': '/Users/timofey/Downloads/download (1)/node_modules/.glob-bs697oE2',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/.bin/glob': '/Users/timofey/Downloads/download (1)/node_modules/.bin/.glob-4qAoLWB6',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/google-auth-library': '/Users/timofey/Downloads/download (1)/node_modules/.google-auth-library-DKeajggI',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/google-logging-utils': '/Users/timofey/Downloads/download (1)/node_modules/.google-logging-utils-brLYud2r',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/google-gax': '/Users/timofey/Downloads/download (1)/node_modules/.google-gax-USSc2c7p',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/gtoken': '/Users/timofey/Downloads/download (1)/node_modules/.gtoken-wjls1QyN',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/http-proxy-agent': '/Users/timofey/Downloads/download (1)/node_modules/.http-proxy-agent-AjDkmPcW',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/html-entities': '/Users/timofey/Downloads/download (1)/node_modules/.html-entities-xzZyg9ir',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/https-proxy-agent': '/Users/timofey/Downloads/download (1)/node_modules/.https-proxy-agent-kVebbAjy',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/is-docker': '/Users/timofey/Downloads/download (1)/node_modules/.is-docker-rMnaywcN',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/.bin/is-docker': '/Users/timofey/Downloads/download (1)/node_modules/.bin/.is-docker-rZzkBgdg',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/is-stream': '/Users/timofey/Downloads/download (1)/node_modules/.is-stream-dGtAUk8E',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/jiti': '/Users/timofey/Downloads/download (1)/node_modules/.jiti-809icyLa',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/.bin/jiti': '/Users/timofey/Downloads/download (1)/node_modules/.bin/.jiti-aaPuYVq2',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/js-yaml': '/Users/timofey/Downloads/download (1)/node_modules/.js-yaml-ei5XAl6E',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/.bin/js-yaml': '/Users/timofey/Downloads/download (1)/node_modules/.bin/.js-yaml-UOjYVQ8T',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/json-bigint': '/Users/timofey/Downloads/download (1)/node_modules/.json-bigint-IYWaHqoX',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/jsonwebtoken': '/Users/timofey/Downloads/download (1)/node_modules/.jsonwebtoken-Ra7wQZZW',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/json5': '/Users/timofey/Downloads/download (1)/node_modules/.json5-vTlpFkXb',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/.bin/json5': '/Users/timofey/Downloads/download (1)/node_modules/.bin/.json5-czg9lk6t',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/jwa': '/Users/timofey/Downloads/download (1)/node_modules/.jwa-VSQQupfl',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/jws': '/Users/timofey/Downloads/download (1)/node_modules/.jws-5J1H8wyX',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/jwks-rsa': '/Users/timofey/Downloads/download (1)/node_modules/.jwks-rsa-lASLwFs4',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/limiter': '/Users/timofey/Downloads/download (1)/node_modules/.limiter-G2TiPfs0',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/lodash.clonedeep': '/Users/timofey/Downloads/download (1)/node_modules/.lodash.clonedeep-yt0CjAm6',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/lodash.isboolean': '/Users/timofey/Downloads/download (1)/node_modules/.lodash.isboolean-CL5rwCMh',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/lodash.includes': '/Users/timofey/Downloads/download (1)/node_modules/.lodash.includes-F9chNyDS',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/lodash.isinteger': '/Users/timofey/Downloads/download (1)/node_modules/.lodash.isinteger-cAm73sRw',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/lodash.isnumber': '/Users/timofey/Downloads/download (1)/node_modules/.lodash.isnumber-uGrPIelg',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/lodash.isstring': '/Users/timofey/Downloads/download (1)/node_modules/.lodash.isstring-PdprrqY0',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/lodash.once': '/Users/timofey/Downloads/download (1)/node_modules/.lodash.once-9b4O7y6O',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/loose-envify': '/Users/timofey/Downloads/download (1)/node_modules/.loose-envify-5wDnFn9n',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/.bin/loose-envify': '/Users/timofey/Downloads/download (1)/node_modules/.bin/.loose-envify-dBholWcM',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/lru-memoizer': '/Users/timofey/Downloads/download (1)/node_modules/.lru-memoizer-NCc6cvX3',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/lodash.isplainobject': '/Users/timofey/Downloads/download (1)/node_modules/.lodash.isplainobject-gkwgktXc',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/memory-pager': '/Users/timofey/Downloads/download (1)/node_modules/.memory-pager-m3BHibyr',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/mime': '/Users/timofey/Downloads/download (1)/node_modules/.mime-79NAmY11',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/.bin/mime': '/Users/timofey/Downloads/download (1)/node_modules/.bin/.mime-QSthClHF',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/mongodb-connection-string-url': '/Users/timofey/Downloads/download (1)/node_modules/.mongodb-connection-string-url-NmPeFmRU',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/mongodb': '/Users/timofey/Downloads/download (1)/node_modules/.mongodb-FvNl0wzn',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/nanoid': '/Users/timofey/Downloads/download (1)/node_modules/.nanoid-Yyi7IYSM',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/.bin/nanoid': '/Users/timofey/Downloads/download (1)/node_modules/.bin/.nanoid-1QdBWEqR',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/napi-postinstall': '/Users/timofey/Downloads/download (1)/node_modules/.napi-postinstall-r4NVKClN',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/.bin/napi-postinstall': '/Users/timofey/Downloads/download (1)/node_modules/.bin/.napi-postinstall-xWpKzryF',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/next': '/Users/timofey/Downloads/download (1)/node_modules/.next-0NxGES3z',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/.bin/next': '/Users/timofey/Downloads/download (1)/node_modules/.bin/.next-jsqWs4q0',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/next-auth': '/Users/timofey/Downloads/download (1)/node_modules/.next-auth-DJ4FxO2H',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/node-forge': '/Users/timofey/Downloads/download (1)/node_modules/.node-forge-7CC1PvAh',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/nodemailer': '/Users/timofey/Downloads/download (1)/node_modules/.nodemailer-espr901C',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/oauth': '/Users/timofey/Downloads/download (1)/node_modules/.oauth-2qSmdCeQ',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/openid-client': '/Users/timofey/Downloads/download (1)/node_modules/.openid-client-K2My7W22',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/oidc-token-hash': '/Users/timofey/Downloads/download (1)/node_modules/.oidc-token-hash-JQDpN4PF',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/patch-package': '/Users/timofey/Downloads/download (1)/node_modules/.patch-package-PeQXLrDi',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/.bin/patch-package': '/Users/timofey/Downloads/download (1)/node_modules/.bin/.patch-package-WMIlNAet',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/postcss/node_modules/nanoid': '/Users/timofey/Downloads/download (1)/node_modules/postcss/node_modules/.nanoid-u1GUGQmD',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/postcss/node_modules/.bin/nanoid': '/Users/timofey/Downloads/download (1)/node_modules/postcss/node_modules/.bin/.nanoid-y6u920Ab',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/pretty-format': '/Users/timofey/Downloads/download (1)/node_modules/.pretty-format-4NUkCtsN',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/preact-render-to-string': '/Users/timofey/Downloads/download (1)/node_modules/.preact-render-to-string-otQgTnay',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/proto3-json-serializer': '/Users/timofey/Downloads/download (1)/node_modules/.proto3-json-serializer-8LoHr2ja',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/preact': '/Users/timofey/Downloads/download (1)/node_modules/.preact-BGGqbLwH',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/request/node_modules/uuid': '/Users/timofey/Downloads/download (1)/node_modules/request/node_modules/.uuid-6DqNN3dU',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/request/node_modules/.bin/uuid': '/Users/timofey/Downloads/download (1)/node_modules/request/node_modules/.bin/.uuid-C4WXrqwQ',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/resolve': '/Users/timofey/Downloads/download (1)/node_modules/.resolve-Z4ntnFU7',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/.bin/resolve': '/Users/timofey/Downloads/download (1)/node_modules/.bin/.resolve-k62BJbY4',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/retry': '/Users/timofey/Downloads/download (1)/node_modules/.retry-6b7pCCU2',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/retry-request': '/Users/timofey/Downloads/download (1)/node_modules/.retry-request-NXqBeGm7',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/rimraf': '/Users/timofey/Downloads/download (1)/node_modules/.rimraf-EI2qiOyX',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/.bin/rimraf': '/Users/timofey/Downloads/download (1)/node_modules/.bin/.rimraf-F4VX3AS3',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/semver': '/Users/timofey/Downloads/download (1)/node_modules/.semver-kig6E0te',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/.bin/semver': '/Users/timofey/Downloads/download (1)/node_modules/.bin/.semver-0xESs7xW',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/sparse-bitfield': '/Users/timofey/Downloads/download (1)/node_modules/.sparse-bitfield-OUZgCm7i',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/stream-events': '/Users/timofey/Downloads/download (1)/node_modules/.stream-events-NuwYUt4h',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/stream-shift': '/Users/timofey/Downloads/download (1)/node_modules/.stream-shift-xQMRLljM',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/sucrase': '/Users/timofey/Downloads/download (1)/node_modules/.sucrase-poCde5cK',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/.bin/sucrase': '/Users/timofey/Downloads/download (1)/node_modules/.bin/.sucrase-6Il2SaCx',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/.bin/sucrase-node': '/Users/timofey/Downloads/download (1)/node_modules/.bin/.sucrase-node-2wuRgK7H',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/tailwindcss': '/Users/timofey/Downloads/download (1)/node_modules/.tailwindcss-xLY12DWy',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/.bin/tailwind': '/Users/timofey/Downloads/download (1)/node_modules/.bin/.tailwind-9vPF3Zm3',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/.bin/tailwindcss': '/Users/timofey/Downloads/download (1)/node_modules/.bin/.tailwindcss-EXdL6QLI',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/teeny-request': '/Users/timofey/Downloads/download (1)/node_modules/.teeny-request-hgUC47o7',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/terser': '/Users/timofey/Downloads/download (1)/node_modules/.terser-7m4ByJO2',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/.bin/terser': '/Users/timofey/Downloads/download (1)/node_modules/.bin/.terser-JrlqOxb5',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/tldts': '/Users/timofey/Downloads/download (1)/node_modules/.tldts-eSgIjkSR',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/.bin/tldts': '/Users/timofey/Downloads/download (1)/node_modules/.bin/.tldts-dVQh9Y7E',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/tsconfig-paths/node_modules/json5': '/Users/timofey/Downloads/download (1)/node_modules/tsconfig-paths/node_modules/.json5-QvQC7Eba',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/tsconfig-paths/node_modules/.bin/json5': '/Users/timofey/Downloads/download (1)/node_modules/tsconfig-paths/node_modules/.bin/.json5-2Cj1aBYh',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/typescript': '/Users/timofey/Downloads/download (1)/node_modules/.typescript-B6nFOVdr',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/.bin/tsc': '/Users/timofey/Downloads/download (1)/node_modules/.bin/.tsc-VMFcgcn4',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/.bin/tsserver': '/Users/timofey/Downloads/download (1)/node_modules/.bin/.tsserver-piryHrmJ',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/update-browserslist-db': '/Users/timofey/Downloads/download (1)/node_modules/.update-browserslist-db-JmPeclJK',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/.bin/update-browserslist-db': '/Users/timofey/Downloads/download (1)/node_modules/.bin/.update-browserslist-db-GoCo847v',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/uuid': '/Users/timofey/Downloads/download (1)/node_modules/.uuid-Z7hNeLac',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/.bin/uuid': '/Users/timofey/Downloads/download (1)/node_modules/.bin/.uuid-4bf8B7zz',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/webpack': '/Users/timofey/Downloads/download (1)/node_modules/.webpack-EzAmJKdb',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/.bin/webpack': '/Users/timofey/Downloads/download (1)/node_modules/.bin/.webpack-I1Cs31az',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/which': '/Users/timofey/Downloads/download (1)/node_modules/.which-YXCmqlsX',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/.bin/node-which': '/Users/timofey/Downloads/download (1)/node_modules/.bin/.node-which-o8EsN2xO',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/xlsx': '/Users/timofey/Downloads/download (1)/node_modules/.xlsx-d1xJbfK6',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/.bin/xlsx': '/Users/timofey/Downloads/download (1)/node_modules/.bin/.xlsx-yGRNsZZC',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/yallist': '/Users/timofey/Downloads/download (1)/node_modules/.yallist-s6Kd2DJ8',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/xml-js': '/Users/timofey/Downloads/download (1)/node_modules/.xml-js-6tv76blE',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/.bin/xml-js': '/Users/timofey/Downloads/download (1)/node_modules/.bin/.xml-js-4GBBhweq',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/yaml': '/Users/timofey/Downloads/download (1)/node_modules/.yaml-G0c6mnR0',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/.bin/yaml': '/Users/timofey/Downloads/download (1)/node_modules/.bin/.yaml-rov9VMeU',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/@aws-sdk/xml-builder/node_modules/fast-xml-parser': '/Users/timofey/Downloads/download (1)/node_modules/@aws-sdk/xml-builder/node_modules/.fast-xml-parser-BEsTzenh',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/@aws-sdk/xml-builder/node_modules/.bin/fxparser': '/Users/timofey/Downloads/download (1)/node_modules/@aws-sdk/xml-builder/node_modules/.bin/.fxparser-VF571MOS',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/@cypress/request/node_modules/uuid': '/Users/timofey/Downloads/download (1)/node_modules/@cypress/request/node_modules/.uuid-kHygu40z',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/@cypress/request/node_modules/.bin/uuid': '/Users/timofey/Downloads/download (1)/node_modules/@cypress/request/node_modules/.bin/.uuid-21FwLMMe',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/@fastify/busboy': '/Users/timofey/Downloads/download (1)/node_modules/@fastify/.busboy-mpKL7P8S',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/stubs': '/Users/timofey/Downloads/download (1)/node_modules/.stubs-r52MnEoH',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/@google-cloud/firestore': '/Users/timofey/Downloads/download (1)/node_modules/@google-cloud/.firestore-UL1ZsYLH',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/@google-cloud/paginator': '/Users/timofey/Downloads/download (1)/node_modules/@google-cloud/.paginator-ioY1WwR2',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/@grpc/proto-loader': '/Users/timofey/Downloads/download (1)/node_modules/@grpc/.proto-loader-4GNeLmCh',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/.bin/proto-loader-gen-types': '/Users/timofey/Downloads/download (1)/node_modules/.bin/.proto-loader-gen-types-YBOqjpjX',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/@google-cloud/projectify': '/Users/timofey/Downloads/download (1)/node_modules/@google-cloud/.projectify-nIFLnwBu',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/@google-cloud/storage': '/Users/timofey/Downloads/download (1)/node_modules/@google-cloud/.storage-LVc0QuE2',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/@google-cloud/promisify': '/Users/timofey/Downloads/download (1)/node_modules/@google-cloud/.promisify-TZryZma8',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/@js-sdsl/ordered-map': '/Users/timofey/Downloads/download (1)/node_modules/@js-sdsl/.ordered-map-27X2b0JY',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/@mongodb-js/saslprep': '/Users/timofey/Downloads/download (1)/node_modules/@mongodb-js/.saslprep-wFSpwS8g',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/@panva/hkdf': '/Users/timofey/Downloads/download (1)/node_modules/@panva/.hkdf-5PiDba7D',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/@opentelemetry/api': '/Users/timofey/Downloads/download (1)/node_modules/@opentelemetry/.api-tevmeDKH',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/@tootallnate/once': '/Users/timofey/Downloads/download (1)/node_modules/@tootallnate/.once-GRAc86oY',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/@types/connect': '/Users/timofey/Downloads/download (1)/node_modules/@types/.connect-HzijmgKh',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/@types/body-parser': '/Users/timofey/Downloads/download (1)/node_modules/@types/.body-parser-S90tyQpd',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/@types/express': '/Users/timofey/Downloads/download (1)/node_modules/@types/.express-S3qFcb7M',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/@types/express-serve-static-core': '/Users/timofey/Downloads/download (1)/node_modules/@types/.express-serve-static-core-QvA22ske',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/@types/http-errors': '/Users/timofey/Downloads/download (1)/node_modules/@types/.http-errors-EZSJAnk4',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/@types/long': '/Users/timofey/Downloads/download (1)/node_modules/@types/.long-f1tviEVW',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/@types/jsonwebtoken': '/Users/timofey/Downloads/download (1)/node_modules/@types/.jsonwebtoken-VHOWsAAR',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/@types/mime': '/Users/timofey/Downloads/download (1)/node_modules/@types/.mime-mMCzWc1x',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/@types/qs': '/Users/timofey/Downloads/download (1)/node_modules/@types/.qs-spy6VfPZ',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/@types/range-parser': '/Users/timofey/Downloads/download (1)/node_modules/@types/.range-parser-dD6YE7qP',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/@types/send': '/Users/timofey/Downloads/download (1)/node_modules/@types/.send-8kYyolGR',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/@types/serve-static': '/Users/timofey/Downloads/download (1)/node_modules/@types/.serve-static-v4Hdz52u',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/@types/webidl-conversions': '/Users/timofey/Downloads/download (1)/node_modules/@types/.webidl-conversions-nmKQNDL2',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/@types/whatwg-url': '/Users/timofey/Downloads/download (1)/node_modules/@types/.whatwg-url-zvC6fW8Y',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/sshpk': '/Users/timofey/Downloads/download (1)/node_modules/.sshpk-4moSWzrx',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/.bin/sshpk-verify': '/Users/timofey/Downloads/download (1)/node_modules/.bin/.sshpk-verify-aMq7XwZ9',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/.bin/sshpk-sign': '/Users/timofey/Downloads/download (1)/node_modules/.bin/.sshpk-sign-rmwM0epS',
+747 silly reify   '/Users/timofey/Downloads/download (1)/node_modules/.bin/sshpk-conv': '/Users/timofey/Downloads/download (1)/node_modules/.bin/.sshpk-conv-byBJdQwy'
+747 silly reify }
+748 verbose stack Error: ENOTEMPTY: directory not empty, rename '/Users/timofey/Downloads/download (1)/node_modules/abort-controller' -> '/Users/timofey/Downloads/download (1)/node_modules/.abort-controller-MxwScTQW'
+748 verbose stack     at async Object.rename (node:internal/fs/promises:786:10)
+748 verbose stack     at async moveFile (/usr/local/lib/node_modules/npm/node_modules/@npmcli/fs/lib/move-file.js:30:5)
+748 verbose stack     at async Promise.allSettled (index 2)
+748 verbose stack     at async #reifyPackages (/usr/local/lib/node_modules/npm/node_modules/@npmcli/arborist/lib/arborist/reify.js:309:11)
+748 verbose stack     at async Arborist.reify (/usr/local/lib/node_modules/npm/node_modules/@npmcli/arborist/lib/arborist/reify.js:121:5)
+748 verbose stack     at async Install.exec (/usr/local/lib/node_modules/npm/lib/commands/install.js:150:5)
+748 verbose stack     at async Npm.exec (/usr/local/lib/node_modules/npm/lib/npm.js:208:9)
+748 verbose stack     at async module.exports (/usr/local/lib/node_modules/npm/lib/cli/entry.js:67:5)
+749 error code ENOTEMPTY
+750 error syscall rename
+751 error path /Users/timofey/Downloads/download (1)/node_modules/abort-controller
+752 error dest /Users/timofey/Downloads/download (1)/node_modules/.abort-controller-MxwScTQW
+753 error errno -66
+754 error ENOTEMPTY: directory not empty, rename '/Users/timofey/Downloads/download (1)/node_modules/abort-controller' -> '/Users/timofey/Downloads/download (1)/node_modules/.abort-controller-MxwScTQW'
+755 silly unfinished npm timer reify 1768085697267
+756 silly unfinished npm timer reify:retireShallow 1768085701414
+757 verbose cwd /Users/timofey/Downloads/download (1)
+758 verbose os Darwin 23.6.0
+759 verbose node v25.2.1
+760 verbose npm  v11.6.4
+761 verbose exit -66
+762 verbose code -66
+763 error A complete log of this run can be found in: /Users/timofey/Downloads/download (1)/.npm-cache/_logs/2026-01-10T22_54_56_723Z-debug-0.log

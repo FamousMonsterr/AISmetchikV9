@@ -1,0 +1,293 @@
+import { nanoid } from 'nanoid';
+
+export type DocumentData = Record<string, any>;
+
+export class FirebaseError extends Error {
+  code: string;
+  constructor(code: string, message: string) {
+    super(message);
+    this.code = code;
+  }
+}
+
+export class Timestamp {
+  private readonly value: Date;
+  constructor(seconds: number, nanoseconds: number) {
+    this.value = new Date(seconds * 1000 + Math.floor(nanoseconds / 1e6));
+  }
+  toDate() {
+    return this.value;
+  }
+  static now() {
+    return new Timestamp(Math.floor(Date.now() / 1000), 0);
+  }
+  static fromDate(date: Date) {
+    return new Timestamp(Math.floor(date.getTime() / 1000), 0);
+  }
+}
+
+type CollectionRef = { name: string };
+type DocRef = { collection: string; id: string };
+type WhereFilter = { type: 'where'; field: string; op: string; value: any };
+type OrderByClause = { type: 'orderBy'; field: string; direction: 'asc' | 'desc' };
+type LimitClause = { type: 'limit'; count: number };
+type QueryRef = {
+  type: 'query';
+  collection: string;
+  filters: WhereFilter[];
+  orderBy: OrderByClause[];
+  limit?: number;
+};
+
+const isServer = typeof window === 'undefined';
+
+export function collection(_db: unknown, name: string): CollectionRef {
+  return { name };
+}
+
+export function doc(collectionOrDb: CollectionRef | unknown, nameOrId?: string, id?: string): DocRef {
+  if (typeof (collectionOrDb as CollectionRef)?.name === 'string') {
+    const collectionName = (collectionOrDb as CollectionRef).name;
+    const docId = nameOrId ?? nanoid();
+    return { collection: collectionName, id: docId };
+  }
+  if (!nameOrId) {
+    throw new Error('Collection name is required.');
+  }
+  const docId = id ?? nanoid();
+  return { collection: nameOrId, id: docId };
+}
+
+export function where(field: string, op: string, value: any): WhereFilter {
+  return { type: 'where', field, op, value };
+}
+
+export function orderBy(field: string, direction: 'asc' | 'desc' = 'asc'): OrderByClause {
+  return { type: 'orderBy', field, direction };
+}
+
+export function limit(count: number): LimitClause {
+  return { type: 'limit', count };
+}
+
+export function query(collectionRef: CollectionRef, ...clauses: Array<WhereFilter | OrderByClause | LimitClause>): QueryRef {
+  const filters: WhereFilter[] = [];
+  const orderByClauses: OrderByClause[] = [];
+  let limitValue: number | undefined;
+
+  clauses.forEach((clause) => {
+    if (clause.type === 'where') {
+      filters.push(clause);
+    } else if (clause.type === 'orderBy') {
+      orderByClauses.push(clause);
+    } else if (clause.type === 'limit') {
+      limitValue = clause.count;
+    }
+  });
+
+  return {
+    type: 'query',
+    collection: collectionRef.name,
+    filters,
+    orderBy: orderByClauses,
+    limit: limitValue,
+  };
+}
+
+export function serverTimestamp() {
+  return new Date();
+}
+
+export function increment(value: number) {
+  return { __op: 'increment', value };
+}
+
+export function arrayUnion(...values: any[]) {
+  return { __op: 'arrayUnion', values };
+}
+
+function stripInternalId(doc: DocumentData) {
+  const { _id, ...rest } = doc;
+  return rest;
+}
+
+function createDocSnapshot(doc: DocumentData | null, collectionName?: string) {
+  const exists = !!doc;
+  return {
+    id: doc?._id ?? null,
+    ref: doc && collectionName ? { collection: collectionName, id: doc._id } : undefined,
+    exists: () => exists,
+    data: () => (doc ? stripInternalId(doc) : undefined),
+  };
+}
+
+function createQuerySnapshot(docs: DocumentData[], collectionName?: string) {
+  const docSnapshots = docs.map((doc) => ({
+    id: doc._id,
+    ref: collectionName ? { collection: collectionName, id: doc._id } : undefined,
+    data: () => stripInternalId(doc),
+  }));
+  return {
+    docs: docSnapshots,
+    size: docSnapshots.length,
+    empty: docSnapshots.length === 0,
+    forEach: (callback: (doc: any) => void) => {
+      docSnapshots.forEach(callback);
+    },
+  };
+}
+
+async function executeDocWrite(op: string, payload: any) {
+  const res = await fetch('/api/db', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({ op, ...payload }),
+  });
+  if (!res.ok) {
+    const errorText = await res.text();
+    throw new FirebaseError('db/request-failed', errorText || 'Database request failed.');
+  }
+  return res.json();
+}
+
+export async function getDoc(ref: DocRef) {
+  if (isServer) {
+    throw new FirebaseError('client-only', 'getDoc is client-only in this module.');
+  }
+  const data = await executeDocWrite('getDoc', { ref });
+  return createDocSnapshot(data.doc ?? null, ref.collection);
+}
+
+export async function getDocs(ref: QueryRef | CollectionRef) {
+  if (isServer) {
+    throw new FirebaseError('client-only', 'getDocs is client-only in this module.');
+  }
+  if ((ref as QueryRef).type === 'query') {
+    const data = await executeDocWrite('getDocs', { query: ref });
+    return createQuerySnapshot(data.docs ?? [], (ref as QueryRef).collection);
+  }
+  const queryRef = query(ref as CollectionRef);
+  const data = await executeDocWrite('getDocs', { query: queryRef });
+  return createQuerySnapshot(data.docs ?? [], queryRef.collection);
+}
+
+export async function addDoc(ref: CollectionRef, data: DocumentData) {
+  if (isServer) {
+    throw new FirebaseError('client-only', 'addDoc is client-only in this module.');
+  }
+  const result = await executeDocWrite('addDoc', { ref, data });
+  return { id: result.id };
+}
+
+export async function setDoc(ref: DocRef, data: DocumentData, options?: { merge?: boolean }) {
+  if (isServer) {
+    throw new FirebaseError('client-only', 'setDoc is client-only in this module.');
+  }
+  await executeDocWrite('setDoc', { ref, data, options });
+}
+
+export async function updateDoc(ref: DocRef, data: DocumentData) {
+  if (isServer) {
+    throw new FirebaseError('client-only', 'updateDoc is client-only in this module.');
+  }
+  await executeDocWrite('updateDoc', { ref, data });
+}
+
+export async function deleteDoc(ref: DocRef) {
+  if (isServer) {
+    throw new FirebaseError('client-only', 'deleteDoc is client-only in this module.');
+  }
+  await executeDocWrite('deleteDoc', { ref });
+}
+
+export function runTransaction() {
+  throw new FirebaseError('client-only', 'Transactions are server-only.');
+}
+
+export function writeBatch() {
+  throw new FirebaseError('client-only', 'Batched writes are server-only.');
+}
+
+export function onSnapshot(
+  target: DocRef | QueryRef,
+  onNext: (snapshot: any) => void,
+  onError?: (error: FirebaseError) => void,
+) {
+  if (isServer) {
+    throw new FirebaseError('realtime/server-only', 'Realtime subscriptions must run on the client.');
+  }
+
+  const isDoc = (target as DocRef).id !== undefined && (target as QueryRef).type !== 'query';
+  const descriptor = isDoc
+    ? { type: 'doc', collection: (target as DocRef).collection, id: (target as DocRef).id }
+    : {
+        type: 'query',
+        collection: (target as QueryRef).collection,
+        filters: (target as QueryRef).filters,
+        orderBy: (target as QueryRef).orderBy,
+        limit: (target as QueryRef).limit,
+      };
+
+  const fetchSnapshot = async () => {
+    try {
+      const res = await fetch('/api/query', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(descriptor),
+      });
+      if (!res.ok) {
+        throw new FirebaseError('realtime/fetch-failed', await res.text());
+      }
+      const payload = await res.json();
+      if (descriptor.type === 'doc') {
+        onNext(createDocSnapshot(payload.doc ?? null, descriptor.collection));
+      } else {
+        onNext(createQuerySnapshot(payload.docs ?? [], descriptor.collection));
+      }
+    } catch (error: any) {
+      onError?.(error instanceof FirebaseError ? error : new FirebaseError('realtime/fetch-failed', error.message));
+    }
+  };
+
+  const realtimeMode = process.env.NEXT_PUBLIC_REALTIME_MODE;
+  if (realtimeMode === 'manual') {
+    fetchSnapshot();
+    return () => {};
+  }
+
+  if (realtimeMode === 'polling') {
+    const intervalMs = 5000;
+    fetchSnapshot();
+    const intervalId = window.setInterval(fetchSnapshot, intervalMs);
+    return () => window.clearInterval(intervalId);
+  }
+
+  const url = new URL('/api/realtime', window.location.origin);
+  url.searchParams.set('type', descriptor.type);
+  url.searchParams.set('collection', descriptor.collection);
+  if (descriptor.type === 'doc') {
+    url.searchParams.set('id', descriptor.id);
+  } else {
+    url.searchParams.set('filters', JSON.stringify(descriptor.filters ?? []));
+    url.searchParams.set('orderBy', JSON.stringify(descriptor.orderBy ?? []));
+    if (descriptor.limit) {
+      url.searchParams.set('limit', String(descriptor.limit));
+    }
+  }
+
+  const eventSource = new EventSource(url.toString());
+  eventSource.addEventListener('change', () => {
+    fetchSnapshot();
+  });
+  eventSource.onerror = () => {
+    onError?.(new FirebaseError('realtime/connection-failed', 'Realtime connection failed.'));
+  };
+
+  fetchSnapshot();
+
+  return () => {
+    eventSource.close();
+  };
+}

@@ -1,0 +1,73 @@
+{
+    "providers": {
+        "openrouter": {
+            "name": "OpenRouter",
+            "baseUrl": "https://openrouter.ai/api/v1/chat/completions",
+            "pdfProcessingPriority": [
+                "mistral-ocr",
+                "pdf-text",
+                "native"
+            ]
+        }
+    },
+    "apiModels": [
+        {
+            "value": "openai/gpt-4o-mini",
+            "label": "GPT-4o Mini",
+            "provider": "openrouter",
+            "temperature": 0.2,
+            "supportsThoughts": false,
+            "canGenerateImages": false,
+            "canProcessAudio": false,
+            "pdfEngineOverride": "none",
+            "isDefault": true
+        },
+        {
+            "value": "bytedance-seed/seed-1.6",
+            "label": "ByteDance Seed: Seed 1.6",
+            "provider": "openrouter",
+            "temperature": 0.2,
+            "supportsThoughts": false,
+            "canGenerateImages": false,
+            "canProcessAudio": false
+        },
+        {
+            "value": "google/gemini-3-flash-preview",
+            "label": "Google: Gemini 3 Flash Preview",
+            "provider": "openrouter",
+            "temperature": 0.2,
+            "supportsThoughts": false,
+            "canGenerateImages": false,
+            "canProcessAudio": false,
+            "pdfEngineOverride": "mistral-ocr",
+            "isDefault": true
+        },
+        {
+            "value": "google/gemini-3-pro-preview",
+            "label": "Google: Gemini 3 Pro Preview",
+            "provider": "openrouter",
+            "temperature": 0.2,
+            "supportsThoughts": false,
+            "canGenerateImages": false,
+            "canProcessAudio": false
+        },
+        {
+            "value": "google/gemini-2.5-flash-lite",
+            "label": "Google: Gemini 2.5 Flash Lite",
+            "provider": "openrouter",
+            "temperature": 0.2,
+            "supportsThoughts": false,
+            "canGenerateImages": false,
+            "canProcessAudio": false
+        },
+        {
+            "value": "google/gemini-2.5-pro",
+            "label": "Google: Gemini 2.5 Pro",
+            "provider": "openrouter",
+            "temperature": 0.2,
+            "supportsThoughts": false,
+            "canGenerateImages": false,
+            "canProcessAudio": false
+        }
+    ]
+}
