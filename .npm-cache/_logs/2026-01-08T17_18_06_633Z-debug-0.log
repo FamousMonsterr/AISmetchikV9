@@ -1,0 +1,147 @@
+0 verbose cli /usr/local/Cellar/node/25.2.1/bin/node /usr/local/bin/npm
+1 info using npm@11.6.4
+2 info using node@v25.2.1
+3 silly config load:file:/usr/local/lib/node_modules/npm/npmrc
+4 silly config load:file:/Users/timofey/Downloads/download (1)/.npmrc
+5 silly config load:file:/Users/timofey/.npmrc
+6 silly config load:file:/usr/local/etc/npmrc
+7 verbose title npm install
+8 verbose argv "install" "--cache" "./.npm-cache"
+9 verbose logfile logs-max:10 dir:/Users/timofey/Downloads/download (1)/.npm-cache/_logs/2026-01-08T17_18_06_633Z-
+10 verbose logfile /Users/timofey/Downloads/download (1)/.npm-cache/_logs/2026-01-08T17_18_06_633Z-debug-0.log
+11 silly logfile done cleaning log files
+12 silly packumentCache heap:4496293888 maxSize:1124073472 maxEntrySize:562036736
+13 silly idealTree buildDeps
+14 silly fetch manifest firebase-admin@^12.5.0
+15 silly packumentCache full:https://registry.npmjs.org/firebase-admin cache-miss
+16 http fetch GET 200 https://registry.npmjs.org/npm 2464ms
+17 http fetch GET 200 https://registry.npmjs.org/firebase-admin 1692ms (cache miss)
+18 silly packumentCache full:https://registry.npmjs.org/firebase-admin set size:undefined disposed:false
+19 silly fetch manifest mongodb@^6.13.0
+20 silly packumentCache full:https://registry.npmjs.org/mongodb cache-miss
+21 http fetch GET 200 https://registry.npmjs.org/mongodb 1032ms (cache miss)
+22 silly packumentCache full:https://registry.npmjs.org/mongodb set size:undefined disposed:false
+23 silly fetch manifest @aws-sdk/credential-providers@^3.188.0
+24 silly packumentCache full:https://registry.npmjs.org/@aws-sdk%2fcredential-providers cache-miss
+25 http fetch GET 200 https://registry.npmjs.org/@aws-sdk%2fcredential-providers 822ms (cache miss)
+26 silly packumentCache full:https://registry.npmjs.org/@aws-sdk%2fcredential-providers set size:undefined disposed:false
+27 silly fetch manifest @mongodb-js/zstd@^1.1.0 || ^2.0.0
+28 silly packumentCache full:https://registry.npmjs.org/@mongodb-js%2fzstd cache-miss
+29 http fetch GET 200 https://registry.npmjs.org/@mongodb-js%2fzstd 594ms (cache miss)
+30 silly packumentCache full:https://registry.npmjs.org/@mongodb-js%2fzstd set size:undefined disposed:false
+31 silly fetch manifest gcp-metadata@^5.2.0
+32 silly packumentCache full:https://registry.npmjs.org/gcp-metadata cache-miss
+33 http fetch GET 200 https://registry.npmjs.org/gcp-metadata 317ms (cache miss)
+34 silly packumentCache full:https://registry.npmjs.org/gcp-metadata set size:undefined disposed:false
+35 silly fetch manifest kerberos@^2.0.1
+36 silly packumentCache full:https://registry.npmjs.org/kerberos cache-miss
+37 http fetch GET 200 https://registry.npmjs.org/kerberos 230ms (cache miss)
+38 silly packumentCache full:https://registry.npmjs.org/kerberos set size:undefined disposed:false
+39 silly fetch manifest mongodb-client-encryption@>=6.0.0 <7
+40 silly packumentCache full:https://registry.npmjs.org/mongodb-client-encryption cache-miss
+41 http fetch GET 200 https://registry.npmjs.org/mongodb-client-encryption 431ms (cache miss)
+42 silly packumentCache full:https://registry.npmjs.org/mongodb-client-encryption set size:undefined disposed:false
+43 silly fetch manifest snappy@^7.3.2
+44 silly packumentCache full:https://registry.npmjs.org/snappy cache-miss
+45 http fetch GET 200 https://registry.npmjs.org/snappy 545ms (cache miss)
+46 silly packumentCache full:https://registry.npmjs.org/snappy set size:undefined disposed:false
+47 silly fetch manifest socks@^2.7.1
+48 silly packumentCache full:https://registry.npmjs.org/socks cache-miss
+49 http fetch GET 200 https://registry.npmjs.org/socks 471ms (cache miss)
+50 silly packumentCache full:https://registry.npmjs.org/socks set size:undefined disposed:false
+51 silly fetch manifest next-auth@^4.24.11
+52 silly packumentCache full:https://registry.npmjs.org/next-auth cache-miss
+53 http fetch GET 200 https://registry.npmjs.org/next-auth 3151ms (cache miss)
+54 silly packumentCache full:https://registry.npmjs.org/next-auth set size:undefined disposed:false
+55 silly fetch manifest @auth/core@0.34.3
+56 silly packumentCache full:https://registry.npmjs.org/@auth%2fcore cache-miss
+57 http fetch GET 200 https://registry.npmjs.org/@auth%2fcore 858ms (cache miss)
+58 silly packumentCache full:https://registry.npmjs.org/@auth%2fcore set size:undefined disposed:false
+59 silly fetch manifest @simplewebauthn/browser@^9.0.1
+60 silly packumentCache full:https://registry.npmjs.org/@simplewebauthn%2fbrowser cache-miss
+61 http fetch GET 200 https://registry.npmjs.org/@simplewebauthn%2fbrowser 535ms (cache miss)
+62 silly packumentCache full:https://registry.npmjs.org/@simplewebauthn%2fbrowser set size:undefined disposed:false
+63 silly fetch manifest @simplewebauthn/server@^9.0.2
+64 silly packumentCache full:https://registry.npmjs.org/@simplewebauthn%2fserver cache-miss
+65 http fetch GET 200 https://registry.npmjs.org/@simplewebauthn%2fserver 361ms (cache miss)
+66 silly packumentCache full:https://registry.npmjs.org/@simplewebauthn%2fserver set size:undefined disposed:false
+67 silly fetch manifest nodemailer@^6.9.15
+68 silly packumentCache full:https://registry.npmjs.org/nodemailer cache-miss
+69 http fetch GET 200 https://registry.npmjs.org/nodemailer 430ms (cache miss)
+70 silly packumentCache full:https://registry.npmjs.org/nodemailer set size:undefined disposed:false
+71 silly fetch manifest nodemailer@^7
+72 silly packumentCache full:https://registry.npmjs.org/nodemailer cache-miss
+73 http cache https://registry.npmjs.org/nodemailer 10ms (cache hit)
+74 silly packumentCache full:https://registry.npmjs.org/nodemailer set size:555947 disposed:false
+75 silly fetch manifest next@14.2.35
+76 silly packumentCache full:https://registry.npmjs.org/next cache-miss
+77 http fetch GET 200 https://registry.npmjs.org/next 6761ms (cache miss)
+78 silly packumentCache full:https://registry.npmjs.org/next set size:undefined disposed:false
+79 silly fetch manifest @opentelemetry/api@^1.1.0
+80 silly packumentCache full:https://registry.npmjs.org/@opentelemetry%2fapi cache-miss
+81 http fetch GET 200 https://registry.npmjs.org/@opentelemetry%2fapi 373ms (cache miss)
+82 silly packumentCache full:https://registry.npmjs.org/@opentelemetry%2fapi set size:undefined disposed:false
+83 silly fetch manifest @playwright/test@^1.41.2
+84 silly packumentCache full:https://registry.npmjs.org/@playwright%2ftest cache-miss
+85 http fetch GET 200 https://registry.npmjs.org/@playwright%2ftest 4094ms (cache miss)
+86 silly packumentCache full:https://registry.npmjs.org/@playwright%2ftest set size:undefined disposed:false
+87 silly fetch manifest react@18.3.1
+88 silly packumentCache full:https://registry.npmjs.org/react cache-miss
+89 http fetch GET 200 https://registry.npmjs.org/react 3771ms (cache miss)
+90 silly packumentCache full:https://registry.npmjs.org/react set size:undefined disposed:false
+91 silly fetch manifest react-dom@18.3.1
+92 silly packumentCache full:https://registry.npmjs.org/react-dom cache-miss
+93 http fetch GET 200 https://registry.npmjs.org/react-dom 3687ms (cache miss)
+94 silly packumentCache full:https://registry.npmjs.org/react-dom set size:undefined disposed:false
+95 silly fetch manifest sass@^1.3.0
+96 silly packumentCache full:https://registry.npmjs.org/sass cache-miss
+97 http fetch GET 200 https://registry.npmjs.org/sass 579ms (cache miss)
+98 silly packumentCache full:https://registry.npmjs.org/sass set size:undefined disposed:false
+99 silly fetch manifest nodemailer@^7.0.7
+100 silly packumentCache full:https://registry.npmjs.org/nodemailer cache-hit
+101 verbose stack Error: unable to resolve dependency tree
+101 verbose stack     at #failPeerConflict (/usr/local/lib/node_modules/npm/node_modules/@npmcli/arborist/lib/arborist/build-ideal-tree.js:1404:25)
+101 verbose stack     at #loadPeerSet (/usr/local/lib/node_modules/npm/node_modules/@npmcli/arborist/lib/arborist/build-ideal-tree.js:1397:29)
+101 verbose stack     at async #buildDepStep (/usr/local/lib/node_modules/npm/node_modules/@npmcli/arborist/lib/arborist/build-ideal-tree.js:918:11)
+101 verbose stack     at async Arborist.buildIdealTree (/usr/local/lib/node_modules/npm/node_modules/@npmcli/arborist/lib/arborist/build-ideal-tree.js:170:7)
+101 verbose stack     at async Promise.all (index 1)
+101 verbose stack     at async Arborist.reify (/usr/local/lib/node_modules/npm/node_modules/@npmcli/arborist/lib/arborist/reify.js:110:5)
+101 verbose stack     at async Install.exec (/usr/local/lib/node_modules/npm/lib/commands/install.js:150:5)
+101 verbose stack     at async Npm.exec (/usr/local/lib/node_modules/npm/lib/npm.js:208:9)
+101 verbose stack     at async module.exports (/usr/local/lib/node_modules/npm/lib/cli/entry.js:67:5)
+102 error code ERESOLVE
+103 error ERESOLVE unable to resolve dependency tree
+104 error
+105 error While resolving: ai-smetchik-v3-gemini@0.1.0
+105 error Found: nodemailer@6.10.1
+105 error node_modules/nodemailer
+105 error   nodemailer@"^6.9.15" from the root project
+105 error
+105 error Could not resolve dependency:
+105 error peerOptional nodemailer@"^7.0.7" from next-auth@4.24.13
+105 error node_modules/next-auth
+105 error   next-auth@"^4.24.11" from the root project
+105 error
+105 error Fix the upstream dependency conflict, or retry
+105 error this command with --force or --legacy-peer-deps
+105 error to accept an incorrect (and potentially broken) dependency resolution.
+106 error
+106 error
+106 error For a full report see:
+106 error /Users/timofey/Downloads/download (1)/.npm-cache/_logs/2026-01-08T17_18_06_633Z-eresolve-report.txt
+107 silly unfinished npm timer reify 1767892687116
+108 silly unfinished npm timer reify:loadTrees 1767892687120
+109 silly unfinished npm timer idealTree:buildDeps 1767892688060
+110 silly unfinished npm timer idealTree:#root 1767892688061
+111 verbose cwd /Users/timofey/Downloads/download (1)
+112 verbose os Darwin 23.6.0
+113 verbose node v25.2.1
+114 verbose npm  v11.6.4
+115 notice
+115 notice New minor version of npm available! 11.6.4 -> 11.7.0
+115 notice Changelog: https://github.com/npm/cli/releases/tag/v11.7.0
+115 notice To update run: npm install -g npm@11.7.0
+115 notice  { force: true, Symbol(proc-log.meta): true }
+116 verbose exit 1
+117 verbose code 1
+118 error A complete log of this run can be found in: /Users/timofey/Downloads/download (1)/.npm-cache/_logs/2026-01-08T17_18_06_633Z-debug-0.log

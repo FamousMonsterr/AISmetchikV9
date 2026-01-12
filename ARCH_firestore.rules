@@ -1,0 +1,78 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper Functions
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+    
+    function isAdmin() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.systemRole in ['Admin', 'Super Admin'];
+    }
+
+    function isSuperAdmin() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.systemRole == 'Super Admin';
+    }
+
+    // --- USERS ---
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if request.auth.uid != null;
+      allow update: if (isOwner(userId) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['displayName', 'telegramUsername', 'updatedAt', 'hasUsedTrial', 'originalPlan', 'plan', 'planExpiresAt', 'partnerTermsAgreedAt', 'partnerStatus', 'seenNotifications', 'agreedToThirdParty']))
+                      || isSuperAdmin();
+    }
+    
+    // --- REQUESTS (Projects) ---
+    match /requests/{requestId} {
+      allow read: if isOwner(resource.data.userId) || isAdmin();
+      allow create: if isOwner(request.resource.data.userId);
+      allow update, delete: if isOwner(resource.data.userId) || isSuperAdmin();
+    }
+
+    // --- COMPANIES ---
+    match /companies/{companyId} {
+      allow read: if isOwner(resource.data.userId) || isAdmin();
+      allow create: if isOwner(request.resource.data.userId);
+      allow update, delete: if isOwner(resource.data.userId) || isSuperAdmin();
+    }
+    
+    // --- PRICE BASE ITEMS ---
+    match /priceBaseItems/{itemId} {
+       allow read: if isOwner(resource.data.userId) || isAdmin();
+       allow create: if isOwner(request.resource.data.userId);
+       allow update, delete: if isOwner(resource.data.userId) || isSuperAdmin();
+    }
+
+    // --- USER LOGS ---
+    match /user_logs/{logId} {
+      allow read, list: if isAdmin();
+      allow write: if request.auth.uid != null; 
+    }
+    
+    // --- AI API LOGS ---
+    match /ai_api_logs/{logId} {
+        allow read, list: if isAdmin();
+        allow create: if request.auth.uid != null;
+    }
+    
+    // --- CONFIGS ---
+    match /configs/{configId} {
+      allow read: if request.auth != null;
+      allow write: if isSuperAdmin();
+    }
+    
+    // --- NOTIFICATIONS ---
+    match /notifications/{notificationId} {
+      allow read: if request.auth != null;
+      allow list: if request.auth != null;
+      allow create, update, delete: if isSuperAdmin();
+    }
+
+    // --- S3 FILE CACHE ---
+    match /s3_file_cache/{fileHash} {
+      allow read, write: if request.auth.uid != null;
+    }
+  }
+}
