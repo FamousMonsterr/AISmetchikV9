@@ -45,3 +45,6 @@ package-lock.json
 # macOS specific
 .DS_Store
 node_modules
+
+# npm cache
+.npm-cache/
