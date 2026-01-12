@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="logoTitle logoDesc">
+  <title id="logoTitle">AI Сметчик</title>
+  <desc id="logoDesc">Треугольный знак с металлическим эффектом и буквами AI внутри.</desc>
+  <defs>
+    <linearGradient id="metal" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#f4f4f4" />
+      <stop offset="45%" stop-color="#a7a7a7" />
+      <stop offset="75%" stop-color="#f8f8f8" />
+      <stop offset="100%" stop-color="#9a9a9a" />
+    </linearGradient>
+    <linearGradient id="gold" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#f7e3a4" />
+      <stop offset="50%" stop-color="#c99a35" />
+      <stop offset="100%" stop-color="#f7e3a4" />
+    </linearGradient>
+  </defs>
+  <polygon
+    points="256,32 480,448 32,448"
+    fill="none"
+    stroke="url(#metal)"
+    stroke-width="36"
+    stroke-linejoin="round"
+  />
+  <polygon
+    points="256,64 456,430 56,430"
+    fill="none"
+    stroke="url(#gold)"
+    stroke-width="12"
+    stroke-linejoin="round"
+  />
+  <text
+    x="256"
+    y="336"
+    text-anchor="middle"
+    font-family="'Segoe UI', 'Inter', 'Arial Black', sans-serif"
+    font-size="220"
+    font-weight="700"
+    fill="url(#metal)"
+    stroke="url(#gold)"
+    stroke-width="6"
+    paint-order="stroke"
+  >AI</text>
+</svg>
