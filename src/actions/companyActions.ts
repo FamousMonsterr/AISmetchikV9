@@ -202,7 +202,7 @@ export const suggestCompanyDetails = async (query: string): Promise<{ success: b
     }
     
     try {
-        const envSettings = await getEnvSettings();
+        const envSettings = await getEnvSettings({ allowInternal: true });
         const apiKey = envSettings.dadataApiKey;
         const secretKey = envSettings.dadataApiSecret;
 

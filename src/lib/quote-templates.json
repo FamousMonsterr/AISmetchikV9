@@ -14,11 +14,55 @@
         "docType": "invoice"
     },
     {
+        "id": "invoice-modern-v1",
+        "name": "Современный счет",
+        "description": "Акцентированный заголовок, компактная таблица, для PRO и выше.",
+        "status": "pro",
+        "docType": "invoice",
+        "headerStyle": "modern",
+        "accentColor": "#1f2937",
+        "showSignature": true,
+        "showStamp": true
+    },
+    {
+        "id": "invoice-compact-v1",
+        "name": "Компактный счет",
+        "description": "Укороченный блок реквизитов + аккуратная таблица. Хорошо печатается на 1 лист.",
+        "status": "pro",
+        "docType": "invoice",
+        "headerStyle": "compact",
+        "accentColor": "#0f172a",
+        "showSignature": true,
+        "showStamp": false
+    },
+    {
         "id": "contract-base-v1",
         "name": "Базовый договор подряда",
         "description": "Стандартный договор на выполнение подрядных работ.",
         "status": "pro",
         "docType": "contract"
+    },
+    {
+        "id": "contract-modern-v1",
+        "name": "Современный договор подряда",
+        "description": "Расширенный титульный лист, блок подписи/печати, для Business.",
+        "status": "business",
+        "docType": "contract",
+        "headerStyle": "modern",
+        "accentColor": "#0f172a",
+        "showSignature": true,
+        "showStamp": true
+    },
+    {
+        "id": "contract-brief-v1",
+        "name": "Краткий договор",
+        "description": "Сжатая версия договора с выделением ключевых блоков и финального приложения.",
+        "status": "pro",
+        "docType": "contract",
+        "headerStyle": "compact",
+        "accentColor": "#1d4ed8",
+        "showSignature": true,
+        "showStamp": true
     },
     {
         "id": "pro-template-compact-v1",
@@ -33,5 +77,27 @@
         "description": "Создайте свой собственный уникальный шаблон коммерческого предложения.",
         "status": "business",
         "docType": "proposal"
+    },
+    {
+        "id": "business-template-modern-v1",
+        "name": "Современный КП",
+        "description": "Большой заголовок, акцентные блоки, для Business/Enterprise.",
+        "status": "business",
+        "docType": "proposal",
+        "headerStyle": "modern",
+        "accentColor": "#0f172a",
+        "showSignature": true,
+        "showStamp": true
+    },
+    {
+        "id": "business-template-minimal-v1",
+        "name": "Минималистичный КП",
+        "description": "Чистое полупрозрачное оформление, акцент на итоговой стоимости.",
+        "status": "business",
+        "docType": "proposal",
+        "headerStyle": "compact",
+        "accentColor": "#111827",
+        "showSignature": true,
+        "showStamp": false
     }
 ]

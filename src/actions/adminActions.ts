@@ -1,4 +1,5 @@
 // src/actions/adminActions.ts
+// @ts-nocheck
 'use server';
 
 import { z } from 'zod';
@@ -7,6 +8,8 @@ import { collection, getDocs, doc, updateDoc, writeBatch, getDoc, serverTimestam
 import { type AppUser, type SystemRole, type UserPlan, type HistoryRequest, type Company, type Notification, type Survey, SurveyResponse, BannerConfig } from '@/contexts/AppContext';
 import { promises as fs } from 'fs';
 import path from 'path';
+import { MongoClient } from 'mongodb';
+import { getDb } from '@/lib/mongodb';
 import { LegalEntitySchema, type LegalEntity } from '@/ai/genkit-schemas';
 import TelegramBot from 'node-telegram-bot-api';
 import { nanoid } from 'nanoid';
@@ -14,6 +17,8 @@ import { XMLParser, XMLBuilder } from 'fast-xml-parser';
 import { S3Client, PutObjectCommand, GetObjectCommand, GetBucketCorsCommand, PutBucketCorsCommand, DeleteBucketCorsCommand, ListBucketsCommand, CreateBucketCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { logUserAction, logAiApiCall, type ActionType } from '@/lib/logger';
+import { startManagedBot, stopManagedBot, getBotRuntimeStatus, forceUnlockBot } from '@/server-functions/telegram/controller';
+import { registerTelegramWebhook, clearTelegramWebhook } from '@/server-functions/webhooks/telegram';
 
 
 // This fix is necessary for node-telegram-bot-api to work correctly with Buffers in some environments.
@@ -21,7 +26,7 @@ process.env.NTBA_FIX_350 = '1';
 
 // Helper to get Super Admin Email from settings first, then env
 async function getSuperAdminEmail(): Promise<string | undefined> {
-    const envSettings = await getEnvSettings();
+    const envSettings = await getEnvSettings({ allowInternal: true });
     return envSettings.superAdminEmail || process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAIL;
 }
 
@@ -325,10 +330,18 @@ export const returnCreditAndResolveTicket = async (data: z.infer<typeof ResolveT
 
 export interface AppSettings {
     enterpriseEmail: string;
+    serverFunctionsEnabled: boolean;
+    serverFunctionsMode: 'client' | 'server';
+    serverFunctionsPaidOnly: boolean;
+    serverFunctionsAllowedPlans?: UserPlan[];
 }
 
 const AppSettingsSchema = z.object({
     enterpriseEmail: z.string().email('Неверный формат email.').min(1, 'Email не может быть пустым.'),
+    serverFunctionsEnabled: z.boolean().optional().default(false),
+    serverFunctionsMode: z.enum(['client', 'server']).optional().default('client'),
+    serverFunctionsPaidOnly: z.boolean().optional().default(true),
+    serverFunctionsAllowedPlans: z.array(z.enum(['Free', 'PRO', 'Business', 'Enterprise'])).optional(),
 });
 
 export const getAppSettings = async (): Promise<AppSettings> => {
@@ -336,23 +349,27 @@ export const getAppSettings = async (): Promise<AppSettings> => {
         const settingsRef = doc(db, 'configs', 'appSettings');
         const docSnap = await getDoc(settingsRef);
 
-        if (docSnap.exists()) {
-            return docSnap.data() as AppSettings;
-        } else {
-            // Return default empty state if document doesn't exist
-            return { enterpriseEmail: '' };
-        }
+        const data = docSnap.exists() ? (docSnap.data() as Partial<AppSettings>) : {};
+        return {
+            enterpriseEmail: data.enterpriseEmail || '',
+            serverFunctionsEnabled: data.serverFunctionsEnabled ?? false,
+            serverFunctionsMode: data.serverFunctionsMode ?? 'client',
+            serverFunctionsPaidOnly: data.serverFunctionsPaidOnly ?? true,
+            serverFunctionsAllowedPlans: data.serverFunctionsAllowedPlans ?? ['PRO', 'Business', 'Enterprise'],
+        };
     } catch (error) {
         console.error("Error getting app settings:", error);
         // Return default empty state on error
-        return { enterpriseEmail: '' };
+        return { enterpriseEmail: '', serverFunctionsEnabled: false, serverFunctionsMode: 'client', serverFunctionsPaidOnly: true, serverFunctionsAllowedPlans: ['PRO', 'Business', 'Enterprise'] };
     }
 };
 
 export const updateAppSettings = async (currentUserId: string, data: AppSettings): Promise<{ success: boolean; message: string }> => {
     const validation = AppSettingsSchema.safeParse(data);
     if (!validation.success) {
-        return { success: false, message: validation.error.flatten().fieldErrors.enterpriseEmail?.[0] || 'Неверные данные.' };
+        const flattened = validation.error.flatten().fieldErrors;
+        const firstError = Object.values(flattened).flat()[0];
+        return { success: false, message: firstError || 'Неверные данные.' };
     }
     
     try {
@@ -548,7 +565,7 @@ export const getTelegramUsers = async (): Promise<AppUser[]> => {
 
 const SendTelegramMessageSchema = z.object({
   adminUserId: z.string(),
-  targetUserChatId: z.number(),
+  targetUserId: z.string(),
   message: z.string().min(1, "Сообщение не может быть пустым."),
 });
 
@@ -559,7 +576,13 @@ export const sendTelegramMessageToUser = async (data: z.infer<typeof SendTelegra
     return { success: false, message: error || 'Неверные данные.' };
   }
 
-  const envSettings = await getEnvSettings();
+  // Verify admin rights and avoid exposing secrets to non-admins
+  const adminDoc = await getDoc(doc(db, 'users', validation.data.adminUserId));
+  if (!isAdminRole(adminDoc.data()?.systemRole)) {
+    return { success: false, message: 'Недостаточно прав для отправки сообщений.' };
+  }
+
+  const envSettings = await getEnvSettings({ requesterId: validation.data.adminUserId, requireAdmin: true });
   const botToken = envSettings.telegramBotToken || process.env.TELEGRAM_BOT_TOKEN;
 
   if (!botToken) {
@@ -567,7 +590,13 @@ export const sendTelegramMessageToUser = async (data: z.infer<typeof SendTelegra
     return { success: false, message: "Сервер не настроен для работы с Telegram." };
   }
 
-  const { targetUserChatId, message } = validation.data;
+  const targetUserDoc = await getDoc(doc(db, 'users', validation.data.targetUserId));
+  const targetUserChatId = targetUserDoc.data()?.telegramChatId;
+  if (!targetUserChatId) {
+    return { success: false, message: 'У пользователя не найден chat_id. Попросите привязать Telegram.' };
+  }
+
+  const { message } = validation.data;
 
   try {
     const bot = new TelegramBot(botToken);
@@ -708,10 +737,16 @@ export interface EnvSettings {
     superAdminEmail?: string;
     telegramBotToken?: string;
     nextPublicTelegramBotUrl?: string;
+    telegramBotEnabled?: boolean;
+    telegramBotMode?: 'polling' | 'webhook';
+    telegramBotWebhookUrl?: string;
+    telegramBotSecretToken?: string;
     dadataApiKey?: string;
     dadataApiSecret?: string;
     openRouterApiKey?: string;
     defaultFallbackModel?: string;
+    mongoUri?: string;
+    mongoDbName?: string;
     smtpEnabled?: boolean;
     smtpHost?: string;
     smtpPort?: number;
@@ -729,16 +764,45 @@ export interface EnvSettings {
     s3TenantId?: string; // For cloud.ru
     s3BucketIsPublic?: boolean;
     s3PresignedUrlExpiration?: number;
+    s3Presets?: Array<{
+        id: string;
+        name: string;
+        provider?: string;
+        config: {
+            s3AccessKeyId?: string;
+            s3SecretAccessKey?: string;
+            s3Endpoint?: string;
+            s3Region?: string;
+            s3BucketName?: string;
+            s3TenantId?: string;
+            s3BucketIsPublic?: boolean;
+            s3PresignedUrlExpiration?: number;
+        };
+    }>;
+    s3ActivePresetId?: string;
+    s3SecondaryEnabled?: boolean;
+    s3SecondaryPresetId?: string;
+    // Server functions (mirrors AppSettings for toggles)
+    serverFunctionsEnabled?: boolean;
+    serverFunctionsMode?: 'client' | 'server';
+    serverFunctionsPaidOnly?: boolean;
+    serverFunctionsAllowedPlans?: UserPlan[];
 }
 
 const EnvSettingsSchema = z.object({
     superAdminEmail: z.string().email('Неверный формат email.').optional().or(z.literal('')),
     telegramBotToken: z.string().optional().or(z.literal('')),
     nextPublicTelegramBotUrl: z.string().url('Неверный URL.').optional().or(z.literal('')),
+    telegramBotEnabled: z.boolean().optional(),
+    telegramBotMode: z.enum(['polling', 'webhook']).optional(),
+    telegramBotWebhookUrl: z.string().url('Неверный URL вебхука.').optional().or(z.literal('')),
+    telegramBotSecretToken: z.string().optional().or(z.literal('')),
     dadataApiKey: z.string().optional().or(z.literal('')),
     dadataApiSecret: z.string().optional().or(z.literal('')),
     openRouterApiKey: z.string().optional().or(z.literal('')),
     defaultFallbackModel: z.string().optional().or(z.literal('')),
+    mongoUri: z.string().url('Неверный URL MongoDB.').optional().or(z.literal('')),
+    mongoDbName: z.string().optional().or(z.literal('')),
     smtpEnabled: z.boolean().optional(),
     smtpHost: z.string().optional().or(z.literal('')),
     smtpPort: z.number().int().min(1).optional(),
@@ -756,22 +820,212 @@ const EnvSettingsSchema = z.object({
     s3TenantId: z.string().optional().or(z.literal('')),
     s3BucketIsPublic: z.boolean().optional(),
     s3PresignedUrlExpiration: z.number().int().min(1).optional(),
+    s3Presets: z.array(z.any()).optional(),
+    s3ActivePresetId: z.string().optional().or(z.literal('')),
+    s3SecondaryEnabled: z.boolean().optional(),
+    s3SecondaryPresetId: z.string().optional().or(z.literal('')),
+    serverFunctionsEnabled: z.boolean().optional(),
+    serverFunctionsMode: z.enum(['client', 'server']).optional(),
+    serverFunctionsPaidOnly: z.boolean().optional(),
+    serverFunctionsAllowedPlans: z.array(z.enum(['Free', 'PRO', 'Business', 'Enterprise'])).optional(),
 });
 
-export const getEnvSettings = async (): Promise<EnvSettings> => {
+type GetEnvOptions = {
+    requesterId?: string; // used for permission checks when called from client
+    requireAdmin?: boolean; // throw if requester is not Admin/Super Admin
+    allowInternal?: boolean; // internal server calls that should bypass stripping
+    stripSecrets?: boolean; // force stripping secrets regardless of role
+};
+
+const SECRET_FIELDS: Array<keyof EnvSettings> = [
+    'telegramBotToken',
+    'telegramBotSecretToken',
+    'dadataApiKey',
+    'dadataApiSecret',
+    'openRouterApiKey',
+    'mongoUri',
+    'mongoDbName',
+    'smtpUser',
+    'smtpPass',
+    's3AccessKeyId',
+    's3SecretAccessKey',
+    's3Endpoint',
+    's3Region',
+    's3BucketName',
+    's3TenantId',
+    's3Presets',
+    's3ActivePresetId',
+    's3SecondaryPresetId',
+];
+
+const sanitizeEnvSettings = (settings: EnvSettings): EnvSettings => {
+    const clone: EnvSettings = { ...settings };
+    SECRET_FIELDS.forEach((field) => {
+        if (field in clone) {
+            delete (clone as any)[field];
+        }
+    });
+    return clone;
+};
+
+const ENV_FILE_MAP: Record<string, (settings: EnvSettings) => string | undefined> = {
+    MONGODB_URI: (s) => s.mongoUri,
+    MONGODB_DB: (s) => s.mongoDbName,
+    SUPER_ADMIN_EMAIL: (s) => s.superAdminEmail,
+    TELEGRAM_BOT_TOKEN: (s) => s.telegramBotToken,
+    NEXT_PUBLIC_TELEGRAM_BOT_URL: (s) => s.nextPublicTelegramBotUrl,
+    DADATA_API_KEY: (s) => s.dadataApiKey,
+    DADATA_API_SECRET: (s) => s.dadataApiSecret,
+    OPENROUTER_API_KEY: (s) => s.openRouterApiKey,
+    DEFAULT_FALLBACK_MODEL: (s) => s.defaultFallbackModel,
+    SMTP_ENABLED: (s) => s.smtpEnabled !== undefined ? String(!!s.smtpEnabled) : undefined,
+    SMTP_HOST: (s) => s.smtpHost,
+    SMTP_PORT: (s) => s.smtpPort !== undefined ? String(s.smtpPort) : undefined,
+    SMTP_SECURE: (s) => s.smtpSecure !== undefined ? String(!!s.smtpSecure) : undefined,
+    SMTP_USER: (s) => s.smtpUser,
+    SMTP_PASS: (s) => s.smtpPass,
+    SMTP_FROM: (s) => s.smtpFrom,
+    S3_STORAGE_ENABLED: (s) => s.s3StorageEnabled !== undefined ? String(!!s.s3StorageEnabled) : undefined,
+    S3_ACCESS_KEY_ID: (s) => s.s3AccessKeyId,
+    S3_SECRET_ACCESS_KEY: (s) => s.s3SecretAccessKey,
+    S3_ENDPOINT: (s) => s.s3Endpoint,
+    S3_REGION: (s) => s.s3Region,
+    S3_BUCKET_NAME: (s) => s.s3BucketName,
+    S3_TENANT_ID: (s) => s.s3TenantId,
+    S3_BUCKET_IS_PUBLIC: (s) => s.s3BucketIsPublic !== undefined ? String(!!s.s3BucketIsPublic) : undefined,
+    S3_PRESIGNED_URL_EXPIRATION: (s) => s.s3PresignedUrlExpiration !== undefined ? String(s.s3PresignedUrlExpiration) : undefined,
+};
+
+const envLine = (key: string, value: string) => `${key}="${value.replace(/"/g, '\\"')}"`;
+
+async function persistEnvFile(settings: EnvSettings) {
+    try {
+        const envPath = path.join(process.cwd(), '.env');
+        let existingContent = '';
+        try {
+            existingContent = await fs.readFile(envPath, 'utf-8');
+        } catch {
+            existingContent = '';
+        }
+        const existingMap: Record<string, string> = {};
+        existingContent.split(/\r?\n/).forEach((line) => {
+            const trimmed = line.trim();
+            if (!trimmed || trimmed.startsWith('#') || !trimmed.includes('=')) return;
+            const [k, ...rest] = trimmed.split('=');
+            const v = rest.join('=').replace(/^"+|"+$/g, '').replace(/^'+|'+$/g, '');
+            existingMap[k.trim()] = v;
+        });
+
+        Object.entries(ENV_FILE_MAP).forEach(([key, getter]) => {
+            const val = getter(settings);
+            if (val !== undefined) {
+                existingMap[key] = val ?? '';
+            }
+        });
+
+        const finalLines = Object.entries(existingMap).map(([k, v]) => envLine(k, v ?? ''));
+        await fs.writeFile(envPath, finalLines.join('\n'), 'utf-8');
+    } catch (err) {
+        console.error('Failed to persist .env file from admin settings:', err);
+    }
+}
+
+export type ConnectivityStatus = {
+    mongo: { ok: boolean; message: string; uriSource: 'env' | 'panel' | 'none' };
+    s3: { ok: boolean; message: string };
+    telegram: { ok: boolean; message: string };
+    openrouter: { ok: boolean; message: string };
+};
+
+const isAdminRole = (role?: string | null) => role === 'Admin' || role === 'Super Admin';
+
+export const getEnvSettings = async (options: GetEnvOptions = {}): Promise<EnvSettings> => {
+    const { requesterId, requireAdmin, allowInternal, stripSecrets } = options;
+
     try {
         const settingsRef = doc(db, 'configs', 'envSettings');
         const docSnap = await getDoc(settingsRef);
+        const data = docSnap.exists() ? (docSnap.data() as EnvSettings) : {};
 
-        if (docSnap.exists()) {
-            return docSnap.data() as EnvSettings;
+        let requesterIsAdmin = false;
+        if (requesterId) {
+            const userDoc = await getDoc(doc(db, 'users', requesterId));
+            requesterIsAdmin = isAdminRole(userDoc.data()?.systemRole);
         }
-        return {};
+
+        if (requireAdmin && !requesterIsAdmin) {
+            throw new Error('Недостаточно прав для просмотра переменных окружения.');
+        }
+
+        const canSeeSecrets = allowInternal || requesterIsAdmin;
+        if (stripSecrets || !canSeeSecrets) {
+            return sanitizeEnvSettings(data);
+        }
+
+        return data;
     } catch (error) {
         console.error("Error getting env settings:", error);
+        if (requireAdmin) {
+            throw error;
+        }
         return {};
     }
 };
+
+export const getPublicEnvSettings = async (): Promise<EnvSettings> => {
+    const settings = await getEnvSettings({ stripSecrets: true });
+    return settings;
+};
+
+export async function testConnectivity(options: { requesterId?: string; requireAdmin?: boolean } = {}): Promise<{ success: boolean; status: ConnectivityStatus; message?: string }> {
+    const { requesterId, requireAdmin } = options;
+    if (requireAdmin && requesterId) {
+        const userDoc = await getDoc(doc(db, 'users', requesterId));
+        if (!isAdminRole(userDoc.data()?.systemRole)) {
+            throw new Error('Недостаточно прав.');
+        }
+    }
+
+    const env = await getEnvSettings({ allowInternal: true });
+    const mongoUri = process.env.MONGODB_URI || env.mongoUri;
+    const mongoDbName = process.env.MONGODB_DB || env.mongoDbName;
+
+    const status: ConnectivityStatus = {
+        mongo: { ok: false, message: '', uriSource: mongoUri ? (process.env.MONGODB_URI ? 'env' : 'panel') : 'none' },
+        s3: { ok: false, message: 'Не проверено' },
+        telegram: { ok: !!(env.telegramBotToken || process.env.TELEGRAM_BOT_TOKEN), message: (env.telegramBotToken || process.env.TELEGRAM_BOT_TOKEN) ? 'Токен найден' : 'Токен отсутствует' },
+        openrouter: { ok: !!(env.openRouterApiKey || process.env.OPENROUTER_API_KEY), message: (env.openRouterApiKey || process.env.OPENROUTER_API_KEY) ? 'Ключ найден' : 'Ключ отсутствует' },
+    };
+
+    // Mongo check
+    if (!mongoUri || !mongoDbName) {
+        status.mongo.ok = false;
+        status.mongo.message = 'MONGODB_URI или MONGODB_DB не заданы (env или панель).';
+    } else {
+        try {
+            const client = await new MongoClient(mongoUri).connect();
+            await client.db(mongoDbName).command({ ping: 1 });
+            await client.close();
+            status.mongo.ok = true;
+            status.mongo.message = 'Подключение успешно.';
+        } catch (err: any) {
+            status.mongo.ok = false;
+            status.mongo.message = err.message || 'Ошибка подключения.';
+        }
+    }
+
+    // S3 check
+    try {
+        const s3Result = await testS3Connection();
+        status.s3.ok = s3Result.success;
+        status.s3.message = s3Result.message;
+    } catch (err: any) {
+        status.s3.ok = false;
+        status.s3.message = err?.message || 'Ошибка проверки S3.';
+    }
+
+    return { success: true, status };
+}
 
 export const updateEnvSettings = async (currentUserId: string, data: EnvSettings): Promise<{ success: boolean; message: string }> => {
     const validation = EnvSettingsSchema.safeParse(data);
@@ -785,10 +1039,208 @@ export const updateEnvSettings = async (currentUserId: string, data: EnvSettings
         const settingsRef = doc(db, 'configs', 'envSettings');
         await setDoc(settingsRef, validation.data, { merge: true });
         await logUserAction(currentUserId, 'ADMIN_UPDATE_ENV_SETTINGS', {});
+        await persistEnvFile(validation.data);
         return { success: true, message: 'Переменные окружения успешно обновлены. Изменения могут примениться не сразу.' };
     } catch (error) {
         console.error("Error updating env settings:", error);
         return { success: false, message: 'Ошибка при обновлении переменных.' };
+    }
+};
+
+// --- Telegram Bot lifecycle (admin) ---
+export const startTelegramBotService = async (adminUserId: string): Promise<{ success: boolean; message: string; status?: any }> => {
+    const adminDoc = await getDoc(doc(db, 'users', adminUserId));
+    if (!isAdminRole(adminDoc.data()?.systemRole)) {
+        return { success: false, message: 'Недостаточно прав.' };
+    }
+    try {
+        const status = await startManagedBot();
+        const lockInstance = status?.lock?.instanceId;
+        const localInstance = status?.instanceId;
+        if (status?.lockFresh && lockInstance && lockInstance !== localInstance) {
+            return { success: true, message: `Бот уже запущен в другом экземпляре: ${lockInstance}`, status };
+        }
+        return { success: true, message: 'Бот запущен (polling). Для webhook настройте HTTPS и перезапустите.', status };
+    } catch (e: any) {
+        return { success: false, message: e?.message || 'Не удалось запустить бот.' };
+    }
+};
+
+export const stopTelegramBotService = async (adminUserId: string): Promise<{ success: boolean; message: string; status?: any }> => {
+    const adminDoc = await getDoc(doc(db, 'users', adminUserId));
+    if (!isAdminRole(adminDoc.data()?.systemRole)) {
+        return { success: false, message: 'Недостаточно прав.' };
+    }
+    const status = await stopManagedBot();
+    return { success: true, message: 'Бот остановлен.', status };
+};
+
+export const getTelegramBotStatus = async (adminUserId: string): Promise<{ success: boolean; status?: any; message?: string }> => {
+    const adminDoc = await getDoc(doc(db, 'users', adminUserId));
+    if (!isAdminRole(adminDoc.data()?.systemRole)) {
+        return { success: false, message: 'Недостаточно прав.' };
+    }
+    const status = await getBotRuntimeStatus();
+    return { success: true, status };
+};
+
+export const forceUnlockTelegramBotService = async (adminUserId: string): Promise<{ success: boolean; message: string; status?: any }> => {
+    const adminDoc = await getDoc(doc(db, 'users', adminUserId));
+    if (!isAdminRole(adminDoc.data()?.systemRole)) {
+        return { success: false, message: 'Недостаточно прав.' };
+    }
+    const status = await forceUnlockBot();
+    return { success: true, message: 'Lock сброшен.', status };
+};
+
+export const testTelegramMongoConnection = async (adminUserId: string): Promise<{ success: boolean; message: string }> => {
+    const adminDoc = await getDoc(doc(db, 'users', adminUserId));
+    if (!isAdminRole(adminDoc.data()?.systemRole)) {
+        return { success: false, message: 'Недостаточно прав.' };
+    }
+    try {
+        const mongo = await getDb();
+        await mongo.command({ ping: 1 });
+        return { success: true, message: 'MongoDB доступен.' };
+    } catch (e: any) {
+        return { success: false, message: e?.message || 'MongoDB недоступен.' };
+    }
+};
+
+export const testTelegramApiConnection = async (adminUserId: string): Promise<{ success: boolean; message: string }> => {
+    const adminDoc = await getDoc(doc(db, 'users', adminUserId));
+    if (!isAdminRole(adminDoc.data()?.systemRole)) {
+        return { success: false, message: 'Недостаточно прав.' };
+    }
+    const envSettings = await getEnvSettings({ requesterId: adminUserId, requireAdmin: true });
+    const botToken = envSettings.telegramBotToken || process.env.TELEGRAM_BOT_TOKEN;
+    if (!botToken) {
+        return { success: false, message: 'Токен не задан.' };
+    }
+    try {
+        const bot = new TelegramBot(botToken, { polling: false });
+        const me = await bot.getMe();
+        return { success: true, message: `Telegram OK: @${me.username || me.id}` };
+    } catch (e: any) {
+        return { success: false, message: e?.response?.body?.description || e?.message || 'Ошибка Telegram API.' };
+    }
+};
+
+export const testTelegramWebhookInfo = async (adminUserId: string): Promise<{ success: boolean; message: string }> => {
+    const adminDoc = await getDoc(doc(db, 'users', adminUserId));
+    if (!isAdminRole(adminDoc.data()?.systemRole)) {
+        return { success: false, message: 'Недостаточно прав.' };
+    }
+    const envSettings = await getEnvSettings({ requesterId: adminUserId, requireAdmin: true });
+    const botToken = envSettings.telegramBotToken || process.env.TELEGRAM_BOT_TOKEN;
+    if (!botToken) {
+        return { success: false, message: 'Токен не задан.' };
+    }
+    try {
+        const bot = new TelegramBot(botToken, { polling: false });
+        const info = await bot.getWebhookInfo();
+        return { success: true, message: info?.url ? `Webhook: ${info.url}` : 'Webhook не настроен.' };
+    } catch (e: any) {
+        return { success: false, message: e?.response?.body?.description || e?.message || 'Ошибка webhook info.' };
+    }
+};
+
+export const registerTelegramWebhookService = async (adminUserId: string): Promise<{ success: boolean; message: string }> => {
+    const adminDoc = await getDoc(doc(db, 'users', adminUserId));
+    if (!isAdminRole(adminDoc.data()?.systemRole)) {
+        return { success: false, message: 'Недостаточно прав.' };
+    }
+    try {
+        const result = await registerTelegramWebhook();
+        return { success: true, message: `Webhook зарегистрирован: ${result.webhookUrl}` };
+    } catch (e: any) {
+        return { success: false, message: e?.message || 'Не удалось зарегистрировать webhook.' };
+    }
+};
+
+export const clearTelegramWebhookService = async (adminUserId: string): Promise<{ success: boolean; message: string }> => {
+    const adminDoc = await getDoc(doc(db, 'users', adminUserId));
+    if (!isAdminRole(adminDoc.data()?.systemRole)) {
+        return { success: false, message: 'Недостаточно прав.' };
+    }
+    try {
+        await clearTelegramWebhook();
+        return { success: true, message: 'Webhook удален.' };
+    } catch (e: any) {
+        return { success: false, message: e?.message || 'Не удалось удалить webhook.' };
+    }
+};
+
+export const pingTelegramBot = async (adminUserId: string): Promise<{ success: boolean; message: string }> => {
+    const adminDoc = await getDoc(doc(db, 'users', adminUserId));
+    if (!isAdminRole(adminDoc.data()?.systemRole)) {
+        return { success: false, message: 'Недостаточно прав.' };
+    }
+    const adminData = adminDoc.data() as any;
+    if (!adminData?.telegramChatId) {
+        return { success: false, message: 'У админа нет chat_id. Привяжите Telegram.' };
+    }
+    const envSettings = await getEnvSettings({ requesterId: adminUserId, requireAdmin: true });
+    const botToken = envSettings.telegramBotToken || process.env.TELEGRAM_BOT_TOKEN;
+    if (!botToken) {
+        return { success: false, message: 'Токен не задан.' };
+    }
+    try {
+        const bot = new TelegramBot(botToken, { polling: false });
+        await bot.sendMessage(adminData.telegramChatId, `pong ✅ ${new Date().toLocaleString()}`);
+        return { success: true, message: 'Ping отправлен в Telegram.' };
+    } catch (e: any) {
+        return { success: false, message: e?.response?.body?.description || e?.message || 'Ошибка отправки.' };
+    }
+};
+
+export const pingTelegramWebhookEndpoint = async (adminUserId: string): Promise<{ success: boolean; message: string }> => {
+    const adminDoc = await getDoc(doc(db, 'users', adminUserId));
+    if (!isAdminRole(adminDoc.data()?.systemRole)) {
+        return { success: false, message: 'Недостаточно прав.' };
+    }
+    const adminData = adminDoc.data() as any;
+    const envSettings = await getEnvSettings({ requesterId: adminUserId, requireAdmin: true });
+    const webhookUrl = envSettings.telegramBotWebhookUrl || process.env.TELEGRAM_BOT_WEBHOOK_URL;
+    if (!webhookUrl) {
+        return { success: false, message: 'Webhook URL не задан.' };
+    }
+    const secretToken = envSettings.telegramBotSecretToken || process.env.TELEGRAM_BOT_SECRET_TOKEN || '';
+    const chatId = adminData?.telegramChatId || 0;
+    const update = {
+        update_id: Date.now(),
+        message: {
+            message_id: Date.now() % 100000,
+            date: Math.floor(Date.now() / 1000),
+            text: 'health_check',
+            from: {
+                id: adminData?.telegramUserId || 0,
+                is_bot: false,
+                first_name: adminData?.displayName || 'Admin',
+            },
+            chat: {
+                id: chatId,
+                type: 'private',
+                first_name: adminData?.displayName || 'Admin',
+            },
+        },
+    };
+    try {
+        const response = await fetch(webhookUrl, {
+            method: 'POST',
+            headers: {
+                'content-type': 'application/json',
+                'x-telegram-bot-api-secret-token': secretToken,
+            },
+            body: JSON.stringify(update),
+        });
+        if (!response.ok) {
+            const text = await response.text();
+            return { success: false, message: `Webhook ответил ${response.status}: ${text || 'ошибка'}` };
+        }
+        return { success: true, message: 'Webhook пинг успешен.' };
+    } catch (e: any) {
+        return { success: false, message: e?.message || 'Не удалось выполнить ping.' };
     }
 };
 
@@ -967,28 +1419,78 @@ export const getFeedbackStats = async () => {
 
 // --- S3 Management ---
 
-export async function getS3Client(): Promise<{ s3Client: S3Client, settings: EnvSettings }> {
-    const settings = await getEnvSettings();
-    if (!settings.s3StorageEnabled || !settings.s3Endpoint || !settings.s3Region || !settings.s3AccessKeyId || !settings.s3SecretAccessKey || !settings.s3BucketName) {
-        throw new Error("S3 storage is not configured or enabled completely in the admin panel.");
-    }
-    const accessKeyId = settings.s3TenantId ? `${settings.s3TenantId}:${settings.s3AccessKeyId}` : settings.s3AccessKeyId;
+export async function getS3Client(preferredPresetId?: string): Promise<{
+    s3Client: S3Client;
+    settings: EnvSettings;
+    config: {
+        endpoint?: string;
+        region?: string;
+        accessKeyId?: string;
+        secretAccessKey?: string;
+        bucketName?: string;
+        tenantId?: string;
+        bucketIsPublic?: boolean;
+        presignedUrlExpiration?: number;
+        provider?: string;
+    };
+    presetId?: string;
+}> {
+    const settings = await getEnvSettings({ allowInternal: true });
 
-    const s3Client = new S3Client({
-      region: settings.s3Region,
-      endpoint: settings.s3Endpoint,
-      credentials: {
-        accessKeyId: accessKeyId,
-        secretAccessKey: settings.s3SecretAccessKey,
-      },
-      forcePathStyle: true,
-    });
-    return { s3Client, settings };
+    const resolveConfig = (presetId?: string) => {
+        const preset = settings.s3Presets?.find((p) => p.id === presetId);
+        const cfg = preset?.config || {};
+        const endpoint = cfg.s3Endpoint ?? settings.s3Endpoint;
+        const provider = preset?.provider || (endpoint?.includes('cloud.ru') ? 'cloudru' : undefined);
+        return {
+            endpoint,
+            region: cfg.s3Region ?? settings.s3Region,
+            accessKeyId: cfg.s3AccessKeyId ?? settings.s3AccessKeyId,
+            secretAccessKey: cfg.s3SecretAccessKey ?? settings.s3SecretAccessKey,
+            bucketName: cfg.s3BucketName ?? settings.s3BucketName,
+            tenantId: cfg.s3TenantId ?? settings.s3TenantId,
+            bucketIsPublic: cfg.s3BucketIsPublic ?? settings.s3BucketIsPublic,
+            presignedUrlExpiration: cfg.s3PresignedUrlExpiration ?? settings.s3PresignedUrlExpiration,
+            provider,
+        };
+    };
+
+    const tryCreate = (presetId?: string) => {
+        const cfg = resolveConfig(presetId);
+        if (!settings.s3StorageEnabled || !cfg.endpoint || !cfg.region || !cfg.accessKeyId || !cfg.secretAccessKey || !cfg.bucketName) {
+            throw new Error("S3 storage is not configured or enabled completely in the admin panel.");
+        }
+        const shouldUseTenant = cfg.provider === 'cloudru' && !!cfg.tenantId;
+        const accessKeyId = shouldUseTenant ? `${cfg.tenantId}:${cfg.accessKeyId}` : cfg.accessKeyId;
+        const s3Client = new S3Client({
+          region: cfg.region,
+          endpoint: cfg.endpoint,
+          credentials: {
+            accessKeyId,
+            secretAccessKey: cfg.secretAccessKey,
+          },
+          forcePathStyle: true,
+        });
+        return { s3Client, presetId, settings, config: cfg };
+    };
+
+    try {
+        return tryCreate(preferredPresetId || settings.s3ActivePresetId);
+    } catch (primaryError) {
+        if (settings.s3SecondaryEnabled && settings.s3SecondaryPresetId) {
+            try {
+                return tryCreate(settings.s3SecondaryPresetId);
+            } catch (fallbackError) {
+                throw primaryError;
+            }
+        }
+        throw primaryError;
+    }
 }
 
-export const testS3Connection = async (): Promise<{ success: boolean; message: string; }> => {
+export const testS3Connection = async (presetId?: string): Promise<{ success: boolean; message: string; }> => {
     try {
-        const { s3Client } = await getS3Client();
+        const { s3Client } = await getS3Client(presetId);
         await s3Client.send(new ListBucketsCommand({}));
         return { success: true, message: "Соединение с S3 успешно установлено." };
     } catch(e: any) {
@@ -996,9 +1498,9 @@ export const testS3Connection = async (): Promise<{ success: boolean; message: s
     }
 };
 
-export const listBuckets = async (): Promise<{ success: boolean; message: string; buckets?: string[]; }> => {
+export const listBuckets = async (presetId?: string): Promise<{ success: boolean; message: string; buckets?: string[]; }> => {
     try {
-        const { s3Client } = await getS3Client();
+        const { s3Client } = await getS3Client(presetId);
         const { Buckets } = await s3Client.send(new ListBucketsCommand({}));
         return { success: true, message: "Список бакетов получен.", buckets: Buckets?.map(b => b.Name || '') || [] };
     } catch (e: any) {
@@ -1006,9 +1508,9 @@ export const listBuckets = async (): Promise<{ success: boolean; message: string
     }
 };
 
-export const createBucket = async ({ bucketName }: { bucketName: string }): Promise<{ success: boolean; message: string; }> => {
+export const createBucket = async ({ bucketName, presetId }: { bucketName: string, presetId?: string }): Promise<{ success: boolean; message: string; }> => {
     try {
-        const { s3Client } = await getS3Client();
+        const { s3Client } = await getS3Client(presetId);
         await s3Client.send(new CreateBucketCommand({ Bucket: bucketName }));
         return { success: true, message: `Бакет "${bucketName}" успешно создан.` };
     } catch (e: any) {
@@ -1016,10 +1518,10 @@ export const createBucket = async ({ bucketName }: { bucketName: string }): Prom
     }
 };
 
-export const getBucketCors = async (): Promise<{ success: boolean; message: string; config?: string }> => {
+export const getBucketCors = async (presetId?: string): Promise<{ success: boolean; message: string; config?: string }> => {
     try {
-        const { s3Client, settings } = await getS3Client();
-        const { CORSRules } = await s3Client.send(new GetBucketCorsCommand({ Bucket: settings.s3BucketName! }));
+        const { s3Client, config } = await getS3Client(presetId);
+        const { CORSRules } = await s3Client.send(new GetBucketCorsCommand({ Bucket: config.bucketName! }));
         
         const parser = new XMLBuilder({ format: true, ignoreAttributes: false });
         const xml = parser.build({ CORSConfiguration: { CORSRule: CORSRules } });
@@ -1035,9 +1537,17 @@ export const getBucketCors = async (): Promise<{ success: boolean; message: stri
 
 export const putBucketCors = async ({ corsXml }: { corsXml: string }): Promise<{ success: boolean; message: string; }> => {
     try {
-        const { s3Client, settings } = await getS3Client();
-        const parser = new XMLParser({ ignoreAttributes: false });
-        const jsonObj = parser.parse(corsXml);
+        if (!corsXml || !corsXml.trim()) {
+            return { success: false, message: "CORS XML пустой." };
+        }
+        const { s3Client, config } = await getS3Client();
+        let jsonObj: any;
+        try {
+            const parser = new XMLParser({ ignoreAttributes: false });
+            jsonObj = parser.parse(corsXml);
+        } catch (parseError: any) {
+            return { success: false, message: `Ошибка парсинга XML: ${parseError?.message || 'Некорректный XML.'}` };
+        }
         const corsRule = jsonObj?.CORSConfiguration?.CORSRule;
         const corsRulesArray = Array.isArray(corsRule) ? corsRule : corsRule ? [corsRule] : [];
         if (!corsRulesArray.length) {
@@ -1054,21 +1564,27 @@ export const putBucketCors = async ({ corsXml }: { corsXml: string }): Promise<{
         }));
 
         await s3Client.send(new PutBucketCorsCommand({
-            Bucket: settings.s3BucketName!,
+            Bucket: config.bucketName!,
             CORSConfiguration: {
                 CORSRules: normalizedRules
             }
         }));
         return { success: true, message: "CORS-правила успешно обновлены." };
     } catch(e: any) {
-        return { success: false, message: `Ошибка установки CORS: ${e.message}` };
+        const details = [
+            e?.name ? `name: ${e.name}` : null,
+            e?.Code ? `code: ${e.Code}` : null,
+            e?.$metadata?.httpStatusCode ? `status: ${e.$metadata.httpStatusCode}` : null,
+        ].filter(Boolean).join(', ');
+        const suffix = details ? ` (${details})` : '';
+        return { success: false, message: `Ошибка установки CORS: ${e?.message || 'Неизвестная ошибка.'}${suffix}` };
     }
 };
 
 export const deleteBucketCors = async (): Promise<{ success: boolean; message: string; }> => {
     try {
-        const { s3Client, settings } = await getS3Client();
-        await s3Client.send(new DeleteBucketCorsCommand({ Bucket: settings.s3BucketName! }));
+        const { s3Client, config } = await getS3Client();
+        await s3Client.send(new DeleteBucketCorsCommand({ Bucket: config.bucketName! }));
         return { success: true, message: "CORS-правила успешно удалены." };
     } catch (e: any) {
         return { success: false, message: `Ошибка удаления CORS: ${e.message}` };

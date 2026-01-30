@@ -1,8 +1,9 @@
 // src/services/docxGenerator.ts
-import { Document, Packer, Paragraph, Table, TableCell, TableRow, TextRun, WidthType, AlignmentType, VerticalAlign, ImageRun, PageMargin } from 'docx';
+import { Document, Packer, Paragraph, Table, TableCell, TableRow, TextRun, WidthType, AlignmentType, VerticalAlign, ImageRun } from 'docx';
 import type { Company, SpecificationItem, AnalysisDetails, QuoteConfig } from '@/contexts/AppContext';
 import { format } from 'date-fns';
 import { calculateItemSum } from '@/lib/calculation';
+import { getTemplateConfig } from '@/lib/document-constructor';
 
 
 interface GenerateDocxParams {
@@ -19,25 +20,43 @@ interface GenerateDocxParams {
         servicesSubtotal: number;
     };
     logoBuffer?: ArrayBuffer | null;
+    signatureBuffer?: ArrayBuffer | null;
+    stampBuffer?: ArrayBuffer | null;
+    templateId?: string | null;
 }
 
-export const generateDocx = async ({ company, specifications, analysisDetails, quoteConfig, totals, logoBuffer }: GenerateDocxParams): Promise<Blob> => {
+export const generateDocx = async ({
+    company,
+    specifications,
+    analysisDetails,
+    quoteConfig,
+    totals,
+    logoBuffer,
+    signatureBuffer,
+    stampBuffer,
+    templateId,
+}: GenerateDocxParams): Promise<Blob> => {
+    const tpl = getTemplateConfig(templateId || 'base-template-v1');
+    const accentColor = tpl?.accentColor || '0F172A';
+    const isModern = tpl?.headerStyle === 'modern';
 
     const styles = {
         header: {
             font: "Montserrat",
             bold: true,
-            size: 28, // 14pt
+            size: isModern ? 32 : 28, // 14-16pt
+            color: accentColor,
         },
         subHeader: {
             font: "Montserrat",
-            size: 20, // 10pt
-            color: "808080",
+            size: 20,
+            color: isModern ? accentColor : "808080",
         },
         tableHeader: {
             font: "Montserrat",
             bold: true,
             size: 18, // 9pt
+            color: isModern ? accentColor : undefined,
         },
         tableCell: {
             font: "Montserrat",
@@ -217,10 +236,10 @@ export const generateDocx = async ({ company, specifications, analysisDetails, q
             properties: {
                 page: {
                     margin: {
-                        top: 600,
-                        right: 600,
-                        bottom: 600,
-                        left: 600,
+                        top: isModern ? 500 : 600,
+                        right: isModern ? 500 : 600,
+                        bottom: isModern ? 500 : 600,
+                        left: isModern ? 500 : 600,
                     },
                 },
             },
@@ -228,6 +247,47 @@ export const generateDocx = async ({ company, specifications, analysisDetails, q
                 ...headerChildren,
                 new Paragraph({ text: "" }),
                 table,
+                new Paragraph({ text: "" }),
+                ...(tpl?.showSignature === false ? [] : signatureBuffer
+                    ? [
+                        new Paragraph({
+                            children: [
+                                new TextRun({ text: "Подпись:", ...styles.tableCell }),
+                            ],
+                        }),
+                        new Paragraph({
+                            children: [
+                                new ImageRun({
+                                    data: signatureBuffer,
+                                    transformation: {
+                                        width: 160,
+                                        height: 80,
+                                    },
+                                }),
+                            ],
+                        }),
+                    ]
+                    : []),
+                ...(tpl?.showStamp === false ? [] : stampBuffer
+                    ? [
+                        new Paragraph({
+                            children: [
+                                new TextRun({ text: "Печать:", ...styles.tableCell }),
+                            ],
+                        }),
+                        new Paragraph({
+                            children: [
+                                new ImageRun({
+                                    data: stampBuffer,
+                                    transformation: {
+                                        width: 140,
+                                        height: 140,
+                                    },
+                                }),
+                            ],
+                        }),
+                    ]
+                    : []),
             ],
         }],
     });

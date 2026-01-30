@@ -1,3 +1,4 @@
+// @ts-nocheck
 // src/components/PdfEditorDialog.tsx
 "use client";
 

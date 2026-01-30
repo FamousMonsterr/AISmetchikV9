@@ -1,29 +1,38 @@
 // src/components/NotificationCenter.tsx
 "use client";
 
-import { useState, useEffect, useRef } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { useAppContext, type Notification } from '@/contexts/AppContext';
 import { db } from '@/lib/firebase';
 import { collection, query, where, getDocs, doc, updateDoc, arrayUnion, serverTimestamp } from '@/lib/mongoFirestore';
-import { Loader2, Info, AlertTriangle } from 'lucide-react';
+import { Loader2, Bell, Info, AlertTriangle } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { ScrollArea } from './ui/scroll-area';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 
-export function NotificationCenter() {
+type NotificationCenterProps = {
+  className?: string;
+};
+
+type NotificationWithSource = Notification & { source: 'global' | 'user' };
+
+export function NotificationCenter({ className }: NotificationCenterProps) {
   const { user } = useAppContext();
-  const [unreadNotifications, setUnreadNotifications] = useState<(Notification & { source: 'global' | 'user' })[]>([]);
-  const [currentNotification, setCurrentNotification] = useState<(Notification & { source: 'global' | 'user' }) | null>(null);
+  const [unreadNotifications, setUnreadNotifications] = useState<NotificationWithSource[]>([]);
+  const [hiddenIds, setHiddenIds] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [canClose, setCanClose] = useState(false);
-  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const [processingId, setProcessingId] = useState<string | null>(null);
+  const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
     if (!user) {
       setIsLoading(false);
+      setUnreadNotifications([]);
+      setHiddenIds([]);
       return;
     }
 
@@ -58,9 +67,6 @@ export function NotificationCenter() {
           });
 
         setUnreadNotifications(combined);
-        if (combined.length > 0) {
-          setCurrentNotification(combined[0]);
-        }
       } catch (error) {
         console.error("Failed to fetch notifications:", error);
       } finally {
@@ -71,87 +77,153 @@ export function NotificationCenter() {
     fetchNotifications();
   }, [user]);
 
-  useEffect(() => {
-    if (currentNotification?.type === 'important') {
-      setCanClose(false);
-    } else {
-      setCanClose(true);
-    }
-  }, [currentNotification]);
-
-  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
-    if (currentNotification?.type !== 'important') return;
-    const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
-    if (scrollHeight - scrollTop <= clientHeight + 1) { // +1 for pixel-perfect browsers
-      setCanClose(true);
-    }
-  };
-
-  const handleClose = async () => {
-    if (!user || !currentNotification) return;
-
-    setIsProcessing(true);
+  const markAsRead = async (notification: NotificationWithSource) => {
+    if (!user) return;
+    setProcessingId(notification.id);
     try {
-      if (currentNotification.source === 'global') {
+      if (notification.source === 'global') {
         const userRef = doc(db, 'users', user.uid);
         await updateDoc(userRef, {
-          seenNotifications: arrayUnion(currentNotification.id),
+          seenNotifications: arrayUnion(notification.id),
           updatedAt: serverTimestamp()
         });
       } else {
-        const notificationRef = doc(db, 'user_notifications', currentNotification.id);
+        const notificationRef = doc(db, 'user_notifications', notification.id);
         await updateDoc(notificationRef, {
           status: 'read',
           updatedAt: serverTimestamp(),
         });
       }
-
-      // Move to the next notification
-      const nextIndex = unreadNotifications.findIndex(n => n.id === currentNotification.id) + 1;
-      if (nextIndex < unreadNotifications.length) {
-        setCurrentNotification(unreadNotifications[nextIndex]);
-      } else {
-        setCurrentNotification(null);
-      }
+      setUnreadNotifications((prev) => prev.filter((n) => n.id !== notification.id));
+      setHiddenIds((prev) => prev.filter((id) => id !== notification.id));
     } catch (error) {
       console.error("Failed to mark notification as read:", error);
     } finally {
-      setIsProcessing(false);
+      setProcessingId(null);
     }
   };
 
-  if (isLoading || !currentNotification) {
-    return null; // Don't render anything if there are no notifications to show
-  }
+  const hideNotification = (id: string) => {
+    setHiddenIds((prev) => (prev.includes(id) ? prev : [...prev, id]));
+  };
 
-  const isImportant = currentNotification.type === 'important';
+  const getNotificationDate = (notification: NotificationWithSource) => {
+    const rawDate =
+      (notification.publishedAt?.toDate ? notification.publishedAt.toDate() : notification.publishedAt) ||
+      (notification.createdAt?.toDate ? notification.createdAt.toDate() : notification.createdAt);
+    if (!rawDate) return '';
+    const date = rawDate instanceof Date ? rawDate : new Date(rawDate);
+    if (Number.isNaN(date.getTime())) return '';
+    return date.toLocaleString('ru-RU', {
+      day: '2-digit',
+      month: '2-digit',
+      year: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
+  const visibleNotifications = unreadNotifications.filter((n) => !hiddenIds.includes(n.id));
+  const unreadCount = visibleNotifications.length;
 
   return (
-    <Dialog open={!!currentNotification} onOpenChange={() => { if(canClose) handleClose() }}>
-      <DialogContent className="max-w-2xl" onInteractOutside={e => { if(!canClose) e.preventDefault() }}>
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            {isImportant ? <AlertTriangle className="text-destructive"/> : <Info className="text-primary"/>}
-            {currentNotification.title}
-          </DialogTitle>
-          <DialogDescription>
-             {unreadNotifications.length > 1 && `(Уведомление ${unreadNotifications.findIndex(n => n.id === currentNotification.id) + 1} из ${unreadNotifications.length})`}
-          </DialogDescription>
-        </DialogHeader>
-        <ScrollArea className="h-96" onScroll={handleScroll} ref={scrollAreaRef}>
-             <div className="prose prose-sm max-w-none p-1 pr-4">
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                    {currentNotification.content}
-                </ReactMarkdown>
+    <Popover open={isOpen} onOpenChange={setIsOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon"
+          className={cn("relative", className)}
+          aria-label="Открыть уведомления"
+        >
+          <Bell className="h-5 w-5" />
+          {unreadCount > 0 && (
+            <span className="absolute -top-1 -right-1 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-destructive px-1 text-[11px] font-semibold text-destructive-foreground">
+              {unreadCount > 9 ? "9+" : unreadCount}
+            </span>
+          )}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent align="end" sideOffset={8} className="w-[calc(100vw-2rem)] max-w-[420px] p-0">
+        <div className="flex items-center justify-between border-b px-4 py-3">
+          <div className="text-sm font-semibold">Уведомления</div>
+          {unreadCount > 0 && (
+            <span className="text-xs text-muted-foreground">{unreadCount} новых</span>
+          )}
+        </div>
+
+        {isLoading && (
+          <div className="flex items-center gap-2 px-4 py-4 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Загрузка уведомлений...
+          </div>
+        )}
+
+        {!isLoading && visibleNotifications.length === 0 && (
+          <div className="px-4 py-6 text-sm text-muted-foreground">
+            Новых уведомлений нет.
+          </div>
+        )}
+
+        {!isLoading && visibleNotifications.length > 0 && (
+          <ScrollArea className="max-h-[60vh]">
+            <div className="divide-y">
+              {visibleNotifications.map((notification) => {
+                const dateLabel = getNotificationDate(notification);
+                return (
+                  <div key={notification.id} className="px-4 py-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          {notification.type === 'important' ? (
+                            <AlertTriangle className="h-4 w-4 text-destructive" />
+                          ) : (
+                            <Info className="h-4 w-4 text-primary" />
+                          )}
+                          <div className="font-medium leading-snug">{notification.title}</div>
+                          {notification.type === 'important' && (
+                            <Badge variant="destructive">Важно</Badge>
+                          )}
+                        </div>
+                        {dateLabel && (
+                          <div className="text-xs text-muted-foreground">
+                            {dateLabel}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                  <div className="prose prose-sm max-w-none pt-2">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {notification.content}
+                    </ReactMarkdown>
+                  </div>
+
+                  <div className="mt-3 flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      onClick={() => markAsRead(notification)}
+                      disabled={processingId === notification.id}
+                    >
+                      {processingId === notification.id && (
+                        <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                      )}
+                      Прочитано
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => hideNotification(notification.id)}
+                    >
+                      Скрыть
+                    </Button>
+                  </div>
+                  </div>
+                );
+              })}
             </div>
-        </ScrollArea>
-        <DialogFooter>
-          <Button onClick={handleClose} disabled={isProcessing || !canClose}>
-            {isProcessing && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
-            {isImportant ? "Я прочитал(а) и согласен(на)" : "Закрыть"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          </ScrollArea>
+        )}
+      </PopoverContent>
+    </Popover>
   );
 }

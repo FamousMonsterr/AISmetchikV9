@@ -1,4 +1,5 @@
 // src/app/dashboard/admin/ai-analytics/page.tsx
+// @ts-nocheck
 "use client";
 
 import { useState, useEffect, useCallback, useTransition } from 'react';

@@ -226,12 +226,20 @@ const moveEngine = (engine: string, direction: 'up' | 'down') => {
         existingModels={config.apiModels}
     />
     <div className="space-y-6">
-      <Tabs defaultValue="google">
-        <TabsList className="grid w-full grid-cols-4">
-            {Object.entries(config.providers).map(([providerId, providerConfig]) => (
-                <TabsTrigger key={providerId} value={providerId}>{providerConfig.name}</TabsTrigger>
-            ))}
-        </TabsList>
+      {/** приоритет openrouter по умолчанию */}
+      <Tabs defaultValue={config.providers.openrouter ? "openrouter" : Object.keys(config.providers)[0]}>
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+            <TabsList className="grid w-full sm:w-auto grid-cols-2 sm:grid-cols-4">
+                {Object.entries(config.providers)
+                    .sort(([a], [b]) => (a === 'openrouter' ? -1 : b === 'openrouter' ? 1 : 0))
+                    .map(([providerId, providerConfig]) => (
+                        <TabsTrigger key={providerId} value={providerId}>{providerConfig.name}</TabsTrigger>
+                    ))}
+            </TabsList>
+            <Button variant="outline" size="icon" onClick={() => setIsAddFromProviderDialogOpen(true)}>
+                <PlusCircle className="h-4 w-4" />
+            </Button>
+        </div>
          {Object.entries(config.providers).map(([providerId, providerConfig]) => (
             <TabsContent key={providerId} value={providerId}>
                 <Card className="mt-4">

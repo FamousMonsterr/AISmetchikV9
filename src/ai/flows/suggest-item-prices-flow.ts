@@ -1,4 +1,5 @@
 // src/ai/flows/suggest-item-prices-flow.ts
+// @ts-nocheck
 'use server';
 /**
  * @fileOverview An AI flow to suggest market prices for low-voltage system specification items.

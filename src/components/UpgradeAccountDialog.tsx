@@ -51,6 +51,10 @@ export function UpgradeAccountDialog({ isOpen, onClose, targetRole, featureName 
   const targetRoleIndex = roleHierarchy.indexOf(targetRole);
 
   const isAlreadyOnHigherPlan = currentRoleIndex >= targetRoleIndex;
+  const planExpiresAt = user?.planExpiresAt instanceof Date
+    ? user.planExpiresAt
+    : (user?.planExpiresAt as any)?.toDate?.();
+  const expiresText = planExpiresAt ? new Date(planExpiresAt).toLocaleDateString('ru-RU') : null;
 
   const descriptionText = featureName 
     ? `Функция "${featureName}" доступна только на тарифах ${targetRole} и выше.`
@@ -70,16 +74,16 @@ export function UpgradeAccountDialog({ isOpen, onClose, targetRole, featureName 
         </DialogHeader>
         <div className="py-4">
           {isAlreadyOnHigherPlan ? (
-             <Alert>
-                <CheckCircle className="h-4 w-4" />
-                <AlertTitle>Функция уже доступна</AlertTitle>
-                <AlertDescription>
-                   Ваш текущий тариф "{effectivePlan}" уже включает эту возможность.
+             <Alert className="bg-green-50 border-green-200 text-green-800">
+                <CheckCircle className="h-4 w-4 text-green-600" />
+                <AlertTitle className="text-green-800">Функция уже доступна</AlertTitle>
+                <AlertDescription className="text-green-700">
+                   Ваш тариф "{effectivePlan}" уже выше или равен {targetRole}. {expiresText ? `Оплачено до ${expiresText}.` : 'Подписка активна.'}
                 </AlertDescription>
             </Alert>
           ) : hasUsedTrial ? (
             <Alert>
-                <CheckCircle className="h-4 w-4" />
+               <CheckCircle className="h-4 w-4" />
                 <AlertTitle>Покупка тарифа</AlertTitle>
                 <AlertDescription>
                    Вы уже использовали пробный период. Для доступа к этой функции необходимо приобрести подписку на странице "Баланс".

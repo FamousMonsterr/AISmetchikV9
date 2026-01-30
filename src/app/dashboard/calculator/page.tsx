@@ -15,17 +15,21 @@ const SpecificationPageContent = dynamic(() => import('@/components/calculator/S
 
 
 export default function CalculatorPage() {
-    const { currentProject, isLoading: isContextLoading } = useAppContext();
+    const { currentProject, currentGroup, setCurrentProject, isLoading: isContextLoading } = useAppContext();
     const router = useRouter();
 
     useEffect(() => {
         // This effect ensures that if a user tries to access the page directly
         // without a project selected, they are redirected.
         // It waits for the context to finish loading before making a decision.
+        if (!isContextLoading && !currentProject && currentGroup?.length) {
+            setCurrentProject(currentGroup[0]);
+            return;
+        }
         if (!isContextLoading && !currentProject) {
             router.replace('/dashboard');
         }
-    }, [currentProject, isContextLoading, router]);
+    }, [currentProject, currentGroup, isContextLoading, router, setCurrentProject]);
 
 
     // While the context is loading, or if we are about to redirect, show a loader.

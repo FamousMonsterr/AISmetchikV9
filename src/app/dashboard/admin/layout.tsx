@@ -1,37 +1,86 @@
 // src/app/dashboard/admin/layout.tsx
 "use client";
 
-import { useEffect, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useAppContext } from "@/contexts/AppContext";
 import { Loader2 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ShieldAlert } from "lucide-react";
 import { usePathname } from "next/navigation";
-import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Users, Ticket, Settings, Terminal, FileClock, Send, Library, LayoutDashboard, Bell, Bot, Handshake, Server, Palette, MessageSquareQuote, BarChart2 } from "lucide-react";
+import { Users, Ticket, Settings, Terminal, FileClock, Send, Library, LayoutDashboard, Bell, Bot, Handshake, Server, Palette, MessageSquareQuote, BarChart2, Palette as TemplateIcon, ServerCog, Activity, Search, ChevronDown } from "lucide-react";
 import { query, collection, getDocs, limit, where } from "@/lib/mongoFirestore";
 import { db } from "@/lib/firebase";
+import { motion, AnimatePresence } from "framer-motion";
+import { Input } from "@/components/ui/input";
 
 
-const adminNavItems = [
-    { href: "/dashboard/admin", label: "Дашборд", icon: LayoutDashboard },
-    { href: "/dashboard/admin/users", label: "Пользователи", icon: Users },
-    { href: "/dashboard/admin/tickets", label: "Тикеты", icon: Ticket },
-    { href: "/dashboard/admin/notifications", label: "Уведомления", icon: Bell },
-    { href: "/dashboard/admin/partner-requests", label: "Заявки партнеров", icon: Handshake },
-    { href: "/dashboard/admin/feedback-surveys", label: "Опросы", icon: MessageSquareQuote },
-    { href: "/dashboard/admin/marketing", label: "Маркетинг", icon: Palette },
-    { href: "/dashboard/admin/logs", label: "Логи действий", icon: FileClock },
-    { href: "/dashboard/admin/ai-analytics", label: "Аналитика AI", icon: BarChart2 },
-    { href: "/dashboard/admin/telegram", label: "Telegram", icon: Send },
-    { href: "/dashboard/admin/sections", label: "Разделы", icon: Library },
-    { href: "/dashboard/admin/prompts", label: "Промпты", icon: Terminal },
-    { href: "/dashboard/admin/ai-agent", label: "AI Агент", icon: Bot },
-    { href: "/dashboard/admin/s3", label: "S3 Хранилище", icon: Server },
-    { href: "/dashboard/admin/settings", label: "Настройки", icon: Settings },
+const navGroups = [
+    {
+        id: "main",
+        label: "Главное",
+        icon: LayoutDashboard,
+        links: [{ href: "/dashboard/admin", label: "Дашборд", icon: LayoutDashboard }],
+    },
+    {
+        id: "users",
+        label: "Пользователи",
+        icon: Users,
+        links: [
+            { href: "/dashboard/admin/users", label: "Пользователи", icon: Users },
+            { href: "/dashboard/admin/tickets", label: "Тикеты", icon: Ticket },
+            { href: "/dashboard/admin/partner-requests", label: "Партнёры", icon: Handshake },
+            { href: "/dashboard/admin/feedback-surveys", label: "Опросы", icon: MessageSquareQuote },
+        ],
+    },
+    {
+        id: "communication",
+        label: "Коммуникации",
+        icon: Bell,
+        links: [
+            { href: "/dashboard/admin/notifications", label: "Уведомления", icon: Bell },
+            { href: "/dashboard/admin/marketing", label: "Маркетинг", icon: Palette },
+            { href: "/dashboard/admin/telegram", label: "Telegram", icon: Send },
+        ],
+    },
+    {
+        id: "ai",
+        label: "AI",
+        icon: Bot,
+        links: [
+            { href: "/dashboard/admin/ai-agent", label: "AI Агент", icon: Bot },
+            { href: "/dashboard/admin/prompts", label: "Промпты", icon: Terminal },
+            { href: "/dashboard/admin/ai-analytics", label: "Аналитика AI", icon: BarChart2 },
+        ],
+    },
+    {
+        id: "content",
+        label: "Контент",
+        icon: Library,
+        links: [
+            { href: "/dashboard/admin/sections", label: "Разделы", icon: Library },
+            { href: "/dashboard/admin/templates", label: "Шаблоны", icon: TemplateIcon },
+        ],
+    },
+    {
+        id: "system",
+        label: "Инфраструктура",
+        icon: ServerCog,
+        links: [
+            { href: "/dashboard/admin/server-functions", label: "Серверные функции", icon: ServerCog },
+            { href: "/dashboard/admin/logs", label: "Логи действий", icon: FileClock },
+            { href: "/dashboard/admin/project-logs", label: "Логи проектов", icon: Activity },
+            { href: "/dashboard/admin/s3", label: "S3 хранилище", icon: Server },
+        ],
+    },
+    {
+        id: "settings",
+        label: "Настройки",
+        icon: Settings,
+        links: [{ href: "/dashboard/admin/settings", label: "Настройки", icon: Settings }],
+    },
 ];
 
 // This function will run on first admin layout mount to "warm up" Firestore indexes.
@@ -45,7 +94,8 @@ const warmUpIndexes = async () => {
             query(collection(db, 'ai_api_logs'), limit(1)),
             query(collection(db, 'partner_requests'), limit(1)),
             query(collection(db, 'requests'), where('status', '==', 'reported'), limit(1)),
-            query(collection(db, 'users'), where('telegramChatId', '!=', null), limit(1))
+            query(collection(db, 'users'), where('telegramChatId', '!=', null), limit(1)),
+            query(collection(db, 'project_event_logs'), limit(1)),
         ];
         // We run them, but we don't care about the result.
         // The simple act of querying triggers the index creation on the backend if it doesn't exist.
@@ -68,6 +118,9 @@ export default function AdminLayout({
   const pathname = usePathname();
   const [isPageTransitioning, startPageTransition] = useTransition();
   const isNavigating = isAppNavigating || isPageTransitioning;
+  const [activeGroup, setActiveGroup] = useState<string | null>(null);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
     // Warm up indexes only once when the admin layout is first mounted.
@@ -90,7 +143,18 @@ export default function AdminLayout({
         router.push(href);
       });
     }
+    setSearchOpen(false);
   };
+
+  const flatLinks = useMemo(() => navGroups.flatMap(g => g.links), []);
+  useEffect(() => {
+    const matchedGroup = navGroups.find(g => g.links.some(l => pathname.startsWith(l.href)));
+    if (matchedGroup) setActiveGroup(matchedGroup.id);
+  }, [pathname]);
+
+  const filteredLinks = searchTerm
+    ? flatLinks.filter(l => l.label.toLowerCase().includes(searchTerm.toLowerCase()))
+    : flatLinks;
 
 
   // While user data is loading, show a loader.
@@ -119,27 +183,108 @@ export default function AdminLayout({
 
   // If user is a Super Admin, render the children pages.
   return (
-    <div className="grid grid-cols-1 md:grid-cols-[220px_1fr] gap-6">
-        <aside className="glass-effect bg-black/10 rounded-xl p-2 hidden md:flex">
-            <nav className="flex flex-col gap-1 w-full text-white">
-                 {adminNavItems.map((item) => {
-                     const isActive = item.href === "/dashboard/admin" ? pathname === item.href : pathname.startsWith(item.href);
-                     return (
-                        <Button
-                            key={item.href}
-                            variant={isActive ? "secondary" : "ghost"}
-                            className="justify-start text-white hover:text-white hover:bg-white/10"
-                            onClick={() => handleNavigation(item.href)}
+    <div className="w-full">
+        <main className={cn(
+            'transition-opacity duration-300 rounded-xl border border-border bg-card/70 dark:bg-secondary/50 shadow-sm p-3 sm:p-5 flex flex-col gap-3 overflow-hidden',
+            isNavigating ? 'opacity-50' : 'opacity-100'
+        )}>
+            <div className="sticky top-0 z-20 mb-0 pb-3 border-b border-border/60 bg-card/95 dark:bg-secondary/80 backdrop-blur-sm px-2 sm:px-4 pt-3 rounded-t-xl shadow-sm">
+                <div className="flex items-center gap-2 flex-wrap">
+                    {navGroups.map((group) => {
+                        const isActive = activeGroup === group.id;
+                        return (
+                            <motion.button
+                                key={group.id}
+                                onMouseEnter={() => setActiveGroup(group.id)}
+                                onClick={() => setActiveGroup(group.id)}
+                                className={cn(
+                                    "px-3 py-2 rounded-full text-sm flex items-center gap-2 transition-colors border",
+                                    isActive ? "bg-primary text-primary-foreground border-primary" : "bg-secondary/60 border-border text-foreground hover:bg-secondary"
+                                )}
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
+                            >
+                                <group.icon className="h-4 w-4" />
+                                {group.label}
+                                <ChevronDown className="h-4 w-4" />
+                            </motion.button>
+                        );
+                    })}
+                    <div className="flex-1" />
+                    <Button variant="ghost" size="icon" className="rounded-full" onClick={() => setSearchOpen(true)}>
+                        <Search className="h-4 w-4" />
+                    </Button>
+                </div>
+                <AnimatePresence mode="wait">
+                    {activeGroup && (
+                        <motion.div
+                            key={activeGroup}
+                            initial={{ opacity: 0, y: -6 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -6 }}
+                            className="mt-3 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2"
                         >
-                            <item.icon className="mr-2 h-4 w-4" />
-                            {item.label}
-                        </Button>
-                     );
-                 })}
-            </nav>
-        </aside>
-        <main className={cn('transition-opacity duration-300', isNavigating ? 'opacity-50' : 'opacity-100')}>
-            {children}
+                            {navGroups.find(g => g.id === activeGroup)?.links.map(link => {
+                                const isActive = pathname.startsWith(link.href);
+                                return (
+                                    <Button
+                                        key={link.href}
+                                        variant={isActive ? "secondary" : "ghost"}
+                                        className="justify-start rounded-lg"
+                                        onClick={() => handleNavigation(link.href)}
+                                    >
+                                        <link.icon className="mr-2 h-4 w-4" />
+                                        {link.label}
+                                    </Button>
+                                );
+                            })}
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+            </div>
+            <AnimatePresence>
+                {searchOpen && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        className="absolute inset-x-0 top-2 mx-4 z-30"
+                    >
+                        <div className="rounded-xl border border-border bg-card/95 dark:bg-secondary/80 shadow-lg p-4 space-y-3">
+                            <div className="flex items-center gap-2">
+                                <Search className="h-4 w-4 text-muted-foreground" />
+                                <Input
+                                    autoFocus
+                                    placeholder="Поиск по разделам..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                />
+                                <Button variant="ghost" size="sm" onClick={() => { setSearchOpen(false); setSearchTerm(""); }}>Закрыть</Button>
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 max-h-64 overflow-y-auto">
+                                {filteredLinks.map(link => {
+                                    const isActive = pathname.startsWith(link.href);
+                                    return (
+                                        <Button
+                                            key={link.href}
+                                            variant={isActive ? "secondary" : "ghost"}
+                                            className="justify-start rounded-lg"
+                                            onClick={() => handleNavigation(link.href)}
+                                        >
+                                            <link.icon className="mr-2 h-4 w-4" />
+                                            {link.label}
+                                        </Button>
+                                    );
+                                })}
+                                {filteredLinks.length === 0 && <div className="text-sm text-muted-foreground px-2">Ничего не найдено</div>}
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+            <div className="min-h-0 overflow-auto pt-2">
+                {children}
+            </div>
         </main>
     </div>
   );

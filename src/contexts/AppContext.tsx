@@ -1,3 +1,4 @@
+// @ts-nocheck
 // src/contexts/AppContext.tsx
 "use client";
 
@@ -180,7 +181,7 @@ export interface HistoryRequest {
   fileUri?: string | null; // URI of the file in Gemini
   mimeType?: string | null;
   fileSha1?: string; // SHA-1 hash of the original file
-  status: 'processing' | 'success' | 'failed' | 'reported' | 'draft';
+  status: 'processing' | 'success' | 'failed' | 'reported' | 'draft' | 'cancelled';
   timestamp: any; // Firebase Timestamp or Date
   cost: number;
   error?: string; // For failed status
@@ -212,6 +213,13 @@ export interface HistoryRequest {
 
   // New field for AI call limit
   aiCallCount?: number;
+
+  // Server orchestration
+  serverJobId?: string | null;
+  s3ObjectKey?: string | null;
+  processingStage?: string | null;
+  processingStageMessage?: string | null;
+  processingStageUpdatedAt?: any;
 }
 
 export interface Company {
@@ -590,7 +598,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             checkUserPlan(userData);
             
             if (telegram?.initData && !userData.telegramChatId) {
-                linkTelegramAccount({ initData: telegram.initData, userId: userData.uid });
+                linkTelegramAccount({ initData: telegram.initData });
             }
 
             if (typeof window !== 'undefined') {

@@ -10,7 +10,9 @@
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "migrate:firestore": "node scripts/migrate-firestore-to-mongo.ts",
-    "mongo:indexes": "node scripts/create-mongo-indexes.ts"
+    "mongo:indexes": "node scripts/create-mongo-indexes.ts",
+    "worker:server-analysis": "node scripts/run-server-analysis-worker.js",
+    "bot:local": "TS_NODE_COMPILER_OPTIONS={\"module\":\"CommonJS\"} node -r ts-node/register/transpile-only -r tsconfig-paths/register scripts/telegram-bot.ts"
   },
   "dependencies": {
     "@a2a-js/sdk": "^0.3.7",
@@ -89,11 +91,14 @@
     "@types/react-dom": "^18",
     "@types/react-pdf": "^7.0.0",
     "@types/uuid": "^10.0.0",
+    "@typescript-eslint/eslint-plugin": "^7.2.0",
     "eslint": "^8",
     "eslint-config-next": "14.2.5",
     "null-loader": "^4.0.1",
     "postcss": "^8",
     "tailwindcss": "^3.4.1",
+    "ts-node": "^10.9.2",
+    "tsconfig-paths": "^4.2.0",
     "typescript": "^5"
   },
   "overrides": {

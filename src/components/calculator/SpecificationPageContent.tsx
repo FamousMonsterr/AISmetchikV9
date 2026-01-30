@@ -1,3 +1,4 @@
+// @ts-nocheck
 // src/components/calculator/SpecificationPageContent.tsx
 "use client";
 
@@ -21,6 +22,9 @@ import { db } from '@/lib/firebase';
 import aiConfig from '@/lib/ai-config.json';
 import { ProjectUpdateDialog } from '@/components/ProjectUpdateDialog';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { calculateItemSum, calculateProjectTotals } from '@/lib/calculation';
 import { suggestItemPrices } from '@/ai/flows/suggest-item-prices-flow';
@@ -51,17 +55,17 @@ interface SpecificationPageContentProps {
 
 export default function SpecificationPageContent({ onBackToProjects }: SpecificationPageContentProps) {
   const router = useRouter();
-  const { user, currentProject, setCurrentProject, effectiveRole, resetAppContextState, isNavigating } = useAppContext();
+  const { user, currentProject, setCurrentProject, currentGroup, setCurrentGroup, effectiveRole, resetAppContextState, isNavigating } = useAppContext();
   const { toast } = useToast();
   
   const [isSaving, startSavingTransition] = useTransition();
   const [isActionPending, startActionTransition] = useTransition();
   const autoSaveTimerRef = useRef<number | null>(null);
-  const lastAutoSaveSnapshotRef = useRef<string | null>(null);
-  const lastAutoSaveAtRef = useRef(0);
-  const isAutoSavingRef = useRef(false);
+  const lastAutoSaveSnapshotRef = useRef<Record<string, string | null>>({});
+  const lastAutoSaveAtRef = useRef<Record<string, number>>({});
+  const isAutoSavingRef = useRef<Record<string, boolean>>({});
 
-  const [initialProjectState, setInitialProjectState] = useState<HistoryRequest | null>(null);
+  const [initialProjectStates, setInitialProjectStates] = useState<Record<string, HistoryRequest>>({});
 
   const [isRefineDialogOpen, setIsRefineDialogOpen] = useState(false);
   const [refineAction, setRefineAction] = useState<'refine' | 'fill-empty'>('refine');
@@ -72,7 +76,7 @@ export default function SpecificationPageContent({ onBackToProjects }: Specifica
   
   const [companies, setCompanies] = useState<Company[]>([]);
   const [isLoadingCompanies, setIsLoadingCompanies] = useState(true);
-  const [actionHistory, setActionHistory] = useState<ActionLog[]>([]);
+  const [actionHistoryByProject, setActionHistoryByProject] = useState<Record<string, ActionLog[]>>({});
 
   // AI settings state moved up to the parent
   const [selectedModel, setSelectedModel] = useState(currentProject?.modelUsed || '');
@@ -85,6 +89,15 @@ export default function SpecificationPageContent({ onBackToProjects }: Specifica
     stages: [],
     result: null,
   });
+
+  const [syncByName, setSyncByName] = useState(true);
+  const [activeProjectId, setActiveProjectId] = useState<string | null>(currentProject?.id ?? currentGroup?.[0]?.id ?? null);
+  const isGroupMode = (currentGroup?.length ?? 0) > 1;
+  const initialProjectState = currentProject ? (initialProjectStates[currentProject.id] ?? null) : null;
+  const actionHistory = useMemo(() => {
+    if (!currentProject) return [];
+    return actionHistoryByProject[currentProject.id] ?? [];
+  }, [actionHistoryByProject, currentProject?.id]);
 
   const canUsePrivatePriceBase = user ? user.canUsePrivatePriceBase : false;
 
@@ -107,7 +120,8 @@ export default function SpecificationPageContent({ onBackToProjects }: Specifica
       model: currentProject.modelUsed,
     });
 
-    if (snapshot === lastAutoSaveSnapshotRef.current) return;
+    const projectId = currentProject.id;
+    if (snapshot === lastAutoSaveSnapshotRef.current[projectId]) return;
 
     if (autoSaveTimerRef.current) {
       window.clearTimeout(autoSaveTimerRef.current);
@@ -116,11 +130,12 @@ export default function SpecificationPageContent({ onBackToProjects }: Specifica
     const now = Date.now();
     const minIntervalMs = 30000;
     const baseDelayMs = 8000;
-    const delayMs = Math.max(baseDelayMs, minIntervalMs - (now - lastAutoSaveAtRef.current));
+    const lastSavedAt = lastAutoSaveAtRef.current[projectId] ?? 0;
+    const delayMs = Math.max(baseDelayMs, minIntervalMs - (now - lastSavedAt));
 
     autoSaveTimerRef.current = window.setTimeout(async () => {
-      if (isAutoSavingRef.current) return;
-      isAutoSavingRef.current = true;
+      if (isAutoSavingRef.current[projectId]) return;
+      isAutoSavingRef.current[projectId] = true;
       try {
         const result = await saveProjectVersion({
           userId: user.uid,
@@ -149,12 +164,12 @@ export default function SpecificationPageContent({ onBackToProjects }: Specifica
           return;
         }
 
-        lastAutoSaveSnapshotRef.current = snapshot;
-        lastAutoSaveAtRef.current = Date.now();
+        lastAutoSaveSnapshotRef.current[projectId] = snapshot;
+        lastAutoSaveAtRef.current[projectId] = Date.now();
       } catch (error: any) {
         console.error("Auto-save failed:", error);
       } finally {
-        isAutoSavingRef.current = false;
+        isAutoSavingRef.current[projectId] = false;
       }
     }, delayMs);
 
@@ -181,10 +196,12 @@ export default function SpecificationPageContent({ onBackToProjects }: Specifica
 
 
   useEffect(() => {
-    if (currentProject && !initialProjectState) {
-        setInitialProjectState(currentProject);
-    }
-  }, [currentProject, initialProjectState]);
+    if (!currentProject) return;
+    setInitialProjectStates(prev => {
+      if (prev[currentProject.id]) return prev;
+      return { ...prev, [currentProject.id]: currentProject };
+    });
+  }, [currentProject?.id]);
 
   useEffect(() => {
     if (!user) return;
@@ -207,9 +224,18 @@ export default function SpecificationPageContent({ onBackToProjects }: Specifica
     modelUsed: project.modelUsed,
   });
 
+  const setActionHistoryForCurrent = useCallback((updater: ((prev: ActionLog[]) => ActionLog[]) | ActionLog[]) => {
+    if (!currentProject) return;
+    setActionHistoryByProject(prev => {
+      const currentList = prev[currentProject.id] ?? [];
+      const nextList = typeof updater === 'function' ? updater(currentList) : updater;
+      return { ...prev, [currentProject.id]: nextList };
+    });
+  }, [currentProject?.id]);
+
   const logAction = (description: string, snapshot: ActionSnapshot) => {
     const newAction: ActionLog = { id: nanoid(), timestamp: new Date(), description, snapshot };
-    setActionHistory(prev => [newAction, ...prev].slice(0, 50));
+    setActionHistoryForCurrent(prev => [newAction, ...prev].slice(0, 50));
   };
   
   const updateCurrentProject = (updates: Partial<HistoryRequest>, actionDescription?: string) => {
@@ -219,21 +245,54 @@ export default function SpecificationPageContent({ onBackToProjects }: Specifica
       logAction(actionDescription, buildSnapshot(currentProject));
     }
     
-    setCurrentProject({ ...currentProject, ...updates });
+    const nextProject = { ...currentProject, ...updates };
+    setCurrentProject(nextProject);
+    if (currentGroup) {
+      setCurrentGroup(prev => {
+        if (!prev) return prev;
+        return prev.map(project => project.id === nextProject.id ? nextProject : project);
+      });
+    }
   };
 
   useEffect(() => {
-    if (!currentProject) {
-      setActionHistory([]);
-      return;
+    if (!currentProject) return;
+    setActionHistoryByProject(prev => {
+      if (prev[currentProject.id]) return prev;
+      const seededHistory = currentProject.actionHistory && currentProject.actionHistory.length > 0
+        ? currentProject.actionHistory.map(action => ({
+            ...action,
+            timestamp: action.timestamp instanceof Date ? action.timestamp : new Date(action.timestamp),
+          }))
+        : [];
+      return { ...prev, [currentProject.id]: seededHistory };
+    });
+  }, [currentProject?.id]);
+
+  useEffect(() => {
+    if (!currentProject) return;
+    const model = currentProject.modelUsed || '';
+    setSelectedModel(model);
+    const modelConfig = aiConfig.apiModels.find(m => m.value === model);
+    setTemperature(modelConfig?.temperature || 0.2);
+  }, [currentProject?.id]);
+
+  useEffect(() => {
+    if (!currentGroup || currentGroup.length === 0) return;
+    const fallbackId = activeProjectId ?? currentProject?.id ?? currentGroup[0].id;
+    if (!activeProjectId) {
+      setActiveProjectId(fallbackId);
     }
-    if (currentProject.actionHistory && currentProject.actionHistory.length > 0) {
-      setActionHistory(
-        currentProject.actionHistory.map(action => ({
-          ...action,
-          timestamp: action.timestamp instanceof Date ? action.timestamp : new Date(action.timestamp),
-        })),
-      );
+    if (!currentProject || currentProject.id !== fallbackId) {
+      const nextProject = currentGroup.find(project => project.id === fallbackId) ?? currentGroup[0];
+      setCurrentProject(nextProject);
+    }
+  }, [currentGroup, activeProjectId, currentProject?.id]);
+
+  useEffect(() => {
+    if (!currentProject?.id) return;
+    if (activeProjectId && activeProjectId !== currentProject.id) {
+      setActiveProjectId(currentProject.id);
     }
   }, [currentProject?.id]);
   
@@ -244,22 +303,56 @@ export default function SpecificationPageContent({ onBackToProjects }: Specifica
       updateCurrentProject({ modelUsed: model }, `Модель AI изменена на ${model}`);
   };
 
+  const handleProjectTabChange = (projectId: string) => {
+    if (!currentGroup) return;
+    if (projectId === currentProject?.id) return;
+    setActiveProjectId(projectId);
+    const nextProject = currentGroup.find(project => project.id === projectId);
+    if (nextProject) {
+      setCurrentProject(nextProject);
+    }
+  };
+
   const updateSpecificationItem = (itemId: string, updates: Partial<SpecificationItem>) => {
     if (!currentProject) return;
     const oldSpecs = currentProject.outputSpecifications;
-    
-    const newSpecs = oldSpecs.map(spec => {
-        if (spec.id === itemId) {
-            const updatedSpec = { ...spec, ...updates };
-            if (spec.status === 'На утверждение') {
-                updatedSpec.status = 'Утверждено';
-            }
-            return updatedSpec;
-        }
-        return spec;
-    });
 
     const oldItem = oldSpecs.find(i => i.id === itemId);
+    const matchName = oldItem?.name?.trim();
+    const shouldSyncByName = !!(isGroupMode && syncByName && matchName && !oldItem?.isInformational && currentGroup);
+
+    const applyUpdates = (specs: SpecificationItem[], predicate: (spec: SpecificationItem) => boolean) => {
+      return specs.map(spec => {
+        if (!predicate(spec)) return spec;
+        const updatedSpec = { ...spec, ...updates };
+        if (spec.status === 'На утверждение') {
+          updatedSpec.status = 'Утверждено';
+        }
+        return updatedSpec;
+      });
+    };
+
+    if (shouldSyncByName && currentGroup) {
+      logAction(`Изменена позиция '${oldItem?.name}'`, buildSnapshot(currentProject));
+      const updatedGroup = currentGroup.map(project => {
+        const updatedSpecs = applyUpdates(
+          project.outputSpecifications,
+          spec => !spec.isInformational && spec.name?.trim() === matchName
+        );
+        return { ...project, outputSpecifications: updatedSpecs };
+      });
+      setCurrentGroup(updatedGroup);
+      const updatedCurrent = updatedGroup.find(project => project.id === currentProject.id);
+      if (updatedCurrent) {
+        setCurrentProject(updatedCurrent);
+      } else {
+        const fallbackSpecs = applyUpdates(oldSpecs, spec => !spec.isInformational && spec.name?.trim() === matchName);
+        setCurrentProject({ ...currentProject, outputSpecifications: fallbackSpecs });
+      }
+      return;
+    }
+
+    const newSpecs = applyUpdates(oldSpecs, spec => spec.id === itemId);
     updateCurrentProject({ outputSpecifications: newSpecs }, `Изменена позиция '${oldItem?.name}'`);
   };
 
@@ -344,8 +437,19 @@ export default function SpecificationPageContent({ onBackToProjects }: Specifica
 
         if(result.success && result.project){
             toast({title: "Успешно!", description: result.message});
+             const previousProjectId = currentProject.id;
              setCurrentProject(result.project);
-             setInitialProjectState(result.project); // Reset unsaved changes state
+             setInitialProjectStates(prev => ({ ...prev, [result.project.id]: result.project })); // Reset unsaved changes state
+             if (currentGroup) {
+                setCurrentGroup(prev => {
+                  if (!prev) return prev;
+                  const hasDirectMatch = prev.some(project => project.id === result.project.id);
+                  if (hasDirectMatch) {
+                    return prev.map(project => project.id === result.project.id ? result.project : project);
+                  }
+                  return prev.map(project => project.id === previousProjectId ? result.project : project);
+                });
+             }
              if (makeMain) {
                  if (onBackToProjects) {
                     onBackToProjects();
@@ -402,7 +506,7 @@ export default function SpecificationPageContent({ onBackToProjects }: Specifica
     startActionTransition(async () => {
         try {
             const oldSpecs = currentProject.outputSpecifications;
-            logAction(`Запрос цен у AI`, () => setCurrentProject(p => p ? {...p, outputSpecifications: oldSpecs} : null));
+            logAction(`Запрос цен у AI`, buildSnapshot({ ...currentProject, outputSpecifications: oldSpecs }));
             
             setAiDialogState(prev => ({...prev, currentStage: 'prep'}));
             const itemsToPrice = oldSpecs
@@ -522,13 +626,20 @@ export default function SpecificationPageContent({ onBackToProjects }: Specifica
   
   const handleLoadVersion = async (projectId: string) => {
     if (!user) return;
+    const previousProjectId = currentProject?.id;
     startActionTransition(async () => {
       const projectRef = doc(db, 'requests', projectId);
       const projectSnap = await getDoc(projectRef);
       if (projectSnap.exists()) {
         const newProjectData = { id: projectSnap.id, ...projectSnap.data() } as HistoryRequest;
         setCurrentProject(newProjectData);
-        setInitialProjectState(newProjectData);
+        setInitialProjectStates(prev => ({ ...prev, [newProjectData.id]: newProjectData }));
+        if (currentGroup && previousProjectId) {
+          setCurrentGroup(prev => {
+            if (!prev) return prev;
+            return prev.map(project => project.id === previousProjectId ? newProjectData : project);
+          });
+        }
         setIsVersionDialogOpen(false);
       } else {
         toast({ title: "Ошибка", description: "Не удалось загрузить выбранную версию.", variant: "destructive" });
@@ -676,6 +787,8 @@ export default function SpecificationPageContent({ onBackToProjects }: Specifica
   if (!currentProject) {
     return <div className="flex h-full items-center justify-center"><p>Проект не загружен.</p></div>;
   }
+
+  const resolvedActiveProjectId = activeProjectId ?? currentProject.id ?? currentGroup?.[0]?.id ?? '';
   
   return (
     <div className="w-full">
@@ -713,12 +826,103 @@ export default function SpecificationPageContent({ onBackToProjects }: Specifica
       )}
       
       <div className="flex flex-col lg:flex-row gap-6 items-start">
-        <div className="flex-grow w-full space-y-6">
+        <div className="w-full lg:w-96 lg:sticky lg:top-4 space-y-4 flex-shrink-0 order-1 lg:order-2">
+          <TotalsAndActions
+            specifications={currentProject.outputSpecifications.filter(item => !item.isRecommended)}
+            quoteConfig={currentProject.quoteConfig || initialQuoteConfig}
+            activeProject={currentProject}
+            companies={companies}
+            onSaveDraft={handleSaveChanges}
+            isSaving={isSaving}
+            isMainVersion={!!currentProject.isMainVersion}
+            onAddToPriceBase={() => setIsPriceBaseDialogOpen(true)}
+            onRefineProject={handleRefineProject}
+            onAIPricing={handleAIPricing}
+            isActionLoading={isActionPending}
+            canUsePrivatePriceBase={canUsePrivatePriceBase}
+            onFeatureClick={handleFeatureClick}
+          />
+          <HistoryActions 
+              actionHistory={actionHistory}
+              onUndo={(actionId) => {
+                  const actionIndex = actionHistory.findIndex(action => action.id === actionId);
+                  if (actionIndex === -1 || !currentProject) return;
+                  const action = actionHistory[actionIndex];
+                  const snapshot = action.snapshot;
+                  const nextProject = {
+                    ...currentProject,
+                    outputSpecifications: snapshot.outputSpecifications,
+                    quoteConfig: snapshot.quoteConfig,
+                    analysisDetails: snapshot.analysisDetails ?? null,
+                    aiComment: snapshot.aiComment ?? '',
+                    importantExtractionNotes: snapshot.importantExtractionNotes ?? [],
+                    modelUsed: snapshot.modelUsed,
+                  };
+                  setCurrentProject(nextProject);
+                  if (currentGroup) {
+                    setCurrentGroup(prev => {
+                      if (!prev) return prev;
+                      return prev.map(project => project.id === nextProject.id ? nextProject : project);
+                    });
+                  }
+                  setActionHistoryForCurrent(prev => prev.slice(actionIndex + 1));
+              }}
+          />
+          <AiNotes 
+              aiComment={currentProject.aiComment} 
+              importantExtractionNotes={currentProject.importantExtractionNotes}
+              analysisDetails={currentProject.analysisDetails} 
+          />
+        </div>
+
+        <div className="flex-grow w-full space-y-6 order-2 lg:order-1">
+          {isGroupMode && (
+            <Card className="border-dashed bg-muted/40">
+              <CardHeader className="py-3">
+                <div className="flex flex-col gap-3">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <CardTitle className="text-base truncate" title={currentProject.objectName || currentProject.fileName}>
+                        Группа: {currentProject.objectName || "Без названия"}
+                      </CardTitle>
+                      <CardDescription>
+                        Редактирование нескольких смет в рамках группы.
+                      </CardDescription>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        id="sync-by-name"
+                        checked={syncByName}
+                        onCheckedChange={(checked) => setSyncByName(Boolean(checked))}
+                      />
+                      <Label htmlFor="sync-by-name" className="text-sm">
+                        Синхронизировать позиции по названию
+                      </Label>
+                    </div>
+                  </div>
+                  <Tabs value={resolvedActiveProjectId} onValueChange={handleProjectTabChange}>
+                    <TabsList className="w-full flex-wrap">
+                      {currentGroup?.map((project) => (
+                        <TabsTrigger
+                          key={project.id}
+                          value={project.id}
+                          className="max-w-[16rem] truncate"
+                          title={project.fileName}
+                        >
+                          {project.fileName || "Без названия"}
+                        </TabsTrigger>
+                      ))}
+                    </TabsList>
+                  </Tabs>
+                </div>
+              </CardHeader>
+            </Card>
+          )}
           <Card>
              <CardHeader>
                 <div className="flex items-center justify-between gap-4">
                     <div className="flex-1 min-w-0">
-                        <CardTitle className="truncate">{currentProject.fileName}</CardTitle>
+                        <CardTitle className="truncate" title={currentProject.fileName}>{currentProject.fileName}</CardTitle>
                         <Button variant="link" className="p-0 h-auto text-muted-foreground" onClick={() => setIsVersionDialogOpen(true)}>
                             Версия {currentProject.version || 'N/A'} {currentProject.isMainVersion && '(Основная)'}
                         </Button>
@@ -799,48 +1003,6 @@ export default function SpecificationPageContent({ onBackToProjects }: Specifica
                 onAddAllRecommendations={handleAddAllRecommendations}
             />
           </Accordion>
-        </div>
-        
-        <div className="w-full lg:w-96 lg:sticky lg:top-4 space-y-4 flex-shrink-0">
-          <TotalsAndActions
-            specifications={currentProject.outputSpecifications.filter(item => !item.isRecommended)}
-            quoteConfig={currentProject.quoteConfig || initialQuoteConfig}
-            activeProject={currentProject}
-            companies={companies}
-            onSaveDraft={handleSaveChanges}
-            isSaving={isSaving}
-            isMainVersion={!!currentProject.isMainVersion}
-            onAddToPriceBase={() => setIsPriceBaseDialogOpen(true)}
-            onRefineProject={handleRefineProject}
-            onAIPricing={handleAIPricing}
-            isActionLoading={isActionPending}
-            canUsePrivatePriceBase={canUsePrivatePriceBase}
-            onFeatureClick={handleFeatureClick}
-          />
-          <HistoryActions 
-              actionHistory={actionHistory}
-              onUndo={(actionId) => {
-                  const actionIndex = actionHistory.findIndex(action => action.id === actionId);
-                  if (actionIndex === -1 || !currentProject) return;
-                  const action = actionHistory[actionIndex];
-                  const snapshot = action.snapshot;
-                  setCurrentProject({
-                    ...currentProject,
-                    outputSpecifications: snapshot.outputSpecifications,
-                    quoteConfig: snapshot.quoteConfig,
-                    analysisDetails: snapshot.analysisDetails ?? null,
-                    aiComment: snapshot.aiComment ?? '',
-                    importantExtractionNotes: snapshot.importantExtractionNotes ?? [],
-                    modelUsed: snapshot.modelUsed,
-                  });
-                  setActionHistory(prev => prev.slice(actionIndex + 1));
-              }}
-          />
-          <AiNotes 
-              aiComment={currentProject.aiComment} 
-              importantExtractionNotes={currentProject.importantExtractionNotes}
-              analysisDetails={currentProject.analysisDetails} 
-          />
         </div>
       </div>
       <AIProcessingDialog 

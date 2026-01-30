@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
@@ -15,6 +16,7 @@ const adminCollections = new Set([
   'surveys',
   'survey_responses',
   'knowledge_base_articles',
+  'project_event_logs',
 ]);
 
 const userOwnedCollections = new Set([

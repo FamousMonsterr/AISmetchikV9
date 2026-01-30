@@ -24,8 +24,8 @@ const NavItemWithAlert = ({ href, children, onNavigate, isMobile = false }: { hr
     const description = href === '/partnership' ? "Вы уверены, что хотите перейти на страницу партнерской программы?" : "Вы уверены, что хотите покинуть партнерский портал и перейти на основной сайт?";
 
     const triggerClass = isMobile
-        ? "w-full text-center text-muted-foreground transition-colors hover:text-foreground"
-        : "px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-300 text-muted-foreground hover:text-foreground hover:bg-secondary";
+        ? "w-full text-center text-muted-foreground transition-colors hover:text-foreground active:opacity-80"
+        : "px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-300 text-muted-foreground hover:text-foreground hover:bg-secondary active:opacity-80";
 
     return (
         <AlertDialog>
@@ -50,7 +50,7 @@ const NavItemWithAlert = ({ href, children, onNavigate, isMobile = false }: { hr
 
 const NavLink = ({ href, children, onClick }: { href: string, children: React.ReactNode, onClick?: (e: React.MouseEvent) => void }) => {
     return (
-        <Link href={href} onClick={onClick} className="text-muted-foreground transition-colors hover:text-foreground">
+        <Link href={href} onClick={onClick} className="text-muted-foreground transition-colors hover:text-foreground active:opacity-80">
             {children}
         </Link>
     );
@@ -149,7 +149,7 @@ export const Header = () => {
                         return <NavItemWithAlert key={item.href} href={item.href} onNavigate={() => router.push(item.href)}>{item.label}</NavItemWithAlert>;
                     }
                     return (
-                        <motion.a key={item.href} href={item.href} className='px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-300 text-muted-foreground hover:text-foreground hover:bg-secondary' whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                        <motion.a key={item.href} href={item.href} className='px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-300 text-muted-foreground hover:text-foreground hover:bg-secondary active:opacity-80' whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                             {item.label}
                         </motion.a>
                     );

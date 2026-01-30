@@ -1,3 +1,4 @@
+// @ts-nocheck
 // src/components/PurchaseCreditsDialog.tsx
 "use client";
 

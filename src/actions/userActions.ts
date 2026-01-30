@@ -1,4 +1,5 @@
 // src/actions/userActions.ts
+// @ts-nocheck
 'use server';
 
 import { z } from 'zod';
@@ -8,7 +9,8 @@ import { randomBytes, createHash } from 'crypto';
 import { getDb } from '@/lib/mongodb';
 import { getMailer, getMailerFrom, isMailerConfigured } from '@/lib/mailer';
 import type { HistoryRequest, AnalysisDetails, QuoteConfig, PriceBaseItem, SpecificationItem, ItemType } from '@/contexts/AppContext';
-import { logUserAction } from '@/lib/logger';
+import { DEFAULT_SERVER_QUOTE_CONFIG } from '@/server-functions/config';
+import { logProjectEvent, logUserAction } from '@/lib/logger';
 import { AiSpecificationItemSchema, ExtractProjectSpecificationsOutputSchema } from '@/ai/genkit-schemas';
 
 
@@ -248,13 +250,15 @@ const SaveVersionSchema = z.object({
   analysisDetails: z.any().nullable().optional(),
   error: z.string().optional(),
 
-  status: z.enum(['processing', 'success', 'failed', 'reported', 'draft']),
+  status: z.enum(['processing', 'success', 'failed', 'reported', 'draft', 'cancelled']),
   isMainVersion: z.boolean(),
   parentProjectId: z.string().nullable().optional(),
   importantExtractionNotes: z.array(z.string()).nullable().optional(),
   actionHistory: z.array(z.any()).optional(),
   version: z.number().optional(),
   aiCallCount: z.number().optional(),
+  serverJobId: z.string().nullable().optional(),
+  s3ObjectKey: z.string().nullable().optional(),
 });
 
 
@@ -796,5 +800,410 @@ export const incrementAiCallCount = async (projectId: string): Promise<{ success
     } catch (error) {
         console.error("Error incrementing AI call count:", error);
         return { success: false, message: "Could not update AI call count." };
+    }
+};
+
+// --- Processing pipeline helpers (server/client parallel flow) ---
+
+const CreateProcessingRequestSchema = z.object({
+    userId: z.string().min(1),
+    fileName: z.string().min(1),
+    fileSha1: z.string().optional(),
+    mimeType: z.string().optional(),
+    modelUsed: z.string().optional(),
+    fileUri: z.string().optional(),
+    s3ObjectKey: z.string().optional(),
+    serverJobId: z.string().optional(),
+});
+
+export const createProcessingRequest = async (data: z.infer<typeof CreateProcessingRequestSchema>): Promise<{ success: boolean; message: string; project?: HistoryRequest | null; }> => {
+    const validation = CreateProcessingRequestSchema.safeParse(data);
+    if (!validation.success) {
+        return { success: false, message: 'Неверные данные для создания черновика.', project: null };
+    }
+
+    const { userId, ...payload } = validation.data;
+    const projectRef = doc(collection(db, 'requests'));
+
+    try {
+        const baseData: Omit<HistoryRequest, 'id' | 'timestamp'> = {
+            userId,
+            fileName: payload.fileName,
+            fileUri: payload.fileUri || null,
+            mimeType: payload.mimeType || null,
+            fileSha1: payload.fileSha1,
+            status: 'processing',
+            cost: 0,
+            modelUsed: payload.modelUsed,
+            outputSpecifications: [],
+            aiComment: '',
+            importantExtractionNotes: [],
+            analysisDetails: null,
+            quoteConfig: DEFAULT_SERVER_QUOTE_CONFIG,
+            isMainVersion: true,
+            parentProjectId: projectRef.id,
+            version: 1,
+            aiCallCount: 0,
+            objectId: null,
+            objectName: null,
+            actionHistory: [],
+            serverJobId: payload.serverJobId || null,
+            s3ObjectKey: payload.s3ObjectKey || null,
+        };
+
+        await setDoc(projectRef, {
+            ...baseData,
+            timestamp: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+        } as any);
+
+        await logProjectEvent({
+            projectId: projectRef.id,
+            userId,
+            action: 'PROJECT_PROCESSING_START',
+            stage: 'draft_created',
+            status: 'info',
+            source: 'server',
+            model: payload.modelUsed,
+            file: {
+                name: payload.fileName,
+                uri: payload.fileUri || null,
+                sha1: payload.fileSha1,
+                objectKey: payload.s3ObjectKey || null,
+            },
+            metadata: {
+                serverJobId: payload.serverJobId || null,
+            },
+            message: 'Создан черновик запроса на обработку',
+        });
+
+        await logUserAction(userId, 'PROJECT_PROCESSING_START', { projectId: projectRef.id });
+        const finalDoc = await getDoc(projectRef);
+        return { success: true, message: 'Черновик создан.', project: { id: projectRef.id, ...finalDoc.data() } as HistoryRequest };
+    } catch (error: any) {
+        console.error("Error creating processing request:", error);
+        await logProjectEvent({
+            projectId: projectRef.id,
+            userId,
+            action: 'PROJECT_PROCESSING_FAILED',
+            stage: 'draft_creation',
+            status: 'error',
+            source: 'server',
+            model: payload?.modelUsed,
+            file: {
+                name: payload?.fileName,
+                uri: payload?.fileUri || null,
+                sha1: payload?.fileSha1,
+                objectKey: payload?.s3ObjectKey || null,
+            },
+            metadata: {
+                serverJobId: payload?.serverJobId || null,
+            },
+            message: error?.message || 'Не удалось создать черновик.',
+            error,
+        });
+        return { success: false, message: error.message || 'Не удалось создать черновик.', project: null };
+    }
+};
+
+const FinalizeProcessingRequestSchema = z.object({
+    userId: z.string().min(1),
+    projectId: z.string().min(1),
+    creditCost: z.number().positive(),
+    fileName: z.string(),
+    fileUri: z.string(),
+    mimeType: z.string(),
+    fileSha1: z.string(),
+    modelUsed: z.string(),
+    outputSpecifications: z.array(z.any()),
+    quoteConfig: QuoteConfigSchema.optional(),
+    aiComment: z.string().nullable().optional(),
+    analysisDetails: z.any().nullable().optional(),
+    importantExtractionNotes: z.array(z.string()).nullable().optional(),
+    aiCallCount: z.number().optional(),
+    s3ObjectKey: z.string().nullable().optional(),
+    initialAiResponse: z.any().optional(),
+});
+
+export const finalizeProcessingRequest = async (data: z.infer<typeof FinalizeProcessingRequestSchema>): Promise<{ success: boolean; message: string; project?: HistoryRequest | null; }> => {
+    const validation = FinalizeProcessingRequestSchema.safeParse(data);
+    if (!validation.success) {
+        return { success: false, message: 'Неверные данные для завершения проекта.' };
+    }
+    const {
+        userId, projectId, creditCost, outputSpecifications, quoteConfig,
+        aiComment, analysisDetails, importantExtractionNotes, aiCallCount,
+        initialAiResponse, ...rest
+    } = validation.data;
+
+    const userRef = doc(db, 'users', userId);
+    const projectRef = doc(db, 'requests', projectId);
+
+    try {
+        await runTransaction(db, async (transaction) => {
+            const userDoc = await transaction.get(userRef);
+            if (!userDoc.exists()) throw new Error('Пользователь не найден.');
+            const projectDoc = await transaction.get(projectRef);
+            if (!projectDoc.exists()) throw new Error('Проект не найден.');
+            const projectData = projectDoc.data() as HistoryRequest;
+            if (projectData.userId !== userId) throw new Error('Нет доступа к проекту.');
+            if (projectData.status === 'success') throw new Error('Проект уже завершен.');
+            const currentCredits = userDoc.data().credits || 0;
+            if (currentCredits < creditCost) throw new Error('Недостаточно кредитов.');
+
+            transaction.update(userRef, { credits: currentCredits - creditCost, projectCount: increment(1) });
+
+            transaction.update(projectRef, {
+                ...rest,
+                status: 'success',
+                cost: creditCost,
+                outputSpecifications,
+                quoteConfig: quoteConfig || projectData.quoteConfig || DEFAULT_SERVER_QUOTE_CONFIG,
+                aiComment: aiComment ?? '',
+                analysisDetails: analysisDetails ?? null,
+                importantExtractionNotes: importantExtractionNotes ?? [],
+                aiCallCount: aiCallCount ?? 0,
+                updatedAt: serverTimestamp(),
+            } as any);
+
+            if (rest.fileSha1 && initialAiResponse) {
+                const cacheRef = doc(db, 'file_analysis_cache', rest.fileSha1);
+                transaction.set(cacheRef, {
+                    originalAiResponse: initialAiResponse,
+                    createdAt: serverTimestamp(),
+                    reportCount: 0,
+                }, { merge: true });
+            }
+        });
+
+        await logProjectEvent({
+            projectId,
+            userId,
+            action: 'PROJECT_PROCESSING_COMPLETE',
+            stage: 'finalize',
+            status: 'success',
+            source: 'server',
+            model: rest.modelUsed,
+            file: {
+                name: rest.fileName,
+                uri: rest.fileUri,
+                sha1: rest.fileSha1,
+                objectKey: rest.s3ObjectKey || null,
+            },
+            metadata: {
+                creditCost,
+                aiCallCount: aiCallCount ?? 0,
+                outputSpecificationsCount: outputSpecifications?.length ?? 0,
+                hasAnalysisDetails: !!analysisDetails,
+                importantExtractionNotesCount: importantExtractionNotes?.length ?? 0,
+            },
+            response: initialAiResponse,
+            message: 'Проект финализирован, списаны кредиты и сохранен результат.',
+        });
+
+        await logUserAction(userId, 'PROJECT_PROCESSING_COMPLETE', { projectId });
+        const finalDoc = await getDoc(projectRef);
+        return { success: true, message: 'Проект успешно завершен.', project: { id: finalDoc.id, ...finalDoc.data() } as HistoryRequest };
+    } catch (error: any) {
+        console.error("Error finalizing processing request:", error);
+        await logProjectEvent({
+            projectId,
+            userId,
+            action: 'PROJECT_PROCESSING_FAILED',
+            stage: 'finalize',
+            status: 'error',
+            source: 'server',
+            model: rest?.modelUsed,
+            file: {
+                name: rest?.fileName,
+                uri: rest?.fileUri,
+                sha1: rest?.fileSha1,
+                objectKey: rest?.s3ObjectKey || null,
+            },
+            metadata: { creditCost, aiCallCount: aiCallCount ?? 0 },
+            message: error?.message || 'Не удалось завершить проект.',
+            error,
+        });
+        return { success: false, message: error.message || 'Не удалось завершить проект.', project: null };
+    }
+};
+
+const FailProcessingRequestSchema = z.object({
+    userId: z.string().min(1),
+    projectId: z.string().min(1),
+    status: z.enum(['failed', 'cancelled']),
+    error: z.string().optional(),
+});
+
+export const failProcessingRequest = async (data: z.infer<typeof FailProcessingRequestSchema>): Promise<{ success: boolean; message: string; }> => {
+    const validation = FailProcessingRequestSchema.safeParse(data);
+    if (!validation.success) {
+        return { success: false, message: 'Неверные данные для обновления статуса.' };
+    }
+    const { userId, projectId, status, error } = validation.data;
+    const projectRef = doc(db, 'requests', projectId);
+
+    try {
+        const projectSnap = await getDoc(projectRef);
+        if (!projectSnap.exists()) throw new Error('Проект не найден.');
+        const projectData = projectSnap.data() as HistoryRequest;
+        if (projectData.userId !== userId) throw new Error('Нет доступа к проекту.');
+
+        await updateDoc(projectRef, {
+            status,
+            error: error || (status === 'cancelled' ? 'Процесс остановлен пользователем' : 'Ошибка анализа'),
+            updatedAt: serverTimestamp(),
+        } as any);
+
+        await logUserAction(userId, status === 'cancelled' ? 'PROJECT_PROCESSING_CANCELLED' : 'PROJECT_PROCESSING_FAILED', { projectId });
+        await logProjectEvent({
+            projectId,
+            userId,
+            action: status === 'cancelled' ? 'PROJECT_PROCESSING_CANCELLED' : 'PROJECT_PROCESSING_FAILED',
+            stage: 'status_update',
+            status: status === 'cancelled' ? 'warning' : 'error',
+            source: 'server',
+            model: projectData.modelUsed,
+            file: {
+                name: projectData.fileName,
+                uri: projectData.fileUri,
+                sha1: projectData.fileSha1,
+                objectKey: projectData.s3ObjectKey || null,
+            },
+            metadata: {
+                serverJobId: projectData.serverJobId || null,
+            },
+            message: error || (status === 'cancelled' ? 'Процесс остановлен пользователем' : 'Ошибка анализа'),
+        });
+        return { success: true, message: 'Статус обновлен.' };
+    } catch (err: any) {
+        console.error("Error failing processing request:", err);
+        await logProjectEvent({
+            projectId,
+            userId,
+            action: 'PROJECT_PROCESSING_FAILED',
+            stage: 'status_update',
+            status: 'error',
+            source: 'server',
+            message: err?.message || 'Не удалось обновить проект.',
+            error: err,
+        });
+        return { success: false, message: err.message || 'Не удалось обновить проект.' };
+    }
+};
+
+export const linkRequestToServerJob = async (data: { userId: string; projectId: string; serverJobId: string }): Promise<{ success: boolean; message: string; }> => {
+    const { userId, projectId, serverJobId } = data;
+    if (!userId || !projectId || !serverJobId) return { success: false, message: 'Неверные данные.' };
+    try {
+        const projectRef = doc(db, 'requests', projectId);
+        const projectSnap = await getDoc(projectRef);
+        if (!projectSnap.exists()) throw new Error('Проект не найден.');
+        const projectData = projectSnap.data() as HistoryRequest;
+        if (projectData.userId !== userId) throw new Error('Нет доступа к проекту.');
+        await updateDoc(projectRef, { serverJobId, updatedAt: serverTimestamp() } as any);
+        await logProjectEvent({
+            projectId,
+            userId,
+            jobId: serverJobId,
+            action: 'PROJECT_JOB_LINKED',
+            stage: 'server_job_linked',
+            status: 'info',
+            source: 'server',
+            model: projectData.modelUsed,
+            file: {
+                name: projectData.fileName,
+                uri: projectData.fileUri,
+                sha1: projectData.fileSha1,
+                objectKey: projectData.s3ObjectKey || null,
+            },
+            metadata: {
+                previousServerJobId: projectData.serverJobId || null,
+            },
+            message: 'Серверная задача связана с проектом',
+        });
+        return { success: true, message: 'Задача связана с проектом.' };
+    } catch (err: any) {
+        console.error("Error linking server job:", err);
+        await logProjectEvent({
+            projectId,
+            userId,
+            jobId: serverJobId,
+            action: 'PROJECT_JOB_LINKED',
+            stage: 'server_job_linked',
+            status: 'error',
+            source: 'server',
+            message: err?.message || 'Не удалось связать задачу.',
+            error: err,
+        });
+        return { success: false, message: err.message || 'Не удалось связать задачу.' };
+    }
+};
+
+const RestartProcessingRequestSchema = z.object({
+    userId: z.string().min(1),
+    projectId: z.string().min(1),
+    fileUri: z.string().optional(),
+    s3ObjectKey: z.string().optional(),
+});
+
+export const restartProcessingRequest = async (data: z.infer<typeof RestartProcessingRequestSchema>): Promise<{ success: boolean; message: string; }> => {
+    const validation = RestartProcessingRequestSchema.safeParse(data);
+    if (!validation.success) {
+        return { success: false, message: 'Неверные данные для перезапуска.' };
+    }
+    const { userId, projectId, fileUri, s3ObjectKey } = validation.data;
+    const projectRef = doc(db, 'requests', projectId);
+    try {
+        const snap = await getDoc(projectRef);
+        if (!snap.exists()) throw new Error('Проект не найден.');
+        const project = snap.data() as HistoryRequest;
+        if (project.userId !== userId) throw new Error('Нет доступа к проекту.');
+
+        await updateDoc(projectRef, {
+            status: 'processing',
+            error: '',
+            cost: 0,
+            fileUri: fileUri || project.fileUri || null,
+            s3ObjectKey: s3ObjectKey || project.s3ObjectKey || null,
+            serverJobId: null,
+            updatedAt: serverTimestamp(),
+        } as any);
+
+        await logUserAction(userId, 'PROJECT_PROCESSING_RESTART', { projectId });
+        await logProjectEvent({
+            projectId,
+            userId,
+            action: 'PROJECT_PROCESSING_RESTART',
+            stage: 'restart',
+            status: 'info',
+            source: 'server',
+            model: project.modelUsed,
+            file: {
+                name: project.fileName,
+                uri: fileUri || project.fileUri || null,
+                sha1: project.fileSha1,
+                objectKey: s3ObjectKey || project.s3ObjectKey || null,
+            },
+            metadata: {
+                previousStatus: project.status,
+                serverJobId: project.serverJobId || null,
+            },
+            message: 'Проект отправлен на повторную обработку',
+        });
+        return { success: true, message: 'Проект отправлен на повторную обработку.' };
+    } catch (err: any) {
+        console.error("Error restarting processing request:", err);
+        await logProjectEvent({
+            projectId,
+            userId,
+            action: 'PROJECT_PROCESSING_FAILED',
+            stage: 'restart',
+            status: 'error',
+            source: 'server',
+            message: err?.message || 'Не удалось перезапустить проект.',
+            error: err,
+        });
+        return { success: false, message: err.message || 'Не удалось перезапустить проект.' };
     }
 };

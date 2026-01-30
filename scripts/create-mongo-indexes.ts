@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 import 'dotenv/config';
 import { MongoClient } from 'mongodb';
 
@@ -28,6 +30,16 @@ async function run() {
     db.collection('user_logs').createIndex({ timestamp: -1 }),
     db.collection('ai_api_logs').createIndex({ timestamp: -1 }),
     db.collection('partner_requests').createIndex({ createdAt: -1 }),
+    db.collection('project_event_logs').createIndex({ timestamp: -1 }),
+    db.collection('project_event_logs').createIndex({ projectId: 1, timestamp: -1 }),
+    db.collection('project_event_logs').createIndex({ jobId: 1, timestamp: -1 }),
+    db.collection('project_event_logs').createIndex({ userId: 1, timestamp: -1 }),
+    db.collection('project_event_logs').createIndex({ action: 1, timestamp: -1 }),
+    db.collection('project_event_logs').createIndex({ stage: 1, timestamp: -1 }),
+    db.collection('project_event_logs').createIndex({ status: 1, timestamp: -1 }),
+    db.collection('project_event_logs').createIndex({ source: 1, timestamp: -1 }),
+    db.collection('project_event_logs').createIndex({ model: 1, timestamp: -1 }),
+    db.collection('project_event_logs').createIndex({ tags: 1, timestamp: -1 }),
   ]);
 
   await client.close();

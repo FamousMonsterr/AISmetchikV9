@@ -8,6 +8,7 @@ import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuIte
 import { Group, Pencil, Download, Archive, ArchiveRestore, ChevronDown, Loader2 } from "lucide-react";
 import { ProjectCard } from "./ProjectCard";
 import type { HistoryRequest } from "@/contexts/AppContext";
+import { cn } from "@/lib/utils";
 
 interface ProjectGroupProps {
     object: {
@@ -20,26 +21,28 @@ interface ProjectGroupProps {
     onArchive: (ids: string[]) => void;
     onUnarchive: (ids: string[]) => void;
     isActionPending: boolean;
+    density?: 'comfortable' | 'compact';
     // Pass down all other props needed by ProjectCard
     [key: string]: any;
 }
 
-export function ProjectGroup({ object, onEditGroup, onDownloadReport, onArchive, onUnarchive, isActionPending, ...rest }: ProjectGroupProps) {
+export function ProjectGroup({ object, onEditGroup, onDownloadReport, onArchive, onUnarchive, isActionPending, density = 'comfortable', ...rest }: ProjectGroupProps) {
     const projectIds = object.projects.map((p: any) => p.id);
     const isActionDisabled = isActionPending;
+    const isCompact = density === 'compact';
 
     return (
         <div key={object.projects[0].objectId}>
-            <Card className="p-3 bg-muted/50 rounded-b-none">
-                <div className="flex items-center justify-between">
+            <Card className={cn("bg-muted/50 rounded-b-none", isCompact ? "p-2" : "p-3")}>
+                <div className={cn("flex items-center justify-between", isCompact && "gap-2")}>
                     <div className="flex items-center gap-3 min-w-0">
                         <Group className="h-6 w-6 text-primary flex-shrink-0"/>
-                        <h3 className="text-lg font-semibold truncate">{object.name}</h3>
+                        <h3 className={cn("font-semibold truncate", isCompact ? "text-base" : "text-lg")} title={object.name}>{object.name}</h3>
                         <Badge variant="secondary" className="flex-shrink-0">{object.projects.length} проект(а)</Badge>
                     </div>
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <Button size="sm" variant="outline" disabled={isActionDisabled}>
+                            <Button size="sm" variant="outline" disabled={isActionDisabled} className={cn(isCompact && "h-8 px-2 text-xs")}>
                                 {isActionDisabled ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <ChevronDown className="mr-2 h-4 w-4" />}
                                 Действия с группой
                             </Button>
@@ -67,8 +70,8 @@ export function ProjectGroup({ object, onEditGroup, onDownloadReport, onArchive,
                     </DropdownMenu>
                 </div>
             </Card>
-            <div className="space-y-2 border border-t-0 rounded-b-lg p-2">
-                {object.projects.map((p: any) => <ProjectCard key={p.id} item={p} isGrouped={true} {...rest} />)}
+            <div className={cn("space-y-2 border border-t-0 rounded-b-lg", isCompact ? "p-1.5" : "p-2")}>
+                {object.projects.map((p: any) => <ProjectCard key={p.id} item={p} isGrouped={true} density={density} {...rest} />)}
             </div>
         </div>
     );

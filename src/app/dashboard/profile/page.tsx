@@ -28,7 +28,7 @@ const PriceBaseTab = dynamic(() => import('@/app/dashboard/price-base/page'), {
 
 function ProfilePageContent() {
     const searchParams = useSearchParams();
-    const tab = searchParams.get('tab') || 'profile';
+    const tab = searchParams.get('tab') || 'balance';
 
     return (
         <Card>
@@ -40,17 +40,17 @@ function ProfilePageContent() {
                 <Tabs defaultValue={tab} className="w-full">
                     <div className="border-b">
                         <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 h-auto rounded-none bg-transparent p-0 gap-0">
-                            <TabsTrigger value="profile">Профиль</TabsTrigger>
                             <TabsTrigger value="balance">Баланс</TabsTrigger>
+                            <TabsTrigger value="profile">Профиль</TabsTrigger>
                             <TabsTrigger value="tickets">Мои тикеты</TabsTrigger>
                             <TabsTrigger value="companies">Мои компании</TabsTrigger>
                         </TabsList>
                     </div>
-                    <TabsContent value="profile" className="mt-6">
-                        <ProfileTab />
-                    </TabsContent>
                     <TabsContent value="balance" className="mt-6">
                         <BalanceTab />
+                    </TabsContent>
+                    <TabsContent value="profile" className="mt-6">
+                        <ProfileTab />
                     </TabsContent>
                     <TabsContent value="tickets" className="mt-6">
                         <TicketsTab />

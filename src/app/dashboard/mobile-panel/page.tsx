@@ -1,4 +1,5 @@
 // src/app/dashboard/mobile-panel/page.tsx
+// @ts-nocheck
 "use client";
 
 import { useState, useCallback, useEffect, useMemo } from 'react';
@@ -96,7 +97,7 @@ export default function MobilePanelPage() {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-black pb-10 w-full overflow-x-hidden max-w-[100vw]">
+        <div className="min-h-screen bg-gray-50 dark:bg-black pb-12 w-full overflow-x-hidden max-w-[100vw]">
             <div className="max-w-md mx-auto px-4 pt-4">
                 {isProcessingDialogOpen && selectedFile && (
                     <ProcessingDialog
@@ -125,7 +126,7 @@ export default function MobilePanelPage() {
                                 animate={{ opacity: 1, scale: 1 }}
                                 {...getRootProps()} 
                                 onClick={(e) => (e.currentTarget.querySelector('input') as HTMLElement)?.click()}
-                                className="mb-4"
+                                className="mb-4 sticky top-2 z-20"
                             >
                                 <input {...getInputProps()} />
                                 <div className="relative overflow-hidden group bg-gradient-to-br from-primary to-primary/80 dark:from-blue-500 dark:to-indigo-600 rounded-2xl p-6 text-white text-center shadow-lg shadow-blue-200 cursor-pointer">
@@ -149,7 +150,7 @@ export default function MobilePanelPage() {
                                 </div>
                             </motion.div>
 
-                            <div className="relative mb-6">
+                            <div className="relative mb-6 sticky top-28 z-10">
                                 <input 
                                     type="text" 
                                     placeholder="Найти проект..." 

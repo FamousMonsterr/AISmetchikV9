@@ -48,3 +48,6 @@ node_modules
 
 # npm cache
 .npm-cache/
+
+# Firebase Admin SDK key
+est-smetter-firebase-adminsdk-fbsvc-e5d604b115.json

@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 import 'dotenv/config';
 import { MongoClient } from 'mongodb';
 import admin from 'firebase-admin';

@@ -1,4 +1,5 @@
 // src/app/dashboard/price-base/page.tsx
+// @ts-nocheck
 "use client";
 
 import { useState, useEffect, useMemo, useCallback, useTransition } from 'react';

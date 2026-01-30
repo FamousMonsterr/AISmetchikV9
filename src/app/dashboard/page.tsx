@@ -183,27 +183,27 @@ export default function DashboardPage() {
     <div className="w-full">
     {/* All Dialogs */}
      <Dialog open={showWelcomeModal} onOpenChange={setShowWelcomeModal}>
-        <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-                <Bot className="h-6 w-6 text-primary"/>
-                Добро пожаловать в EstimateAI!
-            </DialogTitle>
-            <DialogDescription>
-                Рады видеть вас! Вот краткая инструкция для начала работы.
-            </DialogDescription>
-        </DialogHeader>
         <DialogContent>
-            <div className="py-4 prose prose-sm max-w-none">
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                {`1.  **Загрузите документ:** Перетащите PDF-файл, скан или фото со спецификацией в поле "Анализ файла".
+          <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                  <Bot className="h-6 w-6 text-primary"/>
+                  Добро пожаловать в EstimateAI!
+              </DialogTitle>
+              <DialogDescription>
+                  Рады видеть вас! Вот краткая инструкция для начала работы.
+              </DialogDescription>
+          </DialogHeader>
+          <div className="py-4 prose prose-sm max-w-none">
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+              {`1.  **Загрузите документ:** Перетащите PDF-файл, скан или фото со спецификацией в поле "Анализ файла".
 2.  **Дождитесь анализа:** Наш AI проанализирует документ и создаст таблицу с позициями.
 3.  **Отредактируйте и оцените:** Вы будете перенаправлены на страницу спецификации, где сможете внести правки, указать цены и сформировать коммерческое предложение.`}
-              </ReactMarkdown>
-            </div>
+            </ReactMarkdown>
+          </div>
+          <DialogFooter>
+              <Button onClick={() => setShowWelcomeModal(false)}>Начать работу</Button>
+          </DialogFooter>
         </DialogContent>
-        <DialogFooter>
-            <Button onClick={() => setShowWelcomeModal(false)}>Начать работу</Button>
-        </DialogFooter>
     </Dialog>
 
     <InsufficientCreditsDialog isOpen={isCreditsDialogOpen} onClose={() => setIsCreditsDialogOpen(false)} />
@@ -242,7 +242,7 @@ export default function DashboardPage() {
                     <input {...getInputProps()} />
                     <FileUp className="mx-auto h-10 w-10 text-muted-foreground mb-2" />
                     {selectedFile ? (
-                        <p className="font-semibold text-primary truncate">{selectedFile.name}</p>
+                        <p className="font-semibold text-primary truncate max-w-[80%] mx-auto" title={selectedFile.name}>{selectedFile.name}</p>
                     ) : (
                         <>
                             <h3 className="font-semibold">Перетащите файл или <span className="text-primary hover:underline">нажмите для выбора</span></h3>

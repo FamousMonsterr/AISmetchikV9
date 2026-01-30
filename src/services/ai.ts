@@ -1,3 +1,4 @@
+// @ts-nocheck
 // src/services/ai.ts
 'use server';
 

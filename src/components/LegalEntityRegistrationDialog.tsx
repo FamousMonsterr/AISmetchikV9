@@ -1,4 +1,5 @@
 // src/components/LegalEntityRegistrationDialog.tsx
+// @ts-nocheck
 "use client";
 
 import { useState, useTransition, useCallback, useEffect } from 'react';

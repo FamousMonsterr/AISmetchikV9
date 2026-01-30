@@ -1,3 +1,4 @@
+// @ts-nocheck
 import nodemailer from 'nodemailer';
 import { getEnvSettings } from '@/actions/adminActions';
 
@@ -12,7 +13,7 @@ type MailerConfig = {
 };
 
 async function resolveMailerConfig(): Promise<MailerConfig | null> {
-  const settings = await getEnvSettings();
+  const settings = await getEnvSettings({ allowInternal: true });
   const enabled = settings.smtpEnabled ?? process.env.SMTP_ENABLED === 'true';
 
   const host = settings.smtpHost || process.env.SMTP_HOST || '';

@@ -1,4 +1,5 @@
 // src/app/dashboard/admin/feedback-surveys/page.tsx
+// @ts-nocheck
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';

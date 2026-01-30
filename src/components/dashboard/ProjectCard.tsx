@@ -5,14 +5,16 @@ import { useState } from 'react';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Checkbox } from "@/components/ui/checkbox";
 import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
-import { Eye, Pencil, MessageSquareWarning, Archive, ArchiveRestore, Unlink, Trash2, Loader2, GitCommit } from "lucide-react";
+import { Eye, Pencil, MessageSquareWarning, Archive, ArchiveRestore, Unlink, Trash2, Loader2, GitCommit, RefreshCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import type { HistoryRequest } from "@/contexts/AppContext";
+import { SERVER_STAGE_LABELS, SERVER_STAGE_ORDER, type ServerStageKey } from "@/lib/server-analysis-stages";
 import { Details } from '../Details';
 import { Input } from '../ui/input';
 
@@ -22,6 +24,7 @@ const getStatusBadge = (status: HistoryRequest['status']) => {
         case 'draft': return <Badge variant="outline">Версия</Badge>;
         case 'processing': return <Badge variant="outline"><Loader2 className="h-3 w-3 mr-1 animate-spin"/>Обработка</Badge>;
         case 'failed': return <Badge variant="destructive">Ошибка</Badge>;
+        case 'cancelled': return <Badge variant="outline" className="text-amber-600 border-amber-500">Отменено</Badge>;
         case 'reported': return <Badge variant="destructive">Жалоба</Badge>;
         default: return <Badge variant="secondary">{status}</Badge>;
     }
@@ -34,10 +37,17 @@ const safeFormatDate = (timestamp: any): string => {
     return format(date, 'd MMM yyyy, HH:mm', { locale: ru });
 }
 
-export function ProjectCard({ item, isGrouped, onSelectionChange, selection, isActionPending, onViewResult, onUngroup, onArchive, onUnarchive, onReport, onDelete, onRenameProject, onViewVersions, activeTab }: any) {
+export function ProjectCard({ item, isGrouped, onSelectionChange, selection, isActionPending, onViewResult, onUngroup, onArchive, onUnarchive, onReport, onDelete, onRenameProject, onViewVersions, activeTab, onRetry, density = 'comfortable' }: any) {
     const isActionDisabled = isActionPending;
     const [isRenaming, setIsRenaming] = useState(false);
     const [newName, setNewName] = useState(item.fileName);
+    const isCompact = density === 'compact';
+    const stageKey = item.processingStage as ServerStageKey | undefined;
+    const stageLabel = stageKey ? (SERVER_STAGE_LABELS[stageKey] || stageKey) : null;
+    const stageIndex = stageKey ? SERVER_STAGE_ORDER.indexOf(stageKey) : -1;
+    const progressValue = stageIndex >= 0 ? Math.round(((stageIndex + 1) / SERVER_STAGE_ORDER.length) * 100) : 0;
+    const showStage = stageLabel && ['processing', 'failed', 'cancelled'].includes(item.status);
+    const errorDetail = item.processingStageMessage || item.error;
 
     const handleRename = () => {
         if (newName !== item.fileName && newName.trim() !== '') {
@@ -47,14 +57,14 @@ export function ProjectCard({ item, isGrouped, onSelectionChange, selection, isA
     }
     
     return (
-        <Card className={cn("p-3 transition-colors", selection.has(item.id) && "bg-secondary")}>
-            <div className="flex items-start gap-3">
+        <Card className={cn("transition-colors", selection.has(item.id) && "bg-secondary/70", isCompact ? "p-2" : "p-3")}>
+            <div className={cn("flex items-start gap-3", isCompact && "gap-2")}>
                {!isGrouped && (activeTab === 'active' || activeTab === 'archived') && (
                    <Checkbox
                         id={`select-${item.id}`}
                         checked={selection.has(item.id)}
                         onCheckedChange={(checked) => onSelectionChange(item.id, !!checked)}
-                        className="mt-1"
+                        className={cn("mt-1", isCompact && "scale-90")}
                     />
                )}
                 <div className="flex-1 min-w-0">
@@ -68,18 +78,45 @@ export function ProjectCard({ item, isGrouped, onSelectionChange, selection, isA
                             autoFocus
                         />
                     ) : (
-                        <p className="font-medium truncate cursor-pointer" onClick={() => setIsRenaming(true)}>{item.fileName}</p>
+                        <p className="font-medium truncate cursor-pointer max-w-full" title={item.fileName} onClick={() => setIsRenaming(true)}>{item.fileName}</p>
                     )}
                     <Details title="Детали">
-                        <div className="text-xs text-muted-foreground space-y-1 mt-1">
+                        <div className={cn("text-xs text-muted-foreground space-y-1", isCompact ? "mt-0.5" : "mt-1")}>
                             <p className="truncate"><strong>Версия:</strong> {item.version || 1}</p>
                             <p className="truncate"><strong>ID:</strong> {item.id}</p>
                             <p className="truncate"><strong>Дата:</strong> {safeFormatDate(item.timestamp)}</p>
                         </div>
                     </Details>
-                    <div className="mt-2 flex gap-2">
+                    <div className={cn("flex gap-2", isCompact ? "mt-1" : "mt-2")}>
                         {getStatusBadge(item.status)}
                     </div>
+                    {showStage && (
+                        <div className={cn("space-y-1", isCompact ? "mt-1" : "mt-2")}>
+                            {item.status === 'processing' && (
+                                <>
+                                    <div className="text-xs text-muted-foreground">
+                                        <span className="font-medium">Этап:</span> {stageLabel}
+                                    </div>
+                                    {item.processingStageMessage && (
+                                        <div className="text-xs text-muted-foreground">{item.processingStageMessage}</div>
+                                    )}
+                                    {stageIndex >= 0 && (
+                                        <Progress value={progressValue} className={cn(isCompact ? "h-1.5" : "h-2")} />
+                                    )}
+                                </>
+                            )}
+                            {item.status === 'failed' && (
+                                <div className="text-xs text-destructive">
+                                    Ошибка на этапе: {stageLabel || 'неизвестно'}{errorDetail ? `. ${errorDetail}` : ''}
+                                </div>
+                            )}
+                            {item.status === 'cancelled' && (
+                                <div className="text-xs text-amber-600">
+                                    Остановлено на этапе: {stageLabel || 'неизвестно'}{errorDetail ? `. ${errorDetail}` : ''}
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </div>
                 <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2">
                     <Button variant="outline" size="sm" onClick={() => onViewResult(item)} disabled={isActionDisabled}>
@@ -97,6 +134,12 @@ export function ProjectCard({ item, isGrouped, onSelectionChange, selection, isA
                             <DropdownMenuItem onSelect={() => onViewVersions(item)}>
                                 <GitCommit className="mr-2 h-4 w-4"/>Просмотреть версии
                             </DropdownMenuItem>
+                            {['failed', 'cancelled'].includes(item.status) && (
+                                <DropdownMenuItem onSelect={() => onRetry?.(item)}>
+                                    <RefreshCcw className="mr-2 h-4 w-4" />
+                                    Повторить анализ
+                                </DropdownMenuItem>
+                            )}
                             <DropdownMenuSeparator />
                              {isGrouped ? (
                                 <DropdownMenuItem onSelect={() => onUngroup([item.id])}>

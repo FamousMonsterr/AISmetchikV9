@@ -14,6 +14,7 @@ const adminCollections = new Set([
   'surveys',
   'survey_responses',
   'knowledge_base_articles',
+  'project_event_logs',
 ]);
 
 const userOwnedCollections = new Set([

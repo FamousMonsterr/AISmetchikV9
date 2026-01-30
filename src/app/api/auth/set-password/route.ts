@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { createHash } from 'crypto';

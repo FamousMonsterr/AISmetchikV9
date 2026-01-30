@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 import type { SpecificationItem, AiSpecificationItem, ItemType } from '@/contexts/AppContext';

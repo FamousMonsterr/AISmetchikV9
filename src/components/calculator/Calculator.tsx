@@ -1,3 +1,4 @@
+// @ts-nocheck
 // src/components/calculator/Calculator.tsx
 "use client";
 

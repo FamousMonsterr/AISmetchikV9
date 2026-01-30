@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Save, KeyRound, Bot, Database, Power, Link, Eye, EyeOff, SlidersHorizontal, Mail } from "lucide-react";
-import { getEnvSettings, updateEnvSettings, type EnvSettings } from '@/actions/adminActions';
+import { getEnvSettings, updateEnvSettings, type EnvSettings, testConnectivity, type ConnectivityStatus } from '@/actions/adminActions';
 import { useAppContext } from '@/contexts/AppContext';
 import { Input } from '@/components/ui/input';
 import { isEqual } from 'lodash';
@@ -49,6 +49,8 @@ export function EnvSettings() {
   const [settings, setSettings] = useState<EnvSettings | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isPending, startTransition] = useTransition();
+  const [isTesting, startTesting] = useTransition();
+  const [status, setStatus] = useState<ConnectivityStatus | null>(null);
   
   const hasUnsavedChanges = !isEqual(initialSettings, settings);
 
@@ -58,7 +60,7 @@ export function EnvSettings() {
       if (!user) return;
       setIsLoading(true);
       try {
-        const currentSettings = await getEnvSettings();
+        const currentSettings = await getEnvSettings({ requesterId: user.uid, requireAdmin: true });
         setSettings(currentSettings);
         setInitialSettings(currentSettings);
       } catch (error) {
@@ -86,6 +88,19 @@ export function EnvSettings() {
       }
     });
   };
+
+  const handleTest = () => {
+    if (!user) return;
+    startTesting(async () => {
+        try {
+            const result = await testConnectivity({ requesterId: user.uid, requireAdmin: true });
+            setStatus(result.status);
+            toast({ title: "Диагностика выполнена", description: "Проверьте статусы ниже." });
+        } catch (err: any) {
+            toast({ title: "Ошибка диагностики", description: err?.message || "Не удалось выполнить проверку.", variant: "destructive" });
+        }
+    });
+  };
   
   if (isLoading || !settings) {
     return ( <div className="flex justify-center items-center h-40"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div> )
@@ -99,8 +114,47 @@ export function EnvSettings() {
       </CardHeader>
       <CardContent className="space-y-6">
         <Card><CardHeader><CardTitle className="flex items-center gap-2 text-base"><KeyRound /> Администрирование</CardTitle></CardHeader><CardContent><div className="space-y-2"><Label htmlFor="superAdminEmail">Email Супер-администратора</Label><Input id="superAdminEmail" type="email" value={settings.superAdminEmail || ''} onChange={(e) => setSettings({ ...settings, superAdminEmail: e.target.value })} placeholder="super@admin.com" disabled={isPending} /></div></CardContent></Card>
-        <Card><CardHeader><CardTitle className="flex items-center gap-2 text-base"><Bot /> Telegram</CardTitle></CardHeader><CardContent className="space-y-4"><div className="space-y-2"><Label htmlFor="telegramBotToken">Токен Telegram бота</Label><PasswordInput id="telegramBotToken" value={settings.telegramBotToken || ''} onChange={(e) => setSettings({ ...settings, telegramBotToken: e.target.value })} placeholder="••••••••••" disabled={isPending} /></div><div className="space-y-2"><Label htmlFor="telegramBotUrl">Публичный URL бота (для ссылок)</Label><Input id="telegramBotUrl" type="url" value={settings.nextPublicTelegramBotUrl || ''} onChange={(e) => setSettings({ ...settings, nextPublicTelegramBotUrl: e.target.value })} placeholder="https://t.me/YourBot" disabled={isPending} /></div></CardContent></Card>
+        <Card>
+            <CardHeader><CardTitle className="flex items-center gap-2 text-base"><Bot /> Telegram</CardTitle></CardHeader>
+            <CardContent className="space-y-4">
+                <div className="flex items-center justify-between rounded-md border p-3">
+                    <div>
+                        <Label htmlFor="telegramBotEnabled">Включить бота</Label>
+                        <p className="text-xs text-muted-foreground">Управляет запуском в polling-режиме (или webhook при внешнем сервере).</p>
+                    </div>
+                    <Switch id="telegramBotEnabled" checked={!!settings.telegramBotEnabled} onCheckedChange={(checked) => setSettings({ ...settings, telegramBotEnabled: checked })} disabled={isPending} />
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="telegramBotToken">Токен Telegram бота</Label>
+                    <PasswordInput id="telegramBotToken" value={settings.telegramBotToken || ''} onChange={(e) => setSettings({ ...settings, telegramBotToken: e.target.value })} placeholder="••••••••••" disabled={isPending} />
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="telegramBotUrl">Публичный URL бота (для ссылок)</Label>
+                    <Input id="telegramBotUrl" type="url" value={settings.nextPublicTelegramBotUrl || ''} onChange={(e) => setSettings({ ...settings, nextPublicTelegramBotUrl: e.target.value })} placeholder="https://t.me/YourBot" disabled={isPending} />
+                </div>
+                <div className="space-y-2">
+                    <Label>Режим бота</Label>
+                    <Select value={settings.telegramBotMode || 'polling'} onValueChange={(v) => setSettings({ ...settings, telegramBotMode: v as any })} disabled={isPending}>
+                        <SelectTrigger><SelectValue placeholder="Выберите режим" /></SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="polling">Polling (локально/без вебхука)</SelectItem>
+                            <SelectItem value="webhook">Webhook (нужен публичный HTTPS)</SelectItem>
+                        </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">Для webhook укажите URL и секрет, настройте тот же URL в BotFather.</p>
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="telegramBotWebhookUrl">Webhook URL</Label>
+                    <Input id="telegramBotWebhookUrl" type="url" value={settings.telegramBotWebhookUrl || ''} onChange={(e) => setSettings({ ...settings, telegramBotWebhookUrl: e.target.value })} placeholder="https://example.com/api/telegram/webhook" disabled={isPending || (settings.telegramBotMode || 'polling') !== 'webhook'} />
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="telegramBotSecretToken">Webhook secret (X-Telegram-Bot-Api-Secret-Token)</Label>
+                    <PasswordInput id="telegramBotSecretToken" value={settings.telegramBotSecretToken || ''} onChange={(e) => setSettings({ ...settings, telegramBotSecretToken: e.target.value })} placeholder="••••••••••" disabled={isPending || (settings.telegramBotMode || 'polling') !== 'webhook'} />
+                </div>
+            </CardContent>
+        </Card>
         <Card><CardHeader><CardTitle className="flex items-center gap-2 text-base"><Database /> DaData API</CardTitle></CardHeader><CardContent className="space-y-4"><div className="space-y-2"><Label htmlFor="dadataApiKey">Ключ API DaData</Label><PasswordInput id="dadataApiKey" value={settings.dadataApiKey || ''} onChange={(e) => setSettings({ ...settings, dadataApiKey: e.target.value })} placeholder="••••••••••" disabled={isPending} /></div><div className="space-y-2"><Label htmlFor="dadataApiSecret">Секретный ключ DaData</Label><PasswordInput id="dadataApiSecret" value={settings.dadataApiSecret || ''} onChange={(e) => setSettings({ ...settings, dadataApiSecret: e.target.value })} placeholder="••••••••••" disabled={isPending} /></div></CardContent></Card>
+        <Card><CardHeader><CardTitle className="flex items-center gap-2 text-base"><Database /> MongoDB</CardTitle></CardHeader><CardContent className="space-y-4"><div className="space-y-2"><Label htmlFor="mongoUri">MongoDB URI</Label><PasswordInput id="mongoUri" value={settings.mongoUri || ''} onChange={(e) => setSettings({ ...settings, mongoUri: e.target.value })} placeholder="mongodb+srv://user:pass@host" disabled={isPending} /></div><div className="space-y-2"><Label htmlFor="mongoDbName">Имя базы данных</Label><Input id="mongoDbName" value={settings.mongoDbName || ''} onChange={(e) => setSettings({ ...settings, mongoDbName: e.target.value })} placeholder="admin" disabled={isPending} /></div><p className="text-xs text-muted-foreground">Параметры из панели имеют приоритет над .env. После изменения перезапустите сервер.</p></CardContent></Card>
         <Card>
             <CardHeader><CardTitle className="flex items-center gap-2 text-base"><Power /> Ключи AI</CardTitle></CardHeader>
             <CardContent className="space-y-4">
@@ -157,6 +211,39 @@ export function EnvSettings() {
             Сохранить переменные
         </Button>
        </CardFooter>
+        <Card className="mt-4">
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-base"><SlidersHorizontal /> Диагностика подключений</CardTitle>
+                <CardDescription>Проверяет Mongo, S3, OpenRouter и Telegram.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+                <Button variant="outline" onClick={handleTest} disabled={isTesting}>
+                    {isTesting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                    Запустить проверку
+                </Button>
+                {status && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                        <div className="rounded-md border p-3">
+                            <div className="font-semibold">MongoDB</div>
+                            <div className={status.mongo.ok ? "text-green-600" : "text-destructive"}>{status.mongo.message}</div>
+                            <div className="text-xs text-muted-foreground">Источник: {status.mongo.uriSource}</div>
+                        </div>
+                        <div className="rounded-md border p-3">
+                            <div className="font-semibold">S3</div>
+                            <div className={status.s3.ok ? "text-green-600" : "text-destructive"}>{status.s3.message}</div>
+                        </div>
+                        <div className="rounded-md border p-3">
+                            <div className="font-semibold">OpenRouter</div>
+                            <div className={status.openrouter.ok ? "text-green-600" : "text-destructive"}>{status.openrouter.message}</div>
+                        </div>
+                        <div className="rounded-md border p-3">
+                            <div className="font-semibold">Telegram</div>
+                            <div className={status.telegram.ok ? "text-green-600" : "text-destructive"}>{status.telegram.message}</div>
+                        </div>
+                    </div>
+                )}
+            </CardContent>
+        </Card>
     </Card>
   );
 }

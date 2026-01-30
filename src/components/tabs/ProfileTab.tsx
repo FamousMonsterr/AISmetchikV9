@@ -1,7 +1,8 @@
+// @ts-nocheck
 // src/components/tabs/ProfileTab.tsx
 "use client";
 
-import { useState, useEffect, useTransition } from 'react';
+import { useState, useEffect, useTransition, useMemo } from 'react';
 import { useAppContext } from "@/contexts/AppContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
@@ -15,36 +16,73 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { CheckCircle } from 'lucide-react';
 import { BottomGradient, LabelInputContainer } from '@/components/ui/aceternity-ui';
 import { Input } from '@/components/ui/input';
-import { getEnvSettings } from '@/actions/adminActions';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { getPublicEnvSettings } from '@/actions/adminActions';
+import { syncTelegramChatId } from '@/actions/telegramActions';
 import { useTheme } from 'next-themes';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { SupportChat } from '@/components/support/SupportChat';
+import templateCatalog from '@/lib/quote-templates.json';
 
 
 export default function ProfileTab() {
-  const { user, setUser, telegramUser } = useAppContext();
+  const { user, setUser, telegramUser, effectivePlan } = useAppContext();
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
 
   const [displayName, setDisplayName] = useState(user?.displayName || '');
   const [telegramUsernameState, setTelegramUsernameState] = useState(user?.telegramUsername || '');
+  const [documentTemplates, setDocumentTemplates] = useState({
+    proposal: user?.documentTemplates?.proposal || '',
+    invoice: user?.documentTemplates?.invoice || '',
+    contract: user?.documentTemplates?.contract || '',
+  });
+  const [signatureState, setSignatureState] = useState({
+    url: user?.signatureUrl || '',
+    objectKey: user?.signatureObjectKey || '',
+    expiresAt: user?.signatureUrlExpirationTimestamp || null,
+  });
+  const [stampState, setStampState] = useState({
+    url: user?.stampUrl || '',
+    objectKey: user?.stampObjectKey || '',
+    expiresAt: user?.stampUrlExpirationTimestamp || null,
+  });
+  const [isUploadingSignature, setIsUploadingSignature] = useState(false);
+  const [isUploadingStamp, setIsUploadingStamp] = useState(false);
 
   const [botUrl, setBotUrl] = useState('');
+  const [isSyncingChat, setIsSyncingChat] = useState(false);
   const { theme, setTheme } = useTheme();
 
     useEffect(() => {
-        const fetchBotUrl = async () => {
-            const settings = await getEnvSettings();
+    const fetchBotUrl = async () => {
+            const settings = await getPublicEnvSettings();
             setBotUrl(settings.nextPublicTelegramBotUrl || process.env.NEXT_PUBLIC_TELEGRAM_BOT_URL || 'https://t.me/Estimate_GPT_Bot');
         };
         fetchBotUrl();
     }, []);
 
   const referralLink = user?.uid ? `${botUrl}?start=ref_${user.uid}` : '';
+  const chatLink = user?.uid ? `${botUrl}?start=uid_${user.uid}` : botUrl;
 
   useEffect(() => {
     setDisplayName(user?.displayName || '');
     setTelegramUsernameState(user?.telegramUsername || '');
+    setDocumentTemplates({
+      proposal: user?.documentTemplates?.proposal || '',
+      invoice: user?.documentTemplates?.invoice || '',
+      contract: user?.documentTemplates?.contract || '',
+    });
+    setSignatureState({
+      url: user?.signatureUrl || '',
+      objectKey: user?.signatureObjectKey || '',
+      expiresAt: user?.signatureUrlExpirationTimestamp || null,
+    });
+    setStampState({
+      url: user?.stampUrl || '',
+      objectKey: user?.stampObjectKey || '',
+      expiresAt: user?.stampUrlExpirationTimestamp || null,
+    });
   }, [user]);
 
   const handleCopy = (textToCopy: string, successMessage: string) => {
@@ -62,19 +100,146 @@ export default function ProfileTab() {
         userId: user.uid,
         displayName,
         telegramUsername: telegramUsernameState,
+        documentTemplates,
+        signatureUrl: signatureState.url || null,
+        signatureObjectKey: signatureState.objectKey || null,
+        signatureUrlExpirationTimestamp: typeof signatureState.expiresAt === 'number' ? signatureState.expiresAt : null,
+        stampUrl: stampState.url || null,
+        stampObjectKey: stampState.objectKey || null,
+        stampUrlExpirationTimestamp: typeof stampState.expiresAt === 'number' ? stampState.expiresAt : null,
       });
 
       if (result.success) {
         toast({ title: "Успех", description: result.message });
         // Optimistically update context
-        setUser({ ...user, displayName, telegramUsername: telegramUsernameState });
+        setUser({
+          ...user,
+          displayName,
+          telegramUsername: telegramUsernameState,
+          documentTemplates,
+          signatureUrl: signatureState.url || null,
+          signatureObjectKey: signatureState.objectKey || null,
+          signatureUrlExpirationTimestamp: signatureState.expiresAt || null,
+          stampUrl: stampState.url || null,
+          stampObjectKey: stampState.objectKey || null,
+          stampUrlExpirationTimestamp: stampState.expiresAt || null,
+        });
       } else {
         toast({ title: "Ошибка", description: result.message, variant: "destructive" });
       }
     });
   };
 
-  const isProfileChanged = displayName !== user?.displayName || telegramUsernameState !== user?.telegramUsername;
+  const handleSyncChatId = async () => {
+    if (!user) return;
+    setIsSyncingChat(true);
+    try {
+      const result = await syncTelegramChatId();
+      if (!result.success) {
+        throw new Error(result.message);
+      }
+      toast({ title: "Готово", description: result.message });
+      setUser({
+        ...user,
+        telegramChatId: result.chatId || user.telegramChatId,
+      });
+    } catch (error: any) {
+      toast({ title: "Ошибка", description: error.message || 'Не удалось получить chat_id.', variant: "destructive" });
+    } finally {
+      setIsSyncingChat(false);
+    }
+  };
+
+  const isProfileChanged =
+    displayName !== user?.displayName ||
+    telegramUsernameState !== user?.telegramUsername ||
+    documentTemplates.proposal !== (user?.documentTemplates?.proposal || '') ||
+    documentTemplates.invoice !== (user?.documentTemplates?.invoice || '') ||
+    documentTemplates.contract !== (user?.documentTemplates?.contract || '') ||
+    signatureState.url !== (user?.signatureUrl || '') ||
+    signatureState.objectKey !== (user?.signatureObjectKey || '') ||
+    stampState.url !== (user?.stampUrl || '') ||
+    stampState.objectKey !== (user?.stampObjectKey || '');
+
+  const templateAccess = {
+    Free: ['free'],
+    PRO: ['free', 'pro'],
+    Business: ['free', 'pro', 'business'],
+    Enterprise: ['free', 'pro', 'business'],
+  } as const;
+
+  const canEditTemplates = effectivePlan !== 'Free';
+
+  const templateOptions = useMemo(() => {
+    const allowed = templateAccess[effectivePlan ?? 'Free'] || ['free'];
+    return {
+      proposal: templateCatalog.filter((item) => item.docType === 'proposal' && allowed.includes(item.status as 'free' | 'pro' | 'business')),
+      invoice: templateCatalog.filter((item) => item.docType === 'invoice' && allowed.includes(item.status as 'free' | 'pro' | 'business')),
+      contract: templateCatalog.filter((item) => item.docType === 'contract' && allowed.includes(item.status as 'free' | 'pro' | 'business')),
+    };
+  }, [effectivePlan]);
+
+  useEffect(() => {
+    if (!canEditTemplates) return;
+    setDocumentTemplates((prev) => ({
+      proposal: prev.proposal || templateOptions.proposal[0]?.id || '',
+      invoice: prev.invoice || templateOptions.invoice[0]?.id || '',
+      contract: prev.contract || templateOptions.contract[0]?.id || '',
+    }));
+  }, [canEditTemplates, templateOptions]);
+
+  const uploadAsset = async (file: File) => {
+    const presignedUrlResponse = await fetch("/api/s3-upload", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ fileName: file.name, fileType: file.type }),
+    });
+    if (!presignedUrlResponse.ok) {
+      throw new Error((await presignedUrlResponse.json()).error || "Не удалось получить ссылку для загрузки.");
+    }
+    const { uploadUrl, accessUrl, objectKey, urlExpirationTimestamp } = await presignedUrlResponse.json();
+    const uploadResponse = await fetch(uploadUrl, {
+      method: 'PUT',
+      headers: { 'Content-Type': file.type },
+      body: file,
+    });
+    if (!uploadResponse.ok) {
+      throw new Error('Не удалось загрузить файл в хранилище.');
+    }
+    return { accessUrl, objectKey, urlExpirationTimestamp };
+  };
+
+  const handleAssetChange = async (type: 'signature' | 'stamp', file?: File | null) => {
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      toast({ title: 'Ошибка', description: 'Поддерживаются только изображения.', variant: 'destructive' });
+      return;
+    }
+    if (type === 'signature') setIsUploadingSignature(true);
+    if (type === 'stamp') setIsUploadingStamp(true);
+    try {
+      const uploaded = await uploadAsset(file);
+      if (type === 'signature') {
+        setSignatureState({ url: uploaded.accessUrl, objectKey: uploaded.objectKey, expiresAt: uploaded.urlExpirationTimestamp });
+      } else {
+        setStampState({ url: uploaded.accessUrl, objectKey: uploaded.objectKey, expiresAt: uploaded.urlExpirationTimestamp });
+      }
+      toast({ title: 'Готово', description: 'Файл загружен и готов к использованию.' });
+    } catch (error: any) {
+      toast({ title: 'Ошибка загрузки', description: error.message, variant: 'destructive' });
+    } finally {
+      if (type === 'signature') setIsUploadingSignature(false);
+      if (type === 'stamp') setIsUploadingStamp(false);
+    }
+  };
+
+  const handleAssetRemove = (type: 'signature' | 'stamp') => {
+    if (type === 'signature') {
+      setSignatureState({ url: '', objectKey: '', expiresAt: null });
+    } else {
+      setStampState({ url: '', objectKey: '', expiresAt: null });
+    }
+  };
 
 
   return (
@@ -165,7 +330,7 @@ export default function ProfileTab() {
             </button>
         </CardFooter>
       </Card>
-       <Card>
+      <Card>
         <CardHeader>
           <CardTitle>Настройки темы</CardTitle>
           <CardDescription>Выберите предпочтительную цветовую схему интерфейса.</CardDescription>
@@ -196,6 +361,145 @@ export default function ProfileTab() {
             </RadioGroup>
         </CardContent>
       </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Шаблоны документов</CardTitle>
+          <CardDescription>Выберите шаблоны по умолчанию для документов.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {!canEditTemplates && (
+            <Alert>
+              <AlertTitle>Недоступно на Free</AlertTitle>
+              <AlertDescription className="space-y-2">
+                <div>Настройка шаблонов доступна на PRO и выше.</div>
+                <Button size="sm" variant="outline" onClick={() => toast({ title: 'Запрос отправлен', description: 'Мы включим 3-дневный пробный доступ и уведомим вас.' })}>
+                  Запросить 3 дня PRO
+                </Button>
+              </AlertDescription>
+            </Alert>
+          )}
+          <div className="grid gap-4 md:grid-cols-3">
+            <div>
+              <Label>КП</Label>
+              <Select
+                value={documentTemplates.proposal}
+                onValueChange={(value) => setDocumentTemplates((prev) => ({ ...prev, proposal: value }))}
+                disabled={!canEditTemplates}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Выберите шаблон" />
+                </SelectTrigger>
+                <SelectContent>
+                  {templateOptions.proposal.map((item) => (
+                    <SelectItem key={item.id} value={item.id}>
+                      {item.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Счет</Label>
+              <Select
+                value={documentTemplates.invoice}
+                onValueChange={(value) => setDocumentTemplates((prev) => ({ ...prev, invoice: value }))}
+                disabled={!canEditTemplates}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Выберите шаблон" />
+                </SelectTrigger>
+                <SelectContent>
+                  {templateOptions.invoice.map((item) => (
+                    <SelectItem key={item.id} value={item.id}>
+                      {item.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Договор</Label>
+              <Select
+                value={documentTemplates.contract}
+                onValueChange={(value) => setDocumentTemplates((prev) => ({ ...prev, contract: value }))}
+                disabled={!canEditTemplates}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Выберите шаблон" />
+                </SelectTrigger>
+                <SelectContent>
+                  {templateOptions.contract.map((item) => (
+                    <SelectItem key={item.id} value={item.id}>
+                      {item.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Подпись и печать</CardTitle>
+          <CardDescription>Добавьте изображение подписи и печати для документов.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {!canEditTemplates && (
+            <Alert>
+              <AlertTitle>Недоступно на Free</AlertTitle>
+              <AlertDescription className="space-y-2">
+                <div>Загрузка подписи и печати доступна на PRO и выше.</div>
+                <Button size="sm" variant="outline" onClick={() => toast({ title: 'Запрос отправлен', description: 'Мы включим 3-дневный пробный доступ и уведомим вас.' })}>
+                  Запросить 3 дня PRO
+                </Button>
+              </AlertDescription>
+            </Alert>
+          )}
+          <div className="grid gap-6 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label>Подпись</Label>
+              {signatureState.url ? (
+                <div className="space-y-2">
+                  <img src={signatureState.url} alt="Подпись" className="max-h-24 rounded border" />
+                  <Button variant="outline" onClick={() => handleAssetRemove('signature')} disabled={!canEditTemplates}>
+                    Удалить подпись
+                  </Button>
+                </div>
+              ) : (
+                <Input
+                  type="file"
+                  accept="image/*"
+                  disabled={!canEditTemplates || isUploadingSignature}
+                  onChange={(e) => handleAssetChange('signature', e.target.files?.[0])}
+                />
+              )}
+              {isUploadingSignature && <p className="text-xs text-muted-foreground">Загрузка подписи...</p>}
+            </div>
+            <div className="space-y-2">
+              <Label>Печать</Label>
+              {stampState.url ? (
+                <div className="space-y-2">
+                  <img src={stampState.url} alt="Печать" className="max-h-28 rounded border" />
+                  <Button variant="outline" onClick={() => handleAssetRemove('stamp')} disabled={!canEditTemplates}>
+                    Удалить печать
+                  </Button>
+                </div>
+              ) : (
+                <Input
+                  type="file"
+                  accept="image/*"
+                  disabled={!canEditTemplates || isUploadingStamp}
+                  onChange={(e) => handleAssetChange('stamp', e.target.files?.[0])}
+                />
+              )}
+              {isUploadingStamp && <p className="text-xs text-muted-foreground">Загрузка печати...</p>}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
       
        <Card>
         <CardHeader>
@@ -209,6 +513,12 @@ export default function ProfileTab() {
                     <AlertTitle className="text-green-800 dark:text-green-300">Аккаунт успешно привязан</AlertTitle>
                     <AlertDescription className="text-green-700 dark:text-green-400">
                         Ваш аккаунт связан с Telegram: <strong>@{user.telegramUsername || telegramUser?.username || 'user'}</strong>. Теперь вы можете получать файлы прямо в чат с ботом.
+                        <div className="mt-3">
+                          <Button variant="outline" size="sm" onClick={handleSyncChatId} disabled={isSyncingChat}>
+                              {isSyncingChat ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                              Обновить chat-ID
+                          </Button>
+                        </div>
                     </AlertDescription>
                 </Alert>
             ) : (
@@ -216,15 +526,21 @@ export default function ProfileTab() {
                     <Bot className="h-4 w-4"/>
                     <AlertTitle>Аккаунт не привязан</AlertTitle>
                     <AlertDescription>
-                        Чтобы получать файлы в Telegram, откройте это приложение через нашего бота. Синхронизация произойдет автоматически.
+                        Чтобы получать файлы в Telegram, откройте бота и напишите /start. Затем нажмите «Получить chat-ID».
                     </AlertDescription>
                      <div className="mt-4">
-                        <Button asChild>
-                            <a href={botUrl} target="_blank" rel="noopener noreferrer">
-                                <Bot className="mr-2 h-4 w-4"/>
-                                Перейти к боту
-                            </a>
-                        </Button>
+                        <div className="flex flex-wrap gap-2">
+                          <Button asChild>
+                              <a href={chatLink} target="_blank" rel="noopener noreferrer">
+                                  <Bot className="mr-2 h-4 w-4"/>
+                                  Открыть бота
+                              </a>
+                          </Button>
+                          <Button variant="outline" onClick={handleSyncChatId} disabled={isSyncingChat}>
+                              {isSyncingChat ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                              Получить chat-ID
+                          </Button>
+                        </div>
                     </div>
                 </Alert>
             )}

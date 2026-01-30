@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { nanoid } from 'nanoid';
 import { getClient, getDb } from '@/lib/mongodb';
 

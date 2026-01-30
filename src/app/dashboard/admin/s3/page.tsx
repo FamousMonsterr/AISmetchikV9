@@ -30,7 +30,7 @@ export default function S3AdminPage() {
           if (!user) return;
           setIsLoading(true);
           try {
-            const currentSettings = await getEnvSettings();
+            const currentSettings = await getEnvSettings({ requesterId: user.uid, requireAdmin: true });
             setSettings(currentSettings);
             setInitialSettings(currentSettings);
           } catch (error) {
@@ -67,7 +67,7 @@ export default function S3AdminPage() {
         <div className="space-y-4">
             <S3Info />
             <S3Settings settings={settings} setSettings={setSettings as (settings: EnvSettings) => void} isPending={isPending} />
-            <S3Testing />
+            <S3Testing settings={settings} />
              <div className="sticky bottom-6">
                 <Card>
                     <CardFooter className="pt-6">

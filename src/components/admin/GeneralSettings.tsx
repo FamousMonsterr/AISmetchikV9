@@ -13,6 +13,9 @@ import { useAppContext } from '@/contexts/AppContext';
 import { BottomGradient, LabelInputContainer, Input } from '@/components/ui/aceternity-ui';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Separator } from '@/components/ui/separator';
+import { Switch } from '@/components/ui/switch';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 
 function WipeDataDialog({ onConfirm, isPending }: { onConfirm: () => void, isPending: boolean }) {
     const [confirmationText, setConfirmationText] = useState("");
@@ -63,7 +66,13 @@ function WipeDataDialog({ onConfirm, isPending }: { onConfirm: () => void, isPen
 export function GeneralSettings() {
   const { toast } = useToast();
   const { user } = useAppContext();
-  const [settings, setSettings] = useState<AppSettings>({ enterpriseEmail: '' });
+  const [settings, setSettings] = useState<AppSettings>({
+    enterpriseEmail: '',
+    serverFunctionsEnabled: false,
+    serverFunctionsMode: 'client',
+    serverFunctionsPaidOnly: true,
+    serverFunctionsAllowedPlans: ['PRO', 'Business', 'Enterprise'],
+  });
   const [isLoading, setIsLoading] = useState(true);
   const [isPending, startTransition] = useTransition();
   const [isWipePending, startWipeTransition] = useTransition();
@@ -163,6 +172,75 @@ export function GeneralSettings() {
                 disabled={isPending}
             />
         </LabelInputContainer>
+
+        <Separator className="my-4" />
+
+        <div className="space-y-4">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <Label className="font-semibold">Серверные функции анализа</Label>
+              <p className="text-sm text-muted-foreground">Включите, чтобы анализ запускался на сервере без удержания пользователя на странице.</p>
+            </div>
+            <Switch
+              checked={settings.serverFunctionsEnabled}
+              onCheckedChange={(checked) => setSettings({ ...settings, serverFunctionsEnabled: checked })}
+              disabled={isPending}
+            />
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-[220px_1fr] sm:items-center">
+            <Label>Режим по умолчанию</Label>
+            <Select
+              value={settings.serverFunctionsMode}
+              onValueChange={(value) => setSettings({ ...settings, serverFunctionsMode: value as AppSettings['serverFunctionsMode'] })}
+              disabled={isPending || !settings.serverFunctionsEnabled}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Выберите режим" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="client">Локальный (как сейчас)</SelectItem>
+                <SelectItem value="server">Серверный (VDS очередь)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <Label>Только для платных планов</Label>
+              <p className="text-sm text-muted-foreground">Бесплатные пользователи остаются на локальной обработке.</p>
+            </div>
+            <Switch
+              checked={settings.serverFunctionsPaidOnly}
+              onCheckedChange={(checked) => setSettings({ ...settings, serverFunctionsPaidOnly: checked })}
+              disabled={isPending || !settings.serverFunctionsEnabled}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Разрешенные тарифы для серверной очереди</Label>
+            <p className="text-sm text-muted-foreground">Если появится Light/другой тариф, можно ограничить доступ к серверным функциям.</p>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              {['Free', 'PRO', 'Business', 'Enterprise'].map((plan) => {
+                const isChecked = settings.serverFunctionsAllowedPlans?.includes(plan as any);
+                return (
+                  <label key={plan} className="flex items-center gap-2 border rounded-md p-2 cursor-pointer">
+                    <Checkbox
+                      checked={!!isChecked}
+                      onCheckedChange={(checked) => {
+                        const next = new Set(settings.serverFunctionsAllowedPlans || []);
+                        if (checked) next.add(plan as any); else next.delete(plan as any);
+                        setSettings({ ...settings, serverFunctionsAllowedPlans: Array.from(next) as AppSettings['serverFunctionsAllowedPlans'] });
+                      }}
+                      disabled={isPending || !settings.serverFunctionsEnabled}
+                    />
+                    <span className="text-sm">{plan}</span>
+                  </label>
+                );
+              })}
+            </div>
+          </div>
+        </div>
       </CardContent>
        <CardFooter>
          <button

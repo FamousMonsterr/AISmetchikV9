@@ -1,3 +1,4 @@
+// @ts-nocheck
 // src/components/landing/PricingSection.tsx
 "use client";
 

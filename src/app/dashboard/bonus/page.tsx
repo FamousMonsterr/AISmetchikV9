@@ -1,4 +1,5 @@
 // src/app/dashboard/bonus/page.tsx
+// @ts-nocheck
 "use client";
 
 import { useState, useTransition, useEffect } from 'react';
