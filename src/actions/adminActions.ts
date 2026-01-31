@@ -764,6 +764,8 @@ export interface EnvSettings {
     s3TenantId?: string; // For cloud.ru
     s3BucketIsPublic?: boolean;
     s3PresignedUrlExpiration?: number;
+    s3PersonalBucketName?: string;
+    s3PersonalBucketIsPublic?: boolean;
     s3Presets?: Array<{
         id: string;
         name: string;
@@ -820,6 +822,8 @@ const EnvSettingsSchema = z.object({
     s3TenantId: z.string().optional().or(z.literal('')),
     s3BucketIsPublic: z.boolean().optional(),
     s3PresignedUrlExpiration: z.number().int().min(1).optional(),
+    s3PersonalBucketName: z.string().optional().or(z.literal('')),
+    s3PersonalBucketIsPublic: z.boolean().optional(),
     s3Presets: z.array(z.any()).optional(),
     s3ActivePresetId: z.string().optional().or(z.literal('')),
     s3SecondaryEnabled: z.boolean().optional(),
@@ -853,6 +857,7 @@ const SECRET_FIELDS: Array<keyof EnvSettings> = [
     's3Region',
     's3BucketName',
     's3TenantId',
+    's3PersonalBucketName',
     's3Presets',
     's3ActivePresetId',
     's3SecondaryPresetId',
@@ -894,6 +899,8 @@ const ENV_FILE_MAP: Record<string, (settings: EnvSettings) => string | undefined
     S3_TENANT_ID: (s) => s.s3TenantId,
     S3_BUCKET_IS_PUBLIC: (s) => s.s3BucketIsPublic !== undefined ? String(!!s.s3BucketIsPublic) : undefined,
     S3_PRESIGNED_URL_EXPIRATION: (s) => s.s3PresignedUrlExpiration !== undefined ? String(s.s3PresignedUrlExpiration) : undefined,
+    S3_PERSONAL_BUCKET_NAME: (s) => s.s3PersonalBucketName,
+    S3_PERSONAL_BUCKET_IS_PUBLIC: (s) => s.s3PersonalBucketIsPublic !== undefined ? String(!!s.s3PersonalBucketIsPublic) : undefined,
 };
 
 const envLine = (key: string, value: string) => `${key}="${value.replace(/"/g, '\\"')}"`;
@@ -1419,7 +1426,7 @@ export const getFeedbackStats = async () => {
 
 // --- S3 Management ---
 
-export async function getS3Client(preferredPresetId?: string): Promise<{
+export async function getS3Client(preferredPresetId?: string, options?: { bucketType?: 'default' | 'personal' }): Promise<{
     s3Client: S3Client;
     settings: EnvSettings;
     config: {
@@ -1436,13 +1443,16 @@ export async function getS3Client(preferredPresetId?: string): Promise<{
     presetId?: string;
 }> {
     const settings = await getEnvSettings({ allowInternal: true });
+    if (options?.bucketType === 'personal' && !settings.s3PersonalBucketName) {
+        throw new Error("S3 personal bucket is not configured in the admin panel.");
+    }
 
     const resolveConfig = (presetId?: string) => {
         const preset = settings.s3Presets?.find((p) => p.id === presetId);
         const cfg = preset?.config || {};
         const endpoint = cfg.s3Endpoint ?? settings.s3Endpoint;
         const provider = preset?.provider || (endpoint?.includes('cloud.ru') ? 'cloudru' : undefined);
-        return {
+        const resolved = {
             endpoint,
             region: cfg.s3Region ?? settings.s3Region,
             accessKeyId: cfg.s3AccessKeyId ?? settings.s3AccessKeyId,
@@ -1453,6 +1463,14 @@ export async function getS3Client(preferredPresetId?: string): Promise<{
             presignedUrlExpiration: cfg.s3PresignedUrlExpiration ?? settings.s3PresignedUrlExpiration,
             provider,
         };
+        if (options?.bucketType === 'personal') {
+            return {
+                ...resolved,
+                bucketName: settings.s3PersonalBucketName || resolved.bucketName,
+                bucketIsPublic: settings.s3PersonalBucketIsPublic ?? resolved.bucketIsPublic,
+            };
+        }
+        return resolved;
     };
 
     const tryCreate = (presetId?: string) => {

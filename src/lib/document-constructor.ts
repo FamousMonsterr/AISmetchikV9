@@ -122,7 +122,7 @@ export const demoPreviewData: PreviewData = {
   quoteConfig: {
     taxType: 'none',
     includeCommissioning: true,
-    commissioningCost: 15000,
+    commissioningCost: 7,
     commissioningQuantity: 1,
     includeExecutiveDocumentation: false,
     executiveDocumentationTotalCost: 0,

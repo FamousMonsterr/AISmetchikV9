@@ -20,7 +20,9 @@
             "canGenerateImages": false,
             "canProcessAudio": false,
             "pdfEngineOverride": "none",
-            "isDefault": true
+            "isDefault": true,
+            "isServiceModel": true,
+            "isVoiceModel": false
         },
         {
             "value": "bytedance-seed/seed-1.6",
@@ -29,7 +31,9 @@
             "temperature": 0.2,
             "supportsThoughts": false,
             "canGenerateImages": false,
-            "canProcessAudio": false
+            "canProcessAudio": false,
+            "isServiceModel": false,
+            "isVoiceModel": false
         },
         {
             "value": "google/gemini-3-flash-preview",
@@ -40,7 +44,8 @@
             "canGenerateImages": false,
             "canProcessAudio": false,
             "pdfEngineOverride": "mistral-ocr",
-            "isDefault": true
+            "isServiceModel": false,
+            "isVoiceModel": false
         },
         {
             "value": "google/gemini-3-pro-preview",
@@ -49,7 +54,9 @@
             "temperature": 0.2,
             "supportsThoughts": false,
             "canGenerateImages": false,
-            "canProcessAudio": false
+            "canProcessAudio": false,
+            "isServiceModel": false,
+            "isVoiceModel": false
         },
         {
             "value": "google/gemini-2.5-flash-lite",
@@ -58,7 +65,9 @@
             "temperature": 0.2,
             "supportsThoughts": false,
             "canGenerateImages": false,
-            "canProcessAudio": false
+            "canProcessAudio": false,
+            "isServiceModel": false,
+            "isVoiceModel": false
         },
         {
             "value": "google/gemini-2.5-pro",
@@ -67,7 +76,9 @@
             "temperature": 0.2,
             "supportsThoughts": false,
             "canGenerateImages": false,
-            "canProcessAudio": false
+            "canProcessAudio": false,
+            "isServiceModel": false,
+            "isVoiceModel": false
         }
     ]
 }

@@ -350,10 +350,20 @@ export function S3Settings({ settings, setSettings, isPending }: { settings: Env
                     </div>
                  </div>
                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4"><div className="space-y-2"><Label>Access Key ID (логин)</Label><Input id="s3-key-id" value={settings.s3AccessKeyId || ''} onChange={(e) => setSettings({...settings, s3AccessKeyId: e.target.value})} placeholder="Ваш S3 Access Key ID" disabled={isPending || !settings.s3StorageEnabled} /></div><div className="space-y-2"><Label>Secret Access Key (пароль)</Label><PasswordInput id="s3-secret" value={settings.s3SecretAccessKey || ''} onChange={(e) => setSettings({...settings, s3SecretAccessKey: e.target.value})} placeholder="Ваш S3 Secret Access Key" disabled={isPending || !settings.s3StorageEnabled} /></div></div>
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2"><Label>Регион</Label><Input value={settings.s3Region || providerDefaults[s3Preset]?.s3Region || ''} onChange={(e) => setSettings({...settings, s3Region: e.target.value})} placeholder={providerDefaults[s3Preset]?.s3Region || "ru-central-1"} disabled={isPending || !settings.s3StorageEnabled} /></div>
                     <div className="space-y-2"><Label>Название бакета</Label><Input value={settings.s3BucketName || ''} onChange={(e) => setSettings({ ...settings, s3BucketName: e.target.value })} placeholder="my-awesome-bucket" disabled={isPending || !settings.s3StorageEnabled}/></div>
                  </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                   <div className="space-y-2">
+                      <Label>Персональный бакет (аватары и файлы пользователя)</Label>
+                      <Input value={settings.s3PersonalBucketName || ''} onChange={(e) => setSettings({ ...settings, s3PersonalBucketName: e.target.value })} placeholder="my-personal-bucket" disabled={isPending || !settings.s3StorageEnabled}/>
+                   </div>
+                   <div className="flex items-center space-x-2 pt-6">
+                      <Switch id="personal-public-bucket-toggle" checked={settings.s3PersonalBucketIsPublic} onCheckedChange={(checked) => setSettings({...settings, s3PersonalBucketIsPublic: checked})} disabled={isPending}/>
+                      <Label htmlFor="personal-public-bucket-toggle">Публичный персональный бакет</Label>
+                   </div>
+                </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                    <div className="space-y-2">
                        <Label>Время жизни presigned URL (сек)</Label>

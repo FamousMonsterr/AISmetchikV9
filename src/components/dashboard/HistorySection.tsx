@@ -46,7 +46,7 @@ export function HistorySection({
     onProjectSelect?: (project: HistoryRequest) => void,
     searchTerm?: string
 }) {
-    const { user, setCurrentProject, setCurrentGroup } = useAppContext();
+    const { user, setCurrentProject, setCurrentGroup, effectivePlan } = useAppContext();
     const { toast } = useToast();
     const router = useRouter();
 
@@ -67,6 +67,7 @@ export function HistorySection({
     const [isGroupDialogOpen, setIsGroupDialogOpen] = useState(false);
     const [newGroupName, setNewGroupName] = useState("");
     const [density, setDensity] = useState<'comfortable' | 'compact'>('comfortable');
+    const [pendingGroupEdit, setPendingGroupEdit] = useState<{ name: string; projects: HistoryRequest[] } | null>(null);
     
     const [isVersionDialogOpen, setIsVersionDialogOpen] = useState(false);
     const [projectForVersions, setProjectForVersions] = useState<HistoryRequest | null>(null);
@@ -315,7 +316,9 @@ export function HistorySection({
         }
     }
 
-    const handleEditGroup = (object: { name: string, projects: HistoryRequest[] }) => {
+    const isPro = effectivePlan === 'PRO' || effectivePlan === 'Business' || effectivePlan === 'Enterprise';
+
+    const startGroupEdit = (object: { name: string, projects: HistoryRequest[] }) => {
         startNavigation(() => {
             if (!object || object.projects.length === 0) return;
             const [firstProject] = object.projects;
@@ -324,6 +327,22 @@ export function HistorySection({
             router.push('/dashboard/calculator');
         });
     };
+
+    const handleEditGroup = (object: { name: string, projects: HistoryRequest[] }) => {
+        if (!isPro) {
+            setPendingGroupEdit(object);
+            handleFeatureClick(false, 'PRO');
+            return;
+        }
+        startGroupEdit(object);
+    };
+
+    useEffect(() => {
+        if (pendingGroupEdit && isPro) {
+            startGroupEdit(pendingGroupEdit);
+            setPendingGroupEdit(null);
+        }
+    }, [pendingGroupEdit, isPro]);
 
     const filteredHistory = useMemo(() => {
         return history.filter(project => {
@@ -408,8 +427,6 @@ export function HistorySection({
         });
     };
 
-    const canGroupProjects = user ? user.canGroupProjects : false;
-
     const handleBatchPriceUpdate = async (selectedSections: Set<string>) => {
         if (!user) return;
         const projectIds = projectsToUpdate.map(p => p.id);
@@ -435,7 +452,16 @@ export function HistorySection({
     return (
         <>
             <UpgradeAccountDialog isOpen={isUpgradeModalOpen} onClose={() => setIsUpgradeModalOpen(false)} targetRole={upgradeTargetRole} />
-            {isBatchPriceDialogOpen && (<PrivatePriceDialog isOpen={isBatchPriceDialogOpen} onClose={() => setIsBatchPriceDialogOpen(false)} onConfirm={handleBatchPriceUpdate as any} isGroupMode={true} batchProjectCount={projectsToUpdate.length}/> )}
+            {isBatchPriceDialogOpen && (
+                <PrivatePriceDialog
+                    isOpen={isBatchPriceDialogOpen}
+                    onClose={() => setIsBatchPriceDialogOpen(false)}
+                    onConfirm={handleBatchPriceUpdate as any}
+                    isGroupMode={true}
+                    batchProjectCount={projectsToUpdate.length}
+                    onBusinessFeatureClick={() => handleFeatureClick(false, 'Business')}
+                />
+            )}
              {projectForVersions && (
                 <ProjectUpdateDialog
                     isOpen={isVersionDialogOpen}
@@ -530,9 +556,8 @@ export function HistorySection({
                                     <Button size="sm" variant="outline" onClick={() => handleUngroup(Array.from(selection))} disabled={isActionPending}>
                                         <Unlink className="mr-2 h-4 w-4" />Открепить
                                     </Button>
-                                    <Button size="sm" variant="outline" onClick={() => canGroupProjects ? setIsGroupDialogOpen(true) : handleFeatureClick(false, 'Enterprise')} disabled={isActionPending}>
+                                    <Button size="sm" variant="outline" onClick={() => setIsGroupDialogOpen(true)} disabled={isActionPending}>
                                         <GitMerge className="mr-2 h-4 w-4" />Сгруппировать
-                                        {!canGroupProjects && <Badge variant="outline" className="ml-2 text-xs h-5 px-1 text-amber-500 border-amber-400">PRO</Badge>}
                                     </Button>
                                     <Button size="sm" variant="outline" onClick={() => handleAction(Array.from(selection), archiveRequest, {}, "Проекты архивированы.")} disabled={isActionPending}>
                                         <Archive className="mr-2 h-4 w-4"/>Архивировать ({selection.size})
@@ -593,6 +618,7 @@ export function HistorySection({
                             onRenameProject={handleRenameProject}
                             onViewVersions={(project) => { setProjectForVersions(project); setIsVersionDialogOpen(true); }}
                             onRetry={handleRetry}
+                            isPro={isPro}
                         />
                     </Tabs>
                 </CardContent>
@@ -610,6 +636,7 @@ interface HistoryRendererProps {
     selection: Set<string>;
     isActionPending: boolean;
     density: 'comfortable' | 'compact';
+    isPro: boolean;
     onSelectionChange: (id: string, checked: boolean) => void;
     onViewResult: (item: HistoryRequest) => void;
     onUngroup: (ids: string[]) => void;
@@ -679,7 +706,7 @@ const HistoryRenderer = (props: HistoryRendererProps) => {
         
         return (
             <div className="space-y-6">
-                {objectsToRender.map((obj: any) => <ProjectGroup key={obj.name} object={obj} density={props.density} {...props} />)}
+                {objectsToRender.map((obj: any) => <ProjectGroup key={obj.name} object={obj} density={props.density} isPro={props.isPro} {...props} />)}
                 {ungroupedToRender.length > 0 && (
                     <div>
                         <h4 className="text-md font-semibold text-muted-foreground mt-8 mb-2 flex items-center gap-2">Проекты без группы</h4>

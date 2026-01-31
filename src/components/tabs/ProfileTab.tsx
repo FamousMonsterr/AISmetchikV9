@@ -47,8 +47,14 @@ export default function ProfileTab() {
     objectKey: user?.stampObjectKey || '',
     expiresAt: user?.stampUrlExpirationTimestamp || null,
   });
+  const [avatarState, setAvatarState] = useState({
+    url: user?.avatarUrl || '',
+    objectKey: user?.avatarObjectKey || '',
+    expiresAt: user?.avatarUrlExpirationTimestamp || null,
+  });
   const [isUploadingSignature, setIsUploadingSignature] = useState(false);
   const [isUploadingStamp, setIsUploadingStamp] = useState(false);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
 
   const [botUrl, setBotUrl] = useState('');
   const [isSyncingChat, setIsSyncingChat] = useState(false);
@@ -83,6 +89,11 @@ export default function ProfileTab() {
       objectKey: user?.stampObjectKey || '',
       expiresAt: user?.stampUrlExpirationTimestamp || null,
     });
+    setAvatarState({
+      url: user?.avatarUrl || '',
+      objectKey: user?.avatarObjectKey || '',
+      expiresAt: user?.avatarUrlExpirationTimestamp || null,
+    });
   }, [user]);
 
   const handleCopy = (textToCopy: string, successMessage: string) => {
@@ -107,6 +118,9 @@ export default function ProfileTab() {
         stampUrl: stampState.url || null,
         stampObjectKey: stampState.objectKey || null,
         stampUrlExpirationTimestamp: typeof stampState.expiresAt === 'number' ? stampState.expiresAt : null,
+        avatarUrl: avatarState.url || null,
+        avatarObjectKey: avatarState.objectKey || null,
+        avatarUrlExpirationTimestamp: typeof avatarState.expiresAt === 'number' ? avatarState.expiresAt : null,
       });
 
       if (result.success) {
@@ -123,6 +137,9 @@ export default function ProfileTab() {
           stampUrl: stampState.url || null,
           stampObjectKey: stampState.objectKey || null,
           stampUrlExpirationTimestamp: stampState.expiresAt || null,
+          avatarUrl: avatarState.url || null,
+          avatarObjectKey: avatarState.objectKey || null,
+          avatarUrlExpirationTimestamp: avatarState.expiresAt || null,
         });
       } else {
         toast({ title: "Ошибка", description: result.message, variant: "destructive" });
@@ -159,7 +176,9 @@ export default function ProfileTab() {
     signatureState.url !== (user?.signatureUrl || '') ||
     signatureState.objectKey !== (user?.signatureObjectKey || '') ||
     stampState.url !== (user?.stampUrl || '') ||
-    stampState.objectKey !== (user?.stampObjectKey || '');
+    stampState.objectKey !== (user?.stampObjectKey || '') ||
+    avatarState.url !== (user?.avatarUrl || '') ||
+    avatarState.objectKey !== (user?.avatarObjectKey || '');
 
   const templateAccess = {
     Free: ['free'],
@@ -188,11 +207,11 @@ export default function ProfileTab() {
     }));
   }, [canEditTemplates, templateOptions]);
 
-  const uploadAsset = async (file: File) => {
+  const uploadAsset = async (file: File, bucketType?: 'default' | 'personal') => {
     const presignedUrlResponse = await fetch("/api/s3-upload", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ fileName: file.name, fileType: file.type }),
+      body: JSON.stringify({ fileName: file.name, fileType: file.type, bucketType }),
     });
     if (!presignedUrlResponse.ok) {
       throw new Error((await presignedUrlResponse.json()).error || "Не удалось получить ссылку для загрузки.");
@@ -209,7 +228,7 @@ export default function ProfileTab() {
     return { accessUrl, objectKey, urlExpirationTimestamp };
   };
 
-  const handleAssetChange = async (type: 'signature' | 'stamp', file?: File | null) => {
+  const handleAssetChange = async (type: 'signature' | 'stamp' | 'avatar', file?: File | null) => {
     if (!file) return;
     if (!file.type.startsWith('image/')) {
       toast({ title: 'Ошибка', description: 'Поддерживаются только изображения.', variant: 'destructive' });
@@ -217,12 +236,15 @@ export default function ProfileTab() {
     }
     if (type === 'signature') setIsUploadingSignature(true);
     if (type === 'stamp') setIsUploadingStamp(true);
+    if (type === 'avatar') setIsUploadingAvatar(true);
     try {
-      const uploaded = await uploadAsset(file);
+      const uploaded = await uploadAsset(file, type === 'avatar' ? 'personal' : 'default');
       if (type === 'signature') {
         setSignatureState({ url: uploaded.accessUrl, objectKey: uploaded.objectKey, expiresAt: uploaded.urlExpirationTimestamp });
-      } else {
+      } else if (type === 'stamp') {
         setStampState({ url: uploaded.accessUrl, objectKey: uploaded.objectKey, expiresAt: uploaded.urlExpirationTimestamp });
+      } else {
+        setAvatarState({ url: uploaded.accessUrl, objectKey: uploaded.objectKey, expiresAt: uploaded.urlExpirationTimestamp });
       }
       toast({ title: 'Готово', description: 'Файл загружен и готов к использованию.' });
     } catch (error: any) {
@@ -230,14 +252,17 @@ export default function ProfileTab() {
     } finally {
       if (type === 'signature') setIsUploadingSignature(false);
       if (type === 'stamp') setIsUploadingStamp(false);
+      if (type === 'avatar') setIsUploadingAvatar(false);
     }
   };
 
-  const handleAssetRemove = (type: 'signature' | 'stamp') => {
+  const handleAssetRemove = (type: 'signature' | 'stamp' | 'avatar') => {
     if (type === 'signature') {
       setSignatureState({ url: '', objectKey: '', expiresAt: null });
-    } else {
+    } else if (type === 'stamp') {
       setStampState({ url: '', objectKey: '', expiresAt: null });
+    } else {
+      setAvatarState({ url: '', objectKey: '', expiresAt: null });
     }
   };
 
@@ -278,10 +303,31 @@ export default function ProfileTab() {
               <CardTitle>Профиль</CardTitle>
               <CardDescription>Ваши данные и настройки аккаунта.</CardDescription>
             </div>
-             <Avatar className="h-16 w-16">
-                <AvatarImage src={user?.email ? `https://avatar.vercel.sh/${user.email}.png` : undefined} alt={user?.displayName || 'Avatar'} />
-                <AvatarFallback>{user?.displayName?.[0]}</AvatarFallback>
-            </Avatar>
+            <div className="flex flex-col items-end gap-2">
+              <Avatar className="h-16 w-16">
+                  <AvatarImage src={avatarState.url || (user?.email ? `https://avatar.vercel.sh/${user.email}.png` : undefined)} alt={user?.displayName || 'Avatar'} />
+                  <AvatarFallback>{user?.displayName?.[0]}</AvatarFallback>
+              </Avatar>
+              <div className="flex flex-wrap items-center justify-end gap-2">
+                <Button variant="outline" size="sm" asChild disabled={isUploadingAvatar}>
+                  <label className="cursor-pointer">
+                    {isUploadingAvatar ? <Loader2 className="mr-2 h-3 w-3 animate-spin" /> : null}
+                    Загрузить
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => handleAssetChange('avatar', e.target.files?.[0])}
+                    />
+                  </label>
+                </Button>
+                {avatarState.url && (
+                  <Button variant="ghost" size="sm" onClick={() => handleAssetRemove('avatar')} disabled={isUploadingAvatar}>
+                    Удалить
+                  </Button>
+                )}
+              </div>
+            </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-4">

@@ -83,9 +83,12 @@ interface ProcessingDialogProps {
   model: string;
   temperature?: number;
   includeThoughts?: boolean;
+  objectId?: string | null;
+  objectName?: string | null;
+  onProjectProcessed?: (project: HistoryRequest) => void;
 }
 
-export function ProcessingDialog({ isOpen, onClose, file, model, temperature, includeThoughts }: ProcessingDialogProps) {
+export function ProcessingDialog({ isOpen, onClose, file, model, temperature, includeThoughts, objectId, objectName, onProjectProcessed }: ProcessingDialogProps) {
     const { user, setCurrentProject, effectivePlan } = useAppContext();
     const { toast } = useToast();
     const router = useRouter();
@@ -187,6 +190,8 @@ export function ProcessingDialog({ isOpen, onClose, file, model, temperature, in
                     fileSha1: hash,
                     fileUri: uri,
                     s3ObjectKey: objKey,
+                    objectId,
+                    objectName,
                 });
                 if (!draft.success || !draft.project) {
                     throw new Error(draft.message || 'Не удалось создать черновик проекта.');
@@ -298,6 +303,7 @@ export function ProcessingDialog({ isOpen, onClose, file, model, temperature, in
 
                 await setProjectStage('complete');
                 setCurrentProject(finalizeResult.project);
+                onProjectProcessed?.(finalizeResult.project);
                 setStage('complete');
                 toast({title: "Анализ завершен!", description: `Проект "${file.name}" успешно обработан и сохранен.`});
                 onClose();
@@ -472,7 +478,7 @@ export function ProcessingDialog({ isOpen, onClose, file, model, temperature, in
         };
         
         processFile();
-    }, [isOpen, file, user, isSelectedOpenRouter, effectivePdfEngine, model, temperature, includeThoughts, toast, router, onClose, setCurrentProject, serverSettingsLoaded, shouldUseServerPipeline, processingProjectId]);
+    }, [isOpen, file, user, isSelectedOpenRouter, effectivePdfEngine, model, temperature, includeThoughts, toast, router, onClose, setCurrentProject, serverSettingsLoaded, shouldUseServerPipeline, processingProjectId, objectId, objectName, onProjectProcessed]);
 
     const handleStop = async () => {
         if (!user) return;

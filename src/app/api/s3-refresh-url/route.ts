@@ -6,13 +6,13 @@ import { getS3Client } from "@/actions/adminActions";
 
 export async function POST(request: NextRequest) {
   try {
-    const { objectKey, presetId } = await request.json();
+    const { objectKey, presetId, bucketType } = await request.json();
 
     if (!objectKey) {
       return NextResponse.json({ error: "objectKey is required" }, { status: 400 });
     }
     
-    const { s3Client, config } = await getS3Client(presetId);
+    const { s3Client, config } = await getS3Client(presetId, { bucketType });
     
     const expiration = config.presignedUrlExpiration ?? 900;
 

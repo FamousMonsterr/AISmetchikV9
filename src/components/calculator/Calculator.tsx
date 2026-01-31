@@ -44,6 +44,12 @@ interface CalculatorProps {
     onProFeatureClick: () => void;
     onApplyPricesFromPrivateBase: () => void;
     onSmrCostChange: (cost: number) => void; // Callback to notify parent of cost changes
+    externalUpdates?: {
+        manualSmrCost?: number | null;
+        complexityMultiplier?: number | null;
+    } | null;
+    onExternalUpdatesApplied?: () => void;
+    onComplexityChange?: (value: number) => void;
 }
 
 // Helper function to convert Blob to Base64
@@ -65,14 +71,18 @@ function blobToBase64(blob: Blob): Promise<string> {
 type FileFormat = 'pdf' | 'docx' | 'xlsx';
 
 
-export function Calculator({ 
-    initialProjectData, 
-    calculatedDevices, 
-    calculatedCable,
-    onProFeatureClick,
-    onApplyPricesFromPrivateBase,
-    onSmrCostChange
- }: CalculatorProps) {
+export function Calculator(props: CalculatorProps) {
+    const {
+        initialProjectData,
+        calculatedDevices,
+        calculatedCable,
+        onProFeatureClick,
+        onApplyPricesFromPrivateBase,
+        onSmrCostChange,
+        externalUpdates,
+        onExternalUpdatesApplied,
+        onComplexityChange,
+    } = props;
     const { toast } = useToast();
     const { user, currentProject, setCurrentProject, effectivePlan, logAction, companies } = useAppContext();
     const [isAdjustCostDialogOpen, setIsAdjustCostDialogOpen] = useState(false);
@@ -121,6 +131,18 @@ export function Calculator({
     const [manualSmrCost, setManualSmrCost] = useState<number | null>(null);
     const [desiredTotalInput, setDesiredTotalInput] = useState<string>('');
 
+    useEffect(() => {
+        if (!externalUpdates) return;
+        if (Object.prototype.hasOwnProperty.call(externalUpdates, 'manualSmrCost')) {
+            setManualSmrCost(externalUpdates.manualSmrCost ?? null);
+        }
+        if (typeof externalUpdates.complexityMultiplier === 'number') {
+            setInputValues(prev => ({ ...prev, complexityMultiplier: externalUpdates.complexityMultiplier as number }));
+            onComplexityChange?.(externalUpdates.complexityMultiplier as number);
+        }
+        onExternalUpdatesApplied?.();
+    }, [externalUpdates, onExternalUpdatesApplied, onComplexityChange]);
+
     const displaySmrCost = manualSmrCost ?? recommendedSmrCost;
     const isCostOverridden = manualSmrCost !== null;
 
@@ -153,6 +175,9 @@ export function Calculator({
     const handleInputChange = (field: keyof typeof inputValues, value: string | number | boolean) => {
         const finalValue = numericFields.has(field) ? Number(value) : value;
         setInputValues(prev => ({ ...prev, [field]: finalValue }));
+        if (field === 'complexityMultiplier' && typeof finalValue === 'number') {
+            onComplexityChange?.(finalValue);
+        }
     };
     
     const handleSliderChange = (value: number[]) => handleInputChange('complexityMultiplier', 1 + value[0] / 100);
@@ -218,7 +243,7 @@ export function Calculator({
                             <Tooltip>
                                 <TooltipTrigger asChild>
                                      <button
-                                        className="h-6 w-6 flex items-center justify-center relative rounded-full hover:bg-muted"
+                                        className={cn("h-6 w-6 flex items-center justify-center relative rounded-full hover:bg-muted", isPro && "text-amber-700")}
                                         onClick={(e) => {
                                             e.stopPropagation();
                                             if (isPro) {
@@ -232,7 +257,7 @@ export function Calculator({
                                         {!isPro && <Star className="absolute h-3 w-3 -top-1 -right-1 text-amber-500 fill-amber-400" />}
                                     </button>
                                 </TooltipTrigger>
-                                <TooltipContent><p>Задать цену вручную</p></TooltipContent>
+                                <TooltipContent><p>{isPro ? "Задать цену вручную" : "Задать цену вручную (PRO)"}</p></TooltipContent>
                             </Tooltip>
                         </TooltipProvider>
                     </div>
@@ -246,7 +271,7 @@ export function Calculator({
                             <Label>Простой</Label>
                             <Switch checked={inputValues.mode === 'advanced'} onCheckedChange={handleModeSwitch} />
                             <Label className={cn("flex items-center gap-1", !isPro && "text-muted-foreground")}>
-                                Продвинутый
+                                {isPro ? "Продвинутый" : "Продвинутый (PRO)"}
                                 {!isPro && <Star className="h-4 w-4 text-amber-500"/>}
                             </Label>
                         </div>

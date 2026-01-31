@@ -32,6 +32,9 @@ const UpdateProfileSchema = z.object({
   stampUrl: z.string().optional().nullable(),
   stampObjectKey: z.string().optional().nullable(),
   stampUrlExpirationTimestamp: z.number().optional().nullable(),
+  avatarUrl: z.string().optional().nullable(),
+  avatarObjectKey: z.string().optional().nullable(),
+  avatarUrlExpirationTimestamp: z.number().optional().nullable(),
 });
 
 export const updateUserProfile = async (data: z.infer<typeof UpdateProfileSchema>): Promise<{ success: boolean; message: string }> => {
@@ -53,6 +56,9 @@ export const updateUserProfile = async (data: z.infer<typeof UpdateProfileSchema
     stampUrl,
     stampObjectKey,
     stampUrlExpirationTimestamp,
+    avatarUrl,
+    avatarObjectKey,
+    avatarUrlExpirationTimestamp,
   } = validation.data;
   const userRef = doc(db, 'users', userId);
 
@@ -91,6 +97,18 @@ export const updateUserProfile = async (data: z.infer<typeof UpdateProfileSchema
     if (stampUrlExpirationTimestamp !== undefined) {
       updatePayload.stampUrlExpirationTimestamp = stampUrlExpirationTimestamp ?? null;
       updatedFields.push('stampUrlExpirationTimestamp');
+    }
+    if (avatarUrl !== undefined) {
+      updatePayload.avatarUrl = avatarUrl ?? null;
+      updatedFields.push('avatarUrl');
+    }
+    if (avatarObjectKey !== undefined) {
+      updatePayload.avatarObjectKey = avatarObjectKey ?? null;
+      updatedFields.push('avatarObjectKey');
+    }
+    if (avatarUrlExpirationTimestamp !== undefined) {
+      updatePayload.avatarUrlExpirationTimestamp = avatarUrlExpirationTimestamp ?? null;
+      updatedFields.push('avatarUrlExpirationTimestamp');
     }
 
     await updateDoc(userRef, updatePayload);
@@ -600,6 +618,7 @@ const UpdateRequestSchema = z.object({
       objectId: z.string().nullable().optional(),
       objectName: z.string().nullable().optional(),
       fileName: z.string().optional(),
+      actionHistory: z.array(z.any()).optional(),
   })
 });
 
@@ -814,6 +833,8 @@ const CreateProcessingRequestSchema = z.object({
     fileUri: z.string().optional(),
     s3ObjectKey: z.string().optional(),
     serverJobId: z.string().optional(),
+    objectId: z.string().nullable().optional(),
+    objectName: z.string().nullable().optional(),
 });
 
 export const createProcessingRequest = async (data: z.infer<typeof CreateProcessingRequestSchema>): Promise<{ success: boolean; message: string; project?: HistoryRequest | null; }> => {
@@ -844,8 +865,8 @@ export const createProcessingRequest = async (data: z.infer<typeof CreateProcess
             parentProjectId: projectRef.id,
             version: 1,
             aiCallCount: 0,
-            objectId: null,
-            objectName: null,
+            objectId: payload.objectId ?? null,
+            objectName: payload.objectName ?? null,
             actionHistory: [],
             serverJobId: payload.serverJobId || null,
             s3ObjectKey: payload.s3ObjectKey || null,

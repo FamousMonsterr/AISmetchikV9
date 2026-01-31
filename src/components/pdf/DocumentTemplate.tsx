@@ -178,6 +178,7 @@ const DocumentTemplate = ({
   ];
 
   const titleStyle = [baseStyles.title, isModern && { color: accentColor }];
+  const commissioningTotal = totals.specItemsTotalSum * (quoteConfig.commissioningCost / 100) * (quoteConfig.commissioningQuantity || 0);
 
   return (
     <Document>
@@ -268,7 +269,7 @@ const DocumentTemplate = ({
         {/* Totals Section */}
         <View style={baseStyles.totalsContainer}>
              {quoteConfig.showMaterialColumns !== false && <View style={baseStyles.totalRow}><Text style={baseStyles.totalLabel}>Итого по спецификации:</Text><Text style={baseStyles.totalValue}>{totals.specItemsTotalSum.toFixed(2)} ₽</Text></View>}
-            {quoteConfig.includeCommissioning && <View style={baseStyles.totalRow}><Text style={baseStyles.totalLabel}>Пуско-наладочные работы:</Text><Text style={baseStyles.totalValue}>{(quoteConfig.commissioningCost * quoteConfig.commissioningQuantity).toFixed(2)} ₽</Text></View>}
+            {quoteConfig.includeCommissioning && <View style={baseStyles.totalRow}><Text style={baseStyles.totalLabel}>Пуско-наладочные работы:</Text><Text style={baseStyles.totalValue}>{commissioningTotal.toFixed(2)} ₽</Text></View>}
             {quoteConfig.includeExecutiveDocumentation && <View style={baseStyles.totalRow}><Text style={baseStyles.totalLabel}>Исполнительная документация:</Text><Text style={baseStyles.totalValue}>{(quoteConfig.executiveDocumentationTotalCost * quoteConfig.executiveDocumentationQuantity).toFixed(2)} ₽</Text></View>}
             {quoteConfig.includeMeasurementTrip && <View style={baseStyles.totalRow}><Text style={baseStyles.totalLabel}>Выезд для замера:</Text><Text style={baseStyles.totalValue}>{(quoteConfig.measurementTripCost * quoteConfig.measurementTripQuantity).toFixed(2)} ₽</Text></View>}
             {quoteConfig.includeDismantling && <View style={baseStyles.totalRow}><Text style={baseStyles.totalLabel}>Демонтаж:</Text><Text style={baseStyles.totalValue}>{quoteConfig.dismantlingCost.toFixed(2)} ₽</Text></View>}

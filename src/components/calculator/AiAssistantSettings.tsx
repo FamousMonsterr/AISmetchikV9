@@ -25,6 +25,7 @@ interface AiAssistantSettingsProps {
     includeThoughts: boolean;
     onThoughtsChange: (checked: boolean) => void;
     onProFeatureClick: () => void;
+    onBusinessFeatureClick: () => void;
 }
 
 export function AiAssistantSettings({
@@ -34,10 +35,12 @@ export function AiAssistantSettings({
     onTemperatureChange,
     includeThoughts,
     onThoughtsChange,
-    onProFeatureClick
+    onProFeatureClick,
+    onBusinessFeatureClick
 }: AiAssistantSettingsProps) {
     const { user, effectivePlan } = useAppContext();
     const canUseThoughts = effectivePlan === 'PRO' || effectivePlan === 'Business' || effectivePlan === 'Enterprise';
+    const canSelectModel = effectivePlan === 'Business' || effectivePlan === 'Enterprise';
 
     const userAvailableModels = useMemo(() => {
         if (!user || !user.availableModels) return [];
@@ -51,22 +54,35 @@ export function AiAssistantSettings({
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2">
                         <Label htmlFor="ai-model-select">Модель</Label>
-                        <Select value={selectedModel} onValueChange={onModelChange}>
-                            <SelectTrigger id="ai-model-select">
-                                <SelectValue placeholder="Выберите модель..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {userAvailableModels.length > 0 ? (
-                                    userAvailableModels.map(model => (
-                                        <SelectItem key={model.value} value={model.value}>
-                                            {model.label} {model.isDefault && '(по умолч.)'}
-                                        </SelectItem>
-                                    ))
-                                ) : (
-                                    <SelectItem value="no-models" disabled>Модели не доступны</SelectItem>
-                                )}
-                            </SelectContent>
-                        </Select>
+                        {canSelectModel ? (
+                            <Select value={selectedModel} onValueChange={onModelChange}>
+                                <SelectTrigger id="ai-model-select">
+                                    <SelectValue placeholder="Выберите модель..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {userAvailableModels.length > 0 ? (
+                                        userAvailableModels.map(model => (
+                                            <SelectItem key={model.value} value={model.value}>
+                                                {model.label} {model.isDefault && '(по умолч.)'}
+                                            </SelectItem>
+                                        ))
+                                    ) : (
+                                        <SelectItem value="no-models" disabled>Модели не доступны</SelectItem>
+                                    )}
+                                </SelectContent>
+                            </Select>
+                        ) : (
+                            <div className="space-y-2">
+                                <Input id="ai-model-select" value="Скрыто" readOnly disabled />
+                                <button
+                                    type="button"
+                                    onClick={onBusinessFeatureClick}
+                                    className="inline-flex items-center gap-2 text-sm font-medium text-blue-700 border border-blue-300 px-3 py-1.5 rounded-md hover:bg-blue-50"
+                                >
+                                    Сменить модель <span className="text-xs text-blue-500 border border-blue-200 px-1.5 rounded">Business</span>
+                                </button>
+                            </div>
+                        )}
                     </div>
                      <div className="space-y-2">
                         <Label>Опции</Label>

@@ -15,7 +15,6 @@ import { z } from 'zod';
 import { updateUserPwaStatus, saveProjectVersion } from '@/actions/userActions';
 import { useToast } from '@/hooks/use-toast';
 import { useTheme } from "next-themes";
-import { NotificationCenter } from '@/components/NotificationCenter';
 import aiConfig from '@/lib/ai-config.json';
 
 
@@ -109,6 +108,9 @@ export interface AppUser {
   stampUrl?: string | null;
   stampObjectKey?: string | null;
   stampUrlExpirationTimestamp?: any | null; // number or Timestamp
+  avatarUrl?: string | null;
+  avatarObjectKey?: string | null;
+  avatarUrlExpirationTimestamp?: any | null; // number or Timestamp
 }
 
 export type ItemStatus = 'На утверждение' | 'Утверждено' | 'Уточнить';
@@ -676,7 +678,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const logAction = useCallback((description: string, snapshot: ActionSnapshot) => {
     const newAction: ActionLog = { id: nanoid(), timestamp: new Date(), description, snapshot };
-    setActionHistory(prev => [newAction, ...prev].slice(0, 50));
+    setActionHistory(prev => [newAction, ...prev].slice(0, 10));
   }, []);
 
   const value: AppState = {
@@ -708,7 +710,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   return (
     <AppContext.Provider value={value}>
       {children}
-      <NotificationCenter />
     </AppContext.Provider>
   );
 };

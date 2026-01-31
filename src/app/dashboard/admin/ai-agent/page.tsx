@@ -103,6 +103,28 @@ const moveEngine = (engine: string, direction: 'up' | 'down') => {
     });
   };
 
+  const handleSetServiceModel = (modelIndex: number, enabled: boolean) => {
+    setConfig(prev => {
+      if (!prev) return null;
+      const newApiModels = prev.apiModels.map((model: any, index: number) => ({
+        ...model,
+        isServiceModel: index === modelIndex ? enabled : false,
+      }));
+      return { ...prev, apiModels: newApiModels };
+    });
+  };
+
+  const handleSetVoiceModel = (modelIndex: number, enabled: boolean) => {
+    setConfig(prev => {
+      if (!prev) return null;
+      const newApiModels = prev.apiModels.map((model: any, index: number) => ({
+        ...model,
+        isVoiceModel: index === modelIndex ? enabled : false,
+      }));
+      return { ...prev, apiModels: newApiModels };
+    });
+  };
+
   const handleSaveModel = (modelData: any, index?: number) => {
     setConfig(prev => {
         if (!prev) return null;
@@ -204,6 +226,16 @@ const moveEngine = (engine: string, direction: 'up' | 'down') => {
                     <div className="flex items-center space-x-2"><Switch id={`thoughts-${index}`} checked={modelInfo.supportsThoughts} onCheckedChange={c => handleModelConfigChange(index, 'supportsThoughts', c)} /><Label htmlFor={`thoughts-${index}`}>Мысли</Label></div>
                     <div className="flex items-center space-x-2"><Switch id={`images-${index}`} checked={modelInfo.canGenerateImages} onCheckedChange={c => handleModelConfigChange(index, 'canGenerateImages', c)} /><Label htmlFor={`images-${index}`}>Картинки</Label></div>
                     <div className="flex items-center space-x-2"><Switch id={`audio-${index}`} checked={modelInfo.canProcessAudio} onCheckedChange={c => handleModelConfigChange(index, 'canProcessAudio', c)} /><Label htmlFor={`audio-${index}`}>Аудио</Label></div>
+                    <div className="flex items-center space-x-2"><Switch id={`service-${index}`} checked={!!modelInfo.isServiceModel} onCheckedChange={(c) => handleSetServiceModel(index, !!c)} /><Label htmlFor={`service-${index}`}>Сервисная</Label></div>
+                    <div className="flex items-center space-x-2">
+                        <Switch
+                          id={`voice-${index}`}
+                          checked={!!modelInfo.isVoiceModel}
+                          onCheckedChange={(c) => handleSetVoiceModel(index, !!c)}
+                          disabled={!modelInfo.canProcessAudio}
+                        />
+                        <Label htmlFor={`voice-${index}`}>Голос</Label>
+                    </div>
                 </div>
             </CardContent>
         </Card>

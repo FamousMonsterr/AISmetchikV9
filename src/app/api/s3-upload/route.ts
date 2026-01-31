@@ -9,13 +9,13 @@ import { nanoid } from 'nanoid';
 
 export async function POST(request: NextRequest) {
   try {
-    const { fileName, fileType, presetId } = await request.json();
+    const { fileName, fileType, presetId, bucketType } = await request.json();
 
     if (!fileName || !fileType) {
       return NextResponse.json({ error: "fileName and fileType are required" }, { status: 400 });
     }
     
-    const { s3Client, config } = await getS3Client(presetId);
+    const { s3Client, config } = await getS3Client(presetId, { bucketType });
     
     // Correctly encode the filename and generate a unique key
     const objectKey = `${nanoid()}-${encodeURIComponent(fileName)}`;

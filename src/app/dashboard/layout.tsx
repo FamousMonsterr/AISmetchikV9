@@ -14,25 +14,23 @@ import {
 
 import {
   Home,
-  User,
   LogOut,
   Loader2,
   Shield,
-  FileText,
-  Wrench,
-  Gift,
-  Megaphone,
-  Calculator,
   Menu,
-  ArrowLeft,
   BookOpen,
-  Sun, Moon, Monitor, Handshake, Bell, Waypoints, MessageCircle
+  Sun,
+  Moon,
+  Monitor,
+  Handshake,
+  Waypoints,
 } from "lucide-react";
 import { useAppContext } from "@/contexts/AppContext";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Link from "next/link";
 import { UpgradeAccountDialog } from "@/components/UpgradeAccountDialog";
 import { NotificationCenter } from '@/components/NotificationCenter';
+import { FloatingSupportChat } from '@/components/support/FloatingSupportChat';
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -114,24 +112,17 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
         }
     };
 
-    const menuItems = [
-        { href: "/dashboard", label: "Проекты", icon: <Home className="h-5 w-5 shrink-0" /> },
-        { href: "/dashboard/mobile-panel", label: "Пульт", icon: <Waypoints className="h-5 w-5 shrink-0" />, mobileOnly: true },
-        { href: "/dashboard/calculator", label: "Калькулятор", icon: <Calculator className="h-5 w-5 shrink-0" />, mobileOnly: false },
-        { href: "/dashboard/profile", label: "Профиль", icon: <User className="h-5 w-5 shrink-0" /> },
-        { href: "/dashboard/bonus", label: "Партнерам", icon: <Handshake className="h-5 w-5 shrink-0" /> },
-        { href: "/dashboard/training", label: "База знаний", icon: <BookOpen className="h-5 w-5 shrink-0" /> }
-    ];
+  const menuItems = [
+      { href: "/dashboard", label: "Проекты", icon: <Home className="h-5 w-5 shrink-0" /> },
+      { href: "/dashboard/mobile-panel", label: "Пульт", icon: <Waypoints className="h-5 w-5 shrink-0" />, mobileOnly: true },
+      { href: "/dashboard/bonus", label: "Партнерам", icon: <Handshake className="h-5 w-5 shrink-0" /> },
+      { href: "/dashboard/training", label: "База знаний", icon: <BookOpen className="h-5 w-5 shrink-0" /> }
+  ];
     
     const adminMenuItem = { href: "/dashboard/admin", label: "Админ-панель", icon: <Shield className="h-5 w-5 shrink-0" /> };
-    const supportMenuItem = { href: "/dashboard/support", label: "Обращения", icon: <MessageCircle className="h-5 w-5 shrink-0" /> };
-    const canViewSupport = !!user && (user.systemRole !== 'User' || user.isPartner);
-    if (user?.systemRole === 'Super Admin') {
-        menuItems.push(adminMenuItem);
-    }
-    if (canViewSupport) {
-        menuItems.push(supportMenuItem);
-    }
+  if (user?.systemRole === 'Super Admin') {
+      menuItems.push(adminMenuItem);
+  }
 
     if (isUserLoading || !user) { 
         return (
@@ -166,26 +157,29 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                         </div>
                     </div>
                     <div className="flex flex-col gap-2">
-                         <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" className="justify-start gap-2 w-full hover:bg-secondary/80 px-3">
-                                   {theme === 'light' ? <Sun className="h-5 w-5 shrink-0"/> : theme === 'dark' ? <Moon className="h-5 w-5 shrink-0"/> : <Monitor className="h-5 w-5 shrink-0"/>}
-                                   {open && <span className="text-sm font-medium">Тема</span>}
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent side="right" align="start">
-                                <DropdownMenuItem onClick={() => setTheme('light')}>Светлая</DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => setTheme('dark')}>Темная</DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => setTheme('system')}>Системная</DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
+                         <div className={cn("flex gap-2", open ? "flex-col items-stretch" : "flex-col items-center")}>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" className={cn("justify-start gap-2 hover:bg-secondary/80 px-3", open ? "w-full" : "w-10 justify-center px-0")}>
+                                       {theme === 'light' ? <Sun className="h-5 w-5 shrink-0"/> : theme === 'dark' ? <Moon className="h-5 w-5 shrink-0"/> : <Monitor className="h-5 w-5 shrink-0"/>}
+                                       {open && <span className="text-sm font-medium">Тема</span>}
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent side="right" align="start">
+                                    <DropdownMenuItem onClick={() => setTheme('light')}>Светлая</DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => setTheme('dark')}>Темная</DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => setTheme('system')}>Системная</DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                            <NotificationCenter className={cn(open ? "w-full justify-start gap-2 px-3" : "h-10 w-10")} showLabel={open} />
+                         </div>
                          <SidebarLink
                             link={{
                                 label: user.displayName,
                                 href: "/dashboard/profile",
                                 icon: (
                                 <Avatar className="h-7 w-7 shrink-0">
-                                    <AvatarImage src={`https://avatar.vercel.sh/${user.email}.png`} alt={user.displayName} />
+                                    <AvatarImage src={user.avatarUrl || `https://avatar.vercel.sh/${user.email}.png`} alt={user.displayName} />
                                     <AvatarFallback>{user.displayName?.[0].toUpperCase()}</AvatarFallback>
                                 </Avatar>
                                 ),
@@ -214,12 +208,8 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                     <div className="flex-1">
                         <Logo href="/dashboard" variant={user.isPartner ? 'partnerDashboard' : 'default'} />
                     </div>
-                    <NotificationCenter />
                 </header>
                 <main className="flex flex-1 flex-col p-2 md:p-6 overflow-y-auto">
-                    <div className="sticky top-0 z-20 hidden md:flex justify-end pb-2">
-                        <NotificationCenter />
-                    </div>
                     {isNavigating ? (
                          <div className="flex h-full items-center justify-center">
                             <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -227,6 +217,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                     ) : children}
                 </main>
             </div>
+            <FloatingSupportChat />
              <Script src="https://telegram.org/js/telegram-web-app.js" strategy="afterInteractive" />
             <UpgradeAccountDialog 
                 isOpen={isUpgradeModalOpen} 

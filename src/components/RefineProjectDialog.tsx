@@ -27,10 +27,11 @@ interface RefineProjectDialogProps {
   selectedModel: string;
   temperature: number;
   includeThoughts: boolean;
+  onProjectUpdate?: (nextProject: HistoryRequest, actionDescription: string) => void;
 }
 
 
-export function RefineProjectDialog({ isOpen, onClose, actionType, project, selectedModel, includeThoughts }: RefineProjectDialogProps) {
+export function RefineProjectDialog({ isOpen, onClose, actionType, project, selectedModel, includeThoughts, onProjectUpdate }: RefineProjectDialogProps) {
   const { user, setCurrentProject, setShowTimeoutWarning, effectivePlan } = useAppContext();
   const [isProcessing, startProcessing] = useTransition();
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -223,7 +224,17 @@ export function RefineProjectDialog({ isOpen, onClose, actionType, project, sele
                     tempSpecs.push({ ...hydratedItem, id: nanoid() } as SpecificationItem);
                   }
               });
-              setCurrentProject(prev => prev ? {...prev, outputSpecifications: tempSpecs, aiComment: result.aiRefinementComment || prev.aiComment, aiCallCount: (prev.aiCallCount || 0) + 1 } : null);
+              const nextProject: HistoryRequest = {
+                ...project,
+                outputSpecifications: tempSpecs,
+                aiComment: result.aiRefinementComment || project.aiComment,
+                aiCallCount: (project.aiCallCount || 0) + 1,
+              };
+              if (onProjectUpdate) {
+                onProjectUpdate(nextProject, actionType === 'fillEmpty' ? 'AI: заполнено пустое' : 'AI: уточнение позиций');
+              } else {
+                setCurrentProject(nextProject);
+              }
               toast({ title: "Позиции уточнены!", description: result.aiRefinementComment || "Данные были успешно обновлены." });
 
           } else if (actionType === 'findMissing' && 'newlyFoundItems' in result) {
@@ -233,10 +244,27 @@ export function RefineProjectDialog({ isOpen, onClose, actionType, project, sele
                       id: nanoid(),
                       status: 'На утверждение' as const,
                   }));
-                  setCurrentProject(prev => prev ? {...prev, outputSpecifications: [...prev.outputSpecifications, ...newItems], aiCallCount: (prev.aiCallCount || 0) + 1 } : null);
+                  const nextProject: HistoryRequest = {
+                    ...project,
+                    outputSpecifications: [...project.outputSpecifications, ...newItems],
+                    aiCallCount: (project.aiCallCount || 0) + 1,
+                  };
+                  if (onProjectUpdate) {
+                    onProjectUpdate(nextProject, 'AI: поиск пропущенных позиций');
+                  } else {
+                    setCurrentProject(nextProject);
+                  }
                   toast({ title: "Найдены новые позиции!", description: `Добавлено ${result.newlyFoundItems.length} новых позиций в конец списка.` });
               } else {
-                  setCurrentProject(prev => prev ? {...prev, aiCallCount: (prev.aiCallCount || 0) + 1 } : null);
+                  const nextProject: HistoryRequest = {
+                    ...project,
+                    aiCallCount: (project.aiCallCount || 0) + 1,
+                  };
+                  if (onProjectUpdate) {
+                    onProjectUpdate(nextProject, 'AI: поиск пропущенных позиций');
+                  } else {
+                    setCurrentProject(nextProject);
+                  }
                   toast({ title: "Ничего не найдено", description: "AI не нашел новых позиций в документе." });
               }
           }

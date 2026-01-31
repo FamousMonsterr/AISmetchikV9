@@ -12,6 +12,7 @@ import { calculateProjectTotals } from '@/lib/calculation';
 import { DocumentGenerationDialog } from '@/components/DocumentGenerationDialog';
 import aiConstructorConfig from '@/lib/ai-constructor-config.json';
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '../ui/tooltip';
+import { cn } from '@/lib/utils';
 
 
 interface TotalsAndActionsProps {
@@ -27,7 +28,10 @@ interface TotalsAndActionsProps {
   onAIPricing: () => void;
   isActionLoading: boolean;
   canUsePrivatePriceBase: boolean;
-  onFeatureClick: (isAllowed: boolean, requiredRole: 'PRO' | 'Enterprise') => void;
+  onFeatureClick: (isAllowed: boolean, requiredRole: 'PRO' | 'Business' | 'Enterprise') => void;
+  groupSmrTotal?: number | null;
+  groupProjects?: HistoryRequest[] | null;
+  isGroupWorkActive?: boolean;
 }
 
 export function TotalsAndActions({ 
@@ -43,7 +47,10 @@ export function TotalsAndActions({
   onAIPricing,
   isActionLoading,
   canUsePrivatePriceBase,
-  onFeatureClick
+  onFeatureClick,
+  groupSmrTotal,
+  groupProjects,
+  isGroupWorkActive = false
 }: TotalsAndActionsProps) {
 
   const [isDocGenDialogOpen, setIsDocGenDialogOpen] = useState(false);
@@ -66,6 +73,8 @@ export function TotalsAndActions({
         specifications={specifications}
         quoteConfig={quoteConfig}
         companies={companies || []}
+        projects={isGroupWorkActive ? (groupProjects || []) : []}
+        isGroupWorkActive={isGroupWorkActive}
       />
       <Card>
         <CardHeader>
@@ -74,6 +83,9 @@ export function TotalsAndActions({
         <CardContent className="space-y-2 text-sm">
           {quoteConfig.showMaterialColumns && (
             <div className="flex justify-between"><span className="text-muted-foreground">Итого по спецификации:</span> <span className="font-medium">{calculateProjectTotals(specifications, quoteConfig).specItemsTotalSum.toFixed(2)} ₽</span></div>
+          )}
+          {typeof groupSmrTotal === 'number' && (
+            <div className="flex justify-between"><span className="text-muted-foreground">СМР группы:</span> <span className="font-medium">{groupSmrTotal.toFixed(2)} ₽</span></div>
           )}
           <div className="flex justify-between"><span className="text-muted-foreground">Доп. работы и услуги:</span> <span className="font-medium">{calculateProjectTotals(specifications, quoteConfig).servicesSubtotal.toFixed(2)} ₽</span></div>
           <Separator />
@@ -89,7 +101,14 @@ export function TotalsAndActions({
         </CardContent>
         <CardFooter className="flex flex-col gap-2">
             <div className="flex w-full items-center justify-center gap-2">
-                 <Button onClick={onAIPricing} disabled={!activeProject || isActionLoading} className="flex-1">
+                 <Button
+                    onClick={onAIPricing}
+                    disabled={!activeProject || isActionLoading}
+                    className={cn(
+                      "flex-1 transition-colors",
+                      isGroupWorkActive && "bg-primary/90 hover:bg-primary/80 shadow-sm"
+                    )}
+                  >
                     {isActionLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Bot className="mr-2 h-4 w-4" />}
                     Распределить СМР (AI)
                 </Button>
@@ -146,7 +165,12 @@ export function TotalsAndActions({
                     <Button
                       variant="outline"
                       size="icon"
-                      className="h-12 w-12 relative border-amber-500 text-amber-600 hover:bg-amber-100 hover:text-amber-700"
+                      className={cn(
+                        "h-12 w-12 relative",
+                        canUsePrivatePriceBase
+                          ? "border-amber-500 text-amber-700 hover:bg-amber-100 hover:text-amber-800"
+                          : "border-amber-300 text-amber-500 hover:bg-amber-50"
+                      )}
                       onClick={() => canUsePrivatePriceBase ? onAddToPriceBase() : onFeatureClick(false, 'PRO')}
                       disabled={isActionLoading}
                     >
@@ -154,7 +178,7 @@ export function TotalsAndActions({
                       {!canUsePrivatePriceBase && <Star className="absolute -top-1 -right-1 h-4 w-4 text-amber-400" />}
                     </Button>
                   </TooltipTrigger>
-                  <TooltipContent><p>Обновить мою базу цен</p></TooltipContent>
+                  <TooltipContent><p>{canUsePrivatePriceBase ? "Обновить мою базу цен" : "Обновить мою базу цен (PRO)"}</p></TooltipContent>
                 </Tooltip>
               </TooltipProvider>
             </div>

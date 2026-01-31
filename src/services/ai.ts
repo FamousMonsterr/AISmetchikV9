@@ -7,8 +7,13 @@ import aiConfig from '@/lib/ai-config.json';
 import { type PdfEngine } from './openrouter';
 
 export const getDefaultModel = async (): Promise<string> => {
-    const model = aiConfig.apiModels.find(m => m.isDefault);
+    const model = aiConfig.apiModels.find(m => m.isServiceModel) || aiConfig.apiModels.find(m => m.isDefault);
     return model ? model.value : aiConfig.apiModels[0]?.value || '';
+};
+
+export const getVoiceModel = async (): Promise<string> => {
+    const model = aiConfig.apiModels.find(m => m.isVoiceModel) || aiConfig.apiModels.find(m => m.canProcessAudio);
+    return model ? model.value : '';
 };
 
 
@@ -35,6 +40,10 @@ export async function generateJson(params: AiServiceParams & { responseMimeType?
     if (params.items) {
         const itemsString = JSON.stringify(params.items, null, 2);
         processedPrompt = processedPrompt.replace('{{items}}', itemsString);
+    }
+    if (processedPrompt.includes('{{groupedItems}}')) {
+        const groupedItemsString = JSON.stringify(params.groupedItems || [], null, 2);
+        processedPrompt = processedPrompt.replace('{{groupedItems}}', groupedItemsString);
     }
     if (params.totalSmrCost !== undefined) {
         processedPrompt = processedPrompt.replace('{{totalSmrCost}}', String(params.totalSmrCost));

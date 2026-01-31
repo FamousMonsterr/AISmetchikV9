@@ -19,7 +19,7 @@ import {
 } from '@/actions/supportActions';
 import { cn } from '@/lib/utils';
 
-export function SupportChat() {
+export function SupportChat({ className }: { className?: string } = {}) {
   const { user } = useAppContext();
   const { toast } = useToast();
   const [thread, setThread] = useState<SupportThread | null>(null);
@@ -142,7 +142,7 @@ export function SupportChat() {
   if (!user) return null;
 
   return (
-    <Card>
+    <Card className={cn(className)}>
       <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <CardTitle>Связь с менеджером</CardTitle>

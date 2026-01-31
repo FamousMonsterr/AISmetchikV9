@@ -117,6 +117,12 @@ interface ContractTemplateProps {
   signatureUrl?: string | null;
   stampUrl?: string | null;
   templateId?: string;
+  appendices?: {
+    title: string;
+    projectName: string;
+    specifications: SpecificationItem[];
+    quoteConfig: QuoteConfig;
+  }[];
 }
 
 // A very simplified number to words for demonstration purposes.
@@ -140,6 +146,7 @@ const ContractTemplate = ({
   signatureUrl,
   stampUrl,
   templateId,
+  appendices,
 }: ContractTemplateProps) => {
   const tpl = getTemplateConfig(templateId || 'contract-base-v1');
   const accentColor = tpl?.accentColor || '#0f172a';
@@ -149,6 +156,8 @@ const ContractTemplate = ({
     styles.page,
     isModern && { padding: 40, backgroundColor: '#f8fafc' },
   ];
+
+  const appendixPages = appendices && appendices.length > 0 ? appendices : null;
 
   return (
   <Document>
@@ -210,29 +219,57 @@ const ContractTemplate = ({
         </View>
       </View>
     </Page>
-    
-    <Page size="A4" style={styles.page}>
+
+    {appendixPages ? (
+      appendixPages.map((appendix, index) => (
+        <Page key={`${appendix.projectName}-${index}`} size="A4" style={styles.page}>
+          <Text style={styles.title}>{appendix.title} к Договору подряда № {contractNumber}</Text>
+          <Text style={{textAlign: 'center', marginBottom: 8}}>Спецификация оборудования и работ</Text>
+          <Text style={{textAlign: 'center', marginBottom: 16}}>Проект: {appendix.projectName}</Text>
+          <View style={styles.table}>
+            <View style={styles.tableHeaderRow} fixed>
+              <Text style={[styles.tableColHeader, {width: '5%'}]}>№</Text>
+              <Text style={[styles.tableColHeader, {width: '55%'}]}>Наименование</Text>
+              <Text style={[styles.tableColHeader, {width: '10%'}]}>Кол-во</Text>
+              <Text style={[styles.tableColHeader, {width: '10%'}]}>Ед.</Text>
+              <Text style={[styles.tableColHeader, {width: '20%', borderRightWidth: 0}]}>Сумма</Text>
+            </View>
+            {appendix.specifications.filter(i => !i.isInformational).map((item, rowIndex) => (
+              <View key={item.id} style={styles.tableRow} wrap={false}>
+                <Text style={[styles.tableCol, {width: '5%', textAlign: 'center'}]}>{rowIndex + 1}</Text>
+                <Text style={[styles.tableCol, {width: '55%'}]}>{`${item.name} ${item.brand || ''} ${item.model || ''}`}</Text>
+                <Text style={[styles.tableCol, {width: '10%', textAlign: 'center'}]}>{item.quantityToInstall}</Text>
+                <Text style={[styles.tableCol, {width: '10%', textAlign: 'center'}]}>{item.unit}</Text>
+                <Text style={[styles.tableCol, {width: '20%', textAlign: 'right', borderRightWidth: 0}]}>{calculateItemSum(item, appendix.quoteConfig).toLocaleString('ru-RU')}</Text>
+              </View>
+            ))}
+          </View>
+        </Page>
+      ))
+    ) : (
+      <Page size="A4" style={styles.page}>
         <Text style={styles.title}>Приложение №1 к Договору подряда № {contractNumber}</Text>
         <Text style={{textAlign: 'center', marginBottom: 20}}>Спецификация оборудования и работ</Text>
         <View style={styles.table}>
-            <View style={styles.tableHeaderRow} fixed>
-                 <Text style={[styles.tableColHeader, {width: '5%'}]}>№</Text>
-                 <Text style={[styles.tableColHeader, {width: '55%'}]}>Наименование</Text>
-                 <Text style={[styles.tableColHeader, {width: '10%'}]}>Кол-во</Text>
-                 <Text style={[styles.tableColHeader, {width: '10%'}]}>Ед.</Text>
-                 <Text style={[styles.tableColHeader, {width: '20%', borderRightWidth: 0}]}>Сумма</Text>
+          <View style={styles.tableHeaderRow} fixed>
+            <Text style={[styles.tableColHeader, {width: '5%'}]}>№</Text>
+            <Text style={[styles.tableColHeader, {width: '55%'}]}>Наименование</Text>
+            <Text style={[styles.tableColHeader, {width: '10%'}]}>Кол-во</Text>
+            <Text style={[styles.tableColHeader, {width: '10%'}]}>Ед.</Text>
+            <Text style={[styles.tableColHeader, {width: '20%', borderRightWidth: 0}]}>Сумма</Text>
+          </View>
+          {specifications.filter(i => !i.isInformational).map((item, index) => (
+            <View key={item.id} style={styles.tableRow} wrap={false}>
+              <Text style={[styles.tableCol, {width: '5%', textAlign: 'center'}]}>{index + 1}</Text>
+              <Text style={[styles.tableCol, {width: '55%'}]}>{`${item.name} ${item.brand || ''} ${item.model || ''}`}</Text>
+              <Text style={[styles.tableCol, {width: '10%', textAlign: 'center'}]}>{item.quantityToInstall}</Text>
+              <Text style={[styles.tableCol, {width: '10%', textAlign: 'center'}]}>{item.unit}</Text>
+              <Text style={[styles.tableCol, {width: '20%', textAlign: 'right', borderRightWidth: 0}]}>{calculateItemSum(item, quoteConfig).toLocaleString('ru-RU')}</Text>
             </View>
-             {specifications.filter(i => !i.isInformational).map((item, index) => (
-                <View key={item.id} style={styles.tableRow} wrap={false}>
-                    <Text style={[styles.tableCol, {width: '5%', textAlign: 'center'}]}>{index + 1}</Text>
-                    <Text style={[styles.tableCol, {width: '55%'}]}>{`${item.name} ${item.brand || ''} ${item.model || ''}`}</Text>
-                    <Text style={[styles.tableCol, {width: '10%', textAlign: 'center'}]}>{item.quantityToInstall}</Text>
-                    <Text style={[styles.tableCol, {width: '10%', textAlign: 'center'}]}>{item.unit}</Text>
-                    <Text style={[styles.tableCol, {width: '20%', textAlign: 'right', borderRightWidth: 0}]}>{calculateItemSum(item, quoteConfig).toLocaleString('ru-RU')}</Text>
-                </View>
-            ))}
+          ))}
         </View>
-    </Page>
+      </Page>
+    )}
   </Document>
 );
 

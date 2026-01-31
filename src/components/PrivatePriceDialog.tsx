@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Loader2, DatabaseZap, AlertTriangle, Wand2, Star } from 'lucide-react';
+import { Loader2, DatabaseZap, AlertTriangle, Wand2, HardDrive } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAppContext, type PriceBaseItem, type SpecificationItem } from '@/contexts/AppContext';
 import { getStandardSections } from '@/actions/adminActions';
@@ -22,6 +22,7 @@ interface PrivatePriceDialogProps {
   projectId?: string;
   isGroupMode?: boolean;
   batchProjectCount?: number;
+  onBusinessFeatureClick?: () => void;
 }
 
 export function PrivatePriceDialog({ 
@@ -30,10 +31,13 @@ export function PrivatePriceDialog({
   onConfirm,
   projectId,
   isGroupMode = false,
-  batchProjectCount = 0
+  batchProjectCount = 0,
+  onBusinessFeatureClick
 }: PrivatePriceDialogProps) {
-  const { user, currentProject } = useAppContext();
+  const { user, currentProject, effectivePlan } = useAppContext();
   const { toast } = useToast();
+  const isBusiness = effectivePlan === 'Business' || effectivePlan === 'Enterprise';
+  const businessButtonClass = "border-blue-300 text-blue-700 hover:bg-blue-50";
 
   const [isLoading, setIsLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -217,6 +221,30 @@ export function PrivatePriceDialog({
               )}
             </>
           )}
+        </div>
+        <div className="border rounded-md p-3 bg-blue-50/50 flex flex-col gap-3">
+          <div className="flex items-start justify-between gap-3">
+            <div className="space-y-1">
+              <p className="text-sm font-semibold">Собственное S3-хранилище</p>
+              <p className="text-xs text-muted-foreground">
+                Подключите ваше хранилище для корпоративной безопасности и контроля доступа.
+              </p>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              className={businessButtonClass}
+              onClick={() => onBusinessFeatureClick?.()}
+            >
+              <HardDrive className="mr-2 h-4 w-4" />
+              Подключить S3
+              {!isBusiness && (
+                <span className="ml-2 text-[10px] uppercase tracking-wide border border-blue-200 text-blue-600 px-1.5 rounded">
+                  Business
+                </span>
+              )}
+            </Button>
+          </div>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose} disabled={isProcessing}>Отмена</Button>

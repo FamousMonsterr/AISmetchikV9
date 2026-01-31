@@ -22,11 +22,12 @@ interface ProjectGroupProps {
     onUnarchive: (ids: string[]) => void;
     isActionPending: boolean;
     density?: 'comfortable' | 'compact';
+    isPro?: boolean;
     // Pass down all other props needed by ProjectCard
     [key: string]: any;
 }
 
-export function ProjectGroup({ object, onEditGroup, onDownloadReport, onArchive, onUnarchive, isActionPending, density = 'comfortable', ...rest }: ProjectGroupProps) {
+export function ProjectGroup({ object, onEditGroup, onDownloadReport, onArchive, onUnarchive, isActionPending, density = 'comfortable', isPro = false, ...rest }: ProjectGroupProps) {
     const projectIds = object.projects.map((p: any) => p.id);
     const isActionDisabled = isActionPending;
     const isCompact = density === 'compact';
@@ -50,7 +51,7 @@ export function ProjectGroup({ object, onEditGroup, onDownloadReport, onArchive,
                         <DropdownMenuContent>
                             <DropdownMenuItem onSelect={() => onEditGroup(object)} disabled={isActionDisabled}>
                                 <Pencil className="mr-2 h-4 w-4" />
-                                Редактировать группу
+                                {isPro ? 'Редактировать группу' : 'Редактировать группу (PRO)'}
                             </DropdownMenuItem>
                             <DropdownMenuItem onSelect={() => onDownloadReport(object)} disabled={isActionDisabled}>
                                 <Download className="mr-2 h-4 w-4" />

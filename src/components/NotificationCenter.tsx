@@ -16,11 +16,12 @@ import { cn } from '@/lib/utils';
 
 type NotificationCenterProps = {
   className?: string;
+  showLabel?: boolean;
 };
 
 type NotificationWithSource = Notification & { source: 'global' | 'user' };
 
-export function NotificationCenter({ className }: NotificationCenterProps) {
+export function NotificationCenter({ className, showLabel = false }: NotificationCenterProps) {
   const { user } = useAppContext();
   const [unreadNotifications, setUnreadNotifications] = useState<NotificationWithSource[]>([]);
   const [hiddenIds, setHiddenIds] = useState<string[]>([]);
@@ -131,13 +132,14 @@ export function NotificationCenter({ className }: NotificationCenterProps) {
       <PopoverTrigger asChild>
         <Button
           variant="ghost"
-          size="icon"
-          className={cn("relative", className)}
+          size={showLabel ? "default" : "icon"}
+          className={cn("relative", showLabel && "justify-start gap-2", className)}
           aria-label="Открыть уведомления"
         >
           <Bell className="h-5 w-5" />
+          {showLabel && <span className="text-sm font-medium">Уведомления</span>}
           {unreadCount > 0 && (
-            <span className="absolute -top-1 -right-1 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-destructive px-1 text-[11px] font-semibold text-destructive-foreground">
+            <span className={cn("absolute flex h-5 min-w-[20px] items-center justify-center rounded-full bg-destructive px-1 text-[11px] font-semibold text-destructive-foreground", showLabel ? "top-2 right-2" : "-top-1 -right-1")}>
               {unreadCount > 9 ? "9+" : unreadCount}
             </span>
           )}
