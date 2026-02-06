@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, CreditCard, FileText, Building, User, AlertTriangle } from 'lucide-react';
+import { Loader2, FileText, Building, User, AlertTriangle, UploadCloud, PhoneCall, ShieldCheck } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAppContext, type Company } from '@/contexts/AppContext';
 import { onSnapshot, query, collection, where, addDoc, serverTimestamp, doc, updateDoc } from '@/lib/mongoFirestore';
@@ -19,9 +19,10 @@ import { saveAs } from 'file-saver';
 import InvoiceTemplate from './pdf/InvoiceTemplate';
 import axios from 'axios';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
-import { Checkbox } from './ui/checkbox';
 import { logThirdPartyConsent } from '@/actions/userActions';
 import Link from 'next/link';
+import proConfig from '@/lib/pro-subscription-config.json';
+import { createSbpCreditOrder, createLegalCreditOrder } from '@/actions/creditPurchaseActions';
 
 
 export type CreditPackage = {
@@ -79,6 +80,9 @@ export function PurchaseCreditsDialog({ isOpen, onClose, selectedPackage }: Purc
     const [isGenerating, startGenerating] = useTransition();
     const [isConsentPending, startConsentTransition] = useTransition();
     const [needsConsent, setNeedsConsent] = useState(false);
+    const [receiptFile, setReceiptFile] = useState<File | null>(null);
+    const sbpPhone = proConfig.sbpPhone || '+79114185037';
+    const sbpBank = proConfig.sbpBank || 'Сбербанк';
 
 
     useEffect(() => {
@@ -102,6 +106,12 @@ export function PurchaseCreditsDialog({ isOpen, onClose, selectedPackage }: Purc
             return () => unsubscribe();
         }
     }, [isOpen, user, paymentMethod, toast]);
+
+    useEffect(() => {
+        if (isOpen) {
+            setReceiptFile(null);
+        }
+    }, [isOpen]);
 
     const handleConfirmConsent = () => {
         if (!user) return;
@@ -180,6 +190,15 @@ export function PurchaseCreditsDialog({ isOpen, onClose, selectedPackage }: Purc
                 downloadUrl: fileUri,
             });
 
+            await createLegalCreditOrder({
+                userId: user.uid,
+                packageName: selectedPackage.name,
+                invoiceUrl: fileUri,
+                invoiceNumber,
+                companyId: buyerCompany.id,
+                companyName: buyerCompany.name,
+            });
+
             saveAs(blob, fileName);
             toast({ title: "Успех!", description: "Счет сгенерирован, скачан и сохранен в историю." });
             onClose();
@@ -190,6 +209,46 @@ export function PurchaseCreditsDialog({ isOpen, onClose, selectedPackage }: Purc
         }
     };
     
+    const handleSubmitSbp = () => {
+        if (!user) return;
+        if (!receiptFile) {
+            toast({ title: 'Нужен чек', description: 'Загрузите чек перевода по СБП.', variant: 'destructive' });
+            return;
+        }
+        startGenerating(async () => {
+            try {
+                const presignedUrlResponse = await fetch("/api/s3-upload", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ fileName: receiptFile.name, fileType: receiptFile.type, bucketType: 'user_docs' }),
+                });
+                if (!presignedUrlResponse.ok) {
+                    throw new Error((await presignedUrlResponse.json()).error || "Не удалось получить ссылку для загрузки.");
+                }
+                const { uploadUrl, accessUrl, objectKey } = await presignedUrlResponse.json();
+                await axios.put(uploadUrl, receiptFile, { headers: { 'Content-Type': receiptFile.type } });
+
+                const result = await createSbpCreditOrder({
+                    userId: user.uid,
+                    packageName: selectedPackage.name,
+                    receiptUrl: accessUrl,
+                    receiptObjectKey: objectKey,
+                    receiptFileName: receiptFile.name,
+                });
+                if (!result.success) {
+                    throw new Error(result.message || 'Не удалось отправить чек.');
+                }
+                toast({
+                    title: 'Чек отправлен',
+                    description: 'Проверка оплаты займет до 24 часов.',
+                });
+                onClose();
+            } catch (error: any) {
+                toast({ title: 'Ошибка', description: error.message || 'Не удалось отправить чек.', variant: 'destructive' });
+            }
+        });
+    };
+
     const handleGenerateInvoiceClick = () => {
         if (user && !user.agreedToThirdParty) {
             setNeedsConsent(true);
@@ -199,10 +258,6 @@ export function PurchaseCreditsDialog({ isOpen, onClose, selectedPackage }: Purc
     }
 
 
-    const handlePayByCard = () => {
-        toast({ title: "В разработке", description: "Оплата картой для физ. лиц будет доступна в ближайшее время." });
-    };
-    
     if (needsConsent) {
         return <ConsentDialog onConfirm={handleConfirmConsent} onCancel={() => setNeedsConsent(false)} isPending={isConsentPending} />;
     }
@@ -223,7 +278,7 @@ export function PurchaseCreditsDialog({ isOpen, onClose, selectedPackage }: Purc
                     <RadioGroup value={paymentMethod} onValueChange={(v) => setPaymentMethod(v as any)} className="flex gap-4">
                         <Label htmlFor="pay-individual" className="flex-1 p-4 border rounded-md cursor-pointer hover:bg-secondary has-[:checked]:bg-secondary has-[:checked]:border-primary">
                             <div className="flex items-center justify-between">
-                                <span className="flex items-center gap-2"><User /> Физ. лицо</span>
+                                <span className="flex items-center gap-2"><User /> Физ. лицо (СБП)</span>
                                 <RadioGroupItem value="individual" id="pay-individual" />
                             </div>
                         </Label>
@@ -234,6 +289,32 @@ export function PurchaseCreditsDialog({ isOpen, onClose, selectedPackage }: Purc
                             </div>
                         </Label>
                     </RadioGroup>
+
+                    {paymentMethod === 'individual' && (
+                        <Alert>
+                            <PhoneCall className="h-4 w-4" />
+                            <AlertTitle>Оплата по СБП</AlertTitle>
+                            <AlertDescription className="space-y-3">
+                                <div>
+                                    Переведите <strong>{selectedPackage.totalPrice.toLocaleString('ru-RU')} ₽</strong> по номеру {sbpPhone}.
+                                </div>
+                                <div className="text-xs text-muted-foreground">Банк получателя: {sbpBank}.</div>
+                                <div className="flex items-center gap-2">
+                                    <input
+                                        type="file"
+                                        accept="image/*,.pdf"
+                                        onChange={(e) => setReceiptFile(e.target.files?.[0] || null)}
+                                        disabled={isGenerating}
+                                    />
+                                    {receiptFile && <span className="text-xs text-muted-foreground">{receiptFile.name}</span>}
+                                </div>
+                                <div className="text-xs text-muted-foreground flex items-center gap-2">
+                                    <ShieldCheck className="h-4 w-4" />
+                                    Проверка платежа занимает до 24 часов.
+                                </div>
+                            </AlertDescription>
+                        </Alert>
+                    )}
 
                     {paymentMethod === 'legal' && (
                         <div className="mt-4 space-y-2">
@@ -259,9 +340,9 @@ export function PurchaseCreditsDialog({ isOpen, onClose, selectedPackage }: Purc
                 <DialogFooter>
                     <Button variant="outline" onClick={onClose} disabled={isGenerating}>Отмена</Button>
                     {paymentMethod === 'individual' && (
-                        <Button onClick={handlePayByCard}>
-                            <CreditCard className="mr-2 h-4 w-4" />
-                            Оплатить картой (скоро)
+                        <Button onClick={handleSubmitSbp} disabled={isGenerating || !receiptFile}>
+                            {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <UploadCloud className="mr-2 h-4 w-4" />}
+                            Отправить чек
                         </Button>
                     )}
                     {paymentMethod === 'legal' && (

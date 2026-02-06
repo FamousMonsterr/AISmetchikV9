@@ -1912,6 +1912,7 @@ export default function SpecificationPageContent({ onBackToProjects }: Specifica
                 includeThoughts={includeThoughts}
                 onThoughtsChange={setIncludeThoughts}
                 onProFeatureClick={() => handleFeatureClick(false, 'PRO')}
+                onBusinessFeatureClick={() => handleFeatureClick(false, 'Business')}
               />
             </AccordionItem>
 

@@ -66,6 +66,7 @@ export function PurchaseProDialog({ isOpen, onClose }: PurchaseProDialogProps) {
 
   const selectedPlan = planOptions.find((option) => option.months === selectedMonths) || planOptions[0];
   const sbpPhone = proConfig.sbpPhone || '+79114185037';
+  const sbpBank = proConfig.sbpBank || 'Сбербанк';
 
   useEffect(() => {
     if (!isOpen) return;
@@ -285,6 +286,7 @@ export function PurchaseProDialog({ isOpen, onClose }: PurchaseProDialogProps) {
               <AlertTitle>Оплата по СБП</AlertTitle>
               <AlertDescription className="space-y-3">
                 <div>Переведите <strong>{selectedPlan.price.toLocaleString('ru-RU')} ₽</strong> по номеру {sbpPhone}.</div>
+                <div className="text-xs text-muted-foreground">Банк получателя: {sbpBank}.</div>
                 <div className="flex items-center gap-2">
                   <input
                     type="file"

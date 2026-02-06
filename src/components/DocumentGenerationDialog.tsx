@@ -2,7 +2,7 @@
 // src/components/DocumentGenerationDialog.tsx
 "use client";
 
-import { useEffect, useState, useTransition } from 'react';
+import { useEffect, useMemo, useState, useTransition } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -37,6 +37,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import templateCatalog from '@/lib/quote-templates.json';
 import { updateUserProfile } from '@/actions/userActions';
 import JSZip from 'jszip';
+import { useUserTemplates } from '@/hooks/use-user-templates';
+import type { TemplateStyleConfig } from '@/lib/template-utils';
 
 type DocumentType = 'proposal' | 'invoice' | 'contract' | 'act' | 'ks2' | 'ks3' | 'ks6a';
 type FileFormat = 'pdf' | 'docx' | 'xlsx';
@@ -74,6 +76,16 @@ export function DocumentGenerationDialog({ isOpen, onClose, project, specificati
     const { finalTotal } = calculateProjectTotals(specifications, quoteConfig);
     const isGroupContext = isGroupWorkActive && projects.length > 1;
 
+    const { templates: customTemplates } = useUserTemplates({ enabled: isOpen });
+    const customProposalTemplates = useMemo(
+        () => customTemplates.filter((template) => template.docType === 'proposal'),
+        [customTemplates],
+    );
+    const customTemplatesById = useMemo(
+        () => new Map(customProposalTemplates.map((template) => [template.id, template])),
+        [customProposalTemplates],
+    );
+
     useEffect(() => {
         if (invoiceKind === 'advance' && generateAct) {
             setGenerateAct(false);
@@ -87,13 +99,20 @@ export function DocumentGenerationDialog({ isOpen, onClose, project, specificati
         Enterprise: ['free', 'pro', 'business'],
     } as const;
 
-    const templateOptions = templateCatalog.filter((template) => {
+    const baseTemplateOptions = templateCatalog.filter((template) => {
         if (template.docType !== docType) return false;
         const allowed = templateAccess[effectivePlan ?? 'Free'] || ['free'];
         return allowed.includes(template.status as (typeof allowed)[number]);
     });
 
+    const customTemplateOptions = docType === 'proposal' && effectivePlan !== 'Free'
+        ? customProposalTemplates
+        : [];
+
+    const templateOptions = [...baseTemplateOptions, ...customTemplateOptions];
+
     const activeTemplateId = selectedTemplateId || user?.documentTemplates?.[docType] || templateOptions[0]?.id || 'base-template-v1';
+    const activeTemplateConfig = customTemplatesById.get(activeTemplateId) || null;
 
     const resolveProjectName = (proj: HistoryRequest) => proj.analysisDetails?.objectName || proj.fileName || 'Проект';
     const resolveProjectSpecs = (proj: HistoryRequest) => proj.outputSpecifications.filter(item => !item.isRecommended);
@@ -453,6 +472,7 @@ export function DocumentGenerationDialog({ isOpen, onClose, project, specificati
                             company={contractor}
                             sections={sections}
                             templateId={activeTemplateId}
+                            templateConfig={activeTemplateConfig as TemplateStyleConfig | null}
                             signatureUrl={signatureUrl}
                             stampUrl={stampUrl}
                             includeSummary={true}
@@ -479,6 +499,7 @@ export function DocumentGenerationDialog({ isOpen, onClose, project, specificati
                         signatureBuffer,
                         stampBuffer,
                         templateId: activeTemplateId,
+                        templateConfig: activeTemplateConfig as TemplateStyleConfig | null,
                     });
                     files.push({ blob: docxBlob, fileName: `КП_${baseName}.docx` });
                 } else if (format === 'xlsx') {
@@ -489,6 +510,7 @@ export function DocumentGenerationDialog({ isOpen, onClose, project, specificati
                         <DocumentTemplate
                             {...docParams}
                             templateId={activeTemplateId}
+                            templateConfig={activeTemplateConfig as TemplateStyleConfig | null}
                             signatureUrl={signatureUrl}
                             stampUrl={stampUrl}
                         />
@@ -818,7 +840,9 @@ export function DocumentGenerationDialog({ isOpen, onClose, project, specificati
                               <SelectTrigger><SelectValue placeholder="Выберите шаблон" /></SelectTrigger>
                               <SelectContent>
                                 {templateOptions.map((template) => (
-                                  <SelectItem key={template.id} value={template.id}>{template.name}</SelectItem>
+                                  <SelectItem key={template.id} value={template.id}>
+                                    {template.userId ? `${template.name} (ваш)` : template.name}
+                                  </SelectItem>
                                 ))}
                               </SelectContent>
                             </Select>

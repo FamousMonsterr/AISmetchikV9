@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { PlanBadge } from '@/components/PlanBadge';
 import { Copy, Bot, User as UserIcon, Send, Save, Loader2, Mail, Briefcase, KeySquare, Sun, Moon, Monitor, Crown } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { updateUserProfile, updateMarketingConsent } from '@/actions/userActions';
@@ -26,15 +27,26 @@ import { getNextPlan, getPlanLabel } from '@/lib/plan-utils';
 import { AvatarCropDialog } from '@/components/AvatarCropDialog';
 import { Switch } from '@/components/ui/switch';
 import { UpgradeAccountDialog } from '@/components/UpgradeAccountDialog';
+import { PurchaseProDialog } from '@/components/PurchaseProDialog';
 import templateCatalog from '@/lib/quote-templates.json';
+import { useUserTemplates } from '@/hooks/use-user-templates';
+import { createUserTemplate, updateUserTemplate, deleteUserTemplate } from '@/actions/templateActions';
+import { getTemplateLimitForPlan, type UserTemplate } from '@/lib/template-utils';
+import { TemplateConstructorDialog, type TemplateFormValues } from '@/components/templates/TemplateConstructorDialog';
 
 
 export default function ProfileTab() {
   const { user, setUser, telegramUser, effectivePlan } = useAppContext();
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
+  const [isTemplatePending, startTemplateTransition] = useTransition();
   const [isUpgradeOpen, setIsUpgradeOpen] = useState(false);
   const [upgradeTargetRole, setUpgradeTargetRole] = useState<'PRO' | 'Business' | 'Enterprise'>('PRO');
+  const [isPurchaseOpen, setIsPurchaseOpen] = useState(false);
+
+  const { templates: customTemplates, isLoading: isTemplatesLoading } = useUserTemplates();
+  const [isTemplateDialogOpen, setIsTemplateDialogOpen] = useState(false);
+  const [editingTemplate, setEditingTemplate] = useState<UserTemplate | null>(null);
 
   const [displayName, setDisplayName] = useState(user?.displayName || '');
   const [telegramUsernameState, setTelegramUsernameState] = useState(user?.telegramUsername || '');
@@ -164,6 +176,15 @@ export default function ProfileTab() {
   const nextPlan = getNextPlan(currentPlan);
   const nextPlanLabel = getPlanLabel(nextPlan);
 
+  const handleNextPlanClick = () => {
+    if (!nextPlan) return;
+    if (nextPlan === 'PRO') {
+      setIsPurchaseOpen(true);
+      return;
+    }
+    openUpgradeDialog(nextPlan);
+  };
+
   const handleMarketingToggle = (checked: boolean) => {
     if (!user) return;
     startTransition(async () => {
@@ -197,6 +218,58 @@ export default function ProfileTab() {
     }
   };
 
+  const openTemplateDialog = (template?: UserTemplate | null) => {
+    setEditingTemplate(template || null);
+    setIsTemplateDialogOpen(true);
+  };
+
+  const handleTemplateSubmit = (values: TemplateFormValues) => {
+    if (!user) return;
+    startTemplateTransition(async () => {
+      const payload = {
+        name: values.name,
+        description: values.description || '',
+        accentColor: values.accentColor,
+        headerStyle: values.headerStyle,
+        showSignature: values.showSignature,
+        showStamp: values.showStamp,
+      };
+      const result = editingTemplate
+        ? await updateUserTemplate({
+            userId: user.uid,
+            templateId: editingTemplate.id,
+            updates: payload,
+          })
+        : await createUserTemplate({
+            userId: user.uid,
+            ...payload,
+            docType: 'proposal',
+          });
+
+      if (result.success) {
+        toast({ title: 'Готово', description: result.message });
+        setIsTemplateDialogOpen(false);
+        setEditingTemplate(null);
+      } else {
+        toast({ title: 'Ошибка', description: result.message, variant: 'destructive' });
+      }
+    });
+  };
+
+  const handleTemplateDelete = (template: UserTemplate) => {
+    if (!user) return;
+    const confirmed = window.confirm(`Удалить шаблон "${template.name}"?`);
+    if (!confirmed) return;
+    startTemplateTransition(async () => {
+      const result = await deleteUserTemplate({ userId: user.uid, templateId: template.id });
+      if (result.success) {
+        toast({ title: 'Удалено', description: result.message });
+      } else {
+        toast({ title: 'Ошибка', description: result.message, variant: 'destructive' });
+      }
+    });
+  };
+
   const isProfileChanged =
     displayName !== user?.displayName ||
     telegramUsernameState !== user?.telegramUsername ||
@@ -218,15 +291,27 @@ export default function ProfileTab() {
   } as const;
 
   const canEditTemplates = effectivePlan !== 'Free';
+  const customProposalTemplates = useMemo(
+    () => customTemplates.filter((template) => template.docType === 'proposal'),
+    [customTemplates],
+  );
 
   const templateOptions = useMemo(() => {
     const allowed = templateAccess[effectivePlan ?? 'Free'] || ['free'];
     return {
-      proposal: templateCatalog.filter((item) => item.docType === 'proposal' && allowed.includes(item.status as 'free' | 'pro' | 'business')),
+      proposal: [
+        ...templateCatalog.filter((item) => item.docType === 'proposal' && allowed.includes(item.status as 'free' | 'pro' | 'business')),
+        ...(effectivePlan !== 'Free' ? customProposalTemplates : []),
+      ],
       invoice: templateCatalog.filter((item) => item.docType === 'invoice' && allowed.includes(item.status as 'free' | 'pro' | 'business')),
       contract: templateCatalog.filter((item) => item.docType === 'contract' && allowed.includes(item.status as 'free' | 'pro' | 'business')),
     };
-  }, [effectivePlan]);
+  }, [effectivePlan, customProposalTemplates]);
+
+  const templateLimit = getTemplateLimitForPlan(effectivePlan);
+  const templateCount = customProposalTemplates.length;
+  const canUseConstructor = templateLimit > 0;
+  const isLimitReached = canUseConstructor && templateCount >= templateLimit;
 
   useEffect(() => {
     if (!canEditTemplates) return;
@@ -405,7 +490,7 @@ export default function ProfileTab() {
           {nextPlan && (
             <div className="space-y-2">
               <Label>Следующий тариф</Label>
-              <Button onClick={() => openUpgradeDialog(nextPlan)} className="w-full justify-start">
+              <Button onClick={handleNextPlanClick} className="w-full justify-start">
                 <Crown className="mr-2 h-4 w-4" />
                 Перейти на {nextPlanLabel}
               </Button>
@@ -487,9 +572,7 @@ export default function ProfileTab() {
               <AlertTitle>Недоступно на Free</AlertTitle>
               <AlertDescription className="space-y-2">
                 <div>Настройка шаблонов доступна на PRO и выше.</div>
-                <Button size="sm" variant="outline" onClick={() => openUpgradeDialog('PRO')}>
-                  Запросить 3 дня PRO
-                </Button>
+                <PlanBadge plan="PRO" size="xs" />
               </AlertDescription>
             </Alert>
           )}
@@ -507,7 +590,7 @@ export default function ProfileTab() {
                 <SelectContent>
                   {templateOptions.proposal.map((item) => (
                     <SelectItem key={item.id} value={item.id}>
-                      {item.name}
+                      {item.userId ? `${item.name} (ваш)` : item.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -557,6 +640,69 @@ export default function ProfileTab() {
 
       <Card>
         <CardHeader>
+          <CardTitle>Конструктор КП</CardTitle>
+          <CardDescription>Создавайте фирменные шаблоны коммерческого предложения.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {!canUseConstructor ? (
+            <Alert>
+              <AlertTitle>Доступно на PRO и выше</AlertTitle>
+              <AlertDescription className="flex items-center gap-2">
+                <span>Конструктор шаблонов — PRO функция.</span>
+                <PlanBadge plan="PRO" size="xs" />
+              </AlertDescription>
+            </Alert>
+          ) : (
+            <>
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-3">
+                <div>
+                  <div className="text-sm font-medium">Создано шаблонов: {templateCount} из {templateLimit}</div>
+                  <div className="text-xs text-muted-foreground">PRO — 1, Business — 10, Enterprise — 50</div>
+                </div>
+                <Button onClick={() => openTemplateDialog(null)} disabled={isLimitReached || isTemplatePending}>
+                  Создать шаблон
+                </Button>
+              </div>
+
+              {isTemplatesLoading ? (
+                <div className="text-sm text-muted-foreground">Загрузка шаблонов...</div>
+              ) : customProposalTemplates.length === 0 ? (
+                <div className="text-sm text-muted-foreground">Пока нет собственных шаблонов.</div>
+              ) : (
+                <div className="grid gap-3">
+                  {customProposalTemplates.map((template) => (
+                    <div key={template.id} className="rounded-lg border p-3 flex flex-wrap items-start justify-between gap-3">
+                      <div className="space-y-1">
+                        <div className="text-sm font-semibold">{template.name}</div>
+                        {template.description && <div className="text-xs text-muted-foreground">{template.description}</div>}
+                        <div className="text-xs text-muted-foreground flex flex-wrap items-center gap-3">
+                          <span>Стиль: {template.headerStyle || 'standard'}</span>
+                          <span className="flex items-center gap-1">
+                            Цвет: <span className="inline-block h-3 w-3 rounded-full border" style={{ backgroundColor: template.accentColor || '#0f172a' }} />
+                          </span>
+                          <span>Подпись: {template.showSignature === false ? 'нет' : 'да'}</span>
+                          <span>Печать: {template.showStamp === false ? 'нет' : 'да'}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button size="sm" variant="outline" onClick={() => openTemplateDialog(template)} disabled={isTemplatePending}>
+                          Редактировать
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => handleTemplateDelete(template)} disabled={isTemplatePending}>
+                          Удалить
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
           <CardTitle>Подпись и печать</CardTitle>
           <CardDescription>Добавьте изображение подписи и печати для документов.</CardDescription>
         </CardHeader>
@@ -566,9 +712,7 @@ export default function ProfileTab() {
               <AlertTitle>Недоступно на Free</AlertTitle>
               <AlertDescription className="space-y-2">
                 <div>Загрузка подписи и печати доступна на PRO и выше.</div>
-                <Button size="sm" variant="outline" onClick={() => openUpgradeDialog('PRO')}>
-                  Запросить 3 дня PRO
-                </Button>
+                <PlanBadge plan="PRO" size="xs" />
               </AlertDescription>
             </Alert>
           )}
@@ -677,10 +821,26 @@ export default function ProfileTab() {
         }}
       />
 
+      <TemplateConstructorDialog
+        isOpen={isTemplateDialogOpen}
+        onClose={() => {
+          setIsTemplateDialogOpen(false);
+          setEditingTemplate(null);
+        }}
+        onSubmit={handleTemplateSubmit}
+        isSubmitting={isTemplatePending}
+        initialTemplate={editingTemplate}
+      />
+
       <UpgradeAccountDialog
         isOpen={isUpgradeOpen}
         onClose={() => setIsUpgradeOpen(false)}
         targetRole={upgradeTargetRole}
+      />
+
+      <PurchaseProDialog
+        isOpen={isPurchaseOpen}
+        onClose={() => setIsPurchaseOpen(false)}
       />
       
     </div>

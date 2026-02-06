@@ -40,6 +40,7 @@ import { GlassButton } from "@/components/ui/glass-button";
 import { PlanBadge } from "@/components/PlanBadge";
 import { PlanModelPreference } from "@/components/PlanModelPreference";
 import { getModelLabel, resolvePlanModelId } from "@/lib/plan-models";
+import { UpgradeAccountDialog } from "@/components/UpgradeAccountDialog";
 
 
 const LARGE_FILE_THRESHOLD_MB = 50; // 5 MB threshold for PDF editor
@@ -96,6 +97,7 @@ export default function DashboardPage() {
   
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
   const [isCreditsDialogOpen, setIsCreditsDialogOpen] = useState(false);
+  const [isBusinessUpgradeOpen, setIsBusinessUpgradeOpen] = useState(false);
   
 
   // PWA Share Target Handling
@@ -159,6 +161,11 @@ export default function DashboardPage() {
   }, [userAvailableModels, selectedModel, canSelectModel, resolvedModel]);
 
   const activeModel = canSelectModel ? (selectedModel || resolvedModel) : resolvedModel;
+  const activeModelLabel = useMemo(() => {
+    if (effectivePlan === 'Free') return 'Базовая модель';
+    if (effectivePlan === 'PRO') return 'PRO модель';
+    return getModelLabel(activeModel) || 'Модель определяется тарифом';
+  }, [effectivePlan, activeModel]);
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     if (acceptedFiles.length > 0) {
@@ -217,6 +224,11 @@ export default function DashboardPage() {
     </Dialog>
 
     <InsufficientCreditsDialog isOpen={isCreditsDialogOpen} onClose={() => setIsCreditsDialogOpen(false)} />
+    <UpgradeAccountDialog
+      isOpen={isBusinessUpgradeOpen}
+      onClose={() => setIsBusinessUpgradeOpen(false)}
+      targetRole="Business"
+    />
 
     {isProcessingDialogOpen && selectedFile && (
          <ProcessingDialog
@@ -296,9 +308,9 @@ export default function DashboardPage() {
                     ) : (
                         <div className="flex items-center justify-between rounded-md border px-3 py-2 text-sm">
                             <span className="text-muted-foreground">
-                                {getModelLabel(activeModel) || 'Модель определяется тарифом'}
+                                {activeModelLabel}
                             </span>
-                            <PlanBadge plan="Business" size="xs" />
+                            <PlanBadge plan="Business" size="xs" onClick={() => setIsBusinessUpgradeOpen(true)} />
                         </div>
                     )}
                  </div>

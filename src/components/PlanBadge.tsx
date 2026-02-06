@@ -26,10 +26,27 @@ const sizeStyles: Record<PlanBadgeSize, string> = {
 };
 
 export function PlanBadge({ plan, size = 'sm', icon, className, ...props }: PlanBadgeProps) {
+  const isClickable = typeof props.onClick === 'function';
+  const handleKeyDown: React.KeyboardEventHandler<HTMLDivElement> = (event) => {
+    if (!isClickable) return;
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      props.onClick?.(event as any);
+    }
+  };
   return (
     <Badge
       variant="outline"
-      className={cn('inline-flex items-center gap-1 uppercase tracking-wide', planStyles[plan], sizeStyles[size], className)}
+      role={isClickable ? 'button' : undefined}
+      tabIndex={isClickable ? 0 : undefined}
+      onKeyDown={handleKeyDown}
+      className={cn(
+        'inline-flex items-center gap-1 uppercase tracking-wide',
+        planStyles[plan],
+        sizeStyles[size],
+        isClickable && 'cursor-pointer transition-colors hover:opacity-90',
+        className,
+      )}
       {...props}
     >
       {icon}

@@ -93,6 +93,13 @@ export default function AdminLogsPage() {
         case 'PRO_PAYMENT_APPROVED': return { icon: BadgeCheck, text: `Оплата PRO подтверждена` };
         case 'PRO_PAYMENT_AUTO_APPROVED': return { icon: BadgeCheck, text: `Оплата PRO подтверждена автоматически` };
         case 'PRO_PAYMENT_REJECTED': return { icon: BadgeX, text: `Оплата PRO отклонена` };
+        case 'CREDIT_PAYMENT_SUBMITTED': return { icon: BadgeDollarSign, text: `Оплата кредитов отправлена` };
+        case 'CREDIT_PAYMENT_APPROVED': return { icon: BadgeCheck, text: `Оплата кредитов подтверждена` };
+        case 'CREDIT_PAYMENT_AUTO_APPROVED': return { icon: BadgeCheck, text: `Оплата кредитов авто-подтверждена` };
+        case 'CREDIT_PAYMENT_REJECTED': return { icon: BadgeX, text: `Оплата кредитов отклонена` };
+        case 'TEMPLATE_CREATED': return { icon: FileText, text: `Создан шаблон` };
+        case 'TEMPLATE_UPDATED': return { icon: FileText, text: `Обновлен шаблон` };
+        case 'TEMPLATE_DELETED': return { icon: FileText, text: `Удален шаблон` };
         case 'MARKETING_CONSENT_UPDATE': return { icon: MailCheck, text: `Обновлено согласие на рассылку` };
         case 'ADMIN_SEND_TELEGRAM_MESSAGE': return { icon: Send, text: 'Админ: сообщение в Telegram' };
         case 'ADMIN_UPDATE_SECTIONS': return { icon: Library, text: 'Админ: обновлены разделы' };

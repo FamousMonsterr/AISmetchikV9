@@ -4,6 +4,7 @@ import type { Company, SpecificationItem, AnalysisDetails, QuoteConfig } from '@
 import { format } from 'date-fns';
 import { calculateItemSum } from '@/lib/calculation';
 import { getTemplateConfig } from '@/lib/document-constructor';
+import type { TemplateStyleConfig } from '@/lib/template-utils';
 
 
 interface GenerateDocxParams {
@@ -23,6 +24,7 @@ interface GenerateDocxParams {
     signatureBuffer?: ArrayBuffer | null;
     stampBuffer?: ArrayBuffer | null;
     templateId?: string | null;
+    templateConfig?: TemplateStyleConfig | null;
 }
 
 export const generateDocx = async ({
@@ -35,10 +37,12 @@ export const generateDocx = async ({
     signatureBuffer,
     stampBuffer,
     templateId,
+    templateConfig,
 }: GenerateDocxParams): Promise<Blob> => {
     const tpl = getTemplateConfig(templateId || 'base-template-v1');
-    const accentColor = tpl?.accentColor || '0F172A';
-    const isModern = tpl?.headerStyle === 'modern';
+    const resolved = templateConfig || tpl;
+    const accentColor = resolved?.accentColor ? resolved.accentColor.replace('#', '').toUpperCase() : '0F172A';
+    const isModern = resolved?.headerStyle === 'modern';
 
     const styles = {
         header: {
@@ -248,7 +252,7 @@ export const generateDocx = async ({
                 new Paragraph({ text: "" }),
                 table,
                 new Paragraph({ text: "" }),
-                ...(tpl?.showSignature === false ? [] : signatureBuffer
+                ...(resolved?.showSignature === false ? [] : signatureBuffer
                     ? [
                         new Paragraph({
                             children: [
@@ -268,7 +272,7 @@ export const generateDocx = async ({
                         }),
                     ]
                     : []),
-                ...(tpl?.showStamp === false ? [] : stampBuffer
+                ...(resolved?.showStamp === false ? [] : stampBuffer
                     ? [
                         new Paragraph({
                             children: [

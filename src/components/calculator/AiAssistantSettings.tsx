@@ -20,6 +20,7 @@ interface AiAssistantSettingsProps {
     includeThoughts: boolean;
     onThoughtsChange: (checked: boolean) => void;
     onProFeatureClick: () => void;
+    onBusinessFeatureClick?: () => void;
 }
 
 export function AiAssistantSettings({
@@ -27,7 +28,8 @@ export function AiAssistantSettings({
     onModelChange,
     includeThoughts,
     onThoughtsChange,
-    onProFeatureClick
+    onProFeatureClick,
+    onBusinessFeatureClick,
 }: AiAssistantSettingsProps) {
     const { user, effectivePlan } = useAppContext();
     const canUseThoughts = effectivePlan === 'PRO' || effectivePlan === 'Business' || effectivePlan === 'Enterprise';
@@ -66,7 +68,7 @@ export function AiAssistantSettings({
                         ) : (
                             <div className="flex items-center justify-between rounded-md border px-3 py-2 text-sm">
                                 <span className="text-muted-foreground">{getModelLabel(displayModel) || 'Модель определяется тарифом'}</span>
-                                <PlanBadge plan="Business" size="xs" />
+                                <PlanBadge plan="Business" size="xs" onClick={onBusinessFeatureClick} />
                             </div>
                         )}
                     </div>
