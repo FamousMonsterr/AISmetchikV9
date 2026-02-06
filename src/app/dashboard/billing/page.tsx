@@ -15,6 +15,7 @@ import { PurchaseCreditsDialog, type CreditPackage } from '@/components/Purchase
 import { InvoiceHistory } from '@/components/InvoiceHistory';
 import { CreditHistory } from '@/components/CreditHistory';
 import { UpgradeAccountDialog } from '@/components/UpgradeAccountDialog';
+import { getNextPlan, getPlanLabel } from '@/lib/plan-utils';
 
 const { creditPackages, enterprisePackage } = plansConfig;
 
@@ -51,12 +52,8 @@ export default function BillingPage() {
   };
 
   const currentPlan = effectivePlan || 'Free';
-  const nextPlan = currentPlan === 'Free' ? 'PRO' : currentPlan === 'PRO' ? 'Business' : currentPlan === 'Business' ? 'Enterprise' : null;
-  const nextPlanLabel = nextPlan === 'Business'
-    ? 'Business (от 3 пользователей)'
-    : nextPlan === 'Enterprise'
-      ? 'Enterprise (от 25 пользователей)'
-      : nextPlan;
+  const nextPlan = getNextPlan(currentPlan);
+  const nextPlanLabel = getPlanLabel(nextPlan);
 
   const handleUpgradeClick = () => {
     if (!nextPlan) return;

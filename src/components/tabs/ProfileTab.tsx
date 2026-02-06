@@ -22,6 +22,8 @@ import { syncTelegramChatId } from '@/actions/telegramActions';
 import { useTheme } from 'next-themes';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { SupportChat } from '@/components/support/SupportChat';
+import { getNextPlan, getPlanLabel } from '@/lib/plan-utils';
+import { AvatarCropDialog } from '@/components/AvatarCropDialog';
 import { Switch } from '@/components/ui/switch';
 import { UpgradeAccountDialog } from '@/components/UpgradeAccountDialog';
 import templateCatalog from '@/lib/quote-templates.json';
@@ -56,6 +58,8 @@ export default function ProfileTab() {
     objectKey: user?.avatarObjectKey || '',
     expiresAt: user?.avatarUrlExpirationTimestamp || null,
   });
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [isAvatarCropOpen, setIsAvatarCropOpen] = useState(false);
   const [isUploadingSignature, setIsUploadingSignature] = useState(false);
   const [isUploadingStamp, setIsUploadingStamp] = useState(false);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
@@ -157,12 +161,8 @@ export default function ProfileTab() {
   };
 
   const currentPlan = effectivePlan || 'Free';
-  const nextPlan = currentPlan === 'Free' ? 'PRO' : currentPlan === 'PRO' ? 'Business' : currentPlan === 'Business' ? 'Enterprise' : null;
-  const nextPlanLabel = nextPlan === 'Business'
-    ? 'Business (от 3 пользователей)'
-    : nextPlan === 'Enterprise'
-      ? 'Enterprise (от 25 пользователей)'
-      : nextPlan;
+  const nextPlan = getNextPlan(currentPlan);
+  const nextPlanLabel = getPlanLabel(nextPlan);
 
   const handleMarketingToggle = (checked: boolean) => {
     if (!user) return;
@@ -286,6 +286,16 @@ export default function ProfileTab() {
     }
   };
 
+  const handleAvatarSelect = (file?: File | null) => {
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      toast({ title: 'Ошибка', description: 'Поддерживаются только изображения.', variant: 'destructive' });
+      return;
+    }
+    setAvatarFile(file);
+    setIsAvatarCropOpen(true);
+  };
+
   const handleAssetRemove = (type: 'signature' | 'stamp' | 'avatar') => {
     if (type === 'signature') {
       setSignatureState({ url: '', objectKey: '', expiresAt: null });
@@ -347,7 +357,7 @@ export default function ProfileTab() {
                       type="file"
                       accept="image/*"
                       className="hidden"
-                      onChange={(e) => handleAssetChange('avatar', e.target.files?.[0])}
+                      onChange={(e) => handleAvatarSelect(e.target.files?.[0])}
                     />
                   </label>
                 </Button>
@@ -652,6 +662,20 @@ export default function ProfileTab() {
       </Card>
 
       <SupportChat />
+
+      <AvatarCropDialog
+        isOpen={isAvatarCropOpen}
+        file={avatarFile}
+        onClose={() => {
+          setIsAvatarCropOpen(false);
+          setAvatarFile(null);
+        }}
+        onConfirm={(croppedFile) => {
+          setIsAvatarCropOpen(false);
+          setAvatarFile(null);
+          handleAssetChange('avatar', croppedFile);
+        }}
+      />
 
       <UpgradeAccountDialog
         isOpen={isUpgradeOpen}

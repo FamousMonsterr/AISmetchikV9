@@ -234,22 +234,31 @@ export function PurchaseProDialog({ isOpen, onClose }: PurchaseProDialogProps) {
         <div className="space-y-4 py-2">
           <div>
             <Label>Срок подписки</Label>
-            <RadioGroup value={String(selectedMonths)} onValueChange={(value) => setSelectedMonths(Number(value))} className="grid gap-2 mt-2">
+            <RadioGroup value={String(selectedMonths)} onValueChange={(value) => setSelectedMonths(Number(value))} className="grid gap-2 mt-2 sm:grid-cols-2">
               {planOptions.map((option) => (
-                <Label key={option.months} htmlFor={`plan-${option.months}`} className="flex items-center justify-between gap-2 rounded-md border p-3 cursor-pointer">
+                <Label
+                  key={option.months}
+                  htmlFor={`plan-${option.months}`}
+                  className="flex items-center justify-between gap-2 rounded-md border p-2 cursor-pointer hover:bg-muted/40 has-[:checked]:border-primary has-[:checked]:bg-primary/5"
+                >
                   <div>
-                    <p className="font-medium">{option.label}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {option.isLifetime ? 'Без срока окончания' : 'Оплата за весь период'}
-                    </p>
+                    <p className="text-sm font-medium">{option.label}</p>
+                    <p className="text-xs text-muted-foreground">{option.price.toLocaleString('ru-RU')} ₽</p>
                   </div>
-                  <div className="text-right">
-                    <p className="font-semibold">{option.price.toLocaleString('ru-RU')} ₽</p>
-                    <RadioGroupItem value={String(option.months)} id={`plan-${option.months}`} />
-                  </div>
+                  <RadioGroupItem value={String(option.months)} id={`plan-${option.months}`} />
                 </Label>
               ))}
             </RadioGroup>
+            <div className="mt-3 rounded-md border bg-muted/30 p-3 text-xs text-muted-foreground space-y-1">
+              <div>
+                {selectedPlan.isLifetime ? 'Пожизненный доступ' : `Оплата за ${selectedPlan.months} мес.`}
+              </div>
+              <div>
+                {selectedPlan.isLifetime
+                  ? `Эквивалент ${selectedPlan.months} месяцев PRO.`
+                  : 'Оплата за весь период одной суммой.'}
+              </div>
+            </div>
           </div>
 
           <div>
