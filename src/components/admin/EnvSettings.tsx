@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Save, KeyRound, Bot, Database, Power, Link, Eye, EyeOff, SlidersHorizontal, Mail } from "lucide-react";
-import { getEnvSettings, updateEnvSettings, type EnvSettings, testConnectivity, type ConnectivityStatus } from '@/actions/adminActions';
+import { getEnvSettings, updateEnvSettings, type EnvSettings, testConnectivity, type ConnectivityStatus, syncOzonBank, getOzonBankSyncStatus } from '@/actions/adminActions';
 import { useAppContext } from '@/contexts/AppContext';
 import { Input } from '@/components/ui/input';
 import { isEqual } from 'lodash';
@@ -51,6 +51,8 @@ export function EnvSettings() {
   const [isPending, startTransition] = useTransition();
   const [isTesting, startTesting] = useTransition();
   const [status, setStatus] = useState<ConnectivityStatus | null>(null);
+  const [ozonStatus, setOzonStatus] = useState<any | null>(null);
+  const [isOzonSyncing, startOzonSync] = useTransition();
   
   const hasUnsavedChanges = !isEqual(initialSettings, settings);
 
@@ -76,6 +78,15 @@ export function EnvSettings() {
     fetchSettings();
   }, [user, toast]);
 
+  useEffect(() => {
+    if (!user) return;
+    getOzonBankSyncStatus(user.uid)
+      .then((result) => {
+        if (result.success) setOzonStatus(result.data);
+      })
+      .catch(() => null);
+  }, [user]);
+
   const handleSave = () => {
     if (!user || !settings) return;
     startTransition(async () => {
@@ -99,6 +110,20 @@ export function EnvSettings() {
         } catch (err: any) {
             toast({ title: "Ошибка диагностики", description: err?.message || "Не удалось выполнить проверку.", variant: "destructive" });
         }
+    });
+  };
+
+  const handleOzonSync = () => {
+    if (!user) return;
+    startOzonSync(async () => {
+      const result = await syncOzonBank(user.uid);
+      if (result.success) {
+        toast({ title: 'Синхронизация завершена', description: result.message });
+      } else {
+        toast({ title: 'Ошибка синхронизации', description: result.message, variant: 'destructive' });
+      }
+      const statusResult = await getOzonBankSyncStatus(user.uid);
+      if (statusResult.success) setOzonStatus(statusResult.data);
     });
   };
   
@@ -154,6 +179,35 @@ export function EnvSettings() {
             </CardContent>
         </Card>
         <Card><CardHeader><CardTitle className="flex items-center gap-2 text-base"><Database /> DaData API</CardTitle></CardHeader><CardContent className="space-y-4"><div className="space-y-2"><Label htmlFor="dadataApiKey">Ключ API DaData</Label><PasswordInput id="dadataApiKey" value={settings.dadataApiKey || ''} onChange={(e) => setSettings({ ...settings, dadataApiKey: e.target.value })} placeholder="••••••••••" disabled={isPending} /></div><div className="space-y-2"><Label htmlFor="dadataApiSecret">Секретный ключ DaData</Label><PasswordInput id="dadataApiSecret" value={settings.dadataApiSecret || ''} onChange={(e) => setSettings({ ...settings, dadataApiSecret: e.target.value })} placeholder="••••••••••" disabled={isPending} /></div></CardContent></Card>
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base"><Database /> Ozon Bank</CardTitle>
+            <CardDescription>Настройки доступа и ручная синхронизация.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="ozon-base-url">Base URL API</Label>
+              <Input id="ozon-base-url" value={settings.ozonBankApiBaseUrl || ''} onChange={(e) => setSettings({ ...settings, ozonBankApiBaseUrl: e.target.value })} placeholder="https://api.ozonbank.ru" disabled={isPending} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="ozon-sync-path">Путь синхронизации</Label>
+              <Input id="ozon-sync-path" value={settings.ozonBankSyncPath || ''} onChange={(e) => setSettings({ ...settings, ozonBankSyncPath: e.target.value })} placeholder="/transactions" disabled={isPending} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="ozon-token">Токен доступа</Label>
+              <PasswordInput id="ozon-token" value={settings.ozonBankApiToken || ''} onChange={(e) => setSettings({ ...settings, ozonBankApiToken: e.target.value })} placeholder="••••••••••" disabled={isPending} />
+            </div>
+            <div className="rounded-md border p-3 text-xs text-muted-foreground space-y-1">
+              <div>Последняя синхронизация: {ozonStatus?.lastSyncAt?.toDate ? ozonStatus.lastSyncAt.toDate().toLocaleString('ru-RU') : '—'}</div>
+              <div>Статус: {ozonStatus?.lastSyncStatus || '—'}</div>
+              <div>Сообщение: {ozonStatus?.lastSyncMessage || '—'}</div>
+            </div>
+            <Button variant="outline" onClick={handleOzonSync} disabled={isPending || isOzonSyncing}>
+              {isOzonSyncing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Синхронизировать Ozon Bank
+            </Button>
+          </CardContent>
+        </Card>
         <Card><CardHeader><CardTitle className="flex items-center gap-2 text-base"><Database /> MongoDB</CardTitle></CardHeader><CardContent className="space-y-4"><div className="space-y-2"><Label htmlFor="mongoUri">MongoDB URI</Label><PasswordInput id="mongoUri" value={settings.mongoUri || ''} onChange={(e) => setSettings({ ...settings, mongoUri: e.target.value })} placeholder="mongodb+srv://user:pass@host" disabled={isPending} /></div><div className="space-y-2"><Label htmlFor="mongoDbName">Имя базы данных</Label><Input id="mongoDbName" value={settings.mongoDbName || ''} onChange={(e) => setSettings({ ...settings, mongoDbName: e.target.value })} placeholder="admin" disabled={isPending} /></div><p className="text-xs text-muted-foreground">Параметры из панели имеют приоритет над .env. После изменения перезапустите сервер.</p></CardContent></Card>
         <Card>
             <CardHeader><CardTitle className="flex items-center gap-2 text-base"><Power /> Ключи AI</CardTitle></CardHeader>

@@ -1,14 +1,14 @@
 // src/components/support/FloatingSupportChat.tsx
 "use client";
 
-import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { MessageCircle, X } from 'lucide-react';
 import { SupportChat } from '@/components/support/SupportChat';
 import { cn } from '@/lib/utils';
+import { useSupportChat } from '@/contexts/SupportChatContext';
 
 export function FloatingSupportChat() {
-  const [isOpen, setIsOpen] = useState(false);
+  const { isOpen, toggle } = useSupportChat();
 
   return (
     <div className="fixed bottom-4 right-4 z-40 flex flex-col items-end gap-2">
@@ -23,7 +23,7 @@ export function FloatingSupportChat() {
           "h-12 w-12 rounded-full shadow-lg",
           isOpen ? "bg-secondary text-foreground hover:bg-secondary/80" : "bg-primary text-primary-foreground hover:bg-primary/90"
         )}
-        onClick={() => setIsOpen(prev => !prev)}
+        onClick={toggle}
         aria-label={isOpen ? 'Свернуть чат' : 'Открыть чат'}
       >
         {isOpen ? <X className="h-5 w-5" /> : <MessageCircle className="h-5 w-5" />}

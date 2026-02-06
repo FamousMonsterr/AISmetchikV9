@@ -4,9 +4,9 @@ import aiConfig from '@/lib/ai-config.json';
 type PlanKey = 'free' | 'pro' | 'business' | 'enterprise';
 
 type PlanModelConfig = {
-  defaultModel?: string;
-  abTestModels?: string[];
-  availableModels?: string[];
+  defaultModel: string;
+  abTestModels: string[];
+  availableModels: string[];
 };
 
 export type UserPlanName = 'Free' | 'PRO' | 'Business' | 'Enterprise';

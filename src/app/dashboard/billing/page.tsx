@@ -1,14 +1,12 @@
 // src/app/dashboard/billing/page.tsx
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useTransition } from 'react';
 import { useAppContext } from "@/contexts/AppContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Check, Mail, Loader2, Star, Zap, TrendingUp, KeySquare, HardDrive, Crown } from "lucide-react";
-import { getAppSettings } from '@/actions/adminActions';
 import { Badge } from '@/components/ui/badge';
-import type { AppSettings } from '@/actions/adminActions';
 import plansConfig from '@/lib/plans-config.json';
 import { cn } from '@/lib/utils';
 import { PurchaseCreditsDialog, type CreditPackage } from '@/components/PurchaseCreditsDialog';
@@ -16,35 +14,38 @@ import { InvoiceHistory } from '@/components/InvoiceHistory';
 import { CreditHistory } from '@/components/CreditHistory';
 import { UpgradeAccountDialog } from '@/components/UpgradeAccountDialog';
 import { getNextPlan, getPlanLabel } from '@/lib/plan-utils';
+import { useToast } from '@/hooks/use-toast';
+import { createServiceRequest } from '@/actions/serviceRequestActions';
 
 const { creditPackages, enterprisePackage } = plansConfig;
 
 export default function BillingPage() {
   const { user, effectivePlan } = useAppContext();
-  const [enterpriseEmail, setEnterpriseEmail] = useState('');
-  const [isLoadingEmail, setIsLoadingEmail] = useState(true);
+  const { toast } = useToast();
+  const [isRequestPending, startRequestTransition] = useTransition();
 
   const [isPurchaseDialogOpen, setIsPurchaseDialogOpen] = useState(false);
   const [selectedPackage, setSelectedPackage] = useState<CreditPackage | null>(null);
   const [isUpgradeOpen, setIsUpgradeOpen] = useState(false);
   const [upgradeTargetRole, setUpgradeTargetRole] = useState<'PRO' | 'Business' | 'Enterprise'>('PRO');
 
-  useEffect(() => {
-    const fetchEmail = async () => {
-        setIsLoadingEmail(true);
-        try {
-            const settings: AppSettings = await getAppSettings();
-            setEnterpriseEmail(settings.enterpriseEmail);
-        } catch (error) {
-            console.error("Failed to fetch app settings:", error);
-            // Set a fallback email
-            setEnterpriseEmail('support@example.com');
-        } finally {
-            setIsLoadingEmail(false);
-        }
-    };
-    fetchEmail();
-  }, []);
+  const submitRequest = (type: 's3_storage' | 'estimate_department' | 'crm_connector') => {
+    if (!user) return;
+    startRequestTransition(async () => {
+      const result = await createServiceRequest({
+        userId: user.uid,
+        userName: user.displayName || '',
+        userEmail: user.email || '',
+        type,
+        payload: { source: 'billing' },
+      });
+      if (result.success) {
+        toast({ title: 'Заявка отправлена', description: result.message });
+      } else {
+        toast({ title: 'Ошибка', description: result.message, variant: 'destructive' });
+      }
+    });
+  };
 
   const handlePurchaseClick = (pkg: CreditPackage) => {
     setSelectedPackage(pkg);
@@ -57,8 +58,10 @@ export default function BillingPage() {
 
   const handleUpgradeClick = () => {
     if (!nextPlan) return;
-    setUpgradeTargetRole(nextPlan);
-    setIsUpgradeOpen(true);
+    if (nextPlan === 'PRO' || nextPlan === 'Business' || nextPlan === 'Enterprise') {
+      setUpgradeTargetRole(nextPlan);
+      setIsUpgradeOpen(true);
+    }
   };
 
 
@@ -177,21 +180,32 @@ export default function BillingPage() {
                 </ul>
             </CardContent>
             <CardFooter>
-                 <Button asChild variant="secondary" disabled={isLoadingEmail}>
-                    {isLoadingEmail ? (
-                      <span className="flex items-center">
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin"/>
-                        Загрузка...
-                      </span>
-                    ) : (
-                      <a href={`mailto:${enterpriseEmail}?subject=Запрос на подключение S3 (Business/Enterprise)`}>
-                        <KeySquare className="mr-2 h-4 w-4" />
-                        Запросить подключение S3
-                      </a>
-                    )}
+                 <Button variant="secondary" onClick={() => submitRequest('s3_storage')} disabled={isRequestPending}>
+                    {isRequestPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <KeySquare className="mr-2 h-4 w-4" />}
+                    Запросить подключение S3
                 </Button>
             </CardFooter>
         </Card>
+
+       <Card>
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2"><Mail /> CRM коннектор</CardTitle>
+                <CardDescription>Подключение CRM (AmoCRM, Bitrix24, 1С и др.) доступно на Business/Enterprise.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <ul className="space-y-2 text-sm">
+                    <li className="flex items-center gap-2"><Check className="h-4 w-4 text-green-500"/> Автоматизация обработки смет.</li>
+                    <li className="flex items-center gap-2"><Check className="h-4 w-4 text-green-500"/> Передача данных о смете в сделку.</li>
+                    <li className="flex items-center gap-2"><Check className="h-4 w-4 text-green-500"/> Персональная настройка под процессы.</li>
+                </ul>
+            </CardContent>
+            <CardFooter>
+                <Button variant="secondary" onClick={() => submitRequest('crm_connector')} disabled={isRequestPending}>
+                  {isRequestPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Mail className="mr-2 h-4 w-4" />}
+                  Запросить CRM коннектор
+                </Button>
+            </CardFooter>
+       </Card>
       
        <Card className="bg-gradient-to-r from-primary/10 to-accent/10">
         <CardHeader>
@@ -212,18 +226,9 @@ export default function BillingPage() {
             </ul>
         </CardContent>
         <CardFooter>
-            <Button asChild variant="secondary" className="w-full sm:w-auto" disabled={isLoadingEmail}>
-                {isLoadingEmail ? (
-                    <span className="flex items-center">
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin"/>
-                        Загрузка...
-                    </span>
-                ) : (
-                    <a href={`mailto:${enterpriseEmail}?subject=Запрос на тариф 'Сметный отдел'`}>
-                        <Mail className="mr-2 h-4 w-4" />
-                        Обсудить условия
-                    </a>
-                )}
+            <Button variant="secondary" className="w-full sm:w-auto" onClick={() => submitRequest('estimate_department')} disabled={isRequestPending}>
+                {isRequestPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Mail className="mr-2 h-4 w-4" />}
+                Обсудить условия
             </Button>
         </CardFooter>
       </Card>

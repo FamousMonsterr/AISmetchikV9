@@ -1,5 +1,6 @@
 // scripts/telegram-bot.ts
 // Run with: npm run bot:local
+export {};
 
 require('dotenv/config');
 const { startManagedBot } = require('../src/server-functions/telegram/controller');

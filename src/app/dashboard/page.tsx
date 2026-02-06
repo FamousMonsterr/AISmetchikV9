@@ -14,13 +14,6 @@ import {
   CardTitle,
   CardFooter,
 } from "@/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { useAppContext } from "@/contexts/AppContext";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useCallback, useEffect, useMemo, useRef } from "react";
@@ -38,7 +31,6 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Label } from "@/components/ui/label";
 import { GlassButton } from "@/components/ui/glass-button";
 import { PlanBadge } from "@/components/PlanBadge";
-import { PlanModelPreference } from "@/components/PlanModelPreference";
 import { getModelLabel, resolvePlanModelId } from "@/lib/plan-models";
 import { UpgradeAccountDialog } from "@/components/UpgradeAccountDialog";
 
@@ -278,43 +270,21 @@ export default function DashboardPage() {
             <CardHeader>
                 <CardTitle>Настройки анализа</CardTitle>
                 <CardDescription>
-                    {canSelectModel
-                      ? 'Выберите модель и параметры для обработки'
-                      : 'Модель определяется тарифом. При A/B тесте можно выбрать предпочтительный вариант.'}
+                    Модель определяется тарифом. Настройка моделей доступна в калькуляторе.
                 </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4 flex-grow">
                  <div className="space-y-2">
                      <Label>AI Модель</Label>
-                    {canSelectModel ? (
-                        <Select value={selectedModel} onValueChange={setSelectedModel}>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Выберите модель AI..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {userAvailableModels.length > 0 ? (
-                                    userAvailableModels.map((model: any) => (
-                                        <SelectItem key={model.value} value={model.value}>
-                                            {model.label}
-                                        </SelectItem>
-                                    ))
-                                ) : (
-                                    <SelectItem value="no-models" disabled>
-                                        Модели не доступны
-                                    </SelectItem>
-                                )}
-                            </SelectContent>
-                        </Select>
-                    ) : (
-                        <div className="flex items-center justify-between rounded-md border px-3 py-2 text-sm">
-                            <span className="text-muted-foreground">
-                                {activeModelLabel}
-                            </span>
-                            <PlanBadge plan="Business" size="xs" onClick={() => setIsBusinessUpgradeOpen(true)} />
-                        </div>
-                    )}
+                    <div className="flex items-center justify-between rounded-md border px-3 py-2 text-sm">
+                        <span className="text-muted-foreground">
+                            {activeModelLabel}
+                        </span>
+                        {!canSelectModel && (
+                          <PlanBadge plan="Business" size="xs" onClick={() => setIsBusinessUpgradeOpen(true)} />
+                        )}
+                    </div>
                  </div>
-                 <PlanModelPreference />
             </CardContent>
             <CardFooter>
                  <GlassButton onClick={() => selectedFile && handleStartAnalysis(selectedFile)} className="w-full" disabled={!selectedFile || isProcessingDialogOpen} icon={<Sparkles className="mr-2 h-4 w-4"/>}>

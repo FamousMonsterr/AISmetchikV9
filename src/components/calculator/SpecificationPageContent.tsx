@@ -10,6 +10,7 @@ import { Loader2, ArrowLeft, Mic, MicOff, Bot, Download, Plus } from 'lucide-rea
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { saveProjectVersion, updateRequest } from '@/actions/userActions';
+import { createServiceRequest } from '@/actions/serviceRequestActions';
 import { nanoid } from 'nanoid';
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion';
 import { RefineProjectDialog } from '@/components/RefineProjectDialog';
@@ -749,6 +750,24 @@ export default function SpecificationPageContent({ onBackToProjects }: Specifica
           setUpgradeTargetRole(requiredRole);
           setIsUpgradeModalOpen(true);
       }
+  };
+
+  const handleS3Request = () => {
+    if (!user) return;
+    startActionTransition(async () => {
+      const result = await createServiceRequest({
+        userId: user.uid,
+        userName: user.displayName || '',
+        userEmail: user.email || '',
+        type: 's3_storage',
+        payload: { source: 'private_price_dialog' },
+      });
+      if (result.success) {
+        toast({ title: 'Заявка отправлена', description: result.message });
+      } else {
+        toast({ title: 'Ошибка', description: result.message, variant: 'destructive' });
+      }
+    });
   };
 
   const [smrCost, setSmrCost] = useState(0);
@@ -1674,6 +1693,7 @@ export default function SpecificationPageContent({ onBackToProjects }: Specifica
             onConfirm={() => {}}
             projectId={currentProject.id}
             onBusinessFeatureClick={() => handleFeatureClick(false, 'Business')}
+            onS3Request={handleS3Request}
           />
       )}
       {isGroupProcessingOpen && groupUploadFile && (

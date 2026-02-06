@@ -1,8 +1,8 @@
 # Variables Index
 
-Generated: 2026-02-06T17:54:25.769Z
-Files: 272
-Variables: 4903
+Generated: 2026-02-06T21:27:54.350Z
+Files: 292
+Variables: 5338
 
 ## instrumentation.ts
 
@@ -12,21 +12,13 @@ Variables: 4903
 
 - `baseURL` | const | 3:7
 
+## scripts/auto-approve-credit-payments.ts
+
+- `result` | const | 6:9
+
 ## scripts/auto-approve-pro-payments.ts
 
-- `LIFETIME_MONTHS` | const | 7:7
-- `normalizeDate` | const | 9:7
-- `date` | const | 13:9
-- `base` | const | 19:9
-- `db` | const | 24:9
-- `now` | const | 25:9
-- `orders` | const | 26:9
-- `processed` | const | 32:7
-- `order` | const | 33:14
-- `user` | const | 34:11
-- `currentExpiresAt` | const | 37:11
-- `isLifetime` | const | 38:11
-- `newExpiresAt` | const | 39:11
+- `result` | const | 6:9
 
 ## scripts/create-mongo-indexes.ts
 
@@ -39,9 +31,10 @@ Variables: 4903
 
 - `db` | const | 7:9
 - `users` | const | 8:9
-- `totalExpired` | const | 9:7
+- `totalExpired` | let | 9:7
 - `user` | const | 10:14
-- `result` | const | 11:11
+- `userId` | const | 11:11
+- `result` | const | 12:11
 
 ## scripts/generate-code-index.ts
 
@@ -67,50 +60,41 @@ Variables: 4903
 - `name` | const | 73:11
 - `kind` | const | 74:11
 - `{ line, column }` | const | 75:11
-- `entries` | const | 91:9
-- `variableDeclarations` | const | 92:9
-- `decl` | const | 93:14
-- `name` | const | 94:11
-- `{ line, column }` | const | 95:11
-- `lines` | const | 105:9
-- `lines` | const | 113:9
-- `combined` | const | 118:9
-- `groups` | const | 124:9
-- `section` | const | 125:14
-- `topLevel` | const | 126:11
-- `indexLines` | const | 131:9
-- `[group]` | const | 138:14
-- `partName` | const | 139:11
-- `groupContent` | const | 140:11
-- `files` | const | 149:9
-- `project` | const | 152:9
-- `sourceFiles` | const | 157:9
-- `functionSections` | const | 159:9
-- `variableSections` | const | 160:9
-- `functionCount` | const | 162:7
-- `variableCount` | const | 163:7
-- `sourceFile` | const | 165:14
-- `relativePath` | const | 166:11
-- `functions` | const | 167:11
-- `variables` | const | 168:11
-- `now` | const | 179:9
-- `functionHeader` | const | 180:9
-- `variableHeader` | const | 181:9
+- `list` | const | 83:9
+- `statement` | const | 87:9
+- `entries` | const | 95:9
+- `variableDeclarations` | const | 96:9
+- `decl` | const | 97:14
+- `name` | const | 98:11
+- `{ line, column }` | const | 99:11
+- `lines` | const | 109:9
+- `lines` | const | 117:9
+- `combined` | const | 122:9
+- `groups` | const | 128:9
+- `section` | const | 129:14
+- `topLevel` | const | 130:11
+- `indexLines` | const | 135:9
+- `[group]` | const | 142:14
+- `partName` | const | 143:11
+- `groupContent` | const | 144:11
+- `files` | const | 153:9
+- `project` | const | 156:9
+- `sourceFiles` | const | 161:9
+- `functionSections` | const | 163:9
+- `variableSections` | const | 164:9
+- `functionCount` | let | 166:7
+- `variableCount` | let | 167:7
+- `sourceFile` | const | 169:14
+- `relativePath` | const | 170:11
+- `functions` | const | 171:11
+- `variables` | const | 172:11
+- `now` | const | 183:9
+- `functionHeader` | const | 184:9
+- `variableHeader` | const | 185:9
 
 ## scripts/grant-pro-monthly-credits.ts
 
-- `MONTHLY_BONUS` | const | 6:7
-- `getPeriodKey` | const | 8:7
-- `isSamePeriod` | const | 10:7
-- `normalizeDate` | const | 15:7
-- `date` | const | 19:9
-- `db` | const | 24:9
-- `now` | const | 25:9
-- `periodKey` | const | 26:9
-- `users` | const | 28:9
-- `granted` | const | 38:7
-- `user` | const | 39:14
-- `lastGrantedAt` | const | 40:11
+- `result` | const | 6:9
 
 ## scripts/migrate-credits-ledger.ts
 
@@ -119,7 +103,7 @@ Variables: 4903
 - `addDays` | const | 9:7
 - `db` | const | 12:9
 - `users` | const | 13:9
-- `migrated` | const | 14:7
+- `migrated` | let | 14:7
 - `user` | const | 16:14
 - `userId` | const | 17:11
 - `existingLots` | const | 18:11
@@ -152,14 +136,14 @@ Variables: 4903
 
 ## scripts/server-analysis-worker.ts
 
-- `{ runServerAnalysisWorkerOnce }` | const | 4:7
-- `result` | const | 7:9
-- `error` | const | 16:16
+- `{ runServerAnalysisWorkerOnce }` | const | 5:7
+- `result` | const | 8:9
+- `error` | const | 17:16
 
 ## scripts/telegram-bot.ts
 
-- `{ startManagedBot }` | const | 5:7
-- `err` | const | 12:12
+- `{ startManagedBot }` | const | 6:7
+- `err` | const | 13:12
 
 ## src/actions/adminActions.ts
 
@@ -242,8 +226,8 @@ Variables: 4903
 - `prompt` | const | 413:20
 - `promptDocRef` | const | 414:19
 - `currentPromptDoc` | const | 415:19
-- `lastVersion` | const | 417:17
-- `currentVersionText` | const | 418:17
+- `lastVersion` | let | 417:17
+- `currentVersionText` | let | 418:17
 - `currentVersionRef` | const | 422:23
 - `currentVersionSnap` | const | 423:23
 - `newVersionNumber` | const | 430:23
@@ -292,235 +276,257 @@ Variables: 4903
 - `updateStandardSections` | const | 642:14
 - `jsonString` | const | 647:15
 - `error` | const | 655:14
-- `aiConfigFilePath` | const | 668:7
-- `getAiAgentConfig` | const | 670:14
-- `fileContent` | const | 672:15
-- `error` | const | 674:14
-- `updateAiAgentConfig` | const | 680:14
-- `jsonString` | const | 682:15
+- `aiConfigFilePath` | const | 680:7
+- `getAiAgentConfig` | const | 682:14
+- `fileContent` | const | 684:15
 - `error` | const | 686:14
-- `getRecentLogs` | const | 694:14
-- `logsQuery` | const | 695:11
-- `snapshot` | const | 701:11
-- `BugReportSchema` | const | 705:7
-- `reportUserBug` | const | 714:14
-- `validation` | const | 715:11
-- `error` | const | 728:14
-- `EnvSettingsSchema` | const | 793:7
-- `SECRET_FIELDS` | const | 843:7
-- `sanitizeEnvSettings` | const | 865:7
-- `clone` | const | 866:11
-- `ENV_FILE_MAP` | const | 875:7
-- `envLine` | const | 905:7
-- `envPath` | const | 909:15
-- `existingContent` | const | 910:13
-- `existingMap` | const | 916:15
-- `trimmed` | const | 918:19
-- `[k, ...rest]` | const | 920:19
-- `v` | const | 921:19
-- `val` | const | 926:19
-- `finalLines` | const | 932:15
-- `err` | const | 934:14
-- `isAdminRole` | const | 946:7
-- `getEnvSettings` | const | 948:14
-- `{ requesterId, requireAdmin, allowInternal, stripSecrets }` | const | 949:11
-- `settingsRef` | const | 952:15
-- `docSnap` | const | 953:15
-- `data` | const | 954:15
-- `requesterIsAdmin` | const | 956:13
-- `userDoc` | const | 958:19
-- `canSeeSecrets` | const | 966:15
-- `error` | const | 972:14
-- `getPublicEnvSettings` | const | 981:14
-- `settings` | const | 982:11
-- `{ requesterId, requireAdmin }` | const | 987:11
-- `userDoc` | const | 989:15
-- `env` | const | 995:11
-- `mongoUri` | const | 996:11
-- `mongoDbName` | const | 997:11
-- `status` | const | 999:11
-- `client` | const | 1012:19
-- `err` | const | 1017:18
-- `s3Result` | const | 1025:15
-- `err` | const | 1028:14
-- `updateEnvSettings` | const | 1036:14
-- `validation` | const | 1037:11
-- `firstError` | const | 1040:15
-- `settingsRef` | const | 1045:15
-- `error` | const | 1050:14
-- `startTelegramBotService` | const | 1057:14
-- `adminDoc` | const | 1058:11
-- `status` | const | 1063:15
-- `lockInstance` | const | 1064:15
-- `localInstance` | const | 1065:15
-- `e` | const | 1070:14
-- `stopTelegramBotService` | const | 1075:14
-- `adminDoc` | const | 1076:11
-- `status` | const | 1080:11
-- `getTelegramBotStatus` | const | 1084:14
-- `adminDoc` | const | 1085:11
-- `status` | const | 1089:11
-- `forceUnlockTelegramBotService` | const | 1093:14
-- `adminDoc` | const | 1094:11
-- `status` | const | 1098:11
-- `testTelegramMongoConnection` | const | 1102:14
-- `adminDoc` | const | 1103:11
-- `mongo` | const | 1108:15
-- `e` | const | 1111:14
-- `testTelegramApiConnection` | const | 1116:14
-- `adminDoc` | const | 1117:11
-- `envSettings` | const | 1121:11
-- `botToken` | const | 1122:11
-- `bot` | const | 1127:15
-- `me` | const | 1128:15
-- `e` | const | 1130:14
-- `testTelegramWebhookInfo` | const | 1135:14
-- `adminDoc` | const | 1136:11
-- `envSettings` | const | 1140:11
-- `botToken` | const | 1141:11
-- `bot` | const | 1146:15
-- `info` | const | 1147:15
-- `e` | const | 1149:14
-- `registerTelegramWebhookService` | const | 1154:14
-- `adminDoc` | const | 1155:11
-- `result` | const | 1160:15
-- `e` | const | 1162:14
-- `clearTelegramWebhookService` | const | 1167:14
-- `adminDoc` | const | 1168:11
-- `e` | const | 1175:14
-- `pingTelegramBot` | const | 1180:14
-- `adminDoc` | const | 1181:11
-- `adminData` | const | 1185:11
-- `envSettings` | const | 1189:11
-- `botToken` | const | 1190:11
-- `bot` | const | 1195:15
-- `e` | const | 1198:14
-- `pingTelegramWebhookEndpoint` | const | 1203:14
-- `adminDoc` | const | 1204:11
-- `adminData` | const | 1208:11
-- `envSettings` | const | 1209:11
-- `webhookUrl` | const | 1210:11
-- `secretToken` | const | 1214:11
-- `chatId` | const | 1215:11
-- `update` | const | 1216:11
-- `response` | const | 1235:15
-- `text` | const | 1244:19
+- `updateAiAgentConfig` | const | 692:14
+- `jsonString` | const | 694:15
+- `error` | const | 698:14
+- `getRecentLogs` | const | 706:14
+- `logsQuery` | const | 707:11
+- `snapshot` | const | 713:11
+- `BugReportSchema` | const | 717:7
+- `reportUserBug` | const | 726:14
+- `validation` | const | 727:11
+- `error` | const | 740:14
+- `EnvSettingsSchema` | const | 817:7
+- `SECRET_FIELDS` | const | 879:7
+- `sanitizeEnvSettings` | const | 908:7
+- `clone` | const | 909:11
+- `ENV_FILE_MAP` | const | 918:7
+- `envLine` | const | 960:7
+- `envPath` | const | 964:15
+- `existingContent` | let | 965:13
+- `existingMap` | const | 971:15
+- `trimmed` | const | 973:19
+- `[k, ...rest]` | const | 975:19
+- `v` | const | 976:19
+- `val` | const | 981:19
+- `finalLines` | const | 987:15
+- `err` | const | 989:14
+- `isAdminRole` | const | 1001:7
+- `getEnvSettings` | const | 1003:14
+- `{ requesterId, requireAdmin, allowInternal, stripSecrets }` | const | 1004:11
+- `settingsRef` | const | 1007:15
+- `docSnap` | const | 1008:15
+- `data` | const | 1009:15
+- `requesterIsAdmin` | let | 1011:13
+- `userDoc` | const | 1013:19
+- `canSeeSecrets` | const | 1021:15
+- `error` | const | 1027:14
+- `getPublicEnvSettings` | const | 1036:14
+- `settings` | const | 1037:11
+- `{ requesterId, requireAdmin }` | const | 1042:11
+- `userDoc` | const | 1044:15
+- `env` | const | 1050:11
+- `mongoUri` | const | 1051:11
+- `mongoDbName` | const | 1052:11
+- `status` | const | 1054:11
+- `client` | const | 1067:19
+- `err` | const | 1072:18
+- `s3Result` | const | 1080:15
+- `err` | const | 1083:14
+- `updateEnvSettings` | const | 1091:14
+- `validation` | const | 1092:11
+- `firstError` | const | 1095:15
+- `settingsRef` | const | 1100:15
+- `error` | const | 1105:14
+- `getOzonBankSyncStatus` | const | 1111:14
+- `envSettings` | const | 1112:11
+- `docRef` | const | 1116:11
+- `docSnap` | const | 1117:11
+- `syncOzonBank` | const | 1121:14
+- `envSettings` | const | 1122:11
+- `baseUrl` | const | 1126:11
+- `token` | const | 1127:11
+- `syncPath` | const | 1128:11
+- `url` | const | 1135:15
+- `response` | const | 1136:15
+- `payloadText` | const | 1143:15
+- `status` | const | 1144:15
+- `message` | const | 1145:15
+- `error` | const | 1159:14
+- `startTelegramBotService` | const | 1175:14
+- `adminDoc` | const | 1176:11
+- `status` | const | 1181:15
+- `lockInstance` | const | 1182:15
+- `localInstance` | const | 1183:15
+- `e` | const | 1188:14
+- `stopTelegramBotService` | const | 1193:14
+- `adminDoc` | const | 1194:11
+- `status` | const | 1198:11
+- `getTelegramBotStatus` | const | 1202:14
+- `adminDoc` | const | 1203:11
+- `status` | const | 1207:11
+- `forceUnlockTelegramBotService` | const | 1211:14
+- `adminDoc` | const | 1212:11
+- `status` | const | 1216:11
+- `testTelegramMongoConnection` | const | 1220:14
+- `adminDoc` | const | 1221:11
+- `mongo` | const | 1226:15
+- `e` | const | 1229:14
+- `testTelegramApiConnection` | const | 1234:14
+- `adminDoc` | const | 1235:11
+- `envSettings` | const | 1239:11
+- `botToken` | const | 1240:11
+- `bot` | const | 1245:15
+- `me` | const | 1246:15
 - `e` | const | 1248:14
-- `COLLECTIONS_TO_WIPE` | const | 1256:7
-- `wipeAllData` | const | 1267:14
-- `deletedDocsCount` | const | 1269:13
-- `collectionName` | const | 1271:20
-- `collectionRef` | const | 1272:19
-- `snapshot` | const | 1273:19
-- `batch` | const | 1275:19
-- `batchSize` | const | 1276:17
-- `docSnap` | const | 1278:24
-- `error` | const | 1304:14
-- `BulkUpdateSchema` | const | 1311:7
-- `validation` | const | 1318:11
-- `{ model, filterType, filterValue }` | const | 1322:11
-- `usersRef` | const | 1325:15
-- `q` | const | 1326:15
-- `snapshot` | const | 1328:15
-- `batch` | const | 1333:15
-- `userRef` | const | 1335:19
-- `userData` | const | 1336:19
-- `currentModels` | const | 1337:19
-- `error` | const | 1346:14
-- `getAiApiStats` | const | 1353:14
-- `now` | const | 1355:15
-- `startTime` | const | 1356:15
-- `logsRef` | const | 1358:15
-- `q` | const | 1359:15
-- `snapshot` | const | 1360:15
-- `statsByModel` | const | 1362:15
-- `logData` | const | 1365:19
-- `model` | const | 1366:19
-- `totalCalls` | const | 1378:15
-- `successCalls` | const | 1379:15
-- `errorCalls` | const | 1380:15
-- `totalCost` | const | 1381:15
-- `error` | const | 1391:14
-- `getFeedbackStats` | const | 1396:14
-- `snapshot` | const | 1398:15
-- `ratingsByModel` | const | 1400:15
-- `response` | const | 1403:19
-- `averageRatings` | const | 1413:15
-- `error` | const | 1421:14
-- `settings` | const | 1444:11
-- `resolveConfig` | const | 1449:11
-- `preset` | const | 1450:15
-- `cfg` | const | 1451:15
-- `endpoint` | const | 1452:15
-- `provider` | const | 1453:15
-- `resolved` | const | 1454:15
-- `tryCreate` | const | 1475:11
-- `cfg` | const | 1476:15
-- `shouldUseTenant` | const | 1480:15
-- `accessKeyId` | const | 1481:15
-- `s3Client` | const | 1482:15
-- `primaryError` | const | 1496:14
-- `fallbackError` | const | 1500:22
-- `testS3Connection` | const | 1508:14
-- `{ s3Client }` | const | 1510:15
-- `e` | const | 1513:13
-- `listBuckets` | const | 1518:14
-- `{ s3Client }` | const | 1520:15
-- `{ Buckets }` | const | 1521:15
-- `e` | const | 1523:14
-- `createBucket` | const | 1528:14
-- `{ s3Client }` | const | 1530:15
-- `e` | const | 1533:14
-- `getBucketCors` | const | 1538:14
-- `{ s3Client, config }` | const | 1540:15
-- `{ CORSRules }` | const | 1541:15
-- `parser` | const | 1543:15
-- `xml` | const | 1544:15
-- `e` | const | 1547:13
-- `putBucketCors` | const | 1555:14
-- `{ s3Client, config }` | const | 1560:15
-- `jsonObj` | const | 1561:13
-- `parser` | const | 1563:19
-- `parseError` | const | 1565:18
-- `corsRule` | const | 1568:15
-- `corsRulesArray` | const | 1569:15
-- `toArray` | const | 1574:15
-- `normalizedRules` | const | 1575:15
-- `e` | const | 1590:13
-- `details` | const | 1591:15
-- `suffix` | const | 1596:15
-- `deleteBucketCors` | const | 1601:14
-- `{ s3Client, config }` | const | 1603:15
-- `e` | const | 1606:14
-- `getSurveys` | const | 1612:14
-- `q` | const | 1613:11
-- `snapshot` | const | 1614:11
-- `getNotifications` | const | 1618:14
-- `q` | const | 1619:11
-- `snapshot` | const | 1620:11
-- `createOrUpdateNotification` | const | 1624:14
-- `docRef` | const | 1627:19
-- `docRef` | const | 1631:19
-- `error` | const | 1640:14
-- `deleteNotification` | const | 1645:14
-- `error` | const | 1649:14
-- `createOrUpdateSurvey` | const | 1654:14
-- `docRef` | const | 1657:19
-- `docRef` | const | 1661:19
-- `error` | const | 1665:14
-- `deleteSurvey` | const | 1670:14
-- `error` | const | 1674:14
-- `getBannerConfig` | const | 1680:14
-- `configRef` | const | 1682:15
-- `docSnap` | const | 1683:15
-- `error` | const | 1688:14
-- `updateBannerConfig` | const | 1694:14
-- `error` | const | 1699:14
-- `getKnowledgeBaseArticles` | const | 1713:14
-- `q` | const | 1714:11
-- `snapshot` | const | 1715:11
-- `updateKnowledgeBaseArticle` | const | 1719:14
-- `error` | const | 1723:14
+- `testTelegramWebhookInfo` | const | 1253:14
+- `adminDoc` | const | 1254:11
+- `envSettings` | const | 1258:11
+- `botToken` | const | 1259:11
+- `bot` | const | 1264:15
+- `info` | const | 1265:15
+- `e` | const | 1267:14
+- `registerTelegramWebhookService` | const | 1272:14
+- `adminDoc` | const | 1273:11
+- `result` | const | 1278:15
+- `e` | const | 1280:14
+- `clearTelegramWebhookService` | const | 1285:14
+- `adminDoc` | const | 1286:11
+- `e` | const | 1293:14
+- `pingTelegramBot` | const | 1298:14
+- `adminDoc` | const | 1299:11
+- `adminData` | const | 1303:11
+- `envSettings` | const | 1307:11
+- `botToken` | const | 1308:11
+- `bot` | const | 1313:15
+- `e` | const | 1316:14
+- `pingTelegramWebhookEndpoint` | const | 1321:14
+- `adminDoc` | const | 1322:11
+- `adminData` | const | 1326:11
+- `envSettings` | const | 1327:11
+- `webhookUrl` | const | 1328:11
+- `secretToken` | const | 1332:11
+- `chatId` | const | 1333:11
+- `update` | const | 1334:11
+- `response` | const | 1353:15
+- `text` | const | 1362:19
+- `e` | const | 1366:14
+- `COLLECTIONS_TO_WIPE` | const | 1374:7
+- `wipeAllData` | const | 1385:14
+- `deletedDocsCount` | let | 1387:13
+- `collectionName` | const | 1389:20
+- `collectionRef` | const | 1390:19
+- `snapshot` | const | 1391:19
+- `batch` | const | 1393:19
+- `batchSize` | let | 1394:17
+- `docSnap` | const | 1396:24
+- `error` | const | 1422:14
+- `BulkUpdateSchema` | const | 1429:7
+- `validation` | const | 1436:11
+- `{ model, filterType, filterValue }` | const | 1440:11
+- `usersRef` | const | 1443:15
+- `q` | const | 1444:15
+- `snapshot` | const | 1446:15
+- `batch` | const | 1451:15
+- `userRef` | const | 1453:19
+- `userData` | const | 1454:19
+- `currentModels` | const | 1455:19
+- `error` | const | 1464:14
+- `getAiApiStats` | const | 1471:14
+- `now` | const | 1473:15
+- `startTime` | const | 1474:15
+- `logsRef` | const | 1476:15
+- `q` | const | 1477:15
+- `snapshot` | const | 1478:15
+- `statsByModel` | const | 1480:15
+- `logData` | const | 1483:19
+- `model` | const | 1484:19
+- `totalCalls` | const | 1496:15
+- `successCalls` | const | 1497:15
+- `errorCalls` | const | 1498:15
+- `totalCost` | const | 1499:15
+- `error` | const | 1509:14
+- `getFeedbackStats` | const | 1514:14
+- `snapshot` | const | 1516:15
+- `ratingsByModel` | const | 1518:15
+- `response` | const | 1521:19
+- `averageRatings` | const | 1531:15
+- `error` | const | 1539:14
+- `settings` | const | 1567:11
+- `bucketType` | const | 1568:11
+- `resolveConfig` | const | 1570:11
+- `preset` | const | 1571:15
+- `cfg` | const | 1572:15
+- `endpoint` | const | 1573:15
+- `provider` | const | 1574:15
+- `resolved` | const | 1575:15
+- `resolveBucketForPurpose` | const | 1589:11
+- `resolvePresetForPurpose` | const | 1626:11
+- `tryCreate` | const | 1634:11
+- `cfg` | const | 1635:15
+- `resolvedBucket` | const | 1636:15
+- `bucketName` | const | 1637:15
+- `bucketIsPublic` | const | 1638:15
+- `shouldUseTenant` | const | 1645:15
+- `accessKeyId` | const | 1646:15
+- `s3Client` | const | 1647:15
+- `presetId` | const | 1660:15
+- `primaryError` | const | 1662:14
+- `fallbackError` | const | 1666:22
+- `testS3Connection` | const | 1674:14
+- `{ s3Client }` | const | 1676:15
+- `e` | const | 1679:13
+- `listBuckets` | const | 1684:14
+- `{ s3Client }` | const | 1686:15
+- `{ Buckets }` | const | 1687:15
+- `e` | const | 1689:14
+- `createBucket` | const | 1694:14
+- `{ s3Client }` | const | 1696:15
+- `e` | const | 1699:14
+- `getBucketCors` | const | 1704:14
+- `{ s3Client, config }` | const | 1706:15
+- `{ CORSRules }` | const | 1707:15
+- `parser` | const | 1709:15
+- `xml` | const | 1710:15
+- `e` | const | 1713:13
+- `putBucketCors` | const | 1721:14
+- `{ s3Client, config }` | const | 1726:15
+- `jsonObj` | let | 1727:13
+- `parser` | const | 1729:19
+- `parseError` | const | 1731:18
+- `corsRule` | const | 1734:15
+- `corsRulesArray` | const | 1735:15
+- `toArray` | const | 1740:15
+- `normalizedRules` | const | 1741:15
+- `e` | const | 1756:13
+- `details` | const | 1757:15
+- `suffix` | const | 1762:15
+- `deleteBucketCors` | const | 1767:14
+- `{ s3Client, config }` | const | 1769:15
+- `e` | const | 1772:14
+- `getSurveys` | const | 1778:14
+- `q` | const | 1779:11
+- `snapshot` | const | 1780:11
+- `getNotifications` | const | 1784:14
+- `q` | const | 1785:11
+- `snapshot` | const | 1786:11
+- `createOrUpdateNotification` | const | 1790:14
+- `docRef` | const | 1793:19
+- `docRef` | const | 1797:19
+- `error` | const | 1806:14
+- `deleteNotification` | const | 1811:14
+- `error` | const | 1815:14
+- `createOrUpdateSurvey` | const | 1820:14
+- `docRef` | const | 1823:19
+- `docRef` | const | 1827:19
+- `error` | const | 1831:14
+- `deleteSurvey` | const | 1836:14
+- `error` | const | 1840:14
+- `getBannerConfig` | const | 1846:14
+- `configRef` | const | 1848:15
+- `docSnap` | const | 1849:15
+- `error` | const | 1854:14
+- `updateBannerConfig` | const | 1860:14
+- `error` | const | 1865:14
+- `getKnowledgeBaseArticles` | const | 1879:14
+- `q` | const | 1880:11
+- `snapshot` | const | 1881:11
+- `updateKnowledgeBaseArticle` | const | 1885:14
+- `error` | const | 1889:14
 
 ## src/actions/analysisActions.ts
 
@@ -537,7 +543,7 @@ Variables: 4903
 - `deduction` | const | 29:11
 - `priceBaseItems` | const | 43:11
 - `filteredPriceBase` | const | 44:11
-- `updatedProjectsCount` | const | 46:9
+- `updatedProjectsCount` | let | 46:9
 - `projectId` | const | 49:16
 - `projectRef` | const | 50:13
 - `projectDoc` | const | 51:13
@@ -608,9 +614,123 @@ Variables: 4903
 - `docs` | const | 45:9
 - `entries` | const | 46:9
 
+## src/actions/creditPurchaseActions.ts
+
+- `CreditPackageSchema` | const | 14:7
+- `SbpOrderSchema` | const | 20:7
+- `LegalOrderSchema` | const | 28:7
+- `OrdersQuerySchema` | const | 37:7
+- `OrderActionSchema` | const | 42:7
+- `creditPackages` | const | 48:7
+- `findPackage` | const | 50:7
+- `db` | const | 53:9
+- `user` | const | 54:9
+- `db` | const | 59:9
+- `admins` | const | 67:9
+- `addHours` | const | 82:7
+- `AUTO_APPROVE_HOURS` | const | 83:7
+- `validation` | const | 86:9
+- `{ userId, packageName, receiptUrl, receiptObjectKey, receiptFileName }` | const | 91:9
+- `pkg` | const | 92:9
+- `db` | const | 97:9
+- `user` | const | 98:9
+- `orderId` | const | 103:9
+- `now` | const | 104:9
+- `granted` | const | 123:9
+- `validation` | const | 155:9
+- `{ userId, packageName, invoiceUrl, invoiceNumber, companyId, companyName }` | const | 160:9
+- `pkg` | const | 161:9
+- `db` | const | 166:9
+- `user` | const | 167:9
+- `orderId` | const | 172:9
+- `now` | const | 173:9
+- `granted` | const | 192:9
+- `validation` | const | 224:9
+- `{ adminUserId, status }` | const | 229:9
+- `db` | const | 234:9
+- `filter` | const | 235:9
+- `orders` | const | 237:9
+- `validation` | const | 242:9
+- `{ adminUserId, orderId }` | const | 247:9
+- `db` | const | 252:9
+- `order` | const | 253:9
+- `granted` | const | 264:11
+- `validation` | const | 287:9
+- `{ adminUserId, orderId, reason }` | const | 292:9
+- `db` | const | 297:9
+- `order` | const | 298:9
+- `error` | const | 314:14
+- `db` | const | 329:9
+- `now` | const | 330:9
+- `pending` | const | 331:9
+- `processed` | let | 337:7
+- `order` | const | 338:14
+
+## src/actions/documentTemplateActions.ts
+
+- `templateListFromBase` | const | 30:7
+- `TemplateCreateSchema` | const | 41:7
+- `TemplateUpdateSchema` | const | 52:7
+- `TemplateDeleteSchema` | const | 66:7
+- `SettingsSchema` | const | 71:7
+- `normalizeTemplates` | const | 76:7
+- `isAdmin` | const | 91:7
+- `db` | const | 92:9
+- `user` | const | 93:9
+- `resolveDefaultId` | const | 97:7
+- `buildDefaultSettings` | const | 103:7
+- `defaults` | const | 104:9
+- `byType` | const | 127:9
+- `availability` | const | 129:9
+- `normalizeSettings` | const | 150:7
+- `fallback` | const | 151:9
+- `defaults` | const | 153:9
+- `availability` | const | 154:9
+- `db` | const | 172:9
+- `templatesRaw` | const | 173:9
+- `templates` | const | 174:9
+- `settingsDoc` | const | 175:9
+- `settings` | const | 176:9
+- `validation` | const | 181:9
+- `{ adminUserId, name, description, docType, accentColor, headerStyle, showSignature, showStamp }` | const | 189:9
+- `db` | const | 190:9
+- `templateId` | const | 191:9
+- `now` | const | 192:9
+- `validation` | const | 212:9
+- `db` | const | 220:9
+- `validation` | const | 230:9
+- `db` | const | 238:9
+- `validation` | const | 244:9
+- `db` | const | 252:9
+
 ## src/actions/genkitActions.ts
 
 - None
+
+## src/actions/marketingActions.ts
+
+- `BONUS_CREDITS` | const | 8:7
+- `BONUS_DAYS` | const | 9:7
+- `GrantSchema` | const | 11:7
+- `BatchSchema` | const | 16:7
+- `addDays` | const | 20:7
+- `normalizeDate` | const | 22:7
+- `date` | const | 26:9
+- `isPlanEligible` | const | 30:7
+- `validation` | const | 33:9
+- `{ userId, source }` | const | 37:9
+- `userRef` | const | 39:9
+- `userSnap` | const | 40:9
+- `user` | const | 44:9
+- `lastGrantedAt` | const | 49:9
+- `validation` | const | 71:9
+- `limitCount` | const | 76:9
+- `usersQuery` | const | 77:9
+- `snapshot` | const | 82:9
+- `candidates` | const | 83:9
+- `processed` | let | 88:7
+- `user` | const | 89:14
+- `result` | const | 90:11
 
 ## src/actions/partnerActions.ts
 
@@ -702,8 +822,25 @@ Variables: 4903
 - `db` | const | 406:9
 - `now` | const | 407:9
 - `pending` | const | 408:9
-- `processed` | const | 414:7
+- `processed` | let | 414:7
 - `order` | const | 415:14
+
+## src/actions/serviceRequestActions.ts
+
+- `CreateRequestSchema` | const | 17:7
+- `GetRequestsSchema` | const | 25:7
+- `UpdateStatusSchema` | const | 31:7
+- `dbClient` | const | 38:9
+- `user` | const | 39:9
+- `validation` | const | 44:9
+- `payload` | const | 49:9
+- `validation` | const | 62:9
+- `{ adminUserId, status, type }` | const | 66:9
+- `filters` | const | 71:9
+- `q` | const | 74:9
+- `snapshot` | const | 75:9
+- `validation` | const | 80:9
+- `{ adminUserId, requestId, status }` | const | 84:9
 
 ## src/actions/supportActions.ts
 
@@ -732,11 +869,11 @@ Variables: 4903
 - `db` | const | 157:9
 - `userDoc` | const | 158:9
 - `managerId` | const | 163:9
-- `thread` | const | 164:7
+- `thread` | let | 164:7
 - `now` | const | 167:11
 - `threadId` | const | 168:11
 - `newThread` | const | 169:11
-- `managerInfo` | const | 191:7
+- `managerInfo` | let | 191:7
 - `managerDoc` | const | 193:11
 - `validation` | const | 227:9
 - `{ threadId, requesterId }` | const | 231:9
@@ -809,13 +946,41 @@ Variables: 4903
 - `userRef` | const | 163:11
 - `error` | const | 171:12
 
+## src/actions/templateActions.ts
+
+- `TemplateCreateSchema` | const | 10:7
+- `TemplateUpdateSchema` | const | 21:7
+- `TemplateDeleteSchema` | const | 34:7
+- `sanitizeHeaderStyle` | const | 39:7
+- `buildTemplateId` | const | 44:7
+- `validation` | const | 47:9
+- `{ userId, name, docType, description, accentColor, headerStyle, showSignature, showStamp }` | const | 52:9
+- `db` | const | 53:9
+- `user` | const | 54:9
+- `plan` | const | 59:9
+- `limit` | const | 60:9
+- `existingCount` | const | 65:9
+- `templateId` | const | 70:9
+- `now` | const | 71:9
+- `sanitizedColor` | const | 72:9
+- `validation` | const | 93:9
+- `{ userId, templateId, updates }` | const | 98:9
+- `db` | const | 99:9
+- `existing` | const | 100:9
+- `payload` | const | 105:9
+- `validation` | const | 123:9
+- `{ userId, templateId }` | const | 128:9
+- `db` | const | 129:9
+- `existing` | const | 130:9
+- `user` | const | 137:9
+
 ## src/actions/userActions.ts
 
-- `UpdateProfileSchema` | const | 19:7
-- `updateUserProfile` | const | 41:14
-- `validation` | const | 42:9
-- `firstError` | const | 44:11
-- `errorMessage` | const | 45:11
+- `UpdateProfileSchema` | const | 21:7
+- `updateUserProfile` | const | 43:14
+- `validation` | const | 44:9
+- `firstError` | const | 46:11
+- `errorMessage` | const | 47:11
 - `{
     userId,
     displayName,
@@ -830,204 +995,212 @@ Variables: 4903
     avatarUrl,
     avatarObjectKey,
     avatarUrlExpirationTimestamp,
-  }` | const | 49:9
-- `userRef` | const | 64:9
-- `updatePayload` | const | 67:11
-- `updatedFields` | const | 72:11
-- `error` | const | 119:12
-- `logThirdPartyConsent` | const | 125:14
-- `error` | const | 133:12
-- `MarketingConsentSchema` | const | 138:7
-- `updateMarketingConsent` | const | 143:14
-- `validation` | const | 144:9
-- `{ userId, agreedToMarketing }` | const | 149:9
-- `userRef` | const | 150:9
-- `error` | const | 160:12
-- `UpdatePwaStatusSchema` | const | 166:7
-- `updateUserPwaStatus` | const | 170:14
-- `validation` | const | 171:11
-- `{ userId, isPWA }` | const | 175:11
-- `userRef` | const | 176:11
-- `error` | const | 180:14
-- `PasswordResetSchema` | const | 187:7
-- `sendPasswordReset` | const | 191:14
-- `validation` | const | 192:11
-- `mailerReady` | const | 198:15
-- `dbClient` | const | 203:15
-- `email` | const | 204:15
-- `user` | const | 205:15
-- `token` | const | 210:15
-- `tokenHash` | const | 211:15
-- `expiresAt` | const | 212:15
-- `siteUrl` | const | 221:15
-- `resetLink` | const | 222:15
-- `mailer` | const | 223:15
-- `from` | const | 224:15
-- `error` | const | 233:14
-- `deductCredit` | const | 240:14
-- `error` | const | 244:12
-- `QuoteConfigSchema` | const | 251:7
-- `SaveVersionSchema` | const | 273:7
-- `saveProjectVersion` | const | 300:14
-- `validation` | const | 301:11
-- `{ versionId, ...versionData }` | const | 307:11
-- `batch` | const | 308:11
-- `docRef` | const | 311:13
-- `message` | const | 312:13
-- `action` | const | 313:13
-- `projectGroupQuery` | const | 319:19
-- `querySnapshot` | const | 323:19
-- `finalData` | const | 332:15
-- `docSnap` | const | 345:19
-- `finalProjectDoc` | const | 367:15
-- `savedProject` | const | 368:15
-- `error` | const | 371:14
-- `errorMessage` | const | 373:15
-- `finalizeProjectCreation` | const | 380:14
-- `projectRef` | const | 386:9
-- `now` | const | 390:13
-- `userDoc` | const | 391:13
-- `finalProjectData` | const | 407:13
-- `finalProjectDoc` | const | 435:11
-- `savedProject` | const | 436:11
-- `error` | const | 440:12
-- `errorMessage` | const | 442:11
-- `getUserHistory` | const | 448:14
-- `historyQuery` | const | 453:11
-- `querySnapshot` | const | 459:11
-- `historyList` | const | 460:11
-- `ReportRequestSchema` | const | 468:7
-- `reportRequest` | const | 474:14
-- `validation` | const | 475:9
-- `{ requestId, userId, fileSha1 }` | const | 480:9
-- `requestRef` | const | 483:11
-- `requestDoc` | const | 484:11
-- `cacheRef` | const | 501:15
-- `cacheSnap` | const | 502:15
-- `error` | const | 510:12
-- `ReturnCreditSchema` | const | 516:7
-- `returnCreditForFailedRequest` | const | 521:14
-- `validation` | const | 522:11
-- `{ userId, creditAmount }` | const | 527:11
-- `error` | const | 543:14
-- `errorMessage` | const | 545:15
-- `ArchiveRequestSchema` | const | 551:7
-- `archiveRequest` | const | 556:14
-- `validation` | const | 557:9
-- `{ requestIds, userId }` | const | 562:9
-- `batch` | const | 565:11
-- `id` | const | 566:16
-- `requestRef` | const | 567:13
-- `message` | const | 573:11
-- `error` | const | 575:12
-- `unarchiveRequest` | const | 582:14
-- `validation` | const | 583:9
-- `{ requestIds, userId }` | const | 588:9
-- `batch` | const | 591:11
-- `id` | const | 592:16
-- `requestRef` | const | 593:13
-- `message` | const | 599:11
-- `error` | const | 601:12
-- `DeleteRequestSchema` | const | 607:7
-- `deleteRequest` | const | 612:14
-- `validation` | const | 613:11
-- `{ requestIds, userId }` | const | 617:11
-- `batch` | const | 620:15
-- `id` | const | 621:20
-- `message` | const | 626:15
-- `error` | const | 628:14
-- `UpdateRequestSchema` | const | 634:7
-- `updateRequest` | const | 645:14
-- `validation` | const | 646:11
-- `{ requestIds, userId, updates }` | const | 650:11
-- `batch` | const | 653:15
-- `id` | const | 654:19
-- `requestRef` | const | 655:19
-- `error` | const | 669:14
-- `updatePriceBase` | const | 675:14
-- `batch` | const | 685:15
-- `priceBaseCol` | const | 686:15
-- `q` | const | 687:15
-- `existingPriceBaseSnap` | const | 688:15
-- `existingItems` | const | 689:15
-- `specItem` | const | 691:20
-- `itemKey` | const | 694:19
-- `dataToSave` | const | 696:19
-- `docId` | const | 712:23
-- `docRef` | const | 713:23
-- `newItemRef` | const | 717:23
-- `error` | const | 727:14
-- `getUserPriceBase` | const | 734:14
-- `q` | const | 737:11
-- `snapshot` | const | 738:11
-- `PriceBaseItemUpdateSchema` | const | 747:7
-- `savePriceBaseItems` | const | 758:14
-- `batch` | const | 766:15
-- `priceBaseCol` | const | 767:15
-- `newIds` | const | 768:15
-- `item` | const | 770:20
-- `newItemRef` | const | 771:20
-- `key` | const | 772:20
-- `error` | const | 786:14
-- `updatePriceBaseItem` | const | 792:14
-- `docRef` | const | 796:15
-- `docSnap` | const | 797:15
-- `dataToUpdate` | const | 802:15
-- `originalItem` | const | 803:15
-- `hasIdentifyingFieldChanged` | const | 805:15
-- `newName` | const | 812:20
-- `newModel` | const | 813:20
-- `newBrand` | const | 814:20
-- `newUnit` | const | 815:20
-- `error` | const | 823:14
-- `incrementAiCallCount` | const | 829:14
-- `projectRef` | const | 832:11
-- `error` | const | 839:14
-- `CreateProcessingRequestSchema` | const | 847:7
-- `createProcessingRequest` | const | 860:14
-- `validation` | const | 861:11
-- `{ userId, ...payload }` | const | 866:11
-- `projectRef` | const | 867:11
-- `baseData` | const | 870:15
-- `finalDoc` | const | 922:15
-- `error` | const | 924:14
-- `FinalizeProcessingRequestSchema` | const | 950:7
-- `finalizeProcessingRequest` | const | 969:14
-- `validation` | const | 970:11
+  }` | const | 51:9
+- `userRef` | const | 66:9
+- `updatePayload` | const | 69:11
+- `updatedFields` | const | 74:11
+- `error` | const | 121:12
+- `UpdatePlanModelPreferenceSchema` | const | 128:7
+- `updatePlanModelPreference` | const | 134:14
+- `validation` | const | 135:9
+- `{ userId, plan, model }` | const | 139:9
+- `allowedModels` | const | 140:9
+- `preferenceKey` | const | 146:11
+- `userRef` | const | 147:11
+- `error` | const | 155:12
+- `logThirdPartyConsent` | const | 161:14
+- `error` | const | 169:12
+- `MarketingConsentSchema` | const | 174:7
+- `updateMarketingConsent` | const | 179:14
+- `validation` | const | 180:9
+- `{ userId, agreedToMarketing }` | const | 185:9
+- `userRef` | const | 186:9
+- `error` | const | 199:12
+- `UpdatePwaStatusSchema` | const | 205:7
+- `updateUserPwaStatus` | const | 209:14
+- `validation` | const | 210:11
+- `{ userId, isPWA }` | const | 214:11
+- `userRef` | const | 215:11
+- `error` | const | 219:14
+- `PasswordResetSchema` | const | 226:7
+- `sendPasswordReset` | const | 230:14
+- `validation` | const | 231:11
+- `mailerReady` | const | 237:15
+- `dbClient` | const | 242:15
+- `email` | const | 243:15
+- `user` | const | 244:15
+- `token` | const | 249:15
+- `tokenHash` | const | 250:15
+- `expiresAt` | const | 251:15
+- `siteUrl` | const | 260:15
+- `resetLink` | const | 261:15
+- `mailer` | const | 262:15
+- `from` | const | 263:15
+- `error` | const | 272:14
+- `deductCredit` | const | 279:14
+- `error` | const | 283:12
+- `QuoteConfigSchema` | const | 290:7
+- `SaveVersionSchema` | const | 312:7
+- `saveProjectVersion` | const | 339:14
+- `validation` | const | 340:11
+- `{ versionId, ...versionData }` | const | 346:11
+- `batch` | const | 347:11
+- `docRef` | let | 350:13
+- `message` | let | 351:13
+- `action` | let | 352:13
+- `projectGroupQuery` | const | 358:19
+- `querySnapshot` | const | 362:19
+- `finalData` | const | 371:15
+- `docSnap` | const | 384:19
+- `finalProjectDoc` | const | 406:15
+- `savedProject` | const | 407:15
+- `error` | const | 410:14
+- `errorMessage` | const | 412:15
+- `finalizeProjectCreation` | const | 419:14
+- `projectRef` | const | 425:9
+- `now` | const | 429:13
+- `userDoc` | const | 430:13
+- `finalProjectData` | const | 446:13
+- `finalProjectDoc` | const | 474:11
+- `savedProject` | const | 475:11
+- `error` | const | 479:12
+- `errorMessage` | const | 481:11
+- `getUserHistory` | const | 487:14
+- `historyQuery` | const | 492:11
+- `querySnapshot` | const | 498:11
+- `historyList` | const | 499:11
+- `ReportRequestSchema` | const | 507:7
+- `reportRequest` | const | 513:14
+- `validation` | const | 514:9
+- `{ requestId, userId, fileSha1 }` | const | 519:9
+- `requestRef` | const | 522:11
+- `requestDoc` | const | 523:11
+- `cacheRef` | const | 540:15
+- `cacheSnap` | const | 541:15
+- `error` | const | 549:12
+- `ReturnCreditSchema` | const | 555:7
+- `returnCreditForFailedRequest` | const | 560:14
+- `validation` | const | 561:11
+- `{ userId, creditAmount }` | const | 566:11
+- `error` | const | 582:14
+- `errorMessage` | const | 584:15
+- `ArchiveRequestSchema` | const | 590:7
+- `archiveRequest` | const | 595:14
+- `validation` | const | 596:9
+- `{ requestIds, userId }` | const | 601:9
+- `batch` | const | 604:11
+- `id` | const | 605:16
+- `requestRef` | const | 606:13
+- `message` | const | 612:11
+- `error` | const | 614:12
+- `unarchiveRequest` | const | 621:14
+- `validation` | const | 622:9
+- `{ requestIds, userId }` | const | 627:9
+- `batch` | const | 630:11
+- `id` | const | 631:16
+- `requestRef` | const | 632:13
+- `message` | const | 638:11
+- `error` | const | 640:12
+- `DeleteRequestSchema` | const | 646:7
+- `deleteRequest` | const | 651:14
+- `validation` | const | 652:11
+- `{ requestIds, userId }` | const | 656:11
+- `batch` | const | 659:15
+- `id` | const | 660:20
+- `message` | const | 665:15
+- `error` | const | 667:14
+- `UpdateRequestSchema` | const | 673:7
+- `updateRequest` | const | 684:14
+- `validation` | const | 685:11
+- `{ requestIds, userId, updates }` | const | 689:11
+- `batch` | const | 692:15
+- `id` | const | 693:19
+- `requestRef` | const | 694:19
+- `error` | const | 708:14
+- `updatePriceBase` | const | 714:14
+- `batch` | const | 724:15
+- `priceBaseCol` | const | 725:15
+- `q` | const | 726:15
+- `existingPriceBaseSnap` | const | 727:15
+- `existingItems` | const | 728:15
+- `specItem` | const | 730:20
+- `itemKey` | const | 733:19
+- `dataToSave` | const | 735:19
+- `docId` | const | 751:23
+- `docRef` | const | 752:23
+- `newItemRef` | const | 756:23
+- `error` | const | 766:14
+- `getUserPriceBase` | const | 773:14
+- `q` | const | 776:11
+- `snapshot` | const | 777:11
+- `PriceBaseItemUpdateSchema` | const | 786:7
+- `savePriceBaseItems` | const | 797:14
+- `batch` | const | 805:15
+- `priceBaseCol` | const | 806:15
+- `newIds` | const | 807:15
+- `item` | const | 809:20
+- `newItemRef` | const | 810:20
+- `key` | const | 811:20
+- `error` | const | 825:14
+- `updatePriceBaseItem` | const | 831:14
+- `docRef` | const | 835:15
+- `docSnap` | const | 836:15
+- `dataToUpdate` | const | 841:15
+- `originalItem` | const | 842:15
+- `hasIdentifyingFieldChanged` | const | 844:15
+- `newName` | const | 851:20
+- `newModel` | const | 852:20
+- `newBrand` | const | 853:20
+- `newUnit` | const | 854:20
+- `error` | const | 862:14
+- `incrementAiCallCount` | const | 868:14
+- `projectRef` | const | 871:11
+- `error` | const | 878:14
+- `CreateProcessingRequestSchema` | const | 886:7
+- `createProcessingRequest` | const | 899:14
+- `validation` | const | 900:11
+- `{ userId, ...payload }` | const | 905:11
+- `projectRef` | const | 906:11
+- `baseData` | const | 909:15
+- `finalDoc` | const | 961:15
+- `error` | const | 963:14
+- `FinalizeProcessingRequestSchema` | const | 989:7
+- `finalizeProcessingRequest` | const | 1008:14
+- `validation` | const | 1009:11
 - `{
         userId, projectId, creditCost, outputSpecifications, quoteConfig,
         aiComment, analysisDetails, importantExtractionNotes, aiCallCount,
         initialAiResponse, ...rest
-    }` | const | 974:11
-- `userRef` | const | 980:11
-- `projectRef` | const | 981:11
-- `now` | const | 985:19
-- `userDoc` | const | 986:19
-- `projectDoc` | const | 988:19
-- `finalDoc` | const | 1060:15
-- `error` | const | 1062:14
-- `FailProcessingRequestSchema` | const | 1086:7
-- `failProcessingRequest` | const | 1093:14
-- `validation` | const | 1094:11
-- `{ userId, projectId, status, error }` | const | 1098:11
-- `projectRef` | const | 1099:11
-- `projectSnap` | const | 1102:15
-- `projectData` | const | 1104:15
-- `err` | const | 1134:14
-- `linkRequestToServerJob` | const | 1150:14
-- `{ userId, projectId, serverJobId }` | const | 1151:11
-- `projectRef` | const | 1154:15
-- `projectSnap` | const | 1155:15
-- `projectData` | const | 1157:15
-- `err` | const | 1181:14
-- `RestartProcessingRequestSchema` | const | 1198:7
-- `restartProcessingRequest` | const | 1205:14
-- `validation` | const | 1206:11
-- `{ userId, projectId, fileUri, s3ObjectKey }` | const | 1210:11
-- `projectRef` | const | 1211:11
-- `snap` | const | 1213:15
-- `project` | const | 1215:15
-- `err` | const | 1250:14
+    }` | const | 1013:11
+- `userRef` | const | 1019:11
+- `projectRef` | const | 1020:11
+- `now` | const | 1024:19
+- `userDoc` | const | 1025:19
+- `projectDoc` | const | 1027:19
+- `finalDoc` | const | 1099:15
+- `error` | const | 1101:14
+- `FailProcessingRequestSchema` | const | 1125:7
+- `failProcessingRequest` | const | 1132:14
+- `validation` | const | 1133:11
+- `{ userId, projectId, status, error }` | const | 1137:11
+- `projectRef` | const | 1138:11
+- `projectSnap` | const | 1141:15
+- `projectData` | const | 1143:15
+- `err` | const | 1173:14
+- `linkRequestToServerJob` | const | 1189:14
+- `{ userId, projectId, serverJobId }` | const | 1190:11
+- `projectRef` | const | 1193:15
+- `projectSnap` | const | 1194:15
+- `projectData` | const | 1196:15
+- `err` | const | 1220:14
+- `RestartProcessingRequestSchema` | const | 1237:7
+- `restartProcessingRequest` | const | 1244:14
+- `validation` | const | 1245:11
+- `{ userId, projectId, fileUri, s3ObjectKey }` | const | 1249:11
+- `projectRef` | const | 1250:11
+- `snap` | const | 1252:15
+- `project` | const | 1254:15
+- `err` | const | 1289:14
 
 ## src/ai/flows/create-lead-flow.ts
 
@@ -1050,7 +1223,7 @@ Variables: 4903
 - `fileData` | const | 47:9
 - `result` | const | 50:9
 - `resultText` | const | 57:9
-- `parsedOutput` | const | 62:7
+- `parsedOutput` | let | 62:7
 - `jsonMatch` | const | 65:11
 - `jsonString` | const | 70:13
 - `validationResult` | const | 74:11
@@ -1080,7 +1253,7 @@ Variables: 4903
 - `finalPrompt` | const | 72:9
 - `result` | const | 78:9
 - `resultText` | const | 90:9
-- `parsedOutput` | const | 95:7
+- `parsedOutput` | let | 95:7
 - `startIndex` | const | 97:11
 - `endIndex` | const | 98:11
 - `jsonString` | const | 102:11
@@ -1091,7 +1264,7 @@ Variables: 4903
 
 - `suggestPricesPromptConfig` | const | 19:7
 - `BASE_PROMPT` | const | 23:7
-- `prompt` | const | 27:9
+- `prompt` | let | 27:9
 - `itemsString` | const | 29:11
 - `validatedInput` | const | 47:9
 - `prompt` | const | 48:9
@@ -1104,33 +1277,33 @@ Variables: 4903
 
 - `SuggestPrivatePricesInputSchema` | const | 14:7
 - `SuggestPrivatePricesOutputSchema` | const | 22:7
-- `len1` | const | 33:9
-- `len2` | const | 33:27
+- `len1` | let | 33:9
+- `len2` | let | 33:27
 - `match_distance` | const | 36:11
 - `s1_matches` | const | 37:11
 - `s2_matches` | const | 38:11
-- `matches` | const | 39:9
-- `i` | const | 41:14
+- `matches` | let | 39:9
+- `i` | let | 41:14
 - `start` | const | 42:15
 - `end` | const | 43:15
-- `j` | const | 44:18
-- `t` | const | 56:9
-- `k` | const | 57:9
-- `i` | const | 58:14
+- `j` | let | 44:18
+- `t` | let | 56:9
+- `k` | let | 57:9
+- `i` | let | 58:14
 - `jaro` | const | 66:11
-- `p` | const | 68:9
-- `l` | const | 69:9
+- `p` | let | 68:9
+- `l` | let | 69:9
 - `{ itemsToPrice, priceBaseItems, priceTypeToSuggest }` | const | 79:9
 - `pricedItems` | const | 81:9
-- `bestMatch` | const | 86:9
-- `matchReason` | const | 87:9
+- `bestMatch` | let | 86:9
+- `matchReason` | let | 87:9
 - `modelMatch` | const | 92:15
-- `highestScore` | const | 102:11
-- `potentialMatch` | const | 103:11
+- `highestScore` | let | 102:11
+- `potentialMatch` | let | 103:11
 - `baseItem` | const | 105:18
 - `score` | const | 106:17
 - `updates` | const | 124:13
-- `commentText` | const | 125:11
+- `commentText` | let | 125:11
 
 ## src/ai/genkit-schemas.ts
 
@@ -1287,7 +1460,7 @@ Variables: 4903
 - `validation` | const | 24:11
 - `analysisInput` | const | 30:11
 - `{ text, rawResponse }` | const | 33:11
-- `finalJsonResponse` | const | 37:9
+- `finalJsonResponse` | let | 37:9
 - `e` | const | 52:14
 - `jsonMatch` | const | 55:15
 - `e2` | const | 59:22
@@ -1298,21 +1471,21 @@ Variables: 4903
 
 - `adminCollections` | const | 9:7
 - `userOwnedCollections` | const | 20:7
-- `mongoFilter` | const | 30:9
-- `filter` | const | 31:14
-- `session` | const | 70:9
-- `body` | const | 75:9
-- `admin` | const | 80:9
-- `userId` | const | 81:9
-- `db` | const | 82:9
-- `doc` | const | 96:13
-- `filters` | const | 107:11
-- `hasPublished` | const | 112:13
-- `filter` | const | 120:11
-- `cursor` | const | 121:11
-- `sort` | const | 123:13
-- `docs` | const | 132:11
-- `error` | const | 134:12
+- `mongoFilter` | const | 31:9
+- `filter` | const | 32:14
+- `session` | const | 71:9
+- `body` | const | 76:9
+- `admin` | const | 81:9
+- `userId` | const | 82:9
+- `db` | const | 83:9
+- `doc` | const | 97:13
+- `filters` | const | 108:11
+- `hasPublished` | const | 113:13
+- `filter` | const | 121:11
+- `cursor` | const | 122:11
+- `sort` | const | 124:13
+- `docs` | const | 133:11
+- `error` | const | 135:12
 
 ## src/app/api/realtime/route.ts
 
@@ -1352,8 +1525,8 @@ Variables: 4903
 - `objectKey` | const | 21:11
 - `putCommand` | const | 23:11
 - `uploadUrl` | const | 28:11
-- `accessUrl` | const | 32:9
-- `urlExpirationTimestamp` | const | 33:9
+- `accessUrl` | let | 32:9
+- `urlExpirationTimestamp` | let | 33:9
 - `getUrlExpiration` | const | 42:15
 - `getCommand` | const | 43:15
 - `error` | const | 56:12
@@ -1478,41 +1651,54 @@ Variables: 4903
 
 ## src/app/dashboard/admin/ai-agent/page.tsx
 
-- `{ toast }` | const | 24:9
-- `{ user }` | const | 25:9
-- `[config, setConfig]` | const | 26:9
-- `[isLoading, setIsLoading]` | const | 27:9
-- `[isPending, startTransition]` | const | 28:9
-- `[isModelDialogOpen, setIsModelDialogOpen]` | const | 29:9
-- `[modelToEdit, setModelToEdit]` | const | 30:9
-- `[isAddFromProviderDialogOpen, setIsAddFromProviderDialogOpen]` | const | 31:9
-- `hasUnsavedChanges` | const | 33:9
-- `fetchConfig` | const | 44:11
-- `currentConfig` | const | 47:15
-- `error` | const | 49:16
-- `handleProviderConfigChange` | const | 62:9
-- `newProviders` | const | 65:15
-- `handlePdfPriorityChange` | const | 76:7
-- `moveEngine` | const | 80:7
-- `currentPriority` | const | 83:11
-- `index` | const | 84:11
-- `handleModelConfigChange` | const | 97:9
-- `newApiModels` | const | 100:15
-- `handleSetServiceModel` | const | 106:9
-- `newApiModels` | const | 109:13
-- `handleSetVoiceModel` | const | 117:9
-- `newApiModels` | const | 120:13
-- `handleSaveModel` | const | 128:9
-- `newModels` | const | 131:15
-- `oldModel` | const | 134:19
-- `handleAddMultipleModels` | const | 150:9
-- `newModels` | const | 151:13
-- `handleRemoveModel` | const | 166:9
-- `newApiModels` | const | 169:15
-- `handleSave` | const | 174:9
-- `result` | const | 177:13
-- `renderModelSettings` | const | 194:9
-- `originalIndex` | const | 319:39
+- `{ toast }` | const | 25:9
+- `{ user }` | const | 26:9
+- `[config, setConfig]` | const | 27:9
+- `[isLoading, setIsLoading]` | const | 28:9
+- `[isPending, startTransition]` | const | 29:9
+- `[isModelDialogOpen, setIsModelDialogOpen]` | const | 30:9
+- `[modelToEdit, setModelToEdit]` | const | 31:9
+- `[isAddFromProviderDialogOpen, setIsAddFromProviderDialogOpen]` | const | 32:9
+- `hasUnsavedChanges` | const | 34:9
+- `fetchConfig` | const | 45:11
+- `currentConfig` | const | 48:15
+- `error` | const | 50:16
+- `handleProviderConfigChange` | const | 63:9
+- `newProviders` | const | 66:15
+- `handlePdfPriorityChange` | const | 77:7
+- `moveEngine` | const | 81:7
+- `currentPriority` | const | 84:11
+- `index` | const | 85:11
+- `handleModelConfigChange` | const | 98:9
+- `newApiModels` | const | 101:15
+- `handleSetServiceModel` | const | 107:9
+- `newApiModels` | const | 110:13
+- `handleSetVoiceModel` | const | 118:9
+- `newApiModels` | const | 121:13
+- `handleSaveModel` | const | 129:9
+- `newModels` | const | 132:15
+- `oldModel` | const | 135:19
+- `handleAddMultipleModels` | const | 151:9
+- `newModels` | const | 152:13
+- `handleRemoveModel` | const | 167:9
+- `newApiModels` | const | 170:15
+- `getPlanModels` | const | 175:9
+- `updatePlanModelField` | const | 182:9
+- `planModels` | const | 185:13
+- `togglePlanModelList` | const | 199:9
+- `planModels` | const | 202:13
+- `currentList` | const | 203:13
+- `handleSave` | const | 222:9
+- `validModelIds` | const | 225:13
+- `sanitize` | const | 226:13
+- `sanitizeDefault` | const | 227:13
+- `preparedConfig` | const | 228:13
+- `result` | const | 253:13
+- `planModels` | const | 270:9
+- `modelOptions` | const | 271:9
+- `renderPlanModelChecklist` | const | 273:9
+- `renderModelSettings` | const | 294:9
+- `originalIndex` | const | 412:39
 
 ## src/app/dashboard/admin/ai-analytics/page.tsx
 
@@ -1534,6 +1720,29 @@ Variables: 4903
 - `e` | const | 76:19
 - `filteredLogs` | const | 82:9
 - `lowerSearch` | const | 84:11
+
+## src/app/dashboard/admin/credit-payments/page.tsx
+
+- `statusLabels` | const | 17:7
+- `{ user }` | const | 26:9
+- `{ toast }` | const | 27:9
+- `[orders, setOrders]` | const | 28:9
+- `[isLoading, setIsLoading]` | const | 29:9
+- `[statusFilter, setStatusFilter]` | const | 30:9
+- `[isActionPending, startTransition]` | const | 31:9
+- `loadOrders` | const | 33:9
+- `result` | const | 36:11
+- `handleApprove` | const | 53:9
+- `result` | const | 56:13
+- `handleReject` | const | 66:9
+- `reason` | const | 68:11
+- `result` | const | 70:13
+- `filters` | const | 80:9
+- `createdAt` | const | 138:25
+- `dateLabel` | const | 139:25
+- `docUrl` | const | 140:25
+- `methodLabel` | const | 141:25
+- `statusLabel` | const | 142:25
 
 ## src/app/dashboard/admin/feedback-surveys/page.tsx
 
@@ -1564,24 +1773,24 @@ Variables: 4903
 ## src/app/dashboard/admin/layout.tsx
 
 - `navGroups` | const | 20:7
-- `warmUpIndexes` | const | 88:7
-- `queries` | const | 93:15
-- `error` | const | 105:14
-- `{ user, isNavigating: isAppNavigating }` | const | 117:9
-- `router` | const | 118:9
-- `pathname` | const | 119:9
-- `[isPageTransitioning, startPageTransition]` | const | 120:9
-- `isNavigating` | const | 121:9
-- `[activeGroup, setActiveGroup]` | const | 122:9
-- `[searchOpen, setSearchOpen]` | const | 123:9
-- `[searchTerm, setSearchTerm]` | const | 124:9
-- `handleNavigation` | const | 141:9
-- `flatLinks` | const | 150:9
-- `matchedGroup` | const | 152:11
-- `filteredLinks` | const | 156:9
-- `isActive` | const | 195:31
-- `isActive` | const | 229:39
-- `isActive` | const | 267:43
+- `warmUpIndexes` | const | 90:7
+- `queries` | const | 95:15
+- `error` | const | 110:14
+- `{ user, isNavigating: isAppNavigating }` | const | 122:9
+- `router` | const | 123:9
+- `pathname` | const | 124:9
+- `[isPageTransitioning, startPageTransition]` | const | 125:9
+- `isNavigating` | const | 126:9
+- `[activeGroup, setActiveGroup]` | const | 127:9
+- `[searchOpen, setSearchOpen]` | const | 128:9
+- `[searchTerm, setSearchTerm]` | const | 129:9
+- `handleNavigation` | const | 146:9
+- `flatLinks` | const | 155:9
+- `matchedGroup` | const | 157:11
+- `filteredLinks` | const | 161:9
+- `isActive` | const | 200:31
+- `isActive` | const | 234:39
+- `isActive` | const | 272:43
 
 ## src/app/dashboard/admin/logs/page.tsx
 
@@ -1597,7 +1806,7 @@ Variables: 4903
 - `unsubscribe` | const | 62:11
 - `getActionInfo` | const | 66:9
 - `defaultInfo` | const | 67:11
-- `actionInfo` | const | 132:23
+- `actionInfo` | const | 139:23
 
 ## src/app/dashboard/admin/marketing/page.tsx
 
@@ -1768,6 +1977,7 @@ Variables: 4903
 - `docUrl` | const | 139:25
 - `methodLabel` | const | 140:25
 - `statusLabel` | const | 141:25
+- `durationLabel` | const | 142:25
 
 ## src/app/dashboard/admin/project-logs/page.tsx
 
@@ -1813,7 +2023,7 @@ Variables: 4903
 - `user` | const | 342:13
 - `role` | const | 343:13
 - `visibleLogs` | const | 348:9
-- `logs` | const | 349:9
+- `logs` | let | 349:9
 - `needle` | const | 354:13
 - `sevDiff` | const | 370:15
 - `stats` | const | 380:9
@@ -1919,6 +2129,23 @@ Variables: 4903
 - `recent` | const | 222:19
 - `hasFailed` | const | 223:19
 
+## src/app/dashboard/admin/service-requests/page.tsx
+
+- `statusMap` | const | 29:7
+- `typeLabels` | const | 36:7
+- `{ toast }` | const | 45:9
+- `{ user }` | const | 46:9
+- `[requests, setRequests]` | const | 47:9
+- `[isLoading, setIsLoading]` | const | 48:9
+- `[isUpdating, startUpdating]` | const | 49:9
+- `[statusFilter, setStatusFilter]` | const | 50:9
+- `[typeFilter, setTypeFilter]` | const | 51:9
+- `fetchRequests` | const | 53:9
+- `result` | const | 57:13
+- `error` | const | 66:14
+- `handleStatusChange` | const | 81:9
+- `result` | const | 84:13
+
 ## src/app/dashboard/admin/settings/page.tsx
 
 - `{ user }` | const | 15:9
@@ -1951,12 +2178,12 @@ Variables: 4903
 - `runTest` | const | 110:9
 - `e` | const | 116:14
 - `sortedAndFilteredUsers` | const | 124:9
-- `sortableUsers` | const | 125:9
+- `sortableUsers` | let | 125:9
 - `aValue` | const | 138:15
 - `bValue` | const | 139:15
-- `comparison` | const | 144:13
+- `comparison` | let | 144:13
 - `requestSort` | const | 162:9
-- `direction` | const | 163:9
+- `direction` | let | 163:9
 - `getSortIcon` | const | 170:9
 - `handleOpenMessageDialog` | const | 178:9
 - `handleSendMessage` | const | 184:9
@@ -1981,19 +2208,32 @@ Variables: 4903
 
 ## src/app/dashboard/admin/templates/page.tsx
 
-- `allowed` | const | 21:7
-- `{ toast }` | const | 24:9
-- `[activeTemplateId, setActiveTemplateId]` | const | 25:9
-- `[isExporting, startExport]` | const | 26:9
-- `groupedTemplates` | const | 28:9
-- `activeConfig` | const | 34:9
-- `handleExportPdf` | const | 36:9
-- `blob` | const | 39:13
-- `{ contractor, client, specifications, quoteConfig, objectName }` | const | 40:15
-- `doc` | const | 42:17
-- `doc` | const | 56:17
-- `doc` | const | 76:17
-- `error` | const | 97:16
+- `docTypes` | const | 26:7
+- `planKeys` | const | 27:7
+- `{ toast }` | const | 30:9
+- `{ user }` | const | 31:9
+- `[isPending, startTransition]` | const | 32:9
+- `[isDialogOpen, setIsDialogOpen]` | const | 33:9
+- `[editingTemplate, setEditingTemplate]` | const | 34:9
+- `{ templates, settings }` | const | 36:9
+- `[localTemplates, setLocalTemplates]` | const | 37:9
+- `[localSettings, setLocalSettings]` | const | 38:9
+- `templatesByType` | const | 48:9
+- `refreshTemplates` | const | 55:9
+- `result` | const | 56:11
+- `openCreateDialog` | const | 61:9
+- `openEditDialog` | const | 66:9
+- `handleSubmitTemplate` | const | 71:9
+- `result` | const | 74:13
+- `handleDeleteTemplate` | const | 94:9
+- `confirmed` | const | 96:11
+- `result` | const | 99:13
+- `handleSettingsChange` | const | 109:9
+- `handleAvailabilityToggle` | const | 127:9
+- `current` | const | 133:11
+- `handleSaveSettings` | const | 151:9
+- `result` | const | 154:13
+- `isChecked` | const | 275:37
 
 ## src/app/dashboard/admin/tickets/page.tsx
 
@@ -2032,7 +2272,7 @@ Variables: 4903
 - `userList` | const | 47:13
 - `error` | const | 49:14
 - `handleAction` | const | 60:9
-- `result` | const | 67:13
+- `result` | let | 67:13
 - `handleOpenPermissionsModal` | const | 91:9
 - `handleOpenCreditsModal` | const | 96:9
 - `handleOpenCreditHistory` | const | 101:9
@@ -2040,34 +2280,33 @@ Variables: 4903
 - `handleBulkUpdate` | const | 112:9
 - `result` | const | 114:17
 - `sortedAndFilteredUsers` | const | 124:9
-- `filtered` | const | 125:9
+- `filtered` | let | 125:9
 - `aValue` | const | 134:15
 - `bValue` | const | 135:15
-- `comparison` | const | 140:13
+- `comparison` | let | 140:13
 - `requestSort` | const | 153:9
-- `direction` | const | 154:9
+- `direction` | let | 154:9
 - `getSortIcon` | const | 161:9
 - `{ activeUsers, archivedUsers }` | const | 168:9
 - `renderUserTable` | const | 176:9
 
 ## src/app/dashboard/billing/page.tsx
 
-- `{ creditPackages, enterprisePackage }` | const | 19:7
-- `{ user, effectivePlan }` | const | 22:9
-- `[enterpriseEmail, setEnterpriseEmail]` | const | 23:9
-- `[isLoadingEmail, setIsLoadingEmail]` | const | 24:9
-- `[isPurchaseDialogOpen, setIsPurchaseDialogOpen]` | const | 26:9
-- `[selectedPackage, setSelectedPackage]` | const | 27:9
-- `[isUpgradeOpen, setIsUpgradeOpen]` | const | 28:9
-- `[upgradeTargetRole, setUpgradeTargetRole]` | const | 29:9
-- `fetchEmail` | const | 32:11
-- `settings` | const | 35:19
-- `error` | const | 37:18
-- `handlePurchaseClick` | const | 48:9
-- `currentPlan` | const | 53:9
-- `nextPlan` | const | 54:9
-- `nextPlanLabel` | const | 55:9
-- `handleUpgradeClick` | const | 61:9
+- `{ creditPackages, enterprisePackage }` | const | 20:7
+- `{ user, effectivePlan }` | const | 23:9
+- `{ toast }` | const | 24:9
+- `[isRequestPending, startRequestTransition]` | const | 25:9
+- `[isPurchaseDialogOpen, setIsPurchaseDialogOpen]` | const | 27:9
+- `[selectedPackage, setSelectedPackage]` | const | 28:9
+- `[isUpgradeOpen, setIsUpgradeOpen]` | const | 29:9
+- `[upgradeTargetRole, setUpgradeTargetRole]` | const | 30:9
+- `submitRequest` | const | 32:9
+- `result` | const | 35:13
+- `handlePurchaseClick` | const | 50:9
+- `currentPlan` | const | 55:9
+- `nextPlan` | const | 56:9
+- `nextPlanLabel` | const | 57:9
+- `handleUpgradeClick` | const | 59:9
 - `originalPrice` | const | 129:27
 - `savedAmount` | const | 130:27
 
@@ -2086,24 +2325,24 @@ Variables: 4903
 - `isCurrent` | const | 132:19
 - `currentLevelIndex` | const | 133:19
 - `isNextLevel` | const | 134:19
-- `ReferralDashboard` | const | 179:7
-- `{ user, toast }` | const | 180:11
-- `[referredUsers, setReferredUsers]` | const | 181:11
-- `[isLoading, setIsLoading]` | const | 182:11
-- `[isRegisterOpen, setIsRegisterOpen]` | const | 183:11
-- `fetchReferredUsers` | const | 187:15
-- `users` | const | 190:23
-- `error` | const | 192:22
-- `siteUrl` | const | 201:11
-- `referralLink` | const | 202:11
-- `promocode` | const | 203:11
-- `handleCopy` | const | 205:11
-- `totalReferrals` | const | 214:11
-- `totalEarnedCredits` | const | 215:11
-- `{ user, toast }` | const | 358:11
-- `handleAgree` | const | 360:11
-- `result` | const | 363:19
-- `error` | const | 370:18
+- `ReferralDashboard` | const | 175:7
+- `{ user, toast }` | const | 176:11
+- `[referredUsers, setReferredUsers]` | const | 177:11
+- `[isLoading, setIsLoading]` | const | 178:11
+- `[isRegisterOpen, setIsRegisterOpen]` | const | 179:11
+- `fetchReferredUsers` | const | 183:15
+- `users` | const | 186:23
+- `error` | const | 188:22
+- `siteUrl` | const | 197:11
+- `referralLink` | const | 198:11
+- `promocode` | const | 199:11
+- `handleCopy` | const | 201:11
+- `totalReferrals` | const | 210:11
+- `totalEarnedCredits` | const | 211:11
+- `{ user, toast }` | const | 354:11
+- `handleAgree` | const | 356:11
+- `result` | const | 359:19
+- `error` | const | 366:18
 
 ## src/app/dashboard/calculator/page.tsx
 
@@ -2149,74 +2388,83 @@ Variables: 4903
 
 ## src/app/dashboard/layout.tsx
 
-- `{ user, isLoading: isUserLoading, telegram, setNavigating, currentProject, resetAppContextState }` | const | 51:11
-- `[isNavigating, startNavigation]` | const | 52:11
-- `router` | const | 53:11
-- `pathname` | const | 54:11
-- `{ toast }` | const | 55:11
-- `[isUpgradeModalOpen, setIsUpgradeModalOpen]` | const | 56:11
-- `[upgradeTargetRole, setUpgradeTargetRole]` | const | 57:11
-- `[open, setOpen]` | const | 58:11
-- `{ theme, setTheme }` | const | 59:11
-- `previousPathnameRef` | const | 62:11
-- `isMobile` | const | 63:11
-- `handleLogout` | const | 98:11
-- `handleNavigation` | const | 103:11
-- `menuItems` | const | 115:9
-- `adminMenuItem` | const | 122:11
+- `{ user, isLoading: isUserLoading, telegram, setNavigating, currentProject, resetAppContextState }` | const | 52:11
+- `[isNavigating, startNavigation]` | const | 53:11
+- `router` | const | 54:11
+- `pathname` | const | 55:11
+- `{ toast }` | const | 56:11
+- `[isUpgradeModalOpen, setIsUpgradeModalOpen]` | const | 57:11
+- `[upgradeTargetRole, setUpgradeTargetRole]` | const | 58:11
+- `[open, setOpen]` | const | 59:11
+- `{ theme, setTheme }` | const | 60:11
+- `previousPathnameRef` | const | 63:11
+- `isMobile` | const | 64:11
+- `handleLogout` | const | 99:11
+- `handleNavigation` | const | 104:11
+- `menuItems` | const | 116:9
+- `adminMenuItem` | const | 123:11
 
 ## src/app/dashboard/mobile-panel/page.tsx
 
-- `MAX_FILE_SIZE` | const | 20:7
-- `{ user, userAvailableModels, setCurrentProject: setGlobalProject }` | const | 23:11
-- `{ toast }` | const | 24:11
-- `[localCurrentProject, setLocalCurrentProject]` | const | 26:11
-- `[selectedFile, setSelectedFile]` | const | 27:11
-- `[isProcessingDialogOpen, setIsProcessingDialogOpen]` | const | 28:11
-- `[isCreditsDialogOpen, setIsCreditsDialogOpen]` | const | 29:11
-- `[searchQuery, setSearchQuery]` | const | 30:11
-- `[isLoading, setIsLoading]` | const | 31:11
-- `selectedModel` | const | 33:11
-- `q` | const | 44:15
-- `unsubscribe` | const | 51:15
-- `lastProject` | const | 53:23
-- `onDrop` | const | 62:11
-- `file` | const | 64:15
-- `{ getRootProps, getInputProps, isDragActive }` | const | 83:11
-- `handleProjectSelect` | const | 85:11
-- `handleClearFile` | const | 90:11
+- `MAX_FILE_SIZE` | const | 21:7
+- `{ user, effectivePlan, setCurrentProject: setGlobalProject }` | const | 24:11
+- `{ toast }` | const | 25:11
+- `[localCurrentProject, setLocalCurrentProject]` | const | 27:11
+- `[selectedFile, setSelectedFile]` | const | 28:11
+- `[isProcessingDialogOpen, setIsProcessingDialogOpen]` | const | 29:11
+- `[isCreditsDialogOpen, setIsCreditsDialogOpen]` | const | 30:11
+- `[searchQuery, setSearchQuery]` | const | 31:11
+- `[isLoading, setIsLoading]` | const | 32:11
+- `planKey` | const | 34:11
+- `preference` | const | 35:11
+- `selectedModel` | const | 36:11
+- `q` | const | 45:15
+- `unsubscribe` | const | 52:15
+- `lastProject` | const | 54:23
+- `onDrop` | const | 63:11
+- `file` | const | 65:15
+- `{ getRootProps, getInputProps, isDragActive }` | const | 84:11
+- `handleProjectSelect` | const | 86:11
+- `handleClearFile` | const | 91:11
 
 ## src/app/dashboard/page.tsx
 
-- `LARGE_FILE_THRESHOLD_MB` | const | 42:7
-- `PwaPrompt` | const | 44:7
-- `[isVisible, setIsVisible]` | const | 45:11
-- `isAndroid` | const | 48:15
-- `isPwa` | const | 49:15
-- `handleDismiss` | const | 58:11
+- `LARGE_FILE_THRESHOLD_MB` | const | 38:7
+- `PwaPrompt` | const | 40:7
+- `[isVisible, setIsVisible]` | const | 41:11
+- `isAndroid` | const | 44:15
+- `isPwa` | const | 45:15
+- `handleDismiss` | const | 54:11
 - `{
     user,
-    userAvailableModels, // Use models from context
-  }` | const | 82:9
-- `{ toast }` | const | 86:9
-- `[isProcessingDialogOpen, setIsProcessingDialogOpen]` | const | 88:9
-- `[selectedFile, setSelectedFile]` | const | 90:9
-- `[isPdfEditorOpen, setIsPdfEditorOpen]` | const | 91:9
-- `[showWelcomeModal, setShowWelcomeModal]` | const | 93:9
-- `[isCreditsDialogOpen, setIsCreditsDialogOpen]` | const | 94:9
-- `handleSharedFile` | const | 99:11
-- `urlParams` | const | 101:15
-- `shareReceived` | const | 102:15
-- `pendingFile` | const | 106:23
-- `error` | const | 114:22
-- `[selectedModel, setSelectedModel]` | const | 133:9
-- `currentModelConfig` | const | 135:9
-- `currentModelIsValid` | const | 140:15
-- `defaultModel` | const | 143:19
-- `onDrop` | const | 153:9
-- `file` | const | 155:13
-- `{ getRootProps, getInputProps }` | const | 165:9
-- `handleStartAnalysis` | const | 171:9
+    userAvailableModels, // Plan-based models from context
+    effectivePlan,
+  }` | const | 78:9
+- `{ toast }` | const | 83:9
+- `[isProcessingDialogOpen, setIsProcessingDialogOpen]` | const | 85:9
+- `[selectedFile, setSelectedFile]` | const | 87:9
+- `[isPdfEditorOpen, setIsPdfEditorOpen]` | const | 88:9
+- `[showWelcomeModal, setShowWelcomeModal]` | const | 90:9
+- `[isCreditsDialogOpen, setIsCreditsDialogOpen]` | const | 91:9
+- `[isBusinessUpgradeOpen, setIsBusinessUpgradeOpen]` | const | 92:9
+- `handleSharedFile` | const | 97:11
+- `urlParams` | const | 99:15
+- `shareReceived` | const | 100:15
+- `pendingFile` | const | 104:23
+- `error` | const | 112:22
+- `[selectedModel, setSelectedModel]` | const | 131:9
+- `canSelectModel` | const | 132:9
+- `planKey` | const | 133:9
+- `preference` | const | 134:9
+- `resolvedModel` | const | 135:9
+- `currentModelIsValid` | const | 146:11
+- `defaultModel` | const | 148:13
+- `activeModel` | const | 155:9
+- `activeModelLabel` | const | 156:9
+- `onDrop` | const | 162:9
+- `file` | const | 164:13
+- `{ getRootProps, getInputProps }` | const | 174:9
+- `handleStartAnalysis` | const | 180:9
 
 ## src/app/dashboard/price-base/page.tsx
 
@@ -2323,17 +2571,22 @@ Variables: 4903
 
 ## src/app/dashboard/training/page.tsx
 
-- `KnowledgeBaseVideo` | const | 16:7
-- `{ user }` | const | 44:9
-- `[articles, setArticles]` | const | 45:9
-- `[isLoading, setIsLoading]` | const | 46:9
-- `isEditor` | const | 47:9
-- `featuredPlaylists` | const | 48:9
-- `deepGuides` | const | 72:9
-- `trainingModules` | const | 151:9
-- `q` | const | 326:11
-- `unsubscribe` | const | 327:11
-- `fetchedArticles` | const | 328:15
+- `KnowledgeBaseVideo` | const | 19:7
+- `{ user }` | const | 47:9
+- `{ toast }` | const | 48:9
+- `[isRequestPending, startRequest]` | const | 49:9
+- `canAccess` | const | 50:9
+- `[articles, setArticles]` | const | 51:9
+- `[isLoading, setIsLoading]` | const | 52:9
+- `isEditor` | const | 53:9
+- `featuredPlaylists` | const | 54:9
+- `deepGuides` | const | 78:9
+- `trainingModules` | const | 157:9
+- `q` | const | 332:11
+- `unsubscribe` | const | 333:11
+- `fetchedArticles` | const | 334:15
+- `handleEnterpriseRequest` | const | 481:9
+- `result` | const | 484:13
 
 ## src/app/layout.tsx
 
@@ -2392,6 +2645,23 @@ Variables: 4903
 - `isDone` | const | 116:23
 - `isCurrent` | const | 117:23
 
+## src/components/AvatarCropDialog.tsx
+
+- `createImage` | const | 18:7
+- `image` | const | 20:11
+- `getCroppedImage` | const | 27:7
+- `image` | const | 28:9
+- `canvas` | const | 29:9
+- `ctx` | const | 32:9
+- `[crop, setCrop]` | const | 57:9
+- `[zoom, setZoom]` | const | 58:9
+- `[croppedAreaPixels, setCroppedAreaPixels]` | const | 59:9
+- `imageUrl` | const | 61:9
+- `onCropComplete` | const | 69:9
+- `handleConfirm` | const | 73:9
+- `blob` | const | 75:11
+- `croppedFile` | const | 76:11
+
 ## src/components/CompanyFormDialog.tsx
 
 - `FormSchema` | const | 36:7
@@ -2416,7 +2686,7 @@ Variables: 4903
 - `handleSuggestionSelect` | const | 150:9
 - `{ data }` | const | 151:11
 - `onSubmit` | const | 169:9
-- `result` | const | 176:13
+- `result` | let | 176:13
 - `targets` | const | 184:19
 - `results` | const | 188:19
 - `targetIsClient` | const | 189:24
@@ -2475,150 +2745,161 @@ Variables: 4903
 
 ## src/components/DocumentGenerationDialog.tsx
 
-- `{ user, setUser, effectivePlan }` | const | 56:11
-- `{ toast }` | const | 57:11
-- `[isGenerating, startGenerating]` | const | 58:11
-- `[docType, setDocType]` | const | 60:11
-- `[contractorId, setContractorId]` | const | 61:11
-- `[clientId, setClientId]` | const | 62:11
-- `[advanceType, setAdvanceType]` | const | 63:11
-- `[advanceValue, setAdvanceValue]` | const | 64:11
-- `[isClientFormOpen, setIsClientFormOpen]` | const | 65:11
-- `[invoiceKind, setInvoiceKind]` | const | 66:11
-- `[advanceBasis, setAdvanceBasis]` | const | 67:11
-- `[contractNumber, setContractNumber]` | const | 68:11
-- `[contractDate, setContractDate]` | const | 69:11
-- `[contractBasisText, setContractBasisText]` | const | 70:11
-- `[generateAct, setGenerateAct]` | const | 71:11
-- `[selectedTemplateId, setSelectedTemplateId]` | const | 72:11
-- `{ finalTotal }` | const | 74:11
-- `isGroupContext` | const | 75:11
-- `templateAccess` | const | 83:11
-- `templateOptions` | const | 90:11
-- `allowed` | const | 92:15
-- `activeTemplateId` | const | 96:11
-- `resolveProjectName` | const | 98:11
-- `resolveProjectSpecs` | const | 99:11
-- `resolveProjectQuoteConfig` | const | 100:11
-- `resolveScopeProjects` | const | 101:11
-- `scopeProjects` | const | 103:11
-- `scopeTotalsSum` | const | 104:11
-- `advanceBaseTotal` | const | 105:11
-- `advanceAmount` | const | 106:11
-- `safeAdvanceAmount` | const | 107:11
-- `requiresClient` | const | 109:11
-- `showInvoiceSettings` | const | 110:11
-- `showAdvanceSettings` | const | 111:11
-- `showContractAdvance` | const | 112:11
-- `showContractBasisMeta` | const | 113:11
-- `showContractMeta` | const | 114:11
-- `allowDocx` | const | 115:11
-- `allowXlsx` | const | 116:11
-- `extractExpirationMs` | const | 118:11
-- `refreshSignedUrl` | const | 128:11
-- `refreshResponse` | const | 129:15
-- `ensureAssetUrl` | const | 140:11
-- `expirationMs` | const | 142:15
-- `refreshed` | const | 146:15
-- `fetchImageBuffer` | const | 150:11
-- `response` | const | 152:19
-- `error` | const | 155:18
-- `getProjectTotals` | const | 163:11
-- `specs` | const | 164:15
-- `config` | const | 165:15
-- `buildSections` | const | 169:11
-- `generateDocuments` | const | 177:11
-- `contractor` | const | 178:15
-- `client` | const | 179:15
-- `baseProject` | const | 181:15
-- `groupName` | const | 188:15
-- `baseName` | const | 189:15
-- `signatureUrl` | const | 191:13
-- `stampUrl` | const | 192:13
-- `signatureObjectKey` | const | 193:13
-- `stampObjectKey` | const | 194:13
-- `signatureUrlExpirationTimestamp` | const | 195:13
-- `stampUrlExpirationTimestamp` | const | 196:13
-- `refreshedSignature` | const | 199:19
-- `refreshedStamp` | const | 204:19
-- `result` | const | 216:23
-- `buildInvoiceItems` | const | 241:15
-- `totalsByProject` | const | 242:19
-- `totalSum` | const | 246:19
-- `dateText` | const | 250:27
-- `numberText` | const | 251:27
-- `resolvedText` | const | 252:27
-- `advanceTotal` | const | 254:27
-- `baseTotal` | const | 276:23
-- `scopeProjects` | const | 293:15
-- `files` | const | 299:15
-- `invoiceProjects` | const | 307:23
-- `items` | const | 308:23
-- `totalAmount` | const | 309:23
-- `invoiceNumber` | const | 311:23
-- `invoiceDate` | const | 312:23
-- `invoiceDoc` | const | 313:23
-- `invoiceBlob` | const | 325:23
-- `invoiceFileName` | const | 326:23
-- `presignedUrlResponse` | const | 330:27
-- `{ uploadUrl, accessUrl }` | const | 338:27
-- `fileUri` | const | 340:27
-- `e` | const | 353:26
-- `sections` | const | 358:27
-- `actDoc` | const | 359:27
-- `actBlob` | const | 368:27
-- `contractNumber` | const | 379:23
-- `contractDate` | const | 380:23
-- `workStartDate` | const | 381:23
-- `workEndDate` | const | 382:23
-- `appendices` | const | 385:27
-- `groupTotal` | const | 391:27
-- `contractAdvanceAmount` | const | 392:27
-- `contractDoc` | const | 393:27
-- `contractBlob` | const | 412:27
-- `contractDoc` | const | 417:23
-- `contractBlob` | const | 435:23
-- `excelBlob` | const | 443:31
-- `sections` | const | 450:27
-- `pdfDoc` | const | 451:27
-- `groupBlob` | const | 461:27
-- `docParams` | const | 466:23
-- `signatureBuffer` | const | 475:27
-- `stampBuffer` | const | 476:27
-- `docxBlob` | const | 477:27
-- `excelBlob` | const | 485:27
-- `pdfDoc` | const | 488:27
-- `pdfBlob` | const | 496:27
-- `sections` | const | 506:23
-- `actDoc` | const | 507:23
-- `actBlob` | const | 516:23
-- `sections` | const | 525:23
-- `ks2Doc` | const | 526:23
-- `ks2Blob` | const | 535:23
-- `sections` | const | 544:23
-- `ks3Doc` | const | 545:23
-- `ks3Blob` | const | 554:23
-- `sections` | const | 563:23
-- `ks6aDoc` | const | 564:23
-- `ks6aBlob` | const | 573:23
-- `handleDownload` | const | 582:11
-- `files` | const | 586:23
-- `baseProject` | const | 594:23
-- `groupName` | const | 595:23
-- `zip` | const | 596:23
-- `zipBlob` | const | 598:23
-- `error` | const | 601:22
-- `handleSendToBot` | const | 608:11
-- `files` | const | 615:23
-- `payloadBlob` | const | 618:21
-- `payloadName` | const | 619:21
-- `baseProject` | const | 622:27
-- `groupName` | const | 623:27
-- `zip` | const | 624:27
-- `base64Data` | const | 630:23
-- `reader` | const | 631:27
-- `result` | const | 636:23
-- `error` | const | 639:22
+- `{ user, setUser, effectivePlan }` | const | 59:11
+- `{ toast }` | const | 60:11
+- `[isGenerating, startGenerating]` | const | 61:11
+- `[docType, setDocType]` | const | 63:11
+- `[contractorId, setContractorId]` | const | 64:11
+- `[clientId, setClientId]` | const | 65:11
+- `[advanceType, setAdvanceType]` | const | 66:11
+- `[advanceValue, setAdvanceValue]` | const | 67:11
+- `[isClientFormOpen, setIsClientFormOpen]` | const | 68:11
+- `[invoiceKind, setInvoiceKind]` | const | 69:11
+- `[advanceBasis, setAdvanceBasis]` | const | 70:11
+- `[contractNumber, setContractNumber]` | const | 71:11
+- `[contractDate, setContractDate]` | const | 72:11
+- `[contractBasisText, setContractBasisText]` | const | 73:11
+- `[generateAct, setGenerateAct]` | const | 74:11
+- `[selectedTemplateId, setSelectedTemplateId]` | const | 75:11
+- `{ finalTotal }` | const | 77:11
+- `isGroupContext` | const | 78:11
+- `{ templates: customTemplates }` | const | 80:11
+- `{ templates: globalTemplates, settings: templateSettings }` | const | 81:11
+- `customProposalTemplates` | const | 82:11
+- `customTemplatesById` | const | 86:11
+- `globalTemplatesById` | const | 90:11
+- `baseTemplateOptions` | const | 101:11
+- `options` | const | 102:15
+- `fallbackId` | const | 104:17
+- `defaultId` | const | 105:17
+- `customTemplateOptions` | const | 111:11
+- `templateOptions` | const | 115:11
+- `fallbackId` | const | 117:11
+- `defaultTemplateId` | const | 118:11
+- `activeTemplateId` | const | 119:11
+- `activeTemplateConfig` | const | 120:11
+- `resolveProjectName` | const | 122:11
+- `resolveProjectSpecs` | const | 123:11
+- `resolveProjectQuoteConfig` | const | 124:11
+- `resolveScopeProjects` | const | 125:11
+- `scopeProjects` | const | 127:11
+- `scopeTotalsSum` | const | 128:11
+- `advanceBaseTotal` | const | 129:11
+- `advanceAmount` | const | 130:11
+- `safeAdvanceAmount` | const | 131:11
+- `requiresClient` | const | 133:11
+- `showInvoiceSettings` | const | 134:11
+- `showAdvanceSettings` | const | 135:11
+- `showContractAdvance` | const | 136:11
+- `showContractBasisMeta` | const | 137:11
+- `showContractMeta` | const | 138:11
+- `allowDocx` | const | 139:11
+- `allowXlsx` | const | 140:11
+- `extractExpirationMs` | const | 142:11
+- `refreshSignedUrl` | const | 152:11
+- `refreshResponse` | const | 153:15
+- `ensureAssetUrl` | const | 164:11
+- `expirationMs` | const | 166:15
+- `refreshed` | const | 170:15
+- `fetchImageBuffer` | const | 174:11
+- `response` | const | 176:19
+- `error` | const | 179:18
+- `getProjectTotals` | const | 187:11
+- `specs` | const | 188:15
+- `config` | const | 189:15
+- `buildSections` | const | 193:11
+- `generateDocuments` | const | 201:11
+- `contractor` | const | 202:15
+- `client` | const | 203:15
+- `baseProject` | const | 205:15
+- `groupName` | const | 212:15
+- `baseName` | const | 213:15
+- `signatureUrl` | let | 215:13
+- `stampUrl` | let | 216:13
+- `signatureObjectKey` | let | 217:13
+- `stampObjectKey` | let | 218:13
+- `signatureUrlExpirationTimestamp` | let | 219:13
+- `stampUrlExpirationTimestamp` | let | 220:13
+- `refreshedSignature` | const | 223:19
+- `refreshedStamp` | const | 228:19
+- `result` | const | 240:23
+- `buildInvoiceItems` | const | 265:15
+- `totalsByProject` | const | 266:19
+- `totalSum` | const | 270:19
+- `dateText` | const | 274:27
+- `numberText` | const | 275:27
+- `resolvedText` | const | 276:27
+- `advanceTotal` | const | 278:27
+- `baseTotal` | const | 300:23
+- `scopeProjects` | const | 317:15
+- `files` | const | 323:15
+- `invoiceProjects` | const | 331:23
+- `items` | const | 332:23
+- `totalAmount` | const | 333:23
+- `invoiceNumber` | const | 335:23
+- `invoiceDate` | const | 336:23
+- `invoiceDoc` | const | 337:23
+- `invoiceBlob` | const | 349:23
+- `invoiceFileName` | const | 350:23
+- `presignedUrlResponse` | const | 354:27
+- `{ uploadUrl, accessUrl }` | const | 362:27
+- `fileUri` | const | 364:27
+- `e` | const | 377:26
+- `sections` | const | 382:27
+- `actDoc` | const | 383:27
+- `actBlob` | const | 392:27
+- `contractNumber` | const | 403:23
+- `contractDate` | const | 404:23
+- `workStartDate` | const | 405:23
+- `workEndDate` | const | 406:23
+- `appendices` | const | 409:27
+- `groupTotal` | const | 415:27
+- `contractAdvanceAmount` | const | 416:27
+- `contractDoc` | const | 417:27
+- `contractBlob` | const | 436:27
+- `contractDoc` | const | 441:23
+- `contractBlob` | const | 459:23
+- `excelBlob` | const | 467:31
+- `sections` | const | 474:27
+- `pdfDoc` | const | 475:27
+- `groupBlob` | const | 486:27
+- `docParams` | const | 491:23
+- `signatureBuffer` | const | 500:27
+- `stampBuffer` | const | 501:27
+- `docxBlob` | const | 502:27
+- `excelBlob` | const | 511:27
+- `pdfDoc` | const | 514:27
+- `pdfBlob` | const | 523:27
+- `sections` | const | 533:23
+- `actDoc` | const | 534:23
+- `actBlob` | const | 543:23
+- `sections` | const | 552:23
+- `ks2Doc` | const | 553:23
+- `ks2Blob` | const | 562:23
+- `sections` | const | 571:23
+- `ks3Doc` | const | 572:23
+- `ks3Blob` | const | 581:23
+- `sections` | const | 590:23
+- `ks6aDoc` | const | 591:23
+- `ks6aBlob` | const | 600:23
+- `handleDownload` | const | 609:11
+- `files` | const | 613:23
+- `baseProject` | const | 621:23
+- `groupName` | const | 622:23
+- `zip` | const | 623:23
+- `zipBlob` | const | 625:23
+- `error` | const | 628:22
+- `handleSendToBot` | const | 635:11
+- `files` | const | 642:23
+- `payloadBlob` | let | 645:21
+- `payloadName` | let | 646:21
+- `baseProject` | const | 649:27
+- `groupName` | const | 650:27
+- `zip` | const | 651:27
+- `base64Data` | const | 657:23
+- `reader` | const | 658:27
+- `result` | const | 663:23
+- `error` | const | 666:22
 
 ## src/components/DuplicateProjectDialog.tsx
 
@@ -2657,155 +2938,167 @@ Variables: 4903
 
 ## src/components/GroupZipDialog.tsx
 
-- `templateAccess` | const | 45:7
-- `sanitizeFileName` | const | 52:7
-- `fetchImageBuffer` | const | 54:7
-- `response` | const | 56:11
-- `error` | const | 59:12
-- `{ user, effectivePlan }` | const | 66:9
-- `{ toast }` | const | 67:9
-- `[docType, setDocType]` | const | 68:9
-- `[formatType, setFormatType]` | const | 69:9
-- `[exportMode, setExportMode]` | const | 70:9
-- `[zipMode, setZipMode]` | const | 71:9
-- `[selectedDocTypes, setSelectedDocTypes]` | const | 72:9
-- `[contractorId, setContractorId]` | const | 73:9
-- `[clientId, setClientId]` | const | 74:9
-- `[advanceType, setAdvanceType]` | const | 75:9
-- `[advanceValue, setAdvanceValue]` | const | 76:9
-- `[invoiceKind, setInvoiceKind]` | const | 77:9
-- `[advanceBasis, setAdvanceBasis]` | const | 78:9
-- `[contractNumber, setContractNumber]` | const | 79:9
-- `[contractDate, setContractDate]` | const | 80:9
-- `[contractBasisText, setContractBasisText]` | const | 81:9
-- `[activeTemplateId, setActiveTemplateId]` | const | 82:9
-- `[isGenerating, startGenerating]` | const | 83:9
-- `resolveTemplateIdFor` | const | 85:9
-- `allowed` | const | 86:11
-- `options` | const | 87:11
-- `templateOptions` | const | 92:9
-- `allowed` | const | 93:11
-- `resolvedTemplateId` | const | 97:9
-- `groupName` | const | 101:9
-- `fallback` | const | 102:11
-- `fallbackContractor` | const | 108:13
-- `fallbackClient` | const | 112:13
-- `handleDocTypeChange` | const | 131:9
-- `invoiceActive` | const | 139:9
-- `contractActive` | const | 142:9
-- `showInvoiceSettings` | const | 145:9
-- `showAdvanceSettings` | const | 146:9
-- `showContractBasisMeta` | const | 147:9
-- `allowDocx` | const | 148:9
-- `allowXlsx` | const | 149:9
-- `toggleDocTypeSelection` | const | 151:9
-- `next` | const | 154:15
-- `resolveProjectName` | const | 161:9
-- `resolveProjectSpecs` | const | 162:9
-- `resolveProjectQuoteConfig` | const | 163:9
-- `buildSections` | const | 165:9
-- `specs` | const | 166:11
-- `config` | const | 167:11
-- `buildInvoiceItemsForProjects` | const | 177:9
-- `totalsByProject` | const | 178:11
-- `totalSum` | const | 182:11
-- `dateText` | const | 186:15
-- `numberText` | const | 187:15
-- `resolvedText` | const | 188:15
-- `advanceTotal` | const | 190:15
-- `baseTotal` | const | 212:13
-- `generateCombinedFile` | const | 229:9
-- `templateId` | const | 236:11
-- `groupTitle` | const | 237:11
-- `safeGroupName` | const | 238:11
-- `blob` | const | 246:15
-- `sections` | const | 249:13
-- `pdfDoc` | const | 250:13
-- `blob` | const | 260:13
-- `appendices` | const | 269:13
-- `groupTotal` | const | 275:13
-- `totals` | const | 276:15
-- `contractAdvanceAmount` | const | 279:13
-- `contractNumberValue` | const | 280:13
-- `contractDateValue` | const | 281:13
-- `workStartDate` | const | 282:13
-- `workEndDate` | const | 283:13
-- `contractDoc` | const | 284:13
-- `blob` | const | 303:13
-- `items` | const | 308:13
-- `invoiceNumber` | const | 309:13
-- `invoiceDate` | const | 310:13
-- `invoiceDoc` | const | 311:13
-- `blob` | const | 323:13
-- `sections` | const | 327:11
-- `commonParams` | const | 328:11
-- `actDoc` | const | 337:13
-- `blob` | const | 338:13
-- `ks2Doc` | const | 342:13
-- `blob` | const | 343:13
-- `ks3Doc` | const | 347:13
-- `blob` | const | 348:13
-- `ks6aDoc` | const | 352:13
-- `blob` | const | 353:13
-- `generateProjectFile` | const | 360:9
-- `specifications` | const | 370:11
-- `quoteConfig` | const | 371:11
-- `totals` | const | 372:11
-- `baseName` | const | 373:11
-- `docParams` | const | 380:13
-- `blob` | const | 390:15
-- `blob` | const | 399:15
-- `pdfDoc` | const | 402:13
-- `blob` | const | 410:13
-- `advanceAmount` | const | 418:11
-- `safeAdvanceAmount` | const | 421:11
-- `invoiceNumber` | const | 424:13
-- `invoiceDate` | const | 425:13
-- `items` | const | 426:11
-- `dateText` | const | 430:17
-- `numberText` | const | 431:17
-- `resolvedText` | const | 432:17
-- `invoiceDoc` | const | 442:13
-- `blob` | const | 454:13
-- `contractNumber` | const | 458:11
-- `contractDate` | const | 459:11
-- `workStartDate` | const | 460:11
-- `workEndDate` | const | 461:11
-- `contractDoc` | const | 462:11
-- `blob` | const | 480:11
-- `handleGenerateZip` | const | 484:9
-- `contractor` | const | 491:15
-- `client` | const | 492:15
-- `needsClientFor` | const | 498:15
-- `requiresClient` | const | 499:15
-- `signatureUrl` | const | 510:13
-- `stampUrl` | const | 511:13
-- `signatureBuffer` | const | 512:15
-- `stampBuffer` | const | 513:15
-- `fileData` | const | 516:17
-- `zip` | const | 526:17
-- `types` | const | 527:17
-- `type` | const | 528:22
-- `fileData` | const | 529:19
-- `zipBlob` | const | 534:17
-- `archiveName` | const | 535:17
-- `zip` | const | 542:15
-- `index` | const | 543:18
-- `project` | const | 544:17
-- `fileData` | const | 545:17
-- `zipBlob` | const | 551:15
-- `archiveName` | const | 552:15
-- `error` | const | 556:16
+- `sanitizeFileName` | const | 48:7
+- `fetchImageBuffer` | const | 50:7
+- `response` | const | 52:11
+- `error` | const | 55:12
+- `{ user, effectivePlan }` | const | 62:9
+- `{ toast }` | const | 63:9
+- `[docType, setDocType]` | const | 64:9
+- `[formatType, setFormatType]` | const | 65:9
+- `[exportMode, setExportMode]` | const | 66:9
+- `[zipMode, setZipMode]` | const | 67:9
+- `[selectedDocTypes, setSelectedDocTypes]` | const | 68:9
+- `[contractorId, setContractorId]` | const | 69:9
+- `[clientId, setClientId]` | const | 70:9
+- `[advanceType, setAdvanceType]` | const | 71:9
+- `[advanceValue, setAdvanceValue]` | const | 72:9
+- `[invoiceKind, setInvoiceKind]` | const | 73:9
+- `[advanceBasis, setAdvanceBasis]` | const | 74:9
+- `[contractNumber, setContractNumber]` | const | 75:9
+- `[contractDate, setContractDate]` | const | 76:9
+- `[contractBasisText, setContractBasisText]` | const | 77:9
+- `[activeTemplateId, setActiveTemplateId]` | const | 78:9
+- `[isGenerating, startGenerating]` | const | 79:9
+- `{ templates: customTemplates }` | const | 81:9
+- `{ templates: globalTemplates, settings: templateSettings }` | const | 82:9
+- `customProposalTemplates` | const | 83:9
+- `customTemplatesById` | const | 87:9
+- `globalTemplatesById` | const | 91:9
+- `resolveTemplateIdFor` | const | 96:9
+- `baseOptions` | const | 97:11
+- `customOptions` | const | 98:11
+- `options` | const | 99:11
+- `fallbackId` | const | 100:11
+- `defaultId` | const | 101:11
+- `templateOptions` | const | 106:9
+- `baseOptions` | const | 107:11
+- `customOptions` | const | 108:11
+- `fallbackId` | const | 110:13
+- `defaultId` | const | 111:13
+- `resolvedTemplateId` | const | 117:9
+- `activeTemplateConfig` | const | 120:9
+- `groupName` | const | 122:9
+- `fallback` | const | 123:11
+- `fallbackContractor` | const | 129:13
+- `fallbackClient` | const | 133:13
+- `handleDocTypeChange` | const | 152:9
+- `invoiceActive` | const | 160:9
+- `contractActive` | const | 163:9
+- `showInvoiceSettings` | const | 166:9
+- `showAdvanceSettings` | const | 167:9
+- `showContractBasisMeta` | const | 168:9
+- `allowDocx` | const | 169:9
+- `allowXlsx` | const | 170:9
+- `toggleDocTypeSelection` | const | 172:9
+- `next` | const | 175:15
+- `resolveProjectName` | const | 182:9
+- `resolveProjectSpecs` | const | 183:9
+- `resolveProjectQuoteConfig` | const | 184:9
+- `buildSections` | const | 186:9
+- `specs` | const | 187:11
+- `config` | const | 188:11
+- `buildInvoiceItemsForProjects` | const | 198:9
+- `totalsByProject` | const | 199:11
+- `totalSum` | const | 203:11
+- `dateText` | const | 207:15
+- `numberText` | const | 208:15
+- `resolvedText` | const | 209:15
+- `advanceTotal` | const | 211:15
+- `baseTotal` | const | 233:13
+- `generateCombinedFile` | const | 250:9
+- `templateId` | const | 257:11
+- `templateConfig` | const | 258:11
+- `groupTitle` | const | 259:11
+- `safeGroupName` | const | 260:11
+- `blob` | const | 268:15
+- `sections` | const | 271:13
+- `pdfDoc` | const | 272:13
+- `blob` | const | 283:13
+- `appendices` | const | 292:13
+- `groupTotal` | const | 298:13
+- `totals` | const | 299:15
+- `contractAdvanceAmount` | const | 302:13
+- `contractNumberValue` | const | 303:13
+- `contractDateValue` | const | 304:13
+- `workStartDate` | const | 305:13
+- `workEndDate` | const | 306:13
+- `contractDoc` | const | 307:13
+- `blob` | const | 326:13
+- `items` | const | 331:13
+- `invoiceNumber` | const | 332:13
+- `invoiceDate` | const | 333:13
+- `invoiceDoc` | const | 334:13
+- `blob` | const | 346:13
+- `sections` | const | 350:11
+- `commonParams` | const | 351:11
+- `actDoc` | const | 360:13
+- `blob` | const | 361:13
+- `ks2Doc` | const | 365:13
+- `blob` | const | 366:13
+- `ks3Doc` | const | 370:13
+- `blob` | const | 371:13
+- `ks6aDoc` | const | 375:13
+- `blob` | const | 376:13
+- `generateProjectFile` | const | 383:9
+- `specifications` | const | 393:11
+- `quoteConfig` | const | 394:11
+- `totals` | const | 395:11
+- `baseName` | const | 396:11
+- `docParams` | const | 403:13
+- `blob` | const | 413:15
+- `blob` | const | 423:15
+- `pdfDoc` | const | 426:13
+- `blob` | const | 435:13
+- `advanceAmount` | const | 443:11
+- `safeAdvanceAmount` | const | 446:11
+- `invoiceNumber` | const | 449:13
+- `invoiceDate` | const | 450:13
+- `items` | let | 451:11
+- `dateText` | const | 455:17
+- `numberText` | const | 456:17
+- `resolvedText` | const | 457:17
+- `invoiceDoc` | const | 467:13
+- `blob` | const | 479:13
+- `contractNumber` | const | 483:11
+- `contractDate` | const | 484:11
+- `workStartDate` | const | 485:11
+- `workEndDate` | const | 486:11
+- `contractDoc` | const | 487:11
+- `blob` | const | 505:11
+- `handleGenerateZip` | const | 509:9
+- `contractor` | const | 516:15
+- `client` | const | 517:15
+- `needsClientFor` | const | 523:15
+- `requiresClient` | const | 524:15
+- `signatureUrl` | let | 535:13
+- `stampUrl` | let | 536:13
+- `signatureBuffer` | const | 537:15
+- `stampBuffer` | const | 538:15
+- `fileData` | const | 541:17
+- `zip` | const | 551:17
+- `types` | const | 552:17
+- `type` | const | 553:22
+- `fileData` | const | 554:19
+- `zipBlob` | const | 559:17
+- `archiveName` | const | 560:17
+- `zip` | const | 567:15
+- `index` | let | 568:18
+- `project` | const | 569:17
+- `fileData` | const | 570:17
+- `zipBlob` | const | 576:15
+- `archiveName` | const | 577:15
+- `error` | const | 581:16
 
 ## src/components/HighTierPartnerDialog.tsx
 
 - `tierDetails` | const | 19:7
-- `{ user }` | const | 41:9
-- `{ toast }` | const | 42:9
-- `[isPending, startTransition]` | const | 43:9
-- `details` | const | 44:9
-- `handleSubmit` | const | 46:9
-- `result` | const | 50:13
+- `{ user }` | const | 49:9
+- `{ toast }` | const | 50:9
+- `[isPending, startTransition]` | const | 51:9
+- `details` | const | 52:9
+- `handleSubmit` | const | 54:9
+- `result` | const | 58:13
 
 ## src/components/InsufficientCreditsDialog.tsx
 
@@ -2949,16 +3242,16 @@ Variables: 4903
 - `newSet` | const | 117:15
 - `ranges` | const | 127:11
 - `sorted` | const | 128:11
-- `start` | const | 134:9
-- `end` | const | 135:9
-- `i` | const | 137:14
+- `start` | let | 134:9
+- `end` | let | 135:9
+- `i` | let | 137:14
 - `applyManualSelection` | const | 151:9
 - `newSelected` | const | 154:11
 - `pageCount` | const | 155:11
 - `parts` | const | 157:11
 - `part` | const | 159:20
 - `[start, end]` | const | 161:23
-- `i` | const | 163:26
+- `i` | let | 163:26
 - `num` | const | 167:23
 - `e` | const | 174:14
 - `handleProcess` | const | 180:9
@@ -2970,40 +3263,60 @@ Variables: 4903
 - `error` | const | 198:14
 - `pagesToDeleteCount` | const | 206:9
 
+## src/components/PlanBadge.tsx
+
+- `planStyles` | const | 16:7
+- `sizeStyles` | const | 23:7
+- `isClickable` | const | 29:9
+- `handleKeyDown` | const | 30:9
+
 ## src/components/PlanGate.tsx
 
 - None
 
+## src/components/PlanModelPreference.tsx
+
+- `{ user, effectivePlan }` | const | 19:9
+- `{ toast }` | const | 20:9
+- `[isPending, startTransition]` | const | 21:9
+- `variants` | const | 23:9
+- `planKey` | const | 26:9
+- `planForAction` | const | 27:9
+- `storedValue` | const | 28:9
+- `currentValue` | const | 29:9
+- `handleChange` | const | 31:9
+- `result` | const | 34:13
+
 ## src/components/PrivatePriceDialog.tsx
 
-- `{ user, currentProject, effectivePlan }` | const | 37:9
-- `{ toast }` | const | 38:9
-- `isBusiness` | const | 39:9
-- `businessButtonClass` | const | 40:9
-- `[isLoading, setIsLoading]` | const | 42:9
-- `[isProcessing, setIsProcessing]` | const | 43:9
-- `[allSections, setAllSections]` | const | 45:9
-- `[selectedSection, setSelectedSection]` | const | 46:9
-- `[newSection, setNewSection]` | const | 47:9
-- `[isCreatingNew, setIsCreatingNew]` | const | 48:9
-- `[selectedSections, setSelectedSections]` | const | 49:9
-- `itemsToProcess` | const | 51:9
-- `validationError` | const | 56:9
-- `invalidItem` | const | 58:11
-- `projectHashtags` | const | 71:15
-- `standardSectionsData` | const | 72:15
-- `existingSections` | const | 73:15
-- `suggestedSections` | const | 75:15
-- `matchingSection` | const | 79:20
-- `error` | const | 91:16
-- `handleConfirmClick` | const | 102:9
-- `finalSection` | const | 111:11
-- `result` | const | 117:11
-- `handleCreateNewToggle` | const | 129:9
-- `handleSectionToggle` | const | 135:9
-- `newSet` | const | 137:13
-- `title` | const | 148:9
-- `description` | const | 149:9
+- `{ user, currentProject, effectivePlan }` | const | 40:9
+- `{ toast }` | const | 41:9
+- `isBusiness` | const | 42:9
+- `businessButtonClass` | const | 43:9
+- `[isLoading, setIsLoading]` | const | 45:9
+- `[isProcessing, setIsProcessing]` | const | 46:9
+- `[allSections, setAllSections]` | const | 48:9
+- `[selectedSection, setSelectedSection]` | const | 49:9
+- `[newSection, setNewSection]` | const | 50:9
+- `[isCreatingNew, setIsCreatingNew]` | const | 51:9
+- `[selectedSections, setSelectedSections]` | const | 52:9
+- `itemsToProcess` | const | 54:9
+- `validationError` | const | 59:9
+- `invalidItem` | const | 61:11
+- `projectHashtags` | const | 74:15
+- `standardSectionsData` | const | 75:15
+- `existingSections` | const | 76:15
+- `suggestedSections` | const | 78:15
+- `matchingSection` | const | 82:20
+- `error` | const | 94:16
+- `handleConfirmClick` | const | 105:9
+- `finalSection` | const | 114:11
+- `result` | const | 120:11
+- `handleCreateNewToggle` | const | 132:9
+- `handleSectionToggle` | const | 138:9
+- `newSet` | const | 140:13
+- `title` | const | 151:9
+- `description` | const | 152:9
 
 ## src/components/ProcessingDialog.tsx
 
@@ -3022,66 +3335,67 @@ Variables: 4903
 - `processingStarted` | const | 103:11
 - `cancelRequested` | const | 104:11
 - `modelInfo` | const | 106:11
-- `isSelectedOpenRouter` | const | 107:11
-- `effectivePdfEngine` | const | 110:11
-- `modelOverride` | const | 112:15
-- `planForCheck` | const | 117:11
-- `isPlanAllowedForServer` | const | 118:11
-- `fallback` | const | 120:15
-- `allowed` | const | 121:15
-- `shouldUseServerPipeline` | const | 125:11
-- `resetState` | const | 133:11
-- `cancelled` | const | 148:13
-- `loadSettings` | const | 149:15
-- `data` | const | 151:23
-- `error` | const | 155:22
-- `processFile` | const | 176:15
-- `fileDataForApi` | const | 177:17
-- `fileHash` | const | 178:17
-- `objectKey` | const | 179:17
-- `draftId` | const | 180:17
-- `lastStage` | const | 181:17
-- `ensureDraftExists` | const | 183:19
-- `draft` | const | 185:23
-- `setProjectStage` | const | 204:19
-- `abortIfCancelled` | const | 214:19
-- `err` | const | 216:27
-- `runAnalysis` | const | 222:19
-- `promptConfig` | const | 223:23
-- `missing` | const | 228:23
-- `isPdf` | const | 240:23
-- `pdfEngineToUse` | const | 241:23
-- `response` | const | 255:23
-- `resultJson` | const | 268:23
-- `saveFinalResult` | const | 279:19
-- `hydratedItems` | const | 282:23
-- `finalizeResult` | const | 284:23
-- `fileUri` | const | 330:21
-- `s3CacheRef` | const | 334:23
-- `s3CacheSnap` | const | 335:23
-- `data` | const | 338:27
-- `expirationDate` | const | 343:27
-- `value` | const | 344:29
-- `isExpired` | const | 351:27
-- `refreshResponse` | const | 354:30
-- `{ newAccessUrl, newExpirationTimestamp }` | const | 356:30
-- `presignedUrlResponse` | const | 371:27
-- `{ uploadUrl, accessUrl, objectKey: uploadObjectKey, urlExpirationTimestamp }` | const | 373:27
-- `analysisCacheRef` | const | 394:23
-- `analysisCacheSnap` | const | 395:23
-- `cachedData` | const | 399:27
-- `response` | const | 418:27
-- `result` | const | 434:27
-- `accumulatedResults` | const | 451:21
-- `e` | const | 455:22
-- `handleStop` | const | 483:11
-- `err` | const | 500:18
-- `isProcessing` | const | 506:11
-- `stages` | const | 508:11
-- `currentStageIndex` | const | 512:11
-- `isDone` | const | 544:39
-- `isCurrent` | const | 545:39
-- `StageIcon` | const | 546:39
+- `effectiveTemperature` | const | 107:11
+- `isSelectedOpenRouter` | const | 108:11
+- `effectivePdfEngine` | const | 111:11
+- `modelOverride` | const | 113:15
+- `planForCheck` | const | 118:11
+- `isPlanAllowedForServer` | const | 119:11
+- `fallback` | const | 121:15
+- `allowed` | const | 122:15
+- `shouldUseServerPipeline` | const | 126:11
+- `resetState` | const | 134:11
+- `cancelled` | let | 149:13
+- `loadSettings` | const | 150:15
+- `data` | const | 152:23
+- `error` | const | 156:22
+- `processFile` | const | 177:15
+- `fileDataForApi` | let | 178:17
+- `fileHash` | let | 179:17
+- `objectKey` | let | 180:17
+- `draftId` | let | 181:17
+- `lastStage` | let | 182:17
+- `ensureDraftExists` | const | 184:19
+- `draft` | const | 186:23
+- `setProjectStage` | const | 205:19
+- `abortIfCancelled` | const | 215:19
+- `err` | const | 217:27
+- `runAnalysis` | const | 223:19
+- `promptConfig` | const | 224:23
+- `missing` | const | 229:23
+- `isPdf` | const | 241:23
+- `pdfEngineToUse` | const | 242:23
+- `response` | const | 256:23
+- `resultJson` | const | 269:23
+- `saveFinalResult` | const | 280:19
+- `hydratedItems` | const | 283:23
+- `finalizeResult` | const | 285:23
+- `fileUri` | let | 331:21
+- `s3CacheRef` | const | 335:23
+- `s3CacheSnap` | const | 336:23
+- `data` | const | 339:27
+- `expirationDate` | const | 344:27
+- `value` | const | 345:29
+- `isExpired` | const | 352:27
+- `refreshResponse` | const | 355:30
+- `{ newAccessUrl, newExpirationTimestamp }` | const | 357:30
+- `presignedUrlResponse` | const | 372:27
+- `{ uploadUrl, accessUrl, objectKey: uploadObjectKey, urlExpirationTimestamp }` | const | 374:27
+- `analysisCacheRef` | const | 395:23
+- `analysisCacheSnap` | const | 396:23
+- `cachedData` | const | 400:27
+- `response` | const | 419:27
+- `result` | const | 435:27
+- `accumulatedResults` | let | 452:21
+- `e` | const | 456:22
+- `handleStop` | const | 484:11
+- `err` | const | 501:18
+- `isProcessing` | const | 507:11
+- `stages` | const | 509:11
+- `currentStageIndex` | const | 513:11
+- `isDone` | const | 545:39
+- `isCurrent` | const | 546:39
+- `StageIcon` | const | 547:39
 
 ## src/components/ProjectUpdateDialog.tsx
 
@@ -3106,114 +3420,128 @@ Variables: 4903
 
 ## src/components/PurchaseCreditsDialog.tsx
 
-- `{ user, setUser }` | const | 72:11
-- `{ toast }` | const | 73:11
-- `[paymentMethod, setPaymentMethod]` | const | 75:11
-- `[companies, setCompanies]` | const | 76:11
-- `[selectedCompanyId, setSelectedCompanyId]` | const | 77:11
-- `[isLoadingCompanies, setIsLoadingCompanies]` | const | 78:11
-- `[isGenerating, startGenerating]` | const | 79:11
-- `[isConsentPending, startConsentTransition]` | const | 80:11
-- `[needsConsent, setNeedsConsent]` | const | 81:11
-- `q` | const | 87:19
-- `unsubscribe` | const | 88:19
-- `fetchedCompanies` | const | 89:23
-- `ownCompanies` | const | 90:23
-- `defaultCompany` | const | 92:23
-- `handleConfirmConsent` | const | 106:11
-- `userRef` | const | 109:19
-- `generateInvoice` | const | 120:11
-- `buyerCompany` | const | 121:15
-- `sellerCompany` | const | 130:19
-- `invoiceNumber` | const | 135:19
-- `invoiceDate` | const | 136:19
-- `docToRender` | const | 138:19
-- `blob` | const | 155:19
-- `fileName` | const | 156:19
-- `presignedUrlResponse` | const | 158:19
-- `{ uploadUrl, accessUrl }` | const | 166:19
-- `fileUri` | const | 168:19
-- `error` | const | 187:18
-- `handleGenerateInvoiceClick` | const | 193:11
-- `handlePayByCard` | const | 202:11
+- `{ user, setUser }` | const | 73:11
+- `{ toast }` | const | 74:11
+- `[paymentMethod, setPaymentMethod]` | const | 76:11
+- `[companies, setCompanies]` | const | 77:11
+- `[selectedCompanyId, setSelectedCompanyId]` | const | 78:11
+- `[isLoadingCompanies, setIsLoadingCompanies]` | const | 79:11
+- `[isGenerating, startGenerating]` | const | 80:11
+- `[isConsentPending, startConsentTransition]` | const | 81:11
+- `[needsConsent, setNeedsConsent]` | const | 82:11
+- `[receiptFile, setReceiptFile]` | const | 83:11
+- `sbpPhone` | const | 84:11
+- `sbpBank` | const | 85:11
+- `sbpLink` | const | 86:11
+- `q` | const | 92:19
+- `unsubscribe` | const | 93:19
+- `fetchedCompanies` | const | 94:23
+- `ownCompanies` | const | 95:23
+- `defaultCompany` | const | 97:23
+- `handleConfirmConsent` | const | 117:11
+- `userRef` | const | 120:19
+- `generateInvoice` | const | 131:11
+- `buyerCompany` | const | 132:15
+- `sellerCompany` | const | 141:19
+- `invoiceNumber` | const | 146:19
+- `invoiceDate` | const | 147:19
+- `docToRender` | const | 149:19
+- `blob` | const | 166:19
+- `fileName` | const | 167:19
+- `presignedUrlResponse` | const | 169:19
+- `{ uploadUrl, accessUrl }` | const | 177:19
+- `fileUri` | const | 179:19
+- `error` | const | 207:18
+- `handleSubmitSbp` | const | 213:11
+- `presignedUrlResponse` | const | 221:23
+- `{ uploadUrl, accessUrl, objectKey }` | const | 229:23
+- `result` | const | 232:23
+- `error` | const | 247:22
+- `handleGenerateInvoiceClick` | const | 253:11
 
 ## src/components/PurchaseProDialog.tsx
 
-- `{ user }` | const | 36:9
-- `{ toast }` | const | 37:9
-- `[paymentMethod, setPaymentMethod]` | const | 38:9
-- `[isSubmitting, startSubmitting]` | const | 39:9
-- `[companies, setCompanies]` | const | 41:9
-- `[selectedCompanyId, setSelectedCompanyId]` | const | 42:9
-- `[isLoadingCompanies, setIsLoadingCompanies]` | const | 43:9
-- `[receiptFile, setReceiptFile]` | const | 45:9
-- `planOptions` | const | 47:9
-- `durations` | const | 48:11
-- `lifetimeMonths` | const | 49:11
-- `monthlyPrice` | const | 50:11
-- `options` | const | 51:11
-- `[selectedMonths, setSelectedMonths]` | const | 65:9
-- `selectedPlan` | const | 67:9
-- `sbpPhone` | const | 68:9
-- `q` | const | 79:13
-- `unsubscribe` | const | 80:13
-- `fetchedCompanies` | const | 83:17
-- `ownCompanies` | const | 84:17
-- `defaultCompany` | const | 86:17
-- `handleSubmitSbp` | const | 102:9
-- `presignedUrlResponse` | const | 110:15
-- `{ uploadUrl, accessUrl, objectKey }` | const | 118:15
-- `result` | const | 121:15
-- `error` | const | 137:16
-- `handleGenerateInvoice` | const | 143:9
-- `buyerCompany` | const | 147:15
-- `sellerCompany` | const | 152:15
-- `invoiceNumber` | const | 157:15
-- `invoiceDate` | const | 158:15
-- `docToRender` | const | 160:15
-- `blob` | const | 179:15
-- `fileName` | const | 180:15
-- `presignedUrlResponse` | const | 182:15
-- `{ uploadUrl, accessUrl }` | const | 190:15
-- `error` | const | 216:16
+- `{ user }` | const | 37:9
+- `{ toast }` | const | 38:9
+- `[paymentMethod, setPaymentMethod]` | const | 39:9
+- `[isSubmitting, startSubmitting]` | const | 40:9
+- `[isTrialPending, startTrialTransition]` | const | 41:9
+- `[companies, setCompanies]` | const | 43:9
+- `[selectedCompanyId, setSelectedCompanyId]` | const | 44:9
+- `[isLoadingCompanies, setIsLoadingCompanies]` | const | 45:9
+- `[receiptFile, setReceiptFile]` | const | 47:9
+- `hasUsedTrial` | const | 48:9
+- `planOptions` | const | 50:9
+- `durations` | const | 51:11
+- `lifetimeMonths` | const | 52:11
+- `monthlyPrice` | const | 53:11
+- `options` | const | 54:11
+- `[selectedMonths, setSelectedMonths]` | const | 68:9
+- `selectedPlan` | const | 70:9
+- `sbpPhone` | const | 71:9
+- `sbpBank` | const | 72:9
+- `sbpLink` | const | 73:9
+- `handleActivateTrial` | const | 81:9
+- `result` | const | 84:13
+- `q` | const | 97:13
+- `unsubscribe` | const | 98:13
+- `fetchedCompanies` | const | 101:17
+- `ownCompanies` | const | 102:17
+- `defaultCompany` | const | 104:17
+- `handleSubmitSbp` | const | 120:9
+- `presignedUrlResponse` | const | 128:15
+- `{ uploadUrl, accessUrl, objectKey }` | const | 136:15
+- `result` | const | 139:15
+- `error` | const | 155:16
+- `handleGenerateInvoice` | const | 161:9
+- `buyerCompany` | const | 165:15
+- `sellerCompany` | const | 170:15
+- `invoiceNumber` | const | 175:15
+- `invoiceDate` | const | 176:15
+- `docToRender` | const | 178:15
+- `blob` | const | 197:15
+- `fileName` | const | 198:15
+- `presignedUrlResponse` | const | 200:15
+- `{ uploadUrl, accessUrl }` | const | 208:15
+- `error` | const | 234:16
 
 ## src/components/RefineProjectDialog.tsx
 
 - `ANALYSIS_TIMEOUT_MS` | const | 20:7
-- `{ user, setCurrentProject, setShowTimeoutWarning, effectivePlan }` | const | 35:9
-- `[isProcessing, startProcessing]` | const | 36:9
-- `timeoutRef` | const | 37:9
-- `{ toast, dismiss }` | const | 39:9
-- `[isUpgradeModalOpen, setIsUpgradeModalOpen]` | const | 41:9
-- `actionConfig` | const | 43:9
-- `cleanupTimeout` | const | 57:9
-- `handleProcess` | const | 64:9
-- `aiCallLimit` | const | 70:11
-- `currentAiCalls` | const | 71:11
-- `callsLeft` | const | 87:11
-- `warningThreshold` | const | 88:11
-- `toastId` | const | 98:13
-- `countdownInterval` | const | 99:13
-- `{ id }` | const | 107:19
-- `itemsToRefine` | const | 114:17
-- `message` | const | 119:19
-- `remaining` | const | 128:15
-- `result` | const | 147:15
-- `flowInput` | const | 149:21
-- `flowInput` | const | 158:21
-- `hydrateRefinedData` | const | 187:17
-- `tempSpecs` | const | 203:19
-- `processedSplitIds` | const | 204:21
-- `hydratedItem` | const | 207:24
-- `index` | const | 210:27
-- `originalItem` | const | 212:30
-- `newComment` | const | 213:30
-- `nextProject` | const | 227:21
-- `newItems` | const | 242:25
-- `nextProject` | const | 247:25
-- `nextProject` | const | 259:25
-- `error` | const | 275:18
-- `{ name, description }` | const | 289:9
+- `{ user, setCurrentProject, setShowTimeoutWarning, effectivePlan }` | const | 34:9
+- `[isProcessing, startProcessing]` | const | 35:9
+- `timeoutRef` | const | 36:9
+- `{ toast, dismiss }` | const | 38:9
+- `[isUpgradeModalOpen, setIsUpgradeModalOpen]` | const | 40:9
+- `actionConfig` | const | 42:9
+- `cleanupTimeout` | const | 56:9
+- `handleProcess` | const | 63:9
+- `aiCallLimit` | const | 69:11
+- `currentAiCalls` | const | 70:11
+- `callsLeft` | const | 86:11
+- `warningThreshold` | const | 87:11
+- `toastId` | let | 97:13
+- `countdownInterval` | let | 98:13
+- `{ id }` | const | 106:19
+- `itemsToRefine` | const | 113:17
+- `message` | const | 118:19
+- `remaining` | let | 127:15
+- `result` | let | 146:15
+- `flowInput` | const | 148:21
+- `flowInput` | const | 157:21
+- `hydrateRefinedData` | const | 186:17
+- `tempSpecs` | let | 202:19
+- `processedSplitIds` | const | 203:21
+- `hydratedItem` | const | 206:24
+- `index` | const | 209:27
+- `originalItem` | const | 211:30
+- `newComment` | const | 212:30
+- `nextProject` | const | 226:21
+- `newItems` | const | 241:25
+- `nextProject` | const | 246:25
+- `nextProject` | const | 258:25
+- `error` | const | 274:18
+- `{ name, description }` | const | 288:9
 
 ## src/components/RegistrationDialog.tsx
 
@@ -3247,26 +3575,25 @@ Variables: 4903
 
 ## src/components/UpgradeAccountDialog.tsx
 
-- `{ user, effectivePlan }` | const | 22:9
-- `{ toast }` | const | 23:9
-- `[isPending, startTransition]` | const | 24:9
-- `[enterpriseEmail, setEnterpriseEmail]` | const | 25:9
-- `[isLoadingEmail, setIsLoadingEmail]` | const | 26:9
-- `[isPurchaseOpen, setIsPurchaseOpen]` | const | 27:9
-- `handleActivateTrial` | const | 29:9
-- `result` | const | 32:13
-- `hasUsedTrial` | const | 50:9
-- `roleHierarchy` | const | 52:9
-- `currentRoleIndex` | const | 53:9
-- `targetRoleIndex` | const | 54:9
-- `isAlreadyOnHigherPlan` | const | 56:9
-- `isRequestOnly` | const | 57:9
-- `isTrialAvailable` | const | 58:9
-- `targetRoleLabel` | const | 59:9
-- `planExpiresAt` | const | 64:9
-- `expiresText` | const | 67:9
-- `descriptionText` | const | 69:9
-- `mailtoHref` | const | 88:9
+- `{ user, effectivePlan }` | const | 23:9
+- `{ toast }` | const | 24:9
+- `[isPending, startTransition]` | const | 25:9
+- `[isPurchaseOpen, setIsPurchaseOpen]` | const | 26:9
+- `handleActivateTrial` | const | 28:9
+- `result` | const | 31:13
+- `hasUsedTrial` | const | 49:9
+- `roleHierarchy` | const | 51:9
+- `currentRoleIndex` | const | 52:9
+- `targetRoleIndex` | const | 53:9
+- `isAlreadyOnHigherPlan` | const | 55:9
+- `isRequestOnly` | const | 56:9
+- `isTrialAvailable` | const | 57:9
+- `targetRoleLabel` | const | 58:9
+- `planExpiresAt` | const | 63:9
+- `expiresText` | const | 66:9
+- `descriptionText` | const | 68:9
+- `handleRequestPlan` | const | 78:9
+- `result` | const | 81:13
 
 ## src/components/admin/EnvSettings.tsx
 
@@ -3280,15 +3607,20 @@ Variables: 4903
 - `[isPending, startTransition]` | const | 51:9
 - `[isTesting, startTesting]` | const | 52:9
 - `[status, setStatus]` | const | 53:9
-- `hasUnsavedChanges` | const | 55:9
-- `fetchSettings` | const | 59:11
-- `currentSettings` | const | 63:15
-- `error` | const | 66:16
-- `handleSave` | const | 79:9
-- `result` | const | 82:13
-- `handleTest` | const | 92:9
-- `result` | const | 96:19
-- `err` | const | 99:18
+- `[ozonStatus, setOzonStatus]` | const | 54:9
+- `[isOzonSyncing, startOzonSync]` | const | 55:9
+- `hasUnsavedChanges` | const | 57:9
+- `fetchSettings` | const | 61:11
+- `currentSettings` | const | 65:15
+- `error` | const | 68:16
+- `handleSave` | const | 90:9
+- `result` | const | 93:13
+- `handleTest` | const | 103:9
+- `result` | const | 107:19
+- `err` | const | 110:18
+- `handleOzonSync` | const | 116:9
+- `result` | const | 119:13
+- `statusResult` | const | 125:13
 
 ## src/components/admin/GeneralSettings.tsx
 
@@ -3312,17 +3644,23 @@ Variables: 4903
 
 ## src/components/admin/LegalEntitySettings.tsx
 
-- `{ toast }` | const | 19:9
-- `{ user }` | const | 20:9
-- `[isLoading, setIsLoading]` | const | 21:9
-- `[isPending, startTransition]` | const | 22:9
-- `form` | const | 24:9
-- `fetchSettings` | const | 46:11
-- `currentSettings` | const | 49:15
-- `error` | const | 53:16
-- `onSubmit` | const | 62:9
-- `result` | const | 65:13
-- `renderFormField` | const | 82:9
+- `{ toast }` | const | 20:9
+- `{ user }` | const | 21:9
+- `[isLoading, setIsLoading]` | const | 22:9
+- `[isPending, startTransition]` | const | 23:9
+- `[dadataQuery, setDadataQuery]` | const | 24:9
+- `[dadataSuggestions, setDadataSuggestions]` | const | 25:9
+- `[isDadataLoading, setIsDadataLoading]` | const | 26:9
+- `form` | const | 28:9
+- `fetchSettings` | const | 50:11
+- `currentSettings` | const | 53:15
+- `error` | const | 57:16
+- `query` | const | 67:11
+- `onSubmit` | const | 83:9
+- `result` | const | 86:13
+- `handleSuggestionSelect` | const | 95:9
+- `data` | const | 96:11
+- `renderFormField` | const | 114:9
 
 ## src/components/admin/UserRow.tsx
 
@@ -3410,7 +3748,7 @@ Variables: 4903
 - `[isPending, startTransition]` | const | 36:9
 - `{ toast }` | const | 37:9
 - `[editablePermissions, setEditablePermissions]` | const | 38:9
-- `expiryDate` | const | 42:13
+- `expiryDate` | let | 42:13
 - `handlePermissionChange` | const | 70:9
 - `handleModelSelectionChange` | const | 74:9
 - `currentModels` | const | 76:15
@@ -3441,37 +3779,51 @@ Variables: 4903
 - `[allowedOrigin, setAllowedOrigin]` | const | 55:9
 - `[s3Preset, setS3Preset]` | const | 56:9
 - `[newPresetName, setNewPresetName]` | const | 57:9
-- `found` | const | 68:15
-- `presets` | const | 75:9
-- `applyDefaults` | const | 77:9
-- `defaults` | const | 79:11
-- `inferProviderFromEndpoint` | const | 86:9
-- `buildPresetConfig` | const | 94:9
-- `handleApplyPreset` | const | 108:9
-- `preset` | const | 110:11
-- `inferredProvider` | const | 112:11
-- `nextProvider` | const | 117:11
-- `handleSavePreset` | const | 137:9
-- `presetId` | const | 139:11
-- `preset` | const | 140:11
-- `handleUpdatePreset` | const | 155:9
-- `handleRemovePreset` | const | 172:9
-- `filtered` | const | 174:11
-- `newActive` | const | 175:11
-- `newSecondary` | const | 176:11
-- `handleCorsAction` | const | 186:9
-- `result` | const | 189:15
-- `error` | const | 207:16
-- `buildCorsXml` | const | 214:9
-- `safeOrigin` | const | 215:11
-- `generateCorsRule` | const | 256:9
-- `generateCorsRuleForAll` | const | 260:9
-- `v` | const | 313:80
-- `isActive` | const | 393:31
-- `isSecondary` | const | 394:31
-- `presetProvider` | const | 395:31
-- `nextName` | const | 405:41
-- `nextProvider` | const | 424:41
+- `[bucketPresetId, setBucketPresetId]` | const | 58:9
+- `[bucketList, setBucketList]` | const | 59:9
+- `[isBucketsLoading, setIsBucketsLoading]` | const | 60:9
+- `[newBucketName, setNewBucketName]` | const | 61:9
+- `[newBucketPurpose, setNewBucketPurpose]` | const | 62:9
+- `found` | const | 78:15
+- `presets` | const | 85:9
+- `resolvePresetId` | const | 86:9
+- `loadBuckets` | const | 88:9
+- `presetId` | const | 91:11
+- `result` | const | 92:11
+- `handleCreateBucket` | const | 101:9
+- `presetId` | const | 104:11
+- `result` | const | 105:11
+- `trimmed` | const | 112:11
+- `nextSettings` | const | 113:11
+- `applyDefaults` | const | 136:9
+- `defaults` | const | 138:11
+- `inferProviderFromEndpoint` | const | 145:9
+- `buildPresetConfig` | const | 153:9
+- `handleApplyPreset` | const | 167:9
+- `preset` | const | 169:11
+- `inferredProvider` | const | 171:11
+- `nextProvider` | const | 176:11
+- `handleSavePreset` | const | 196:9
+- `presetId` | const | 198:11
+- `preset` | const | 199:11
+- `handleUpdatePreset` | const | 214:9
+- `handleRemovePreset` | const | 231:9
+- `filtered` | const | 233:11
+- `newActive` | const | 234:11
+- `newSecondary` | const | 235:11
+- `handleCorsAction` | const | 245:9
+- `result` | let | 248:15
+- `error` | const | 266:16
+- `buildCorsXml` | const | 273:9
+- `safeOrigin` | const | 274:11
+- `generateCorsRule` | const | 315:9
+- `generateCorsRuleForAll` | const | 319:9
+- `v` | const | 372:80
+- `isActive` | const | 622:31
+- `isSecondary` | const | 623:31
+- `presetProvider` | const | 624:31
+- `nextName` | const | 634:41
+- `nextProvider` | const | 653:41
 
 ## src/components/admin/s3/S3Testing.tsx
 
@@ -3525,11 +3877,15 @@ Variables: 4903
 
 ## src/components/calculator/AiAssistantSettings.tsx
 
-- `{ apiModels }` | const | 19:7
-- `{ user, effectivePlan }` | const | 42:11
-- `canUseThoughts` | const | 43:11
-- `canSelectModel` | const | 44:11
-- `userAvailableModels` | const | 46:11
+- `{ user, effectivePlan }` | const | 34:11
+- `canUseThoughts` | const | 35:11
+- `canSelectModel` | const | 36:11
+- `planKey` | const | 38:11
+- `preference` | const | 39:11
+- `resolvedModel` | const | 40:11
+- `displayModel` | const | 41:11
+- `displayLabel` | const | 42:11
+- `planModelOptions` | const | 47:11
 
 ## src/components/calculator/AiNotes.tsx
 
@@ -3586,7 +3942,7 @@ Variables: 4903
 - `newTotal` | const | 189:15
 - `handleRevertToRecommended` | const | 202:11
 - `handleInputChange` | const | 207:11
-- `finalValue` | const | 208:13
+- `finalValue` | let | 208:13
 - `handleSliderChange` | const | 218:11
 - `handlePresetClick` | const | 219:11
 - `handleModeSwitch` | const | 221:11
@@ -3606,32 +3962,30 @@ Variables: 4903
 
 ## src/components/calculator/SpecificationPageContent.tsx
 
-- `{ apiModels }` | const | 54:7
-- `dynamic` | const | 56:14
-- `router` | const | 76:9
-- `{ user, currentProject, setCurrentProject, currentGroup, setCurrentGroup, effectivePlan, resetAppContextState, isNavigating }` | const | 77:9
-- `{ toast }` | const | 78:9
-- `[isSaving, startSavingTransition]` | const | 80:9
-- `[isActionPending, startActionTransition]` | const | 81:9
-- `[isAiEditPending, startAiEditTransition]` | const | 82:9
-- `autoSaveTimerRef` | const | 83:9
-- `lastAutoSaveSnapshotRef` | const | 84:9
-- `lastAutoSaveAtRef` | const | 85:9
-- `isAutoSavingRef` | const | 86:9
-- `groupFileInputRef` | const | 87:9
-- `lastComplexityMultiplierRef` | const | 88:9
-- `[initialProjectStates, setInitialProjectStates]` | const | 90:9
-- `[isRefineDialogOpen, setIsRefineDialogOpen]` | const | 92:9
-- `[refineAction, setRefineAction]` | const | 93:9
-- `[isFindMissingDialogOpen, setIsFindMissingDialogOpen]` | const | 94:9
-- `[isPriceBaseDialogOpen, setIsPriceBaseDialogOpen]` | const | 95:9
-- `[isUpgradeModalOpen, setIsUpgradeModalOpen]` | const | 96:9
-- `[upgradeTargetRole, setUpgradeTargetRole]` | const | 97:9
-- `[companies, setCompanies]` | const | 99:9
-- `[isLoadingCompanies, setIsLoadingCompanies]` | const | 100:9
-- `[actionHistoryByProject, setActionHistoryByProject]` | const | 101:9
-- `[selectedModel, setSelectedModel]` | const | 104:9
-- `[temperature, setTemperature]` | const | 105:9
+- `dynamic` | const | 57:14
+- `router` | const | 77:9
+- `{ user, currentProject, setCurrentProject, currentGroup, setCurrentGroup, effectivePlan, resetAppContextState, isNavigating }` | const | 78:9
+- `{ toast }` | const | 79:9
+- `[isSaving, startSavingTransition]` | const | 81:9
+- `[isActionPending, startActionTransition]` | const | 82:9
+- `[isAiEditPending, startAiEditTransition]` | const | 83:9
+- `autoSaveTimerRef` | const | 84:9
+- `lastAutoSaveSnapshotRef` | const | 85:9
+- `lastAutoSaveAtRef` | const | 86:9
+- `isAutoSavingRef` | const | 87:9
+- `groupFileInputRef` | const | 88:9
+- `lastComplexityMultiplierRef` | const | 89:9
+- `[initialProjectStates, setInitialProjectStates]` | const | 91:9
+- `[isRefineDialogOpen, setIsRefineDialogOpen]` | const | 93:9
+- `[refineAction, setRefineAction]` | const | 94:9
+- `[isFindMissingDialogOpen, setIsFindMissingDialogOpen]` | const | 95:9
+- `[isPriceBaseDialogOpen, setIsPriceBaseDialogOpen]` | const | 96:9
+- `[isUpgradeModalOpen, setIsUpgradeModalOpen]` | const | 97:9
+- `[upgradeTargetRole, setUpgradeTargetRole]` | const | 98:9
+- `[companies, setCompanies]` | const | 100:9
+- `[isLoadingCompanies, setIsLoadingCompanies]` | const | 101:9
+- `[actionHistoryByProject, setActionHistoryByProject]` | const | 102:9
+- `[selectedModel, setSelectedModel]` | const | 105:9
 - `[includeThoughts, setIncludeThoughts]` | const | 106:9
 - `[aiDialogState, setAiDialogState]` | const | 107:9
 - `[isSyncDialogOpen, setIsSyncDialogOpen]` | const | 115:9
@@ -3656,265 +4010,271 @@ Variables: 4903
 - `initialProjectState` | const | 135:9
 - `actionHistory` | const | 136:9
 - `isPro` | const | 140:9
-- `proButtonClass` | const | 141:9
-- `withProLabel` | const | 142:9
-- `groupActionButtonClass` | const | 143:9
-- `canUsePrivatePriceBase` | const | 148:9
-- `calculateSmrFromSpecs` | const | 156:9
-- `installation` | const | 159:13
-- `groupSmrTotal` | const | 164:9
-- `hasUnsavedChanges` | const | 169:9
-- `snapshot` | const | 179:11
-- `projectId` | const | 188:11
-- `now` | const | 195:11
-- `minIntervalMs` | const | 196:11
-- `baseDelayMs` | const | 197:11
-- `lastSavedAt` | const | 198:11
-- `delayMs` | const | 199:11
-- `result` | const | 205:15
-- `error` | const | 234:16
-- `handleBeforeUnload` | const | 249:11
-- `q` | const | 274:11
-- `unsubscribe` | const | 275:11
-- `fetchedCompanies` | const | 276:15
-- `buildSnapshot` | const | 283:9
-- `MAX_ACTION_HISTORY` | const | 292:9
-- `setActionHistoryForCurrent` | const | 294:9
-- `currentList` | const | 297:13
-- `nextList` | const | 298:13
-- `persistActionHistory` | const | 303:9
-- `error` | const | 311:14
-- `logActionForProject` | const | 316:9
-- `newAction` | const | 317:11
-- `currentList` | const | 318:11
-- `nextList` | const | 319:11
-- `logAction` | const | 326:9
-- `newAction` | const | 327:11
-- `updateCurrentProject` | const | 331:9
-- `nextProject` | const | 338:11
-- `handleAiProjectUpdate` | const | 348:9
-- `previousProject` | const | 349:11
-- `seededHistory` | const | 364:13
-- `model` | const | 376:11
-- `modelConfig` | const | 378:11
-- `fallbackId` | const | 384:11
-- `nextProject` | const | 389:13
-- `handleModelChange` | const | 401:9
-- `modelConfig` | const | 403:13
-- `handleProjectTabChange` | const | 408:9
-- `nextProject` | const | 412:11
-- `handleGroupFileSelect` | const | 418:9
-- `file` | const | 419:11
-- `handleGroupProcessingClose` | const | 425:9
-- `handleGroupProjectProcessed` | const | 433:9
-- `formatCurrency` | const | 443:9
-- `buildSyncConflicts` | const | 448:9
-- `grouped` | const | 450:11
-- `name` | const | 455:15
-- `materialPrice` | const | 457:15
-- `installationPrice` | const | 458:15
-- `key` | const | 459:15
-- `options` | const | 463:15
-- `handleOpenSyncDialog` | const | 484:9
-- `conflicts` | const | 486:11
-- `defaults` | const | 492:11
-- `currentOption` | const | 494:13
-- `handleApplySync` | const | 502:9
-- `targetProjectIds` | const | 510:11
-- `conflictMap` | const | 513:11
-- `updatedGroup` | const | 514:11
-- `updatedSpecs` | const | 518:13
-- `name` | const | 520:15
-- `conflict` | const | 522:15
-- `selectionKey` | const | 523:15
-- `selected` | const | 524:15
-- `updatedCurrent` | const | 534:11
-- `updateSpecificationItem` | const | 547:9
-- `oldSpecs` | const | 549:11
-- `oldItem` | const | 551:11
-- `matchName` | const | 552:11
-- `shouldSyncByName` | const | 553:11
-- `applyUpdates` | const | 555:11
-- `updatedSpec` | const | 558:15
-- `updatedGroup` | const | 568:13
-- `updatedSpecs` | const | 569:15
-- `updatedCurrent` | const | 576:13
-- `fallbackSpecs` | const | 580:15
-- `newSpecs` | const | 586:11
-- `applyComplexityMultiplier` | const | 590:9
-- `prevMultiplier` | const | 592:11
-- `ratio` | const | 598:11
-- `adjustSpecs` | const | 599:11
-- `basePrice` | const | 601:13
-- `nextPrice` | const | 602:13
-- `updatedGroup` | const | 610:13
-- `updatedCurrent` | const | 615:13
-- `handleAddItem` | const | 627:9
-- `newItem` | const | 629:11
-- `newSpecs` | const | 630:11
-- `handleRemoveItem` | const | 634:9
-- `oldSpecs` | const | 636:11
-- `newSpecs` | const | 637:11
-- `removedItem` | const | 638:11
-- `handleAddRecommendation` | const | 642:9
-- `updatedItem` | const | 644:11
-- `specs` | const | 645:9
-- `hasRecommendedSection` | const | 646:11
-- `handleAddAllRecommendations` | const | 653:9
-- `specs` | const | 655:9
-- `itemsWereAdded` | const | 656:9
-- `hasRecommendedSection` | const | 667:15
-- `handleSaveChanges` | const | 675:9
-- `parentId` | const | 678:15
-- `nextVersionNumber` | const | 679:13
-- `q` | const | 681:20
-- `querySnapshot` | const | 682:20
-- `versions` | const | 683:20
-- `mainProjectDoc` | const | 685:23
-- `result` | const | 691:15
-- `previousProjectId` | const | 708:20
-- `hasDirectMatch` | const | 714:25
-- `handleFeatureClick` | const | 735:9
-- `[smrCost, setSmrCost]` | const | 742:9
-- `handleAIPricing` | const | 744:8
-- `useGroupScope` | const | 747:11
-- `targets` | const | 748:11
-- `unapprovedProjects` | const | 749:11
-- `listPreview` | const | 754:15
-- `serviceModelId` | const | 784:19
-- `itemsToPrice` | const | 785:19
-- `groupedItems` | const | 810:19
-- `totalSmrCost` | const | 832:19
-- `pricingAnalysisDetails` | const | 837:19
-- `pricingQuoteConfig` | const | 845:19
-- `pricingCalculatorInputs` | const | 853:19
-- `result` | const | 861:19
-- `error` | const | 883:18
-- `errorMessage` | const | 885:19
-- `handleApplyPrices` | const | 891:9
-- `parsePricedItems` | const | 892:11
-- `pricedItems` | const | 893:11
-- `textToParse` | const | 895:15
-- `jsonMatch` | const | 907:17
-- `jsonString` | const | 909:21
-- `content` | const | 910:21
-- `content` | const | 913:21
-- `e` | const | 922:16
-- `pricedItems` | const | 932:9
-- `e` | const | 935:14
-- `updatesMap` | const | 946:13
-- `rawId` | const | 948:15
-- `[projectId, itemId]` | const | 949:15
-- `updatedGroup` | const | 957:13
-- `nextSpecs` | const | 958:15
-- `key` | const | 959:17
-- `update` | const | 961:17
-- `newPrice` | const | 962:17
-- `newComment` | const | 963:17
-- `updatedCurrent` | const | 970:13
-- `priceMap` | const | 979:11
-- `updatedSpecs` | const | 981:11
-- `pricedData` | const | 983:15
-- `newPrice` | const | 984:15
-- `newComment` | const | 985:15
-- `{ devicesCount, cableMeters, cableSupportMeters }` | const | 998:9
-- `devices` | const | 1001:9
-- `cable` | const | 1002:9
-- `cableSupport` | const | 1003:9
-- `[isVersionDialogOpen, setIsVersionDialogOpen]` | const | 1016:9
-- `handleLoadVersion` | const | 1018:9
-- `previousProjectId` | const | 1020:11
-- `projectRef` | const | 1022:13
-- `projectSnap` | const | 1023:13
-- `newProjectData` | const | 1025:15
-- `handleRefineProject` | const | 1041:9
-- `normalizeText` | const | 1050:9
-- `getComparisonKey` | const | 1057:9
-- `name` | const | 1058:11
-- `model` | const | 1059:11
-- `getTextSimilarity` | const | 1063:9
-- `aSet` | const | 1067:11
-- `bSet` | const | 1068:11
-- `intersection` | const | 1070:9
-- `union` | const | 1074:11
-- `ensureItemType` | const | 1078:9
-- `findInsertionIndex` | const | 1083:9
-- `bestIndex` | const | 1084:9
-- `bestScore` | const | 1085:9
-- `score` | const | 1088:11
-- `i` | const | 1101:16
-- `candidate` | const | 1102:15
-- `informationalIndex` | const | 1108:11
-- `handleApplyFoundItems` | const | 1112:9
-- `totalAdded` | const | 1118:11
-- `updatedGroup` | const | 1119:13
-- `existingKeys` | const | 1120:15
-- `seenNewKeys` | const | 1126:15
-- `dedupedItems` | const | 1127:15
-- `key` | const | 1130:19
-- `nextSpecs` | const | 1144:15
-- `insertIndex` | const | 1146:17
-- `updatedCurrent` | const | 1157:13
-- `existingKeys` | const | 1170:11
-- `seenNewKeys` | const | 1176:11
-- `dedupedItems` | const | 1177:11
-- `key` | const | 1180:15
-- `nextSpecs` | const | 1195:11
-- `insertIndex` | const | 1197:13
-- `blobToBase64` | const | 1211:9
-- `reader` | const | 1213:13
-- `transcribeAiEditAudio` | const | 1220:9
-- `modelId` | const | 1223:13
-- `base64Data` | const | 1227:13
-- `prompt` | const | 1228:13
-- `result` | const | 1234:13
-- `rawText` | const | 1244:13
-- `cleaned` | const | 1245:13
-- `parsed` | const | 1246:13
-- `error` | const | 1250:14
-- `startAiEditRecording` | const | 1258:9
-- `stream` | const | 1269:13
-- `recorder` | const | 1271:13
-- `audioBlob` | const | 1279:15
-- `error` | const | 1291:14
-- `stopAiEditRecording` | const | 1297:9
-- `applyAiEdits` | const | 1309:9
-- `updates` | const | 1311:11
-- `normalizeNumber` | const | 1314:11
-- `num` | const | 1316:13
-- `applyUpdatesToProject` | const | 1320:11
-- `nextSpecs` | const | 1321:11
-- `findSpecIndex` | const | 1322:13
-- `indexById` | const | 1324:17
-- `lookup` | const | 1328:17
-- `removalIds` | const | 1335:15
-- `index` | const | 1338:21
-- `index` | const | 1348:17
-- `updatesPayload` | const | 1350:17
-- `normalized` | const | 1351:17
-- `nextQuoteConfig` | const | 1385:13
-- `nextAnalysisDetails` | const | 1388:13
-- `updatedGroup` | const | 1404:13
-- `updatedCurrent` | const | 1406:13
-- `updatedProject` | const | 1412:13
-- `handleAiEditSubmit` | const | 1428:9
-- `modelId` | const | 1436:15
-- `promptTemplate` | const | 1437:15
-- `projectContext` | const | 1438:15
-- `prompt` | const | 1486:15
-- `result` | const | 1490:15
-- `rawText` | const | 1491:15
-- `cleaned` | const | 1492:15
-- `parsed` | const | 1493:15
-- `error` | const | 1498:16
-- `isMobile` | const | 1505:9
-- `resolvedActiveProjectId` | const | 1521:9
-- `optionId` | const | 1561:27
-- `actionIndex` | const | 1725:25
-- `action` | const | 1727:25
-- `snapshot` | const | 1728:25
-- `nextProject` | const | 1729:25
-- `nextHistory` | const | 1745:25
+- `canSelectModel` | const | 141:9
+- `planKey` | const | 142:9
+- `planPreference` | const | 143:9
+- `planModelOptions` | const | 144:9
+- `planModelIds` | const | 145:9
+- `resolvedPlanModel` | const | 146:9
+- `proButtonClass` | const | 147:9
+- `withProLabel` | const | 148:9
+- `groupActionButtonClass` | const | 149:9
+- `canUsePrivatePriceBase` | const | 154:9
+- `calculateSmrFromSpecs` | const | 162:9
+- `installation` | const | 165:13
+- `groupSmrTotal` | const | 170:9
+- `hasUnsavedChanges` | const | 175:9
+- `snapshot` | const | 185:11
+- `projectId` | const | 194:11
+- `now` | const | 201:11
+- `minIntervalMs` | const | 202:11
+- `baseDelayMs` | const | 203:11
+- `lastSavedAt` | const | 204:11
+- `delayMs` | const | 205:11
+- `result` | const | 211:15
+- `error` | const | 240:16
+- `handleBeforeUnload` | const | 255:11
+- `q` | const | 280:11
+- `unsubscribe` | const | 281:11
+- `fetchedCompanies` | const | 282:15
+- `buildSnapshot` | const | 289:9
+- `MAX_ACTION_HISTORY` | const | 298:9
+- `setActionHistoryForCurrent` | const | 300:9
+- `currentList` | const | 303:13
+- `nextList` | const | 304:13
+- `persistActionHistory` | const | 309:9
+- `error` | const | 317:14
+- `logActionForProject` | const | 322:9
+- `newAction` | const | 323:11
+- `currentList` | const | 324:11
+- `nextList` | const | 325:11
+- `logAction` | const | 332:9
+- `newAction` | const | 333:11
+- `updateCurrentProject` | const | 337:9
+- `nextProject` | const | 344:11
+- `handleAiProjectUpdate` | const | 354:9
+- `previousProject` | const | 355:11
+- `seededHistory` | const | 370:13
+- `nextModel` | let | 382:9
+- `fallbackId` | const | 398:11
+- `nextProject` | const | 403:13
+- `handleModelChange` | const | 415:9
+- `handleProjectTabChange` | const | 421:9
+- `nextProject` | const | 425:11
+- `handleGroupFileSelect` | const | 431:9
+- `file` | const | 432:11
+- `handleGroupProcessingClose` | const | 438:9
+- `handleGroupProjectProcessed` | const | 446:9
+- `formatCurrency` | const | 456:9
+- `buildSyncConflicts` | const | 461:9
+- `grouped` | const | 463:11
+- `name` | const | 468:15
+- `materialPrice` | const | 470:15
+- `installationPrice` | const | 471:15
+- `key` | const | 472:15
+- `options` | const | 476:15
+- `handleOpenSyncDialog` | const | 497:9
+- `conflicts` | const | 499:11
+- `defaults` | const | 505:11
+- `currentOption` | const | 507:13
+- `handleApplySync` | const | 515:9
+- `targetProjectIds` | const | 523:11
+- `conflictMap` | const | 526:11
+- `updatedGroup` | const | 527:11
+- `updatedSpecs` | const | 531:13
+- `name` | const | 533:15
+- `conflict` | const | 535:15
+- `selectionKey` | const | 536:15
+- `selected` | const | 537:15
+- `updatedCurrent` | const | 547:11
+- `updateSpecificationItem` | const | 560:9
+- `oldSpecs` | const | 562:11
+- `oldItem` | const | 564:11
+- `matchName` | const | 565:11
+- `shouldSyncByName` | const | 566:11
+- `applyUpdates` | const | 568:11
+- `updatedSpec` | const | 571:15
+- `updatedGroup` | const | 581:13
+- `updatedSpecs` | const | 582:15
+- `updatedCurrent` | const | 589:13
+- `fallbackSpecs` | const | 593:15
+- `newSpecs` | const | 599:11
+- `applyComplexityMultiplier` | const | 603:9
+- `prevMultiplier` | const | 605:11
+- `ratio` | const | 611:11
+- `adjustSpecs` | const | 612:11
+- `basePrice` | const | 614:13
+- `nextPrice` | const | 615:13
+- `updatedGroup` | const | 623:13
+- `updatedCurrent` | const | 628:13
+- `handleAddItem` | const | 640:9
+- `newItem` | const | 642:11
+- `newSpecs` | const | 643:11
+- `handleRemoveItem` | const | 647:9
+- `oldSpecs` | const | 649:11
+- `newSpecs` | const | 650:11
+- `removedItem` | const | 651:11
+- `handleAddRecommendation` | const | 655:9
+- `updatedItem` | const | 657:11
+- `specs` | let | 658:9
+- `hasRecommendedSection` | const | 659:11
+- `handleAddAllRecommendations` | const | 666:9
+- `specs` | let | 668:9
+- `itemsWereAdded` | let | 669:9
+- `hasRecommendedSection` | const | 680:15
+- `handleSaveChanges` | const | 688:9
+- `parentId` | const | 691:15
+- `nextVersionNumber` | let | 692:13
+- `q` | const | 694:20
+- `querySnapshot` | const | 695:20
+- `versions` | const | 696:20
+- `mainProjectDoc` | const | 698:23
+- `result` | const | 704:15
+- `previousProjectId` | const | 721:20
+- `hasDirectMatch` | const | 727:25
+- `handleFeatureClick` | const | 748:9
+- `handleS3Request` | const | 755:9
+- `result` | const | 758:13
+- `[smrCost, setSmrCost]` | const | 773:9
+- `handleAIPricing` | const | 775:8
+- `useGroupScope` | const | 778:11
+- `targets` | const | 779:11
+- `unapprovedProjects` | const | 780:11
+- `listPreview` | const | 785:15
+- `serviceModelId` | const | 815:19
+- `itemsToPrice` | const | 816:19
+- `groupedItems` | const | 841:19
+- `totalSmrCost` | const | 863:19
+- `pricingAnalysisDetails` | const | 868:19
+- `pricingQuoteConfig` | const | 876:19
+- `pricingCalculatorInputs` | const | 884:19
+- `result` | const | 892:19
+- `error` | const | 914:18
+- `errorMessage` | const | 916:19
+- `handleApplyPrices` | const | 922:9
+- `parsePricedItems` | const | 923:11
+- `pricedItems` | let | 924:11
+- `textToParse` | let | 926:15
+- `jsonMatch` | const | 938:17
+- `jsonString` | const | 940:21
+- `content` | const | 941:21
+- `content` | const | 944:21
+- `e` | const | 953:16
+- `pricedItems` | let | 963:9
+- `e` | const | 966:14
+- `updatesMap` | const | 977:13
+- `rawId` | const | 979:15
+- `[projectId, itemId]` | const | 980:15
+- `updatedGroup` | const | 988:13
+- `nextSpecs` | const | 989:15
+- `key` | const | 990:17
+- `update` | const | 992:17
+- `newPrice` | const | 993:17
+- `newComment` | const | 994:17
+- `updatedCurrent` | const | 1001:13
+- `priceMap` | const | 1010:11
+- `updatedSpecs` | const | 1012:11
+- `pricedData` | const | 1014:15
+- `newPrice` | const | 1015:15
+- `newComment` | const | 1016:15
+- `{ devicesCount, cableMeters, cableSupportMeters }` | const | 1029:9
+- `devices` | let | 1032:9
+- `cable` | let | 1033:9
+- `cableSupport` | let | 1034:9
+- `[isVersionDialogOpen, setIsVersionDialogOpen]` | const | 1047:9
+- `handleLoadVersion` | const | 1049:9
+- `previousProjectId` | const | 1051:11
+- `projectRef` | const | 1053:13
+- `projectSnap` | const | 1054:13
+- `newProjectData` | const | 1056:15
+- `handleRefineProject` | const | 1072:9
+- `normalizeText` | const | 1081:9
+- `getComparisonKey` | const | 1088:9
+- `name` | const | 1089:11
+- `model` | const | 1090:11
+- `getTextSimilarity` | const | 1094:9
+- `aSet` | const | 1098:11
+- `bSet` | const | 1099:11
+- `intersection` | let | 1101:9
+- `union` | const | 1105:11
+- `ensureItemType` | const | 1109:9
+- `findInsertionIndex` | const | 1114:9
+- `bestIndex` | let | 1115:9
+- `bestScore` | let | 1116:9
+- `score` | let | 1119:11
+- `i` | let | 1132:16
+- `candidate` | const | 1133:15
+- `informationalIndex` | const | 1139:11
+- `handleApplyFoundItems` | const | 1143:9
+- `totalAdded` | let | 1149:11
+- `updatedGroup` | const | 1150:13
+- `existingKeys` | const | 1151:15
+- `seenNewKeys` | const | 1157:15
+- `dedupedItems` | const | 1158:15
+- `key` | const | 1161:19
+- `nextSpecs` | const | 1175:15
+- `insertIndex` | const | 1177:17
+- `updatedCurrent` | const | 1188:13
+- `existingKeys` | const | 1201:11
+- `seenNewKeys` | const | 1207:11
+- `dedupedItems` | const | 1208:11
+- `key` | const | 1211:15
+- `nextSpecs` | const | 1226:11
+- `insertIndex` | const | 1228:13
+- `blobToBase64` | const | 1242:9
+- `reader` | const | 1244:13
+- `transcribeAiEditAudio` | const | 1251:9
+- `modelId` | const | 1254:13
+- `base64Data` | const | 1258:13
+- `prompt` | const | 1259:13
+- `result` | const | 1265:13
+- `rawText` | const | 1275:13
+- `cleaned` | const | 1276:13
+- `parsed` | const | 1277:13
+- `error` | const | 1281:14
+- `startAiEditRecording` | const | 1289:9
+- `stream` | const | 1300:13
+- `recorder` | const | 1302:13
+- `audioBlob` | const | 1310:15
+- `error` | const | 1322:14
+- `stopAiEditRecording` | const | 1328:9
+- `applyAiEdits` | const | 1340:9
+- `updates` | const | 1342:11
+- `normalizeNumber` | const | 1345:11
+- `num` | const | 1347:13
+- `applyUpdatesToProject` | const | 1351:11
+- `nextSpecs` | let | 1352:11
+- `findSpecIndex` | const | 1353:13
+- `indexById` | const | 1355:17
+- `lookup` | const | 1359:17
+- `removalIds` | const | 1366:15
+- `index` | const | 1369:21
+- `index` | const | 1379:17
+- `updatesPayload` | const | 1381:17
+- `normalized` | const | 1382:17
+- `nextQuoteConfig` | const | 1416:13
+- `nextAnalysisDetails` | const | 1419:13
+- `updatedGroup` | const | 1435:13
+- `updatedCurrent` | const | 1437:13
+- `updatedProject` | const | 1443:13
+- `handleAiEditSubmit` | const | 1459:9
+- `modelId` | const | 1467:15
+- `promptTemplate` | const | 1468:15
+- `projectContext` | const | 1469:15
+- `prompt` | const | 1517:15
+- `result` | const | 1521:15
+- `rawText` | const | 1522:15
+- `cleaned` | const | 1523:15
+- `parsed` | const | 1524:15
+- `error` | const | 1529:16
+- `isMobile` | const | 1536:9
+- `resolvedActiveProjectId` | const | 1552:9
+- `optionId` | const | 1592:27
+- `actionIndex` | const | 1755:25
+- `action` | const | 1757:25
+- `snapshot` | const | 1758:25
+- `nextProject` | const | 1759:25
+- `nextHistory` | const | 1775:25
 
 ## src/components/calculator/SpecificationRow.tsx
 
@@ -3979,7 +4339,7 @@ Variables: 4903
 - `handleAction` | const | 185:11
 - `result` | const | 188:19
 - `handleRetry` | const | 197:11
-- `accessUrl` | const | 201:21
+- `accessUrl` | let | 201:21
 - `refresh` | const | 203:27
 - `{ newAccessUrl }` | const | 205:31
 - `err` | const | 208:31
@@ -4030,10 +4390,10 @@ Variables: 4903
 - `renderEmptyState` | const | 659:11
 - `renderContent` | const | 686:11
 - `{ activeObjects, ungroupedActive, archivedObjects, ungroupedArchived }` | const | 687:15
-- `objectsToRender` | const | 689:13
-- `ungroupedToRender` | const | 689:30
-- `emptyTitle` | const | 689:49
-- `emptyDescription` | const | 689:61
+- `objectsToRender` | let | 689:13
+- `ungroupedToRender` | let | 689:30
+- `emptyTitle` | let | 689:49
+- `emptyDescription` | let | 689:61
 
 ## src/components/dashboard/ProjectCard.tsx
 
@@ -4209,9 +4569,9 @@ Variables: 4903
 - `isPro` | const | 71:11
 - `recommendedByHeight` | const | 74:15
 - `{ devicesCount, cableMeters, cableSupportMeters }` | const | 80:11
-- `devices` | const | 82:13
-- `cable` | const | 83:13
-- `cableSupport` | const | 84:13
+- `devices` | let | 82:13
+- `cable` | let | 83:13
+- `cableSupport` | let | 84:13
 - `calculatedShiftCost` | const | 94:11
 - `{ totalInstallationCost: recommendedSmrCost }` | const | 100:11
 - `{ normDevicesPerShift, normCablePerShift, normCableSupportPerShift, infraCost, marginPercent, complexityMultiplier }` | const | 101:15
@@ -4222,7 +4582,7 @@ Variables: 4903
 - `totalInstallationCost` | const | 106:15
 - `handleInputChange` | const | 114:11
 - `numericFields` | const | 115:15
-- `finalValue` | const | 116:13
+- `finalValue` | let | 116:13
 - `handleSliderChange` | const | 123:11
 - `handlePresetClick` | const | 124:11
 - `handleModeSwitch` | const | 126:11
@@ -4263,10 +4623,10 @@ Variables: 4903
 - `initialSeconds` | const | 18:13
 - `startTimeItem` | const | 19:13
 - `now` | const | 20:13
-- `startTimestamp` | const | 21:11
+- `startTimestamp` | let | 21:11
 - `elapsedSeconds` | const | 30:13
-- `difference` | const | 31:11
-- `newTimeLeft` | const | 33:11
+- `difference` | let | 31:11
+- `newTimeLeft` | let | 33:11
 - `timer` | const | 48:11
 - `timerComponents` | const | 55:9
 
@@ -4314,8 +4674,8 @@ Variables: 4903
 ## src/components/partnership/MarketPotentialSection.tsx
 
 - `FormattedCountUp` | const | 12:7
-- `displayValue` | const | 13:9
-- `suffix` | const | 14:9
+- `displayValue` | let | 13:9
+- `suffix` | let | 14:9
 - `formattedValue` | const | 25:11
 - `MarketPotentialSection` | const | 36:7
 - `proYearlyPrice` | const | 37:11
@@ -4372,7 +4732,7 @@ Variables: 4903
 - `isActive` | const | 80:27
 - `isNext` | const | 81:27
 - `isPrev` | const | 82:27
-- `animateState` | const | 84:25
+- `animateState` | let | 84:25
 - `variants` | const | 91:27
 - `UseCasesSection` | const | 150:14
 - `[isPartnerRegisterOpen, setIsPartnerRegisterOpen]` | const | 151:11
@@ -4411,46 +4771,52 @@ Variables: 4903
 
 ## src/components/pdf/DocumentTemplate.tsx
 
-- `baseStyles` | const | 25:7
-- `DocumentTemplate` | const | 157:7
-- `tpl` | const | 168:9
-- `accentColor` | const | 169:9
-- `headerStyle` | const | 170:9
-- `isCompact` | const | 171:9
-- `isModern` | const | 172:9
-- `pageStyle` | const | 174:9
-- `titleStyle` | const | 180:9
-- `commissioningTotal` | const | 181:9
-- `qtyInstall` | const | 240:23
-- `priceInstall` | const | 241:23
-- `sumInstall` | const | 242:23
-- `qtyMaterial` | const | 243:23
-- `priceMaterial` | const | 244:23
-- `sumMaterial` | const | 245:23
-- `itemTotal` | const | 246:23
+- `baseStyles` | const | 26:7
+- `DocumentTemplate` | const | 159:7
+- `tpl` | const | 171:9
+- `resolved` | const | 172:9
+- `accentColor` | const | 173:9
+- `headerStyle` | const | 174:9
+- `isCompact` | const | 180:9
+- `isModern` | const | 181:9
+- `showSignature` | const | 182:9
+- `showStamp` | const | 183:9
+- `pageStyle` | const | 185:9
+- `titleStyle` | const | 191:9
+- `commissioningTotal` | const | 192:9
+- `qtyInstall` | const | 251:23
+- `priceInstall` | const | 252:23
+- `sumInstall` | const | 253:23
+- `qtyMaterial` | const | 254:23
+- `priceMaterial` | const | 255:23
+- `sumMaterial` | const | 256:23
+- `itemTotal` | const | 257:23
 
 ## src/components/pdf/GroupDocumentTemplate.tsx
 
-- `baseStyles` | const | 20:7
-- `GroupDocumentTemplate` | const | 152:7
-- `tpl` | const | 160:9
-- `accentColor` | const | 161:9
-- `headerStyle` | const | 162:9
-- `isCompact` | const | 163:9
-- `isModern` | const | 164:9
-- `pageStyle` | const | 166:9
-- `titleStyle` | const | 172:9
-- `projectLabel` | const | 192:21
-- `totals` | const | 213:15
-- `commissioningTotal` | const | 214:15
-- `headerObjectName` | const | 215:15
-- `qtyInstall` | const | 258:23
-- `priceInstall` | const | 259:23
-- `sumInstall` | const | 260:23
-- `qtyMaterial` | const | 261:23
-- `priceMaterial` | const | 262:23
-- `sumMaterial` | const | 263:23
-- `itemTotal` | const | 264:23
+- `baseStyles` | const | 21:7
+- `GroupDocumentTemplate` | const | 154:7
+- `tpl` | const | 163:9
+- `resolved` | const | 164:9
+- `accentColor` | const | 165:9
+- `headerStyle` | const | 166:9
+- `isCompact` | const | 172:9
+- `isModern` | const | 173:9
+- `showSignature` | const | 174:9
+- `showStamp` | const | 175:9
+- `pageStyle` | const | 177:9
+- `titleStyle` | const | 183:9
+- `projectLabel` | const | 203:21
+- `totals` | const | 224:15
+- `commissioningTotal` | const | 225:15
+- `headerObjectName` | const | 226:15
+- `qtyInstall` | const | 269:23
+- `priceInstall` | const | 270:23
+- `sumInstall` | const | 271:23
+- `qtyMaterial` | const | 272:23
+- `priceMaterial` | const | 273:23
+- `sumMaterial` | const | 274:23
+- `itemTotal` | const | 275:23
 
 ## src/components/pdf/InvoiceTemplate.tsx
 
@@ -4503,7 +4869,7 @@ Variables: 4903
 
 ## src/components/support/FloatingSupportChat.tsx
 
-- `[isOpen, setIsOpen]` | const | 11:9
+- `{ isOpen, toggle }` | const | 11:9
 
 ## src/components/support/SupportChat.tsx
 
@@ -4538,52 +4904,91 @@ Variables: 4903
 
 ## src/components/tabs/ProfileTab.tsx
 
-- `{ user, setUser, telegramUser, effectivePlan }` | const | 31:9
-- `{ toast }` | const | 32:9
-- `[isPending, startTransition]` | const | 33:9
-- `[isUpgradeOpen, setIsUpgradeOpen]` | const | 34:9
-- `[upgradeTargetRole, setUpgradeTargetRole]` | const | 35:9
-- `[displayName, setDisplayName]` | const | 37:9
-- `[telegramUsernameState, setTelegramUsernameState]` | const | 38:9
-- `[documentTemplates, setDocumentTemplates]` | const | 39:9
-- `[signatureState, setSignatureState]` | const | 44:9
-- `[stampState, setStampState]` | const | 49:9
-- `[avatarState, setAvatarState]` | const | 54:9
-- `[isUploadingSignature, setIsUploadingSignature]` | const | 59:9
-- `[isUploadingStamp, setIsUploadingStamp]` | const | 60:9
-- `[isUploadingAvatar, setIsUploadingAvatar]` | const | 61:9
-- `[botUrl, setBotUrl]` | const | 63:9
-- `[isSyncingChat, setIsSyncingChat]` | const | 64:9
-- `{ theme, setTheme }` | const | 65:9
-- `fetchBotUrl` | const | 68:11
-- `settings` | const | 69:19
-- `referralLink` | const | 75:9
-- `chatLink` | const | 76:9
-- `handleCopy` | const | 103:9
-- `handleProfileUpdate` | const | 111:9
-- `result` | const | 114:13
-- `openUpgradeDialog` | const | 154:9
-- `currentPlan` | const | 159:9
-- `nextPlan` | const | 160:9
-- `nextPlanLabel` | const | 161:9
-- `handleMarketingToggle` | const | 167:9
-- `result` | const | 170:13
-- `handleSyncChatId` | const | 180:9
-- `result` | const | 184:13
-- `error` | const | 193:14
-- `isProfileChanged` | const | 200:9
-- `templateAccess` | const | 213:9
-- `canEditTemplates` | const | 220:9
-- `templateOptions` | const | 222:9
-- `allowed` | const | 223:11
-- `uploadAsset` | const | 240:9
-- `presignedUrlResponse` | const | 241:11
-- `{ uploadUrl, accessUrl, objectKey, urlExpirationTimestamp }` | const | 249:11
-- `uploadResponse` | const | 250:11
-- `handleAssetChange` | const | 261:9
-- `uploaded` | const | 271:13
-- `error` | const | 280:14
-- `handleAssetRemove` | const | 289:9
+- `{ user, setUser, telegramUser, effectivePlan }` | const | 40:9
+- `{ toast }` | const | 41:9
+- `{ open: openSupportChat }` | const | 42:9
+- `[isPending, startTransition]` | const | 43:9
+- `[isTemplatePending, startTemplateTransition]` | const | 44:9
+- `[isUpgradeOpen, setIsUpgradeOpen]` | const | 45:9
+- `[upgradeTargetRole, setUpgradeTargetRole]` | const | 46:9
+- `[isPurchaseOpen, setIsPurchaseOpen]` | const | 47:9
+- `{ templates: customTemplates, isLoading: isTemplatesLoading }` | const | 49:9
+- `{ templates: globalTemplates, settings: templateSettings }` | const | 50:9
+- `[isTemplateDialogOpen, setIsTemplateDialogOpen]` | const | 51:9
+- `[editingTemplate, setEditingTemplate]` | const | 52:9
+- `[displayName, setDisplayName]` | const | 54:9
+- `[telegramUsernameState, setTelegramUsernameState]` | const | 55:9
+- `[documentTemplates, setDocumentTemplates]` | const | 56:9
+- `[signatureState, setSignatureState]` | const | 61:9
+- `[stampState, setStampState]` | const | 66:9
+- `[avatarState, setAvatarState]` | const | 71:9
+- `[avatarFile, setAvatarFile]` | const | 76:9
+- `[isAvatarCropOpen, setIsAvatarCropOpen]` | const | 77:9
+- `[isUploadingSignature, setIsUploadingSignature]` | const | 78:9
+- `[isUploadingStamp, setIsUploadingStamp]` | const | 79:9
+- `[isUploadingAvatar, setIsUploadingAvatar]` | const | 80:9
+- `[botUrl, setBotUrl]` | const | 82:9
+- `[isSyncingChat, setIsSyncingChat]` | const | 83:9
+- `{ theme, setTheme }` | const | 84:9
+- `fetchBotUrl` | const | 87:11
+- `settings` | const | 88:19
+- `referralLink` | const | 94:9
+- `chatLink` | const | 95:9
+- `handleCopy` | const | 122:9
+- `handleProfileUpdate` | const | 130:9
+- `result` | const | 133:13
+- `openUpgradeDialog` | const | 173:9
+- `currentPlan` | const | 178:9
+- `nextPlan` | const | 179:9
+- `nextPlanLabel` | const | 180:9
+- `handleNextPlanClick` | const | 182:9
+- `handleMarketingToggle` | const | 191:9
+- `result` | const | 194:13
+- `handleSyncChatId` | const | 204:9
+- `result` | const | 208:13
+- `error` | const | 217:14
+- `openTemplateDialog` | const | 224:9
+- `handleTemplateSubmit` | const | 229:9
+- `payload` | const | 232:13
+- `result` | const | 240:13
+- `handleTemplateDelete` | const | 262:9
+- `confirmed` | const | 264:11
+- `result` | const | 267:13
+- `templatesChanged` | const | 276:9
+- `isProfileChanged` | const | 282:9
+- `canEditTemplates` | const | 293:9
+- `customProposalTemplates` | const | 294:9
+- `templateOptions` | const | 299:9
+- `templateLimit` | const | 310:9
+- `templateCount` | const | 311:9
+- `canUseConstructor` | const | 312:9
+- `isLimitReached` | const | 313:9
+- `proposalDefault` | const | 316:11
+- `invoiceDefault` | const | 317:11
+- `contractDefault` | const | 318:11
+- `uploadAsset` | const | 327:9
+- `presignedUrlResponse` | const | 328:11
+- `{ uploadUrl, accessUrl, objectKey, urlExpirationTimestamp }` | const | 336:11
+- `uploadResponse` | const | 337:11
+- `handleAssetChange` | const | 348:9
+- `uploaded` | const | 358:13
+- `error` | const | 367:14
+- `handleAvatarSelect` | const | 376:9
+- `handleAssetRemove` | const | 386:9
+
+## src/components/templates/AdminTemplateEditorDialog.tsx
+
+- `defaultValues` | const | 32:7
+- `[values, setValues]` | const | 49:9
+- `handleChange` | const | 68:9
+- `handleSubmit` | const | 72:9
+
+## src/components/templates/TemplateConstructorDialog.tsx
+
+- `defaultValues` | const | 32:7
+- `[values, setValues]` | const | 48:9
+- `handleChange` | const | 66:9
+- `handleSubmit` | const | 70:9
 
 ## src/components/ui/accordion.tsx
 
@@ -4676,7 +5081,7 @@ Variables: 4903
 - `key` | const | 291:17
 - `itemConfig` | const | 292:17
 - `payloadPayload` | const | 331:9
-- `configLabelKey` | const | 338:7
+- `configLabelKey` | let | 338:7
 
 ## src/components/ui/checkbox.tsx
 
@@ -4924,61 +5329,78 @@ Variables: 4903
 
 - `SystemRole` | const | 23:14
 - `UserPlan` | const | 30:14
-- `initialQuoteConfig` | const | 446:14
-- `AppContext` | const | 468:7
-- `convertTimestampsToDates` | const | 471:7
-- `newObj` | const | 480:15
-- `key` | const | 481:20
-- `AppProvider` | const | 490:14
-- `{ toast }` | const | 491:9
-- `[user, setUser]` | const | 492:9
-- `[isLoading, setIsLoading]` | const | 493:9
-- `[effectivePlan, setEffectivePlan]` | const | 494:9
-- `[effectiveRole, setEffectiveRole]` | const | 495:9
-- `{ data: session, status }` | const | 496:9
-- `firebaseUser` | const | 497:9
-- `authLoading` | const | 498:9
-- `authError` | const | 499:9
-- `router` | const | 500:9
-- `pathname` | const | 501:9
-- `searchParams` | const | 502:9
-- `[currentProject, setCurrentProject]` | const | 504:9
-- `[currentGroup, setCurrentGroup]` | const | 505:9
-- `[showTimeoutWarning, setShowTimeoutWarning]` | const | 507:9
-- `[actionHistory, setActionHistory]` | const | 508:9
-- `[changeCounter, setChangeCounter]` | const | 511:9
-- `[useFileUpload]` | const | 512:9
-- `incrementChangeCounter` | const | 515:9
-- `resetChangeCounter` | const | 516:9
-- `telegram` | const | 518:9
-- `telegramUser` | const | 525:9
-- `[isNavigating, setNavigating]` | const | 532:9
-- `[isTransitioning, startTransition]` | const | 533:9
-- `userAvailableModels` | const | 535:9
-- `available` | const | 537:9
-- `checkUserPlan` | const | 542:9
-- `changed` | const | 543:9
-- `now` | const | 544:11
-- `userRef` | const | 545:11
-- `tempPlan` | const | 546:9
-- `resetAppContextState` | const | 569:9
-- `userDocRef` | const | 590:11
-- `unsubscribe` | const | 591:11
-- `rawData` | const | 593:19
-- `userData` | const | 594:19
-- `managerDocRef` | const | 597:23
-- `managerDoc` | const | 598:23
-- `managerData` | const | 600:27
-- `isPwa` | const | 618:23
-- `handleThemeChange` | const | 644:15
-- `root` | const | 645:17
-- `cssVar` | const | 647:21
-- `handleBackButton` | const | 653:15
-- `logAction` | const | 690:9
-- `newAction` | const | 691:11
-- `value` | const | 695:9
-- `useAppContext` | const | 729:14
-- `context` | const | 730:9
+- `initialQuoteConfig` | const | 451:14
+- `AppContext` | const | 473:7
+- `convertTimestampsToDates` | const | 476:7
+- `newObj` | const | 485:15
+- `key` | const | 486:20
+- `AppProvider` | const | 495:14
+- `{ toast }` | const | 496:9
+- `[user, setUser]` | const | 497:9
+- `[isLoading, setIsLoading]` | const | 498:9
+- `[effectivePlan, setEffectivePlan]` | const | 499:9
+- `[effectiveRole, setEffectiveRole]` | const | 500:9
+- `{ data: session, status }` | const | 501:9
+- `firebaseUser` | const | 502:9
+- `authLoading` | const | 503:9
+- `authError` | const | 504:9
+- `router` | const | 505:9
+- `pathname` | const | 506:9
+- `searchParams` | const | 507:9
+- `[currentProject, setCurrentProject]` | const | 509:9
+- `[currentGroup, setCurrentGroup]` | const | 510:9
+- `[showTimeoutWarning, setShowTimeoutWarning]` | const | 512:9
+- `[actionHistory, setActionHistory]` | const | 513:9
+- `[changeCounter, setChangeCounter]` | const | 516:9
+- `[useFileUpload]` | const | 517:9
+- `incrementChangeCounter` | const | 520:9
+- `resetChangeCounter` | const | 521:9
+- `telegram` | const | 523:9
+- `telegramUser` | const | 530:9
+- `[isNavigating, setNavigating]` | const | 537:9
+- `[isTransitioning, startTransition]` | const | 538:9
+- `userAvailableModels` | const | 540:9
+- `checkUserPlan` | const | 545:9
+- `changed` | let | 546:9
+- `now` | const | 547:11
+- `userRef` | const | 548:11
+- `tempPlan` | let | 549:9
+- `resetAppContextState` | const | 572:9
+- `userDocRef` | const | 593:11
+- `unsubscribe` | const | 594:11
+- `rawData` | const | 596:19
+- `userData` | const | 597:19
+- `managerDocRef` | const | 600:23
+- `managerDoc` | const | 601:23
+- `managerData` | const | 603:27
+- `isPwa` | const | 621:23
+- `handleThemeChange` | const | 647:15
+- `root` | const | 648:17
+- `cssVar` | const | 650:21
+- `handleBackButton` | const | 656:15
+- `logAction` | const | 693:9
+- `newAction` | const | 694:11
+- `value` | const | 698:9
+- `useAppContext` | const | 732:14
+- `context` | const | 733:9
+
+## src/contexts/SupportChatContext.tsx
+
+- `SupportChatContext` | const | 12:7
+- `[isOpen, setIsOpen]` | const | 15:9
+- `open` | const | 17:9
+- `close` | const | 18:9
+- `toggle` | const | 19:9
+- `value` | const | 21:9
+- `ctx` | const | 27:9
+
+## src/hooks/use-document-templates.ts
+
+- `{ enabled = true }` | const | 8:9
+- `[templates, setTemplates]` | const | 9:9
+- `[settings, setSettings]` | const | 10:9
+- `[isLoading, setIsLoading]` | const | 11:9
+- `isMounted` | let | 15:9
 
 ## src/hooks/use-engagement-tracking.ts
 
@@ -5002,19 +5424,29 @@ Variables: 4903
 - `TOAST_LIMIT` | const | 11:7
 - `TOAST_REMOVE_DELAY` | const | 12:7
 - `actionTypes` | const | 21:7
-- `count` | const | 28:5
+- `count` | let | 28:5
 - `toastTimeouts` | const | 59:7
 - `addToRemoveQueue` | const | 61:7
 - `timeout` | const | 66:9
 - `reducer` | const | 77:14
 - `{ toastId }` | const | 94:13
 - `listeners` | const | 132:7
-- `memoryState` | const | 134:5
+- `memoryState` | let | 134:5
 - `id` | const | 146:9
 - `update` | const | 148:9
 - `dismiss` | const | 153:9
 - `[state, setState]` | const | 175:9
 - `index` | const | 180:13
+
+## src/hooks/use-user-templates.ts
+
+- `{ enabled = true }` | const | 15:9
+- `{ user }` | const | 16:9
+- `[templates, setTemplates]` | const | 17:9
+- `[isLoading, setIsLoading]` | const | 18:9
+- `q` | const | 28:11
+- `unsubscribe` | const | 34:11
+- `nextTemplates` | const | 37:15
 
 ## src/lib/auth.ts
 
@@ -5029,24 +5461,40 @@ Variables: 4903
 
 ## src/lib/calculation.ts
 
-- `materialCostComponent` | const | 9:9
+- `materialCostComponent` | let | 9:9
 - `showMaterials` | const | 12:11
 - `quantityForMaterial` | const | 15:15
 - `installationCostComponent` | const | 19:11
 - `specItemsTotalSum` | const | 27:11
-- `servicesSubtotal` | const | 29:9
+- `servicesSubtotal` | let | 29:9
 - `pnrCost` | const | 31:11
 - `subtotalBeforeTax` | const | 41:11
-- `taxAmount` | const | 43:9
-- `taxLabel` | const | 44:9
-- `finalTotal` | const | 45:9
+- `taxAmount` | let | 43:9
+- `taxLabel` | let | 44:9
+- `finalTotal` | let | 45:9
 
 ## src/lib/document-constructor.ts
 
-- `templateMap` | const | 26:14
-- `getTemplateConfig` | const | 43:14
-- `getTemplatesByType` | const | 48:14
-- `demoPreviewData` | const | 51:14
+- `buildTemplateMap` | const | 26:7
+- `runtimeCatalog` | let | 44:5
+- `runtimeMap` | let | 45:5
+- `registerTemplateCatalog` | const | 47:14
+- `templateMap` | const | 63:14
+- `getTemplateConfig` | const | 65:14
+- `getTemplatesByType` | const | 70:14
+- `demoPreviewData` | const | 73:14
+
+## src/lib/document-template-utils.ts
+
+- `planKey` | const | 3:7
+- `resolveDefaultTemplateId` | const | 10:14
+- `key` | const | 16:9
+- `id` | const | 17:9
+- `filterTemplatesForPlan` | const | 21:14
+- `key` | const | 27:9
+- `filteredByType` | const | 28:9
+- `allowedIds` | const | 33:9
+- `allowedSet` | const | 35:9
 
 ## src/lib/firebase.ts
 
@@ -5078,24 +5526,24 @@ Variables: 4903
 
 ## src/lib/logger.ts
 
-- `logUserAction` | const | 54:14
-- `error` | const | 62:12
-- `MAX_LOG_JSON_CHARS` | const | 85:7
-- `MAX_LOG_STRING_CHARS` | const | 86:7
-- `truncateString` | const | 88:7
-- `safeJsonPayload` | const | 93:7
-- `json` | const | 96:11
-- `error` | const | 103:12
-- `sanitizeDetails` | const | 111:7
-- `safeDetails` | const | 113:9
-- `logAiApiCall` | const | 120:14
-- `safeDetails` | const | 122:15
-- `safeRawResponse` | const | 123:15
-- `error` | const | 139:14
-- `MAX_EVENT_JSON_CHARS` | const | 185:7
-- `sanitizeLogPayload` | const | 187:7
-- `serializeError` | const | 189:7
-- `logProjectEvent` | const | 205:14
+- `logUserAction` | const | 61:14
+- `error` | const | 69:12
+- `MAX_LOG_JSON_CHARS` | const | 92:7
+- `MAX_LOG_STRING_CHARS` | const | 93:7
+- `truncateString` | const | 95:7
+- `safeJsonPayload` | const | 100:7
+- `json` | const | 103:11
+- `error` | const | 110:12
+- `sanitizeDetails` | const | 118:7
+- `safeDetails` | const | 120:9
+- `logAiApiCall` | const | 127:14
+- `safeDetails` | const | 129:15
+- `safeRawResponse` | const | 130:15
+- `error` | const | 146:14
+- `MAX_EVENT_JSON_CHARS` | const | 192:7
+- `sanitizeLogPayload` | const | 194:7
+- `serializeError` | const | 196:7
+- `logProjectEvent` | const | 212:14
 - `{
     projectId,
     userId,
@@ -5114,8 +5562,8 @@ Variables: 4903
     error,
     durationMs,
     correlationId,
-  }` | const | 206:9
-- `err` | const | 254:12
+  }` | const | 213:9
+- `err` | const | 261:12
 
 ## src/lib/mailer.ts
 
@@ -5139,7 +5587,7 @@ Variables: 4903
 - `docId` | const | 58:9
 - `filters` | const | 75:9
 - `orderByClauses` | const | 76:9
-- `limitValue` | const | 77:7
+- `limitValue` | let | 77:7
 - `{ _id, ...rest }` | const | 111:9
 - `exists` | const | 116:9
 - `docSnapshots` | const | 126:9
@@ -5169,7 +5617,7 @@ Variables: 4903
 - `docId` | const | 62:9
 - `filters` | const | 79:9
 - `orderByClauses` | const | 80:9
-- `limitValue` | const | 81:7
+- `limitValue` | let | 81:7
 - `{ _id, ...rest }` | const | 122:9
 - `mongoFilter` | const | 127:9
 - `filter` | const | 128:14
@@ -5222,9 +5670,43 @@ Variables: 4903
 
 - `mongoUri` | const | 3:7
 - `mongoDbName` | const | 4:7
-- `_mongoClientPromise` | const | 16:7
+- `_mongoClientPromise` | var | 16:7
 - `clientPromise` | const | 19:7
 - `client` | const | 32:9
+
+## src/lib/plan-models.ts
+
+- `modelMap` | const | 14:7
+- `sanitizeList` | const | 16:7
+- `unique` | const | 18:9
+- `normalizePlanKey` | const | 27:7
+- `getFallbackModelId` | const | 41:7
+- `getPlanModelConfig` | const | 49:14
+- `planKey` | const | 50:9
+- `rawConfig` | const | 51:9
+- `defaultModel` | const | 52:9
+- `getPlanModelIds` | const | 60:14
+- `config` | const | 61:9
+- `isBusiness` | const | 62:9
+- `candidates` | let | 63:7
+- `fallback` | const | 80:11
+- `getPlanDefaultModelId` | const | 87:14
+- `config` | const | 88:9
+- `fallback` | const | 89:9
+- `resolvePlanModelId` | const | 98:14
+- `candidates` | const | 99:9
+- `config` | const | 103:9
+- `getPlanAbTestModels` | const | 110:14
+- `config` | const | 112:9
+- `getPlanModelOptions` | const | 116:14
+- `getModelLabel` | const | 122:14
+
+## src/lib/plan-utils.ts
+
+- `PLAN_ORDER` | const | 4:14
+- `getNextPlan` | const | 6:14
+- `index` | const | 7:9
+- `getPlanLabel` | const | 12:14
 
 ## src/lib/pwa-helpers.ts
 
@@ -5246,6 +5728,15 @@ Variables: 4903
 
 - `SERVER_STAGE_ORDER` | const | 17:14
 - `SERVER_STAGE_LABELS` | const | 31:14
+
+## src/lib/template-utils.ts
+
+- `CUSTOM_TEMPLATE_PREFIX` | const | 23:14
+- `isCustomTemplateId` | const | 25:14
+- `getTemplateLimitForPlan` | const | 28:14
+- `isTemplateConstructorAvailable` | const | 41:14
+- `normalizeHexColor` | const | 43:14
+- `trimmed` | const | 45:9
 
 ## src/lib/utils.ts
 
@@ -5270,7 +5761,7 @@ Variables: 4903
 - `jobsRef` | const | 37:9
 - `jobsQuery` | const | 38:9
 - `snapshot` | const | 39:9
-- `count` | const | 40:7
+- `count` | let | 40:7
 - `docSnap` | const | 41:14
 
 ## src/server-functions/analysis/jobRunner.ts
@@ -5282,11 +5773,11 @@ Variables: 4903
 - `cacheRef` | const | 39:9
 - `cacheSnap` | const | 40:9
 - `aiResult` | const | 61:9
-- `parsed` | const | 74:7
+- `parsed` | let | 74:7
 - `match` | const | 79:13
 - `validation` | const | 90:9
 - `job` | const | 98:9
-- `lastStage` | const | 103:7
+- `lastStage` | let | 103:7
 - `setStage` | const | 104:9
 - `ensureNotCancelled` | const | 114:9
 - `latest` | const | 115:11
@@ -5356,26 +5847,26 @@ Variables: 4903
 - `enabled` | const | 62:9
 - `mode` | const | 63:9
 - `token` | const | 64:9
-- `latencyMs` | const | 65:7
-- `latencyError` | const | 66:7
+- `latencyMs` | let | 65:7
+- `latencyError` | let | 66:7
 - `start` | const | 68:11
 - `bot` | const | 70:13
 - `err` | const | 73:14
-- `runtime` | const | 77:7
+- `runtime` | let | 77:7
 - `[queue, telegram]` | const | 98:9
 
 ## src/server-functions/notifications/dispatch.ts
 
 - `channels` | const | 38:9
-- `inAppId` | const | 39:7
+- `inAppId` | let | 39:7
 - `notifRef` | const | 41:11
-- `telegramResult` | const | 55:7
+- `telegramResult` | let | 55:7
 - `message` | const | 57:11
 
 ## src/server-functions/notifications/telegram.ts
 
-- `sendBot` | const | 28:5
-- `sendBotToken` | const | 29:5
+- `sendBot` | let | 28:5
+- `sendBotToken` | let | 29:5
 - `getSendBot` | const | 31:7
 - `env` | const | 32:9
 - `token` | const | 33:9
@@ -5419,8 +5910,8 @@ Variables: 4903
 - `q` | const | 41:9
 - `snap` | const | 42:9
 - `docSnap` | const | 44:9
-- `webhookBot` | const | 48:5
-- `webhookBotToken` | const | 49:5
+- `webhookBot` | let | 48:5
+- `webhookBotToken` | let | 49:5
 - `ensureBotToken` | const | 51:7
 - `envSettings` | const | 52:9
 - `token` | const | 53:9
@@ -5521,7 +6012,7 @@ Variables: 4903
 - `finalModelId` | const | 34:11
 - `modelInfo` | const | 35:11
 - `providerInfo` | const | 37:11
-- `processedPrompt` | const | 39:9
+- `processedPrompt` | let | 39:9
 - `itemsString` | const | 41:15
 - `groupedItemsString` | const | 45:15
 - `analysisDetailsString` | const | 49:15
@@ -5582,7 +6073,7 @@ Variables: 4903
 - `{ userId, amount, reason, metadata }` | const | 304:9
 - `bonusLots` | const | 308:9
 - `purchasedLots` | const | 313:9
-- `remainingToDeduct` | const | 319:7
+- `remainingToDeduct` | let | 319:7
 - `ledgerEntries` | const | 320:9
 - `now` | const | 321:9
 - `processLot` | const | 323:9
@@ -5594,46 +6085,51 @@ Variables: 4903
 - `{ userId, amount, reason, originalDebitId, metadata }` | const | 376:9
 - `{ userId, amount, reason, originalDebitId, metadata }` | const | 395:9
 - `now` | const | 396:9
-- `targetLot` | const | 397:7
-- `targetType` | const | 398:7
+- `targetLot` | let | 397:7
+- `targetType` | let | 398:7
 - `originalDebit` | const | 401:11
 - `lot` | const | 405:13
-- `lotId` | const | 415:7
+- `lotId` | let | 415:7
 - `expiresAt` | const | 423:11
 - `summary` | const | 455:9
-- `db` | const | 460:9
+- `{ userId, lotId, reason, metadata }` | const | 465:9
+- `lot` | const | 471:11
+- `remaining` | const | 478:11
+- `now` | const | 483:11
+- `db` | const | 510:9
 
 ## src/services/docxGenerator.ts
 
-- `generateDocx` | const | 28:14
-- `tpl` | const | 39:11
-- `accentColor` | const | 40:11
-- `isModern` | const | 41:11
-- `styles` | const | 43:11
-- `headerChildren` | const | 77:11
-- `showMaterials` | const | 116:11
-- `colHeaders` | const | 118:11
-- `colWidths` | const | 119:9
-- `tableHeader` | const | 130:11
-- `tableRows` | const | 138:11
-- `fullName` | const | 148:15
-- `rowCells` | const | 149:15
-- `qtyInstall` | const | 155:15
-- `priceInstall` | const | 156:15
-- `sumInstall` | const | 157:15
-- `itemTotal` | const | 158:15
-- `qtyMaterial` | const | 161:19
-- `priceMaterial` | const | 162:19
-- `sumMaterial` | const | 163:19
-- `emptyRow` | const | 186:11
-- `createTotalRow` | const | 187:11
-- `totalsRows` | const | 199:11
-- `table` | const | 213:11
-- `doc` | const | 222:11
+- `generateDocx` | const | 30:14
+- `tpl` | const | 42:11
+- `resolved` | const | 43:11
+- `accentColor` | const | 44:11
+- `isModern` | const | 45:11
+- `styles` | const | 47:11
+- `headerChildren` | const | 81:11
+- `showMaterials` | const | 120:11
+- `colHeaders` | const | 122:11
+- `colWidths` | let | 123:9
+- `tableHeader` | const | 134:11
+- `tableRows` | const | 142:11
+- `fullName` | const | 152:15
+- `rowCells` | const | 153:15
+- `qtyInstall` | const | 159:15
+- `priceInstall` | const | 160:15
+- `sumInstall` | const | 161:15
+- `itemTotal` | const | 162:15
+- `qtyMaterial` | const | 165:19
+- `priceMaterial` | const | 166:19
+- `sumMaterial` | const | 167:19
+- `emptyRow` | const | 190:11
+- `createTotalRow` | const | 191:11
+- `totalsRows` | const | 203:11
+- `table` | const | 217:11
+- `doc` | const | 226:11
 
 ## src/services/excelGenerator.ts
 
-- `ws_data` | const | 24:9
+- `ws_data` | let | 24:9
 - `colHeaders` | const | 38:11
 - `tableStartRow` | const | 44:11
 - `fullName` | const | 48:15
@@ -5645,7 +6141,7 @@ Variables: 4903
 - `priceMaterial` | const | 63:19
 - `materialSumRef` | const | 70:19
 - `installSumRef` | const | 71:19
-- `currentRow` | const | 78:9
+- `currentRow` | let | 78:9
 - `totalColIndex` | const | 81:11
 - `labelColIndex` | const | 82:11
 - `itemsTotalRow` | const | 84:11
@@ -5655,7 +6151,7 @@ Variables: 4903
 - `finalTotalRow` | const | 113:11
 - `ws` | const | 118:11
 - `cell` | const | 130:20
-- `c` | const | 133:22
+- `c` | let | 133:22
 - `cell` | const | 134:24
 - `labelCell` | const | 144:19
 - `valueCell` | const | 147:19
@@ -5666,7 +6162,7 @@ Variables: 4903
 - `generateObjectSummaryExcel` | const | 169:14
 - `wb` | const | 170:11
 - `summary_data` | const | 173:11
-- `totalObjectSum` | const | 178:9
+- `totalObjectSum` | let | 178:9
 - `projectTotals` | const | 180:11
 - `totals` | const | 181:15
 - `totalRow` | const | 194:11
@@ -5677,7 +6173,7 @@ Variables: 4903
 - `projectTotalsFull` | const | 213:20
 - `paramsForSheet` | const | 215:20
 - `ws` | const | 222:20
-- `sheetName` | const | 224:18
+- `sheetName` | let | 224:18
 - `wbout` | const | 229:11
 
 ## src/services/openrouter.ts
@@ -5756,8 +6252,8 @@ Variables: 4903
 - `db` | const | 130:9
 - `ctx` | const | 131:9
 - `addDays` | const | 135:7
-- `ctx` | const | 138:7
-- `db` | const | 139:7
+- `ctx` | let | 138:7
+- `db` | let | 139:7
 - `setup` | const | 142:11
 - `result` | const | 149:11
 - `user` | const | 150:11

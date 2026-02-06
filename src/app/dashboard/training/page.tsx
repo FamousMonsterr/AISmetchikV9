@@ -7,11 +7,14 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { BookOpen, AlertTriangle, PlayCircle, Pencil, Sparkles, Target, FileText, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAppContext } from '@/contexts/AppContext';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useTransition } from 'react';
 import { getKnowledgeBaseArticles, KnowledgeBaseArticle } from '@/actions/adminActions';
 import { onSnapshot, collection, query, orderBy } from '@/lib/mongoFirestore';
 import { db } from '@/lib/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
+import { PlanBadge } from '@/components/PlanBadge';
+import { createServiceRequest } from '@/actions/serviceRequestActions';
+import { useToast } from '@/hooks/use-toast';
 
 const KnowledgeBaseVideo = ({ title, description, videoUrl }: { title: string, description: string, videoUrl: string }) => {
     return (
@@ -42,6 +45,9 @@ const KnowledgeBaseVideo = ({ title, description, videoUrl }: { title: string, d
 
 export default function TrainingPage() {
   const { user } = useAppContext();
+  const { toast } = useToast();
+  const [isRequestPending, startRequest] = useTransition();
+  const canAccess = user?.plan === 'Enterprise' || user?.systemRole === 'Super Admin';
   const [articles, setArticles] = useState<KnowledgeBaseArticle[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const isEditor = user?.isEditor || user?.systemRole === 'Super Admin';
@@ -472,3 +478,46 @@ export default function TrainingPage() {
     </div>
   );
 }
+  const handleEnterpriseRequest = () => {
+    if (!user) return;
+    startRequest(async () => {
+      const result = await createServiceRequest({
+        userId: user.uid,
+        userName: user.displayName || '',
+        userEmail: user.email || '',
+        type: 'plan_upgrade',
+        payload: { targetPlan: 'Enterprise (от 25 пользователей)', source: 'training' },
+      });
+      if (result.success) {
+        toast({ title: 'Заявка отправлена', description: result.message });
+      } else {
+        toast({ title: 'Ошибка', description: result.message, variant: 'destructive' });
+      }
+    });
+  };
+
+  if (!canAccess) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2"><BookOpen />База знаний</CardTitle>
+          <CardDescription>Материалы доступны только на Enterprise.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Alert>
+            <AlertTitle>Доступ ограничен</AlertTitle>
+            <AlertDescription>
+              База обучения доступна для Enterprise. Для подключения оставьте заявку.
+            </AlertDescription>
+          </Alert>
+          <div className="flex items-center gap-3">
+            <Button onClick={handleEnterpriseRequest} disabled={isRequestPending}>
+              {isRequestPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Запросить Enterprise
+            </Button>
+            <PlanBadge plan="Enterprise" size="xs" />
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }

@@ -113,9 +113,9 @@ const levels = [
 
 const PartnerLevels = ({ currentStatus }: { currentStatus?: string }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedTier, setSelectedTier] = useState<'Gold' | 'Platinum' | null>(null);
+  const [selectedTier, setSelectedTier] = useState<'Silver' | 'Gold' | 'Platinum' | null>(null);
 
-  const handleOpenModal = (tier: 'Gold' | 'Platinum') => {
+  const handleOpenModal = (tier: 'Silver' | 'Gold' | 'Platinum') => {
       setSelectedTier(tier);
       setIsModalOpen(true);
   };
@@ -150,13 +150,9 @@ const PartnerLevels = ({ currentStatus }: { currentStatus?: string }) => {
                       <Badge variant="secondary"><CheckCircle className="mr-2 h-4 w-4 text-green-500"/>Ваш текущий статус</Badge>
                     )}
                    {isNextLevel && (
-                       level.name === 'Silver' ? (
-                           <Button asChild variant="outline">
-                               <Link href="/dashboard/training">Перейти к обучению</Link>
-                           </Button>
-                       ) : (
-                          <Button variant="outline" onClick={() => handleOpenModal(level.name as 'Gold' | 'Platinum')}>Подробнее</Button>
-                       )
+                      <Button variant="outline" onClick={() => handleOpenModal(level.name as 'Silver' | 'Gold' | 'Platinum')}>
+                        Подробнее
+                      </Button>
                    )}
                 </CardFooter>
               </Card>

@@ -7,16 +7,24 @@ import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAppContext } from '@/contexts/AppContext';
-import { submitHighTierApplication } from '@/actions/partnerActions';
+import { createServiceRequest } from '@/actions/serviceRequestActions';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 
 interface HighTierPartnerDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  tier: 'Gold' | 'Platinum';
+  tier: 'Silver' | 'Gold' | 'Platinum';
 }
 
 const tierDetails = {
+    Silver: {
+        title: "Серебряный партнер",
+        description: "Повышение статуса после прохождения обучения и подтверждения активности.",
+        conditions: [
+            "Пройти базовое обучение.",
+            "Подтвердить активность в привлечении клиентов.",
+        ],
+    },
     Gold: {
         title: "Золотой партнер",
         description: "Этот статус предназначен для серьезных партнеров, готовых работать как юридическое лицо и вкладываться в развитие. Вы получите значительно более высокий процент от платежей ваших клиентов.",
@@ -47,11 +55,12 @@ export function HighTierPartnerDialog({ isOpen, onClose, tier }: HighTierPartner
     if (!user) return;
 
     startTransition(async () => {
-      const result = await submitHighTierApplication({
+      const result = await createServiceRequest({
         userId: user.uid,
         userName: user.displayName,
         userEmail: user.email || 'N/A',
-        desiredTier: tier,
+        type: 'partner_status',
+        payload: { desiredTier: tier },
       });
 
       if (result.success) {

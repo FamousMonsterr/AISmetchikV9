@@ -17,6 +17,7 @@ import { ru } from 'date-fns/locale';
 const statusLabels: Record<string, string> = {
   pending: 'Ожидает проверки',
   approved: 'Подтверждено',
+  auto_approved: 'Авто-подтверждено',
   rejected: 'Отклонено',
   invoice_issued: 'Счет выставлен',
 };
@@ -26,7 +27,7 @@ export default function CreditPaymentsAdminPage() {
   const { toast } = useToast();
   const [orders, setOrders] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'invoice_issued' | 'approved' | 'rejected'>('pending');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'invoice_issued' | 'approved' | 'rejected' | 'auto_approved'>('pending');
   const [isActionPending, startTransition] = useTransition();
 
   const loadOrders = useCallback(async () => {
@@ -80,6 +81,7 @@ export default function CreditPaymentsAdminPage() {
     { value: 'pending', label: 'Ожидает' },
     { value: 'invoice_issued', label: 'Счета' },
     { value: 'approved', label: 'Подтверждено' },
+    { value: 'auto_approved', label: 'Авто' },
     { value: 'rejected', label: 'Отклонено' },
     { value: 'all', label: 'Все' },
   ];
@@ -145,7 +147,12 @@ export default function CreditPaymentsAdminPage() {
                       </TableCell>
                       <TableCell>{methodLabel}</TableCell>
                       <TableCell>{order.packageName || '—'}</TableCell>
-                      <TableCell>{order.credits}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <span>{order.credits}</span>
+                          {order.grantedLotId && <Badge variant="secondary">выданы</Badge>}
+                        </div>
+                      </TableCell>
                       <TableCell>{order.amount?.toLocaleString('ru-RU')} ₽</TableCell>
                       <TableCell><Badge variant="outline">{statusLabel}</Badge></TableCell>
                       <TableCell>

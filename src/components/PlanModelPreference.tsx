@@ -24,6 +24,7 @@ export function PlanModelPreference({ className }: PlanModelPreferenceProps) {
   if (!user || variants.length < 2) return null;
 
   const planKey = effectivePlan === 'PRO' ? 'pro' : 'free';
+  const planForAction = effectivePlan === 'PRO' ? 'PRO' : 'Free';
   const storedValue = user.planModelPreferences?.[planKey] || '';
   const currentValue = variants.includes(storedValue) ? storedValue : '';
 
@@ -32,7 +33,7 @@ export function PlanModelPreference({ className }: PlanModelPreferenceProps) {
     startTransition(async () => {
       const result = await updatePlanModelPreference({
         userId: user.uid,
-        plan: effectivePlan,
+        plan: planForAction,
         model: value,
       });
       if (!result.success) {

@@ -1,8 +1,8 @@
 # Functions Index
 
-Generated: 2026-02-06T17:54:25.769Z
-Files: 272
-Functions: 1005
+Generated: 2026-02-06T21:27:54.350Z
+Files: 292
+Functions: 1114
 
 ## instrumentation.ts
 
@@ -12,11 +12,13 @@ Functions: 1005
 
 - None
 
+## scripts/auto-approve-credit-payments.ts
+
+- `run` | function-declaration | 5:16
+
 ## scripts/auto-approve-pro-payments.ts
 
-- `normalizeDate` | arrow-function | 9:7
-- `buildPlanExpiry` | function-declaration | 17:10
-- `run` | function-declaration | 23:16
+- `run` | function-declaration | 5:16
 
 ## scripts/create-mongo-indexes.ts
 
@@ -33,18 +35,15 @@ Functions: 1005
 - `getLineColumn` | function-declaration | 52:10
 - `collectFunctions` | function-declaration | 57:10
 - `getVariableKind` | function-declaration | 82:10
-- `collectVariables` | function-declaration | 90:10
-- `formatFunctionsSection` | function-declaration | 101:10
-- `formatVariablesSection` | function-declaration | 109:10
-- `writeWithSplit` | function-declaration | 117:10
-- `run` | function-declaration | 148:16
+- `collectVariables` | function-declaration | 94:10
+- `formatFunctionsSection` | function-declaration | 105:10
+- `formatVariablesSection` | function-declaration | 113:10
+- `writeWithSplit` | function-declaration | 121:10
+- `run` | function-declaration | 152:16
 
 ## scripts/grant-pro-monthly-credits.ts
 
-- `getPeriodKey` | arrow-function | 8:7
-- `isSamePeriod` | arrow-function | 10:7
-- `normalizeDate` | arrow-function | 15:7
-- `run` | function-declaration | 23:16
+- `run` | function-declaration | 5:16
 
 ## scripts/migrate-credits-ledger.ts
 
@@ -59,11 +58,11 @@ Functions: 1005
 
 ## scripts/server-analysis-worker.ts
 
-- `main` | function-declaration | 6:16
+- `main` | function-declaration | 7:16
 
 ## scripts/telegram-bot.ts
 
-- `main` | function-declaration | 7:16
+- `main` | function-declaration | 8:16
 
 ## src/actions/adminActions.ts
 
@@ -86,53 +85,57 @@ Functions: 1005
 - `sendTelegramMessageToUser` | arrow-function | 571:14
 - `getStandardSections` | arrow-function | 628:14
 - `updateStandardSections` | arrow-function | 642:14
-- `getAiAgentConfig` | arrow-function | 670:14
-- `updateAiAgentConfig` | arrow-function | 680:14
-- `getRecentLogs` | arrow-function | 694:14
-- `reportUserBug` | arrow-function | 714:14
-- `sanitizeEnvSettings` | arrow-function | 865:7
-- `envLine` | arrow-function | 905:7
-- `persistEnvFile` | function-declaration | 907:16
-- `isAdminRole` | arrow-function | 946:7
-- `getEnvSettings` | arrow-function | 948:14
-- `getPublicEnvSettings` | arrow-function | 981:14
-- `testConnectivity` | function-declaration | 986:23
-- `updateEnvSettings` | arrow-function | 1036:14
-- `startTelegramBotService` | arrow-function | 1057:14
-- `stopTelegramBotService` | arrow-function | 1075:14
-- `getTelegramBotStatus` | arrow-function | 1084:14
-- `forceUnlockTelegramBotService` | arrow-function | 1093:14
-- `testTelegramMongoConnection` | arrow-function | 1102:14
-- `testTelegramApiConnection` | arrow-function | 1116:14
-- `testTelegramWebhookInfo` | arrow-function | 1135:14
-- `registerTelegramWebhookService` | arrow-function | 1154:14
-- `clearTelegramWebhookService` | arrow-function | 1167:14
-- `pingTelegramBot` | arrow-function | 1180:14
-- `pingTelegramWebhookEndpoint` | arrow-function | 1203:14
-- `wipeAllData` | arrow-function | 1267:14
-- `updateUsersInBulk` | function-declaration | 1317:23
-- `getAiApiStats` | arrow-function | 1353:14
-- `getFeedbackStats` | arrow-function | 1396:14
-- `getS3Client` | function-declaration | 1428:23
-- `resolveConfig` | arrow-function | 1449:11
-- `tryCreate` | arrow-function | 1475:11
-- `testS3Connection` | arrow-function | 1508:14
-- `listBuckets` | arrow-function | 1518:14
-- `createBucket` | arrow-function | 1528:14
-- `getBucketCors` | arrow-function | 1538:14
-- `putBucketCors` | arrow-function | 1555:14
-- `toArray` | arrow-function | 1574:15
-- `deleteBucketCors` | arrow-function | 1601:14
-- `getSurveys` | arrow-function | 1612:14
-- `getNotifications` | arrow-function | 1618:14
-- `createOrUpdateNotification` | arrow-function | 1624:14
-- `deleteNotification` | arrow-function | 1645:14
-- `createOrUpdateSurvey` | arrow-function | 1654:14
-- `deleteSurvey` | arrow-function | 1670:14
-- `getBannerConfig` | arrow-function | 1680:14
-- `updateBannerConfig` | arrow-function | 1694:14
-- `getKnowledgeBaseArticles` | arrow-function | 1713:14
-- `updateKnowledgeBaseArticle` | arrow-function | 1719:14
+- `getAiAgentConfig` | arrow-function | 682:14
+- `updateAiAgentConfig` | arrow-function | 692:14
+- `getRecentLogs` | arrow-function | 706:14
+- `reportUserBug` | arrow-function | 726:14
+- `sanitizeEnvSettings` | arrow-function | 908:7
+- `envLine` | arrow-function | 960:7
+- `persistEnvFile` | function-declaration | 962:16
+- `isAdminRole` | arrow-function | 1001:7
+- `getEnvSettings` | arrow-function | 1003:14
+- `getPublicEnvSettings` | arrow-function | 1036:14
+- `testConnectivity` | function-declaration | 1041:23
+- `updateEnvSettings` | arrow-function | 1091:14
+- `getOzonBankSyncStatus` | arrow-function | 1111:14
+- `syncOzonBank` | arrow-function | 1121:14
+- `startTelegramBotService` | arrow-function | 1175:14
+- `stopTelegramBotService` | arrow-function | 1193:14
+- `getTelegramBotStatus` | arrow-function | 1202:14
+- `forceUnlockTelegramBotService` | arrow-function | 1211:14
+- `testTelegramMongoConnection` | arrow-function | 1220:14
+- `testTelegramApiConnection` | arrow-function | 1234:14
+- `testTelegramWebhookInfo` | arrow-function | 1253:14
+- `registerTelegramWebhookService` | arrow-function | 1272:14
+- `clearTelegramWebhookService` | arrow-function | 1285:14
+- `pingTelegramBot` | arrow-function | 1298:14
+- `pingTelegramWebhookEndpoint` | arrow-function | 1321:14
+- `wipeAllData` | arrow-function | 1385:14
+- `updateUsersInBulk` | function-declaration | 1435:23
+- `getAiApiStats` | arrow-function | 1471:14
+- `getFeedbackStats` | arrow-function | 1514:14
+- `getS3Client` | function-declaration | 1548:23
+- `resolveConfig` | arrow-function | 1570:11
+- `resolveBucketForPurpose` | arrow-function | 1589:11
+- `resolvePresetForPurpose` | arrow-function | 1626:11
+- `tryCreate` | arrow-function | 1634:11
+- `testS3Connection` | arrow-function | 1674:14
+- `listBuckets` | arrow-function | 1684:14
+- `createBucket` | arrow-function | 1694:14
+- `getBucketCors` | arrow-function | 1704:14
+- `putBucketCors` | arrow-function | 1721:14
+- `toArray` | arrow-function | 1740:15
+- `deleteBucketCors` | arrow-function | 1767:14
+- `getSurveys` | arrow-function | 1778:14
+- `getNotifications` | arrow-function | 1784:14
+- `createOrUpdateNotification` | arrow-function | 1790:14
+- `deleteNotification` | arrow-function | 1811:14
+- `createOrUpdateSurvey` | arrow-function | 1820:14
+- `deleteSurvey` | arrow-function | 1836:14
+- `getBannerConfig` | arrow-function | 1846:14
+- `updateBannerConfig` | arrow-function | 1860:14
+- `getKnowledgeBaseArticles` | arrow-function | 1879:14
+- `updateKnowledgeBaseArticle` | arrow-function | 1885:14
 
 ## src/actions/analysisActions.ts
 
@@ -156,9 +159,45 @@ Functions: 1005
 - `isAdmin` | function-declaration | 24:16
 - `getCreditHistoryForUser` | function-declaration | 31:23
 
+## src/actions/creditPurchaseActions.ts
+
+- `findPackage` | arrow-function | 50:7
+- `isAdmin` | function-declaration | 52:16
+- `getAdminUsers` | function-declaration | 58:16
+- `notifyAdmins` | function-declaration | 66:16
+- `addHours` | arrow-function | 82:7
+- `createSbpCreditOrder` | function-declaration | 85:23
+- `createLegalCreditOrder` | function-declaration | 154:23
+- `getCreditPurchaseOrders` | function-declaration | 223:23
+- `approveCreditPurchaseOrder` | function-declaration | 241:23
+- `rejectCreditPurchaseOrder` | function-declaration | 286:23
+- `autoApproveCreditPurchaseOrders` | function-declaration | 328:23
+
+## src/actions/documentTemplateActions.ts
+
+- `normalizeTemplates` | arrow-function | 76:7
+- `isAdmin` | arrow-function | 91:7
+- `resolveDefaultId` | arrow-function | 97:7
+- `buildDefaultSettings` | arrow-function | 103:7
+- `byType` | arrow-function | 127:9
+- `normalizeSettings` | arrow-function | 150:7
+- `getDocumentTemplatesBundle` | function-declaration | 171:23
+- `createDocumentTemplate` | function-declaration | 180:23
+- `updateDocumentTemplate` | function-declaration | 211:23
+- `deleteDocumentTemplate` | function-declaration | 229:23
+- `updateDocumentTemplateSettings` | function-declaration | 243:23
+
 ## src/actions/genkitActions.ts
 
 - None
+
+## src/actions/marketingActions.ts
+
+- `addDays` | arrow-function | 20:7
+- `normalizeDate` | arrow-function | 22:7
+- `isPlanEligible` | arrow-function | 30:7
+- `grantMarketingBonusForUser` | function-declaration | 32:23
+- `grantMonthlyMarketingBonuses` | function-declaration | 70:23
 
 ## src/actions/partnerActions.ts
 
@@ -188,6 +227,13 @@ Functions: 1005
 - `rejectProSubscriptionOrder` | function-declaration | 384:23
 - `autoApproveProSubscriptionOrders` | function-declaration | 405:23
 
+## src/actions/serviceRequestActions.ts
+
+- `isAdmin` | function-declaration | 37:16
+- `createServiceRequest` | function-declaration | 43:23
+- `getServiceRequests` | function-declaration | 61:23
+- `updateServiceRequestStatus` | function-declaration | 79:23
+
 ## src/actions/supportActions.ts
 
 - `resolveManagerId` | function-declaration | 68:16
@@ -204,33 +250,42 @@ Functions: 1005
 - `sendFileToTelegramUser` | function-declaration | 75:23
 - `syncTelegramChatId` | function-declaration | 139:23
 
+## src/actions/templateActions.ts
+
+- `sanitizeHeaderStyle` | arrow-function | 39:7
+- `buildTemplateId` | arrow-function | 44:7
+- `createUserTemplate` | function-declaration | 46:23
+- `updateUserTemplate` | function-declaration | 92:23
+- `deleteUserTemplate` | function-declaration | 122:23
+
 ## src/actions/userActions.ts
 
-- `updateUserProfile` | arrow-function | 41:14
-- `logThirdPartyConsent` | arrow-function | 125:14
-- `updateMarketingConsent` | arrow-function | 143:14
-- `updateUserPwaStatus` | arrow-function | 170:14
-- `sendPasswordReset` | arrow-function | 191:14
-- `deductCredit` | arrow-function | 240:14
-- `saveProjectVersion` | arrow-function | 300:14
-- `finalizeProjectCreation` | arrow-function | 380:14
-- `getUserHistory` | arrow-function | 448:14
-- `reportRequest` | arrow-function | 474:14
-- `returnCreditForFailedRequest` | arrow-function | 521:14
-- `archiveRequest` | arrow-function | 556:14
-- `unarchiveRequest` | arrow-function | 582:14
-- `deleteRequest` | arrow-function | 612:14
-- `updateRequest` | arrow-function | 645:14
-- `updatePriceBase` | arrow-function | 675:14
-- `getUserPriceBase` | arrow-function | 734:14
-- `savePriceBaseItems` | arrow-function | 758:14
-- `updatePriceBaseItem` | arrow-function | 792:14
-- `incrementAiCallCount` | arrow-function | 829:14
-- `createProcessingRequest` | arrow-function | 860:14
-- `finalizeProcessingRequest` | arrow-function | 969:14
-- `failProcessingRequest` | arrow-function | 1093:14
-- `linkRequestToServerJob` | arrow-function | 1150:14
-- `restartProcessingRequest` | arrow-function | 1205:14
+- `updateUserProfile` | arrow-function | 43:14
+- `updatePlanModelPreference` | arrow-function | 134:14
+- `logThirdPartyConsent` | arrow-function | 161:14
+- `updateMarketingConsent` | arrow-function | 179:14
+- `updateUserPwaStatus` | arrow-function | 209:14
+- `sendPasswordReset` | arrow-function | 230:14
+- `deductCredit` | arrow-function | 279:14
+- `saveProjectVersion` | arrow-function | 339:14
+- `finalizeProjectCreation` | arrow-function | 419:14
+- `getUserHistory` | arrow-function | 487:14
+- `reportRequest` | arrow-function | 513:14
+- `returnCreditForFailedRequest` | arrow-function | 560:14
+- `archiveRequest` | arrow-function | 595:14
+- `unarchiveRequest` | arrow-function | 621:14
+- `deleteRequest` | arrow-function | 651:14
+- `updateRequest` | arrow-function | 684:14
+- `updatePriceBase` | arrow-function | 714:14
+- `getUserPriceBase` | arrow-function | 773:14
+- `savePriceBaseItems` | arrow-function | 797:14
+- `updatePriceBaseItem` | arrow-function | 831:14
+- `incrementAiCallCount` | arrow-function | 868:14
+- `createProcessingRequest` | arrow-function | 899:14
+- `finalizeProcessingRequest` | arrow-function | 1008:14
+- `failProcessingRequest` | arrow-function | 1132:14
+- `linkRequestToServerJob` | arrow-function | 1189:14
+- `restartProcessingRequest` | arrow-function | 1244:14
 
 ## src/ai/flows/create-lead-flow.ts
 
@@ -322,10 +377,10 @@ Functions: 1005
 
 ## src/app/api/query/route.ts
 
-- `buildMongoFilter` | function-declaration | 29:10
-- `isAdmin` | function-declaration | 61:10
-- `hasUserFilter` | function-declaration | 65:10
-- `POST` | function-declaration | 69:23
+- `buildMongoFilter` | function-declaration | 30:10
+- `isAdmin` | function-declaration | 62:10
+- `hasUserFilter` | function-declaration | 66:10
+- `POST` | function-declaration | 70:23
 
 ## src/app/api/realtime/route.ts
 
@@ -386,25 +441,37 @@ Functions: 1005
 
 ## src/app/dashboard/admin/ai-agent/page.tsx
 
-- `AdminAiAgentPage` | function-declaration | 23:25
-- `fetchConfig` | arrow-function | 44:11
-- `handleProviderConfigChange` | arrow-function | 62:9
-- `handlePdfPriorityChange` | arrow-function | 76:7
-- `moveEngine` | arrow-function | 80:7
-- `handleModelConfigChange` | arrow-function | 97:9
-- `handleSetServiceModel` | arrow-function | 106:9
-- `handleSetVoiceModel` | arrow-function | 117:9
-- `handleSaveModel` | arrow-function | 128:9
-- `handleAddMultipleModels` | arrow-function | 150:9
-- `handleRemoveModel` | arrow-function | 166:9
-- `handleSave` | arrow-function | 174:9
-- `renderModelSettings` | arrow-function | 194:9
+- `AdminAiAgentPage` | function-declaration | 24:25
+- `fetchConfig` | arrow-function | 45:11
+- `handleProviderConfigChange` | arrow-function | 63:9
+- `handlePdfPriorityChange` | arrow-function | 77:7
+- `moveEngine` | arrow-function | 81:7
+- `handleModelConfigChange` | arrow-function | 98:9
+- `handleSetServiceModel` | arrow-function | 107:9
+- `handleSetVoiceModel` | arrow-function | 118:9
+- `handleSaveModel` | arrow-function | 129:9
+- `handleAddMultipleModels` | arrow-function | 151:9
+- `handleRemoveModel` | arrow-function | 167:9
+- `getPlanModels` | arrow-function | 175:9
+- `updatePlanModelField` | arrow-function | 182:9
+- `togglePlanModelList` | arrow-function | 199:9
+- `handleSave` | arrow-function | 222:9
+- `sanitize` | arrow-function | 226:13
+- `sanitizeDefault` | arrow-function | 227:13
+- `renderPlanModelChecklist` | arrow-function | 273:9
+- `renderModelSettings` | arrow-function | 294:9
 
 ## src/app/dashboard/admin/ai-analytics/page.tsx
 
 - `StatusBadge` | arrow-function | 28:7
 - `AiAnalyticsPage` | function-declaration | 38:25
 - `handleStatusUpdate` | arrow-function | 71:9
+
+## src/app/dashboard/admin/credit-payments/page.tsx
+
+- `CreditPaymentsAdminPage` | function-declaration | 25:25
+- `handleApprove` | arrow-function | 53:9
+- `handleReject` | arrow-function | 66:9
 
 ## src/app/dashboard/admin/feedback-surveys/page.tsx
 
@@ -417,9 +484,9 @@ Functions: 1005
 
 ## src/app/dashboard/admin/layout.tsx
 
-- `warmUpIndexes` | arrow-function | 88:7
-- `AdminLayout` | function-declaration | 112:25
-- `handleNavigation` | arrow-function | 141:9
+- `warmUpIndexes` | arrow-function | 90:7
+- `AdminLayout` | function-declaration | 117:25
+- `handleNavigation` | arrow-function | 146:9
 
 ## src/app/dashboard/admin/logs/page.tsx
 
@@ -520,6 +587,11 @@ Functions: 1005
 - `renderStatusIcon` | arrow-function | 146:9
 - `runTestStep` | arrow-function | 153:9
 
+## src/app/dashboard/admin/service-requests/page.tsx
+
+- `AdminServiceRequestsPage` | function-declaration | 44:25
+- `handleStatusChange` | arrow-function | 81:9
+
 ## src/app/dashboard/admin/settings/page.tsx
 
 - `AdminSettingsPage` | function-declaration | 14:25
@@ -539,8 +611,15 @@ Functions: 1005
 
 ## src/app/dashboard/admin/templates/page.tsx
 
-- `TemplatesAdminPage` | function-declaration | 23:25
-- `handleExportPdf` | arrow-function | 36:9
+- `TemplatesAdminPage` | function-declaration | 29:25
+- `refreshTemplates` | arrow-function | 55:9
+- `openCreateDialog` | arrow-function | 61:9
+- `openEditDialog` | arrow-function | 66:9
+- `handleSubmitTemplate` | arrow-function | 71:9
+- `handleDeleteTemplate` | arrow-function | 94:9
+- `handleSettingsChange` | arrow-function | 109:9
+- `handleAvailabilityToggle` | arrow-function | 127:9
+- `handleSaveSettings` | arrow-function | 151:9
 
 ## src/app/dashboard/admin/tickets/page.tsx
 
@@ -563,10 +642,10 @@ Functions: 1005
 
 ## src/app/dashboard/billing/page.tsx
 
-- `BillingPage` | function-declaration | 21:25
-- `fetchEmail` | arrow-function | 32:11
-- `handlePurchaseClick` | arrow-function | 48:9
-- `handleUpgradeClick` | arrow-function | 61:9
+- `BillingPage` | function-declaration | 22:25
+- `submitRequest` | arrow-function | 32:9
+- `handlePurchaseClick` | arrow-function | 50:9
+- `handleUpgradeClick` | arrow-function | 59:9
 
 ## src/app/dashboard/bonus/page.tsx
 
@@ -574,11 +653,11 @@ Functions: 1005
 - `handleAgree` | arrow-function | 47:11
 - `PartnerLevels` | arrow-function | 114:7
 - `handleOpenModal` | arrow-function | 118:9
-- `ReferralDashboard` | arrow-function | 179:7
-- `fetchReferredUsers` | arrow-function | 187:15
-- `handleCopy` | arrow-function | 205:11
-- `BonusPage` | function-declaration | 357:25
-- `handleAgree` | arrow-function | 360:11
+- `ReferralDashboard` | arrow-function | 175:7
+- `fetchReferredUsers` | arrow-function | 183:15
+- `handleCopy` | arrow-function | 201:11
+- `BonusPage` | function-declaration | 353:25
+- `handleAgree` | arrow-function | 356:11
 
 ## src/app/dashboard/calculator/page.tsx
 
@@ -597,24 +676,24 @@ Functions: 1005
 
 ## src/app/dashboard/layout.tsx
 
-- `DashboardLayoutContent` | function-declaration | 50:10
-- `handleLogout` | arrow-function | 98:11
-- `handleNavigation` | arrow-function | 103:11
-- `DashboardLayout` | function-declaration | 232:25
+- `DashboardLayoutContent` | function-declaration | 51:10
+- `handleLogout` | arrow-function | 99:11
+- `handleNavigation` | arrow-function | 104:11
+- `DashboardLayout` | function-declaration | 233:25
 
 ## src/app/dashboard/mobile-panel/page.tsx
 
-- `MobilePanelPage` | function-declaration | 22:25
-- `handleProjectSelect` | arrow-function | 85:11
-- `handleClearFile` | arrow-function | 90:11
+- `MobilePanelPage` | function-declaration | 23:25
+- `handleProjectSelect` | arrow-function | 86:11
+- `handleClearFile` | arrow-function | 91:11
 
 ## src/app/dashboard/page.tsx
 
-- `PwaPrompt` | arrow-function | 44:7
-- `handleDismiss` | arrow-function | 58:11
-- `DashboardPage` | function-declaration | 81:25
-- `handleSharedFile` | arrow-function | 99:11
-- `handleStartAnalysis` | arrow-function | 171:9
+- `PwaPrompt` | arrow-function | 40:7
+- `handleDismiss` | arrow-function | 54:11
+- `DashboardPage` | function-declaration | 77:25
+- `handleSharedFile` | arrow-function | 97:11
+- `handleStartAnalysis` | arrow-function | 180:9
 
 ## src/app/dashboard/price-base/page.tsx
 
@@ -644,8 +723,9 @@ Functions: 1005
 
 ## src/app/dashboard/training/page.tsx
 
-- `KnowledgeBaseVideo` | arrow-function | 16:7
-- `TrainingPage` | function-declaration | 43:25
+- `KnowledgeBaseVideo` | arrow-function | 19:7
+- `TrainingPage` | function-declaration | 46:25
+- `handleEnterpriseRequest` | arrow-function | 481:9
 
 ## src/app/layout.tsx
 
@@ -689,6 +769,13 @@ Functions: 1005
 
 - `AIProcessingDialog` | function-declaration | 44:17
 
+## src/components/AvatarCropDialog.tsx
+
+- `createImage` | arrow-function | 18:7
+- `getCroppedImage` | arrow-function | 27:7
+- `AvatarCropDialog` | function-declaration | 56:17
+- `handleConfirm` | arrow-function | 73:9
+
 ## src/components/CompanyFormDialog.tsx
 
 - `CompanyFormDialog` | function-declaration | 76:17
@@ -721,21 +808,21 @@ Functions: 1005
 
 ## src/components/DocumentGenerationDialog.tsx
 
-- `DocumentGenerationDialog` | function-declaration | 55:17
-- `resolveProjectName` | arrow-function | 98:11
-- `resolveProjectSpecs` | arrow-function | 99:11
-- `resolveProjectQuoteConfig` | arrow-function | 100:11
-- `resolveScopeProjects` | arrow-function | 101:11
-- `extractExpirationMs` | arrow-function | 118:11
-- `refreshSignedUrl` | arrow-function | 128:11
-- `ensureAssetUrl` | arrow-function | 140:11
-- `fetchImageBuffer` | arrow-function | 150:11
-- `getProjectTotals` | arrow-function | 163:11
-- `buildSections` | arrow-function | 169:11
-- `generateDocuments` | arrow-function | 177:11
-- `buildInvoiceItems` | arrow-function | 241:15
-- `handleDownload` | arrow-function | 582:11
-- `handleSendToBot` | arrow-function | 608:11
+- `DocumentGenerationDialog` | function-declaration | 58:17
+- `resolveProjectName` | arrow-function | 122:11
+- `resolveProjectSpecs` | arrow-function | 123:11
+- `resolveProjectQuoteConfig` | arrow-function | 124:11
+- `resolveScopeProjects` | arrow-function | 125:11
+- `extractExpirationMs` | arrow-function | 142:11
+- `refreshSignedUrl` | arrow-function | 152:11
+- `ensureAssetUrl` | arrow-function | 164:11
+- `fetchImageBuffer` | arrow-function | 174:11
+- `getProjectTotals` | arrow-function | 187:11
+- `buildSections` | arrow-function | 193:11
+- `generateDocuments` | arrow-function | 201:11
+- `buildInvoiceItems` | arrow-function | 265:15
+- `handleDownload` | arrow-function | 609:11
+- `handleSendToBot` | arrow-function | 635:11
 
 ## src/components/DuplicateProjectDialog.tsx
 
@@ -757,26 +844,26 @@ Functions: 1005
 
 ## src/components/GroupZipDialog.tsx
 
-- `sanitizeFileName` | arrow-function | 52:7
-- `fetchImageBuffer` | arrow-function | 54:7
-- `GroupZipDialog` | function-declaration | 65:17
-- `resolveTemplateIdFor` | arrow-function | 85:9
-- `handleDocTypeChange` | arrow-function | 131:9
-- `toggleDocTypeSelection` | arrow-function | 151:9
-- `resolveProjectName` | arrow-function | 161:9
-- `resolveProjectSpecs` | arrow-function | 162:9
-- `resolveProjectQuoteConfig` | arrow-function | 163:9
-- `buildSections` | arrow-function | 165:9
-- `buildInvoiceItemsForProjects` | arrow-function | 177:9
-- `generateCombinedFile` | arrow-function | 229:9
-- `generateProjectFile` | arrow-function | 360:9
-- `handleGenerateZip` | arrow-function | 484:9
-- `needsClientFor` | arrow-function | 498:15
+- `sanitizeFileName` | arrow-function | 48:7
+- `fetchImageBuffer` | arrow-function | 50:7
+- `GroupZipDialog` | function-declaration | 61:17
+- `resolveTemplateIdFor` | arrow-function | 96:9
+- `handleDocTypeChange` | arrow-function | 152:9
+- `toggleDocTypeSelection` | arrow-function | 172:9
+- `resolveProjectName` | arrow-function | 182:9
+- `resolveProjectSpecs` | arrow-function | 183:9
+- `resolveProjectQuoteConfig` | arrow-function | 184:9
+- `buildSections` | arrow-function | 186:9
+- `buildInvoiceItemsForProjects` | arrow-function | 198:9
+- `generateCombinedFile` | arrow-function | 250:9
+- `generateProjectFile` | arrow-function | 383:9
+- `handleGenerateZip` | arrow-function | 509:9
+- `needsClientFor` | arrow-function | 523:15
 
 ## src/components/HighTierPartnerDialog.tsx
 
-- `HighTierPartnerDialog` | function-declaration | 40:17
-- `handleSubmit` | arrow-function | 46:9
+- `HighTierPartnerDialog` | function-declaration | 48:17
+- `handleSubmit` | arrow-function | 54:9
 
 ## src/components/InsufficientCreditsDialog.tsx
 
@@ -820,30 +907,40 @@ Functions: 1005
 - `applyManualSelection` | arrow-function | 151:9
 - `handleProcess` | arrow-function | 180:9
 
+## src/components/PlanBadge.tsx
+
+- `PlanBadge` | function-declaration | 28:17
+- `handleKeyDown` | arrow-function | 30:9
+
 ## src/components/PlanGate.tsx
 
-- `PlanGate` | function-declaration | 18:17
+- `PlanGate` | function-declaration | 19:17
+
+## src/components/PlanModelPreference.tsx
+
+- `PlanModelPreference` | function-declaration | 18:17
+- `handleChange` | arrow-function | 31:9
 
 ## src/components/PrivatePriceDialog.tsx
 
-- `PrivatePriceDialog` | function-declaration | 28:17
-- `fetchSections` | function-declaration | 68:20
-- `handleConfirmClick` | arrow-function | 102:9
-- `handleCreateNewToggle` | arrow-function | 129:9
-- `handleSectionToggle` | arrow-function | 135:9
+- `PrivatePriceDialog` | function-declaration | 30:17
+- `fetchSections` | function-declaration | 71:20
+- `handleConfirmClick` | arrow-function | 105:9
+- `handleCreateNewToggle` | arrow-function | 132:9
+- `handleSectionToggle` | arrow-function | 138:9
 
 ## src/components/ProcessingDialog.tsx
 
 - `ProcessingDialog` | function-declaration | 91:17
-- `resetState` | arrow-function | 133:11
-- `loadSettings` | arrow-function | 149:15
-- `processFile` | arrow-function | 176:15
-- `ensureDraftExists` | arrow-function | 183:19
-- `setProjectStage` | arrow-function | 204:19
-- `abortIfCancelled` | arrow-function | 214:19
-- `runAnalysis` | arrow-function | 222:19
-- `saveFinalResult` | arrow-function | 279:19
-- `handleStop` | arrow-function | 483:11
+- `resetState` | arrow-function | 134:11
+- `loadSettings` | arrow-function | 150:15
+- `processFile` | arrow-function | 177:15
+- `ensureDraftExists` | arrow-function | 184:19
+- `setProjectStage` | arrow-function | 205:19
+- `abortIfCancelled` | arrow-function | 215:19
+- `runAnalysis` | arrow-function | 223:19
+- `saveFinalResult` | arrow-function | 280:19
+- `handleStop` | arrow-function | 484:11
 
 ## src/components/ProjectUpdateDialog.tsx
 
@@ -853,25 +950,26 @@ Functions: 1005
 
 ## src/components/PurchaseCreditsDialog.tsx
 
-- `ConsentDialog` | function-declaration | 43:10
-- `PurchaseCreditsDialog` | function-declaration | 71:17
-- `handleConfirmConsent` | arrow-function | 106:11
-- `generateInvoice` | arrow-function | 120:11
-- `handleGenerateInvoiceClick` | arrow-function | 193:11
-- `handlePayByCard` | arrow-function | 202:11
+- `ConsentDialog` | function-declaration | 44:10
+- `PurchaseCreditsDialog` | function-declaration | 72:17
+- `handleConfirmConsent` | arrow-function | 117:11
+- `generateInvoice` | arrow-function | 131:11
+- `handleSubmitSbp` | arrow-function | 213:11
+- `handleGenerateInvoiceClick` | arrow-function | 253:11
 
 ## src/components/PurchaseProDialog.tsx
 
-- `PurchaseProDialog` | function-declaration | 35:17
-- `handleSubmitSbp` | arrow-function | 102:9
-- `handleGenerateInvoice` | arrow-function | 143:9
+- `PurchaseProDialog` | function-declaration | 36:17
+- `handleActivateTrial` | arrow-function | 81:9
+- `handleSubmitSbp` | arrow-function | 120:9
+- `handleGenerateInvoice` | arrow-function | 161:9
 
 ## src/components/RefineProjectDialog.tsx
 
-- `RefineProjectDialog` | function-declaration | 34:17
-- `cleanupTimeout` | arrow-function | 57:9
-- `handleProcess` | arrow-function | 64:9
-- `hydrateRefinedData` | arrow-function | 187:17
+- `RefineProjectDialog` | function-declaration | 33:17
+- `cleanupTimeout` | arrow-function | 56:9
+- `handleProcess` | arrow-function | 63:9
+- `hydrateRefinedData` | arrow-function | 186:17
 
 ## src/components/RegistrationDialog.tsx
 
@@ -884,16 +982,18 @@ Functions: 1005
 
 ## src/components/UpgradeAccountDialog.tsx
 
-- `UpgradeAccountDialog` | function-declaration | 21:17
-- `handleActivateTrial` | arrow-function | 29:9
+- `UpgradeAccountDialog` | function-declaration | 22:17
+- `handleActivateTrial` | arrow-function | 28:9
+- `handleRequestPlan` | arrow-function | 78:9
 
 ## src/components/admin/EnvSettings.tsx
 
 - `PasswordInput` | arrow-function | 19:7
 - `EnvSettings` | function-declaration | 45:17
-- `fetchSettings` | arrow-function | 59:11
-- `handleSave` | arrow-function | 79:9
-- `handleTest` | arrow-function | 92:9
+- `fetchSettings` | arrow-function | 61:11
+- `handleSave` | arrow-function | 90:9
+- `handleTest` | arrow-function | 103:9
+- `handleOzonSync` | arrow-function | 116:9
 
 ## src/components/admin/GeneralSettings.tsx
 
@@ -905,10 +1005,11 @@ Functions: 1005
 
 ## src/components/admin/LegalEntitySettings.tsx
 
-- `LegalEntitySettings` | function-declaration | 18:17
-- `fetchSettings` | arrow-function | 46:11
-- `onSubmit` | arrow-function | 62:9
-- `renderFormField` | arrow-function | 82:9
+- `LegalEntitySettings` | function-declaration | 19:17
+- `fetchSettings` | arrow-function | 50:11
+- `onSubmit` | arrow-function | 83:9
+- `handleSuggestionSelect` | arrow-function | 95:9
+- `renderFormField` | arrow-function | 114:9
 
 ## src/components/admin/UserRow.tsx
 
@@ -969,17 +1070,20 @@ Functions: 1005
 
 - `PasswordInput` | arrow-function | 20:7
 - `S3Settings` | function-declaration | 51:17
-- `applyDefaults` | arrow-function | 77:9
-- `inferProviderFromEndpoint` | arrow-function | 86:9
-- `buildPresetConfig` | arrow-function | 94:9
-- `handleApplyPreset` | arrow-function | 108:9
-- `handleSavePreset` | arrow-function | 137:9
-- `handleUpdatePreset` | arrow-function | 155:9
-- `handleRemovePreset` | arrow-function | 172:9
-- `handleCorsAction` | arrow-function | 186:9
-- `buildCorsXml` | arrow-function | 214:9
-- `generateCorsRule` | arrow-function | 256:9
-- `generateCorsRuleForAll` | arrow-function | 260:9
+- `resolvePresetId` | arrow-function | 86:9
+- `loadBuckets` | arrow-function | 88:9
+- `handleCreateBucket` | arrow-function | 101:9
+- `applyDefaults` | arrow-function | 136:9
+- `inferProviderFromEndpoint` | arrow-function | 145:9
+- `buildPresetConfig` | arrow-function | 153:9
+- `handleApplyPreset` | arrow-function | 167:9
+- `handleSavePreset` | arrow-function | 196:9
+- `handleUpdatePreset` | arrow-function | 214:9
+- `handleRemovePreset` | arrow-function | 231:9
+- `handleCorsAction` | arrow-function | 245:9
+- `buildCorsXml` | arrow-function | 273:9
+- `generateCorsRule` | arrow-function | 315:9
+- `generateCorsRuleForAll` | arrow-function | 319:9
 
 ## src/components/admin/s3/S3Testing.tsx
 
@@ -994,7 +1098,7 @@ Functions: 1005
 
 ## src/components/calculator/AiAssistantSettings.tsx
 
-- `AiAssistantSettings` | function-declaration | 32:17
+- `AiAssistantSettings` | function-declaration | 26:17
 
 ## src/components/calculator/AiNotes.tsx
 
@@ -1032,52 +1136,53 @@ Functions: 1005
 
 ## src/components/calculator/SpecificationPageContent.tsx
 
-- `SpecificationPageContent` | function-declaration | 75:25
-- `withProLabel` | arrow-function | 142:9
-- `calculateSmrFromSpecs` | arrow-function | 156:9
-- `handleBeforeUnload` | arrow-function | 249:11
-- `buildSnapshot` | arrow-function | 283:9
-- `logAction` | arrow-function | 326:9
-- `updateCurrentProject` | arrow-function | 331:9
-- `handleAiProjectUpdate` | arrow-function | 348:9
-- `handleModelChange` | arrow-function | 401:9
-- `handleProjectTabChange` | arrow-function | 408:9
-- `handleGroupFileSelect` | arrow-function | 418:9
-- `handleGroupProcessingClose` | arrow-function | 425:9
-- `handleGroupProjectProcessed` | arrow-function | 433:9
-- `formatCurrency` | arrow-function | 443:9
-- `buildSyncConflicts` | arrow-function | 448:9
-- `handleOpenSyncDialog` | arrow-function | 484:9
-- `handleApplySync` | arrow-function | 502:9
-- `updateSpecificationItem` | arrow-function | 547:9
-- `applyUpdates` | arrow-function | 555:11
-- `adjustSpecs` | arrow-function | 599:11
-- `handleAddItem` | arrow-function | 627:9
-- `handleRemoveItem` | arrow-function | 634:9
-- `handleAddRecommendation` | arrow-function | 642:9
-- `handleAddAllRecommendations` | arrow-function | 653:9
-- `handleSaveChanges` | arrow-function | 675:9
-- `handleFeatureClick` | arrow-function | 735:9
-- `handleAIPricing` | arrow-function | 744:8
-- `handleApplyPrices` | arrow-function | 891:9
-- `parsePricedItems` | arrow-function | 892:11
-- `handleLoadVersion` | arrow-function | 1018:9
-- `handleRefineProject` | arrow-function | 1041:9
-- `normalizeText` | arrow-function | 1050:9
-- `getComparisonKey` | arrow-function | 1057:9
-- `getTextSimilarity` | arrow-function | 1063:9
-- `ensureItemType` | arrow-function | 1078:9
-- `findInsertionIndex` | arrow-function | 1083:9
-- `handleApplyFoundItems` | arrow-function | 1112:9
-- `blobToBase64` | arrow-function | 1211:9
-- `transcribeAiEditAudio` | arrow-function | 1220:9
-- `startAiEditRecording` | arrow-function | 1258:9
-- `stopAiEditRecording` | arrow-function | 1297:9
-- `applyAiEdits` | arrow-function | 1309:9
-- `normalizeNumber` | arrow-function | 1314:11
-- `applyUpdatesToProject` | arrow-function | 1320:11
-- `findSpecIndex` | arrow-function | 1322:13
-- `handleAiEditSubmit` | arrow-function | 1428:9
+- `SpecificationPageContent` | function-declaration | 76:25
+- `withProLabel` | arrow-function | 148:9
+- `calculateSmrFromSpecs` | arrow-function | 162:9
+- `handleBeforeUnload` | arrow-function | 255:11
+- `buildSnapshot` | arrow-function | 289:9
+- `logAction` | arrow-function | 332:9
+- `updateCurrentProject` | arrow-function | 337:9
+- `handleAiProjectUpdate` | arrow-function | 354:9
+- `handleModelChange` | arrow-function | 415:9
+- `handleProjectTabChange` | arrow-function | 421:9
+- `handleGroupFileSelect` | arrow-function | 431:9
+- `handleGroupProcessingClose` | arrow-function | 438:9
+- `handleGroupProjectProcessed` | arrow-function | 446:9
+- `formatCurrency` | arrow-function | 456:9
+- `buildSyncConflicts` | arrow-function | 461:9
+- `handleOpenSyncDialog` | arrow-function | 497:9
+- `handleApplySync` | arrow-function | 515:9
+- `updateSpecificationItem` | arrow-function | 560:9
+- `applyUpdates` | arrow-function | 568:11
+- `adjustSpecs` | arrow-function | 612:11
+- `handleAddItem` | arrow-function | 640:9
+- `handleRemoveItem` | arrow-function | 647:9
+- `handleAddRecommendation` | arrow-function | 655:9
+- `handleAddAllRecommendations` | arrow-function | 666:9
+- `handleSaveChanges` | arrow-function | 688:9
+- `handleFeatureClick` | arrow-function | 748:9
+- `handleS3Request` | arrow-function | 755:9
+- `handleAIPricing` | arrow-function | 775:8
+- `handleApplyPrices` | arrow-function | 922:9
+- `parsePricedItems` | arrow-function | 923:11
+- `handleLoadVersion` | arrow-function | 1049:9
+- `handleRefineProject` | arrow-function | 1072:9
+- `normalizeText` | arrow-function | 1081:9
+- `getComparisonKey` | arrow-function | 1088:9
+- `getTextSimilarity` | arrow-function | 1094:9
+- `ensureItemType` | arrow-function | 1109:9
+- `findInsertionIndex` | arrow-function | 1114:9
+- `handleApplyFoundItems` | arrow-function | 1143:9
+- `blobToBase64` | arrow-function | 1242:9
+- `transcribeAiEditAudio` | arrow-function | 1251:9
+- `startAiEditRecording` | arrow-function | 1289:9
+- `stopAiEditRecording` | arrow-function | 1328:9
+- `applyAiEdits` | arrow-function | 1340:9
+- `normalizeNumber` | arrow-function | 1345:11
+- `applyUpdatesToProject` | arrow-function | 1351:11
+- `findSpecIndex` | arrow-function | 1353:13
+- `handleAiEditSubmit` | arrow-function | 1459:9
 
 ## src/components/calculator/SpecificationRow.tsx
 
@@ -1289,11 +1394,11 @@ Functions: 1005
 
 ## src/components/pdf/DocumentTemplate.tsx
 
-- `DocumentTemplate` | arrow-function | 157:7
+- `DocumentTemplate` | arrow-function | 159:7
 
 ## src/components/pdf/GroupDocumentTemplate.tsx
 
-- `GroupDocumentTemplate` | arrow-function | 152:7
+- `GroupDocumentTemplate` | arrow-function | 154:7
 
 ## src/components/pdf/InvoiceTemplate.tsx
 
@@ -1333,16 +1438,33 @@ Functions: 1005
 
 ## src/components/tabs/ProfileTab.tsx
 
-- `ProfileTab` | function-declaration | 30:25
-- `fetchBotUrl` | arrow-function | 68:11
-- `handleCopy` | arrow-function | 103:9
-- `handleProfileUpdate` | arrow-function | 111:9
-- `openUpgradeDialog` | arrow-function | 154:9
-- `handleMarketingToggle` | arrow-function | 167:9
-- `handleSyncChatId` | arrow-function | 180:9
-- `uploadAsset` | arrow-function | 240:9
-- `handleAssetChange` | arrow-function | 261:9
-- `handleAssetRemove` | arrow-function | 289:9
+- `ProfileTab` | function-declaration | 39:25
+- `fetchBotUrl` | arrow-function | 87:11
+- `handleCopy` | arrow-function | 122:9
+- `handleProfileUpdate` | arrow-function | 130:9
+- `openUpgradeDialog` | arrow-function | 173:9
+- `handleNextPlanClick` | arrow-function | 182:9
+- `handleMarketingToggle` | arrow-function | 191:9
+- `handleSyncChatId` | arrow-function | 204:9
+- `openTemplateDialog` | arrow-function | 224:9
+- `handleTemplateSubmit` | arrow-function | 229:9
+- `handleTemplateDelete` | arrow-function | 262:9
+- `uploadAsset` | arrow-function | 327:9
+- `handleAssetChange` | arrow-function | 348:9
+- `handleAvatarSelect` | arrow-function | 376:9
+- `handleAssetRemove` | arrow-function | 386:9
+
+## src/components/templates/AdminTemplateEditorDialog.tsx
+
+- `AdminTemplateEditorDialog` | function-declaration | 42:17
+- `handleChange` | arrow-function | 68:9
+- `handleSubmit` | arrow-function | 72:9
+
+## src/components/templates/TemplateConstructorDialog.tsx
+
+- `TemplateConstructorDialog` | function-declaration | 41:17
+- `handleChange` | arrow-function | 66:9
+- `handleSubmit` | arrow-function | 70:9
 
 ## src/components/ui/accordion.tsx
 
@@ -1518,13 +1640,22 @@ Functions: 1005
 
 ## src/contexts/AppContext.tsx
 
-- `convertTimestampsToDates` | arrow-function | 471:7
-- `AppProvider` | arrow-function | 490:14
-- `incrementChangeCounter` | arrow-function | 515:9
-- `resetChangeCounter` | arrow-function | 516:9
-- `handleThemeChange` | arrow-function | 644:15
-- `handleBackButton` | arrow-function | 653:15
-- `useAppContext` | arrow-function | 729:14
+- `convertTimestampsToDates` | arrow-function | 476:7
+- `AppProvider` | arrow-function | 495:14
+- `incrementChangeCounter` | arrow-function | 520:9
+- `resetChangeCounter` | arrow-function | 521:9
+- `handleThemeChange` | arrow-function | 647:15
+- `handleBackButton` | arrow-function | 656:15
+- `useAppContext` | arrow-function | 732:14
+
+## src/contexts/SupportChatContext.tsx
+
+- `SupportChatProvider` | function-declaration | 14:17
+- `useSupportChat` | function-declaration | 26:17
+
+## src/hooks/use-document-templates.ts
+
+- `useDocumentTemplates` | function-declaration | 7:17
 
 ## src/hooks/use-engagement-tracking.ts
 
@@ -1549,6 +1680,10 @@ Functions: 1005
 - `dismiss` | arrow-function | 153:9
 - `useToast` | function-declaration | 174:10
 
+## src/hooks/use-user-templates.ts
+
+- `useUserTemplates` | function-declaration | 14:17
+
 ## src/lib/auth.ts
 
 - None
@@ -1560,8 +1695,16 @@ Functions: 1005
 
 ## src/lib/document-constructor.ts
 
-- `getTemplateConfig` | arrow-function | 43:14
-- `getTemplatesByType` | arrow-function | 48:14
+- `buildTemplateMap` | arrow-function | 26:7
+- `registerTemplateCatalog` | arrow-function | 47:14
+- `getTemplateConfig` | arrow-function | 65:14
+- `getTemplatesByType` | arrow-function | 70:14
+
+## src/lib/document-template-utils.ts
+
+- `planKey` | arrow-function | 3:7
+- `resolveDefaultTemplateId` | arrow-function | 10:14
+- `filterTemplatesForPlan` | arrow-function | 21:14
 
 ## src/lib/firebase.ts
 
@@ -1580,14 +1723,14 @@ Functions: 1005
 
 ## src/lib/logger.ts
 
-- `logUserAction` | arrow-function | 54:14
-- `truncateString` | arrow-function | 88:7
-- `safeJsonPayload` | arrow-function | 93:7
-- `sanitizeDetails` | arrow-function | 111:7
-- `logAiApiCall` | arrow-function | 120:14
-- `sanitizeLogPayload` | arrow-function | 187:7
-- `serializeError` | arrow-function | 189:7
-- `logProjectEvent` | arrow-function | 205:14
+- `logUserAction` | arrow-function | 61:14
+- `truncateString` | arrow-function | 95:7
+- `safeJsonPayload` | arrow-function | 100:7
+- `sanitizeDetails` | arrow-function | 118:7
+- `logAiApiCall` | arrow-function | 127:14
+- `sanitizeLogPayload` | arrow-function | 194:7
+- `serializeError` | arrow-function | 196:7
+- `logProjectEvent` | arrow-function | 212:14
 
 ## src/lib/mailer.ts
 
@@ -1658,6 +1801,24 @@ Functions: 1005
 - `getClient` | function-declaration | 27:23
 - `getDb` | function-declaration | 31:23
 
+## src/lib/plan-models.ts
+
+- `sanitizeList` | arrow-function | 16:7
+- `normalizePlanKey` | arrow-function | 27:7
+- `getFallbackModelId` | arrow-function | 41:7
+- `getPlanModelConfig` | arrow-function | 49:14
+- `getPlanModelIds` | arrow-function | 60:14
+- `getPlanDefaultModelId` | arrow-function | 87:14
+- `resolvePlanModelId` | arrow-function | 98:14
+- `getPlanAbTestModels` | arrow-function | 110:14
+- `getPlanModelOptions` | arrow-function | 116:14
+- `getModelLabel` | arrow-function | 122:14
+
+## src/lib/plan-utils.ts
+
+- `getNextPlan` | arrow-function | 6:14
+- `getPlanLabel` | arrow-function | 12:14
+
 ## src/lib/pwa-helpers.ts
 
 - `openDB` | function-declaration | 7:10
@@ -1667,6 +1828,13 @@ Functions: 1005
 ## src/lib/server-analysis-stages.ts
 
 - None
+
+## src/lib/template-utils.ts
+
+- `isCustomTemplateId` | arrow-function | 25:14
+- `getTemplateLimitForPlan` | arrow-function | 28:14
+- `isTemplateConstructorAvailable` | arrow-function | 41:14
+- `normalizeHexColor` | arrow-function | 43:14
 
 ## src/lib/utils.ts
 
@@ -1812,12 +1980,13 @@ Functions: 1005
 - `processLot` | arrow-function | 323:9
 - `refundCredits` | function-declaration | 369:23
 - `refundCreditsInTransaction` | function-declaration | 385:23
-- `getCreditHistory` | function-declaration | 459:23
+- `expireCreditLot` | function-declaration | 459:23
+- `getCreditHistory` | function-declaration | 509:23
 
 ## src/services/docxGenerator.ts
 
-- `generateDocx` | arrow-function | 28:14
-- `createTotalRow` | arrow-function | 187:11
+- `generateDocx` | arrow-function | 30:14
+- `createTotalRow` | arrow-function | 191:11
 
 ## src/services/excelGenerator.ts
 

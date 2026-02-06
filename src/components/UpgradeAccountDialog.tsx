@@ -7,9 +7,10 @@ import { Button } from '@/components/ui/button';
 import { Loader2, Star, CheckCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAppContext, UserPlan } from '@/contexts/AppContext';
-import { activateTrial, getAppSettings } from '@/actions/adminActions';
+import { activateTrial } from '@/actions/adminActions';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 import { PurchaseProDialog } from '@/components/PurchaseProDialog';
+import { createServiceRequest } from '@/actions/serviceRequestActions';
 
 interface UpgradeAccountDialogProps {
   isOpen: boolean;
@@ -22,14 +23,12 @@ export function UpgradeAccountDialog({ isOpen, onClose, targetRole, featureName 
   const { user, effectivePlan } = useAppContext();
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
-  const [enterpriseEmail, setEnterpriseEmail] = useState('support@example.com');
-  const [isLoadingEmail, setIsLoadingEmail] = useState(false);
   const [isPurchaseOpen, setIsPurchaseOpen] = useState(false);
 
   const handleActivateTrial = () => {
-    if (!user) return;
+    if (!user || targetRole !== 'PRO') return;
     startTransition(async () => {
-      const result = await activateTrial({ userId: user.uid, plan: targetRole });
+      const result = await activateTrial({ userId: user.uid, plan: 'PRO' });
       if (result.success) {
         toast({
           title: "Пробный период активирован!",
@@ -71,21 +70,29 @@ export function UpgradeAccountDialog({ isOpen, onClose, targetRole, featureName 
     : `Эта функция доступна только на тарифах ${targetRoleLabel} и выше.`;
 
   useEffect(() => {
-    if (!isOpen || !isRequestOnly) return;
-    setIsLoadingEmail(true);
-    getAppSettings()
-      .then(settings => setEnterpriseEmail(settings.enterpriseEmail || 'support@example.com'))
-      .catch(() => setEnterpriseEmail('support@example.com'))
-      .finally(() => setIsLoadingEmail(false));
-  }, [isOpen, isRequestOnly]);
-
-  useEffect(() => {
     if (!isOpen) {
       setIsPurchaseOpen(false);
     }
   }, [isOpen]);
 
-  const mailtoHref = `mailto:${enterpriseEmail}?subject=${encodeURIComponent(`Запрос на тариф ${targetRoleLabel}`)}`;
+  const handleRequestPlan = () => {
+    if (!user) return;
+    startTransition(async () => {
+      const result = await createServiceRequest({
+        userId: user.uid,
+        userName: user.displayName || '',
+        userEmail: user.email || '',
+        type: 'plan_upgrade',
+        payload: { targetPlan: targetRoleLabel },
+      });
+      if (result.success) {
+        toast({ title: 'Заявка отправлена', description: result.message });
+        onClose();
+      } else {
+        toast({ title: 'Ошибка', description: result.message, variant: 'destructive' });
+      }
+    });
+  };
 
   return (
     <>
@@ -139,10 +146,9 @@ export function UpgradeAccountDialog({ isOpen, onClose, targetRole, featureName 
           <Button variant="outline" onClick={onClose}>Закрыть</Button>
           {!isAlreadyOnHigherPlan && (
               isRequestOnly ? (
-                <Button asChild variant="secondary" disabled={isLoadingEmail}>
-                  <a href={mailtoHref}>
-                    {isLoadingEmail ? "Загрузка..." : `Запросить ${targetRoleLabel}`}
-                  </a>
+                <Button variant="secondary" onClick={handleRequestPlan} disabled={isPending}>
+                  {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                  Запросить {targetRoleLabel}
                 </Button>
               ) : (
                 <>

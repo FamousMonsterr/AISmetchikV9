@@ -34,11 +34,12 @@ import axios from 'axios';
 import { format } from 'date-fns';
 import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/dropdown-menu';
-import templateCatalog from '@/lib/quote-templates.json';
 import { updateUserProfile } from '@/actions/userActions';
 import JSZip from 'jszip';
 import { useUserTemplates } from '@/hooks/use-user-templates';
 import type { TemplateStyleConfig } from '@/lib/template-utils';
+import { useDocumentTemplates } from '@/hooks/use-document-templates';
+import { filterTemplatesForPlan, resolveDefaultTemplateId } from '@/lib/document-template-utils';
 
 type DocumentType = 'proposal' | 'invoice' | 'contract' | 'act' | 'ks2' | 'ks3' | 'ks6a';
 type FileFormat = 'pdf' | 'docx' | 'xlsx';
@@ -77,6 +78,7 @@ export function DocumentGenerationDialog({ isOpen, onClose, project, specificati
     const isGroupContext = isGroupWorkActive && projects.length > 1;
 
     const { templates: customTemplates } = useUserTemplates({ enabled: isOpen });
+    const { templates: globalTemplates, settings: templateSettings } = useDocumentTemplates({ enabled: isOpen });
     const customProposalTemplates = useMemo(
         () => customTemplates.filter((template) => template.docType === 'proposal'),
         [customTemplates],
@@ -85,6 +87,10 @@ export function DocumentGenerationDialog({ isOpen, onClose, project, specificati
         () => new Map(customProposalTemplates.map((template) => [template.id, template])),
         [customProposalTemplates],
     );
+    const globalTemplatesById = useMemo(
+        () => new Map(globalTemplates.map((template) => [template.id, template])),
+        [globalTemplates],
+    );
 
     useEffect(() => {
         if (invoiceKind === 'advance' && generateAct) {
@@ -92,18 +98,15 @@ export function DocumentGenerationDialog({ isOpen, onClose, project, specificati
         }
     }, [invoiceKind, generateAct]);
 
-    const templateAccess = {
-        Free: ['free'],
-        PRO: ['free', 'pro'],
-        Business: ['free', 'pro', 'business'],
-        Enterprise: ['free', 'pro', 'business'],
-    } as const;
-
-    const baseTemplateOptions = templateCatalog.filter((template) => {
-        if (template.docType !== docType) return false;
-        const allowed = templateAccess[effectivePlan ?? 'Free'] || ['free'];
-        return allowed.includes(template.status as (typeof allowed)[number]);
-    });
+    const baseTemplateOptions = useMemo(() => {
+        const options = filterTemplatesForPlan(globalTemplates, templateSettings, effectivePlan, docType);
+        if (effectivePlan === 'Free') {
+          const fallbackId = docType === 'invoice' ? 'invoice-1c-v1' : docType === 'contract' ? 'contract-base-v1' : 'base-template-v1';
+          const defaultId = resolveDefaultTemplateId(templateSettings, effectivePlan, docType, fallbackId);
+          return options.filter((tpl) => tpl.id === defaultId);
+        }
+        return options;
+    }, [globalTemplates, templateSettings, effectivePlan, docType]);
 
     const customTemplateOptions = docType === 'proposal' && effectivePlan !== 'Free'
         ? customProposalTemplates
@@ -111,8 +114,10 @@ export function DocumentGenerationDialog({ isOpen, onClose, project, specificati
 
     const templateOptions = [...baseTemplateOptions, ...customTemplateOptions];
 
-    const activeTemplateId = selectedTemplateId || user?.documentTemplates?.[docType] || templateOptions[0]?.id || 'base-template-v1';
-    const activeTemplateConfig = customTemplatesById.get(activeTemplateId) || null;
+    const fallbackId = docType === 'invoice' ? 'invoice-1c-v1' : docType === 'contract' ? 'contract-base-v1' : 'base-template-v1';
+    const defaultTemplateId = resolveDefaultTemplateId(templateSettings, effectivePlan, docType, templateOptions[0]?.id || fallbackId);
+    const activeTemplateId = selectedTemplateId || user?.documentTemplates?.[docType] || defaultTemplateId || fallbackId;
+    const activeTemplateConfig = (customTemplatesById.get(activeTemplateId) || globalTemplatesById.get(activeTemplateId) || null) as TemplateStyleConfig | null;
 
     const resolveProjectName = (proj: HistoryRequest) => proj.analysisDetails?.objectName || proj.fileName || 'Проект';
     const resolveProjectSpecs = (proj: HistoryRequest) => proj.outputSpecifications.filter(item => !item.isRecommended);
@@ -349,7 +354,7 @@ export function DocumentGenerationDialog({ isOpen, onClose, project, specificati
                     const presignedUrlResponse = await fetch('/api/s3-upload', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ fileName: invoiceFileName, fileType: invoiceBlob.type, bucketType: 'project_docs' }),
+                        body: JSON.stringify({ fileName: invoiceFileName, fileType: invoiceBlob.type, bucketType: 'user_docs' }),
                     });
                     if (!presignedUrlResponse.ok) {
                         throw new Error((await presignedUrlResponse.json()).error || 'Не удалось получить ссылку для загрузки в S3.');

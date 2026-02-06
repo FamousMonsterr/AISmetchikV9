@@ -22,22 +22,24 @@ import { getPublicEnvSettings } from '@/actions/adminActions';
 import { syncTelegramChatId } from '@/actions/telegramActions';
 import { useTheme } from 'next-themes';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { SupportChat } from '@/components/support/SupportChat';
 import { getNextPlan, getPlanLabel } from '@/lib/plan-utils';
 import { AvatarCropDialog } from '@/components/AvatarCropDialog';
 import { Switch } from '@/components/ui/switch';
 import { UpgradeAccountDialog } from '@/components/UpgradeAccountDialog';
 import { PurchaseProDialog } from '@/components/PurchaseProDialog';
-import templateCatalog from '@/lib/quote-templates.json';
 import { useUserTemplates } from '@/hooks/use-user-templates';
 import { createUserTemplate, updateUserTemplate, deleteUserTemplate } from '@/actions/templateActions';
 import { getTemplateLimitForPlan, type UserTemplate } from '@/lib/template-utils';
 import { TemplateConstructorDialog, type TemplateFormValues } from '@/components/templates/TemplateConstructorDialog';
+import { useSupportChat } from '@/contexts/SupportChatContext';
+import { useDocumentTemplates } from '@/hooks/use-document-templates';
+import { filterTemplatesForPlan, resolveDefaultTemplateId } from '@/lib/document-template-utils';
 
 
 export default function ProfileTab() {
   const { user, setUser, telegramUser, effectivePlan } = useAppContext();
   const { toast } = useToast();
+  const { open: openSupportChat } = useSupportChat();
   const [isPending, startTransition] = useTransition();
   const [isTemplatePending, startTemplateTransition] = useTransition();
   const [isUpgradeOpen, setIsUpgradeOpen] = useState(false);
@@ -45,6 +47,7 @@ export default function ProfileTab() {
   const [isPurchaseOpen, setIsPurchaseOpen] = useState(false);
 
   const { templates: customTemplates, isLoading: isTemplatesLoading } = useUserTemplates();
+  const { templates: globalTemplates, settings: templateSettings } = useDocumentTemplates();
   const [isTemplateDialogOpen, setIsTemplateDialogOpen] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<UserTemplate | null>(null);
 
@@ -270,25 +273,22 @@ export default function ProfileTab() {
     });
   };
 
+  const templatesChanged = canEditTemplates && (
+    documentTemplates.proposal !== (user?.documentTemplates?.proposal || '') ||
+    documentTemplates.invoice !== (user?.documentTemplates?.invoice || '') ||
+    documentTemplates.contract !== (user?.documentTemplates?.contract || '')
+  );
+
   const isProfileChanged =
     displayName !== user?.displayName ||
     telegramUsernameState !== user?.telegramUsername ||
-    documentTemplates.proposal !== (user?.documentTemplates?.proposal || '') ||
-    documentTemplates.invoice !== (user?.documentTemplates?.invoice || '') ||
-    documentTemplates.contract !== (user?.documentTemplates?.contract || '') ||
+    templatesChanged ||
     signatureState.url !== (user?.signatureUrl || '') ||
     signatureState.objectKey !== (user?.signatureObjectKey || '') ||
     stampState.url !== (user?.stampUrl || '') ||
     stampState.objectKey !== (user?.stampObjectKey || '') ||
     avatarState.url !== (user?.avatarUrl || '') ||
     avatarState.objectKey !== (user?.avatarObjectKey || '');
-
-  const templateAccess = {
-    Free: ['free'],
-    PRO: ['free', 'pro'],
-    Business: ['free', 'pro', 'business'],
-    Enterprise: ['free', 'pro', 'business'],
-  } as const;
 
   const canEditTemplates = effectivePlan !== 'Free';
   const customProposalTemplates = useMemo(
@@ -297,16 +297,15 @@ export default function ProfileTab() {
   );
 
   const templateOptions = useMemo(() => {
-    const allowed = templateAccess[effectivePlan ?? 'Free'] || ['free'];
     return {
       proposal: [
-        ...templateCatalog.filter((item) => item.docType === 'proposal' && allowed.includes(item.status as 'free' | 'pro' | 'business')),
+        ...filterTemplatesForPlan(globalTemplates, templateSettings, effectivePlan, 'proposal'),
         ...(effectivePlan !== 'Free' ? customProposalTemplates : []),
       ],
-      invoice: templateCatalog.filter((item) => item.docType === 'invoice' && allowed.includes(item.status as 'free' | 'pro' | 'business')),
-      contract: templateCatalog.filter((item) => item.docType === 'contract' && allowed.includes(item.status as 'free' | 'pro' | 'business')),
+      invoice: filterTemplatesForPlan(globalTemplates, templateSettings, effectivePlan, 'invoice'),
+      contract: filterTemplatesForPlan(globalTemplates, templateSettings, effectivePlan, 'contract'),
     };
-  }, [effectivePlan, customProposalTemplates]);
+  }, [effectivePlan, customProposalTemplates, globalTemplates, templateSettings]);
 
   const templateLimit = getTemplateLimitForPlan(effectivePlan);
   const templateCount = customProposalTemplates.length;
@@ -314,13 +313,16 @@ export default function ProfileTab() {
   const isLimitReached = canUseConstructor && templateCount >= templateLimit;
 
   useEffect(() => {
-    if (!canEditTemplates) return;
+    const proposalDefault = resolveDefaultTemplateId(templateSettings, effectivePlan, 'proposal', templateOptions.proposal[0]?.id || '');
+    const invoiceDefault = resolveDefaultTemplateId(templateSettings, effectivePlan, 'invoice', templateOptions.invoice[0]?.id || '');
+    const contractDefault = resolveDefaultTemplateId(templateSettings, effectivePlan, 'contract', templateOptions.contract[0]?.id || '');
+
     setDocumentTemplates((prev) => ({
-      proposal: prev.proposal || templateOptions.proposal[0]?.id || '',
-      invoice: prev.invoice || templateOptions.invoice[0]?.id || '',
-      contract: prev.contract || templateOptions.contract[0]?.id || '',
+      proposal: prev.proposal || proposalDefault,
+      invoice: prev.invoice || invoiceDefault,
+      contract: prev.contract || contractDefault,
     }));
-  }, [canEditTemplates, templateOptions]);
+  }, [templateOptions, templateSettings, effectivePlan]);
 
   const uploadAsset = async (file: File, bucketType?: 'analysis' | 'avatars' | 'user_docs' | 'project_docs' | 'default' | 'personal') => {
     const presignedUrlResponse = await fetch("/api/s3-upload", {
@@ -411,11 +413,9 @@ export default function ProfileTab() {
                 </div>
             </CardContent>
             <CardFooter>
-                 <Button asChild>
-                    <a href={`mailto:${user.managerData.email}?subject=Вопрос по AI Сметчик`}>
-                        <Mail className="mr-2 h-4 w-4"/>
-                        Написать менеджеру
-                    </a>
+                 <Button onClick={openSupportChat}>
+                    <Mail className="mr-2 h-4 w-4"/>
+                    Написать менеджеру
                 </Button>
             </CardFooter>
         </Card>
@@ -521,11 +521,18 @@ export default function ProfileTab() {
             <div>
               <p className="font-medium">Подписка на рассылку</p>
               <p className="text-sm text-muted-foreground">
-                Активная подписка дает +10 бонусных кредитов в месяц на PRO. Отключение вступит в силу со следующего периода.
+                Активная подписка дает +10 бонусных кредитов в месяц на Free и PRO. Отключение вступит в силу со следующего периода.
               </p>
             </div>
             <Switch checked={!!user?.agreedToMarketing} onCheckedChange={handleMarketingToggle} disabled={isPending} />
           </div>
+          {!!user?.agreedToMarketing && (
+            <div className="overflow-hidden rounded-md border bg-muted/30 px-3 py-2">
+              <div className="whitespace-nowrap text-xs text-muted-foreground animate-marquee">
+                Подписка активна: +10 бонусных кредитов каждый месяц для Free/PRO. Отмена вступит в силу со следующего периода получения бонусов.
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -804,8 +811,6 @@ export default function ProfileTab() {
             )}
         </CardContent>
       </Card>
-
-      <SupportChat />
 
       <AvatarCropDialog
         isOpen={isAvatarCropOpen}

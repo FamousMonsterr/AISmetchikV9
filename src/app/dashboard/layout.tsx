@@ -45,6 +45,7 @@ import {
 import { StickyBanner } from "@/components/ui/sticky-banner";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useEngagementTracking } from "@/hooks/use-engagement-tracking";
+import { SupportChatProvider } from "@/contexts/SupportChatContext";
 
 
 function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
@@ -235,6 +236,8 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
     return (
-        <DashboardLayoutContent>{children}</DashboardLayoutContent>
+        <SupportChatProvider>
+            <DashboardLayoutContent>{children}</DashboardLayoutContent>
+        </SupportChatProvider>
     );
 }

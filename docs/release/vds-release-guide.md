@@ -23,8 +23,6 @@
 ## 3) Операции перед запуском
 1. Создать MongoDB индексы:
    - `npm run mongo:indexes`
-2. Если это первый релиз после внедрения леджера кредитов:
-   - `npm run credits:migrate`
 3. Проверить настройки `enterpriseEmail` в админке.
 4. Проверить S3 (endpoint/region/бакеты/CORS), включая назначение бакетов:
    - `analysis` — основной бакет
@@ -37,8 +35,9 @@
 - Локально/на VDS: `npm run worker:server-analysis`
 - Для прод: systemd/pm2/cron с рестартом и логированием.
 - Ежедневно (cron): `npm run credits:expire`
+- Ежедневно (cron): `npm run credits:auto-approve`
 - Ежедневно (cron): `npm run pro:auto-approve`
-- Ежемесячно (cron): `npm run pro:monthly-credits`
+- Ежемесячно (cron): `npm run marketing:monthly-credits`
 
 ## 5) Мониторинг
 - Health: `GET /api/health`

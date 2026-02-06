@@ -8,7 +8,8 @@ async function run() {
   const users = await db.collection('users').find({}, { projection: { _id: 1 } }).toArray();
   let totalExpired = 0;
   for (const user of users) {
-    const result = await expireCreditsForUser(user._id);
+    const userId = typeof user._id === 'string' ? user._id : user._id.toString();
+    const result = await expireCreditsForUser(userId);
     totalExpired += result.expired || 0;
   }
   console.log(`Expired credits processed. Total expired: ${totalExpired}`);

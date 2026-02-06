@@ -754,6 +754,9 @@ export interface EnvSettings {
     telegramBotSecretToken?: string;
     dadataApiKey?: string;
     dadataApiSecret?: string;
+    ozonBankApiBaseUrl?: string;
+    ozonBankApiToken?: string;
+    ozonBankSyncPath?: string;
     openRouterApiKey?: string;
     defaultFallbackModel?: string;
     mongoUri?: string;
@@ -821,6 +824,9 @@ const EnvSettingsSchema = z.object({
     telegramBotSecretToken: z.string().optional().or(z.literal('')),
     dadataApiKey: z.string().optional().or(z.literal('')),
     dadataApiSecret: z.string().optional().or(z.literal('')),
+    ozonBankApiBaseUrl: z.string().optional().or(z.literal('')),
+    ozonBankApiToken: z.string().optional().or(z.literal('')),
+    ozonBankSyncPath: z.string().optional().or(z.literal('')),
     openRouterApiKey: z.string().optional().or(z.literal('')),
     defaultFallbackModel: z.string().optional().or(z.literal('')),
     mongoUri: z.string().url('Неверный URL MongoDB.').optional().or(z.literal('')),
@@ -875,6 +881,7 @@ const SECRET_FIELDS: Array<keyof EnvSettings> = [
     'telegramBotSecretToken',
     'dadataApiKey',
     'dadataApiSecret',
+    'ozonBankApiToken',
     'openRouterApiKey',
     'mongoUri',
     'mongoDbName',
@@ -916,6 +923,9 @@ const ENV_FILE_MAP: Record<string, (settings: EnvSettings) => string | undefined
     NEXT_PUBLIC_TELEGRAM_BOT_URL: (s) => s.nextPublicTelegramBotUrl,
     DADATA_API_KEY: (s) => s.dadataApiKey,
     DADATA_API_SECRET: (s) => s.dadataApiSecret,
+    OZON_BANK_API_BASE_URL: (s) => s.ozonBankApiBaseUrl,
+    OZON_BANK_API_TOKEN: (s) => s.ozonBankApiToken,
+    OZON_BANK_SYNC_PATH: (s) => s.ozonBankSyncPath,
     OPENROUTER_API_KEY: (s) => s.openRouterApiKey,
     DEFAULT_FALLBACK_MODEL: (s) => s.defaultFallbackModel,
     SMTP_ENABLED: (s) => s.smtpEnabled !== undefined ? String(!!s.smtpEnabled) : undefined,
@@ -1095,6 +1105,69 @@ export const updateEnvSettings = async (currentUserId: string, data: EnvSettings
     } catch (error) {
         console.error("Error updating env settings:", error);
         return { success: false, message: 'Ошибка при обновлении переменных.' };
+    }
+};
+
+export const getOzonBankSyncStatus = async (adminUserId: string) => {
+    const envSettings = await getEnvSettings({ requesterId: adminUserId, requireAdmin: true });
+    if (!envSettings) {
+        return { success: false, message: 'Недостаточно прав.' };
+    }
+    const docRef = doc(db, 'configs', 'ozonBankSync');
+    const docSnap = await getDoc(docRef);
+    return { success: true, data: docSnap.exists() ? docSnap.data() : null };
+};
+
+export const syncOzonBank = async (adminUserId: string) => {
+    const envSettings = await getEnvSettings({ requesterId: adminUserId, requireAdmin: true });
+    if (!envSettings) {
+        return { success: false, message: 'Недостаточно прав.' };
+    }
+    const baseUrl = envSettings.ozonBankApiBaseUrl;
+    const token = envSettings.ozonBankApiToken;
+    const syncPath = envSettings.ozonBankSyncPath || '/transactions';
+
+    if (!baseUrl || !token) {
+        return { success: false, message: 'Ozon Bank API не настроен.' };
+    }
+
+    try {
+        const url = new URL(syncPath, baseUrl).toString();
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: {
+                Authorization: `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+        });
+        const payloadText = await response.text();
+        const status = response.ok ? 'success' : 'error';
+        const message = response.ok ? 'Синхронизация выполнена.' : `Ошибка синхронизации: ${response.status}`;
+
+        await setDoc(
+            doc(db, 'configs', 'ozonBankSync'),
+            {
+                lastSyncAt: serverTimestamp(),
+                lastSyncStatus: status,
+                lastSyncMessage: message,
+                lastSyncPayload: payloadText?.slice(0, 2000) || null,
+            },
+            { merge: true },
+        );
+
+        return { success: response.ok, message };
+    } catch (error: any) {
+        console.error('Ozon Bank sync failed:', error);
+        await setDoc(
+            doc(db, 'configs', 'ozonBankSync'),
+            {
+                lastSyncAt: serverTimestamp(),
+                lastSyncStatus: 'error',
+                lastSyncMessage: error.message || 'Ошибка синхронизации.',
+            },
+            { merge: true },
+        );
+        return { success: false, message: error.message || 'Ошибка синхронизации.' };
     }
 };
 

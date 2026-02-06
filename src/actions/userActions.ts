@@ -14,6 +14,7 @@ import { logProjectEvent, logUserAction } from '@/lib/logger';
 import { AiSpecificationItemSchema, ExtractProjectSpecificationsOutputSchema } from '@/ai/genkit-schemas';
 import { deductCredits, deductCreditsInTransaction, refundCredits, withMongoTransaction } from '@/services/credits';
 import { getPlanModelIds } from '@/lib/plan-models';
+import { grantMarketingBonusForUser } from '@/actions/marketingActions';
 
 
 // --- Profile Management ---
@@ -191,6 +192,9 @@ export const updateMarketingConsent = async (data: z.infer<typeof MarketingConse
     });
 
     await logUserAction(userId, 'MARKETING_CONSENT_UPDATE', { agreedToMarketing });
+    if (agreedToMarketing) {
+      await grantMarketingBonusForUser({ userId, source: 'marketing_toggle' });
+    }
     return { success: true, message: 'Настройка рассылок обновлена.' };
   } catch (error: any) {
     console.error("Marketing consent update failed:", error);

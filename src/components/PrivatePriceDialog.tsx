@@ -24,6 +24,7 @@ interface PrivatePriceDialogProps {
   isGroupMode?: boolean;
   batchProjectCount?: number;
   onBusinessFeatureClick?: () => void;
+  onS3Request?: () => void;
 }
 
 export function PrivatePriceDialog({ 
@@ -33,7 +34,8 @@ export function PrivatePriceDialog({
   projectId,
   isGroupMode = false,
   batchProjectCount = 0,
-  onBusinessFeatureClick
+  onBusinessFeatureClick,
+  onS3Request
 }: PrivatePriceDialogProps) {
   const { user, currentProject, effectivePlan } = useAppContext();
   const { toast } = useToast();
@@ -235,7 +237,7 @@ export function PrivatePriceDialog({
               type="button"
               variant="outline"
               className={businessButtonClass}
-              onClick={() => onBusinessFeatureClick?.()}
+              onClick={() => (onS3Request ? onS3Request() : onBusinessFeatureClick?.())}
             >
               <HardDrive className="mr-2 h-4 w-4" />
               Подключить S3

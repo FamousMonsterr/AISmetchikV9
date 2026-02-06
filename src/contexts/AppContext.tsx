@@ -106,6 +106,7 @@ export interface AppUser {
   agreedToMarketing?: boolean;
   agreedToThirdParty?: boolean;
   proMonthlyBonusLastGrantedAt?: any | null;
+  marketingBonusLastGrantedAt?: any | null;
 
   // Notifications
   seenNotifications?: string[];

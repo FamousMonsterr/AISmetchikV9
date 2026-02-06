@@ -1,5 +1,6 @@
 // scripts/server-analysis-worker.ts
 // Simple worker to be run via cron/pm2 for processing queued server analysis jobs.
+export {};
 
 const { runServerAnalysisWorkerOnce } = require('../src/server-functions/analysis/worker');
 

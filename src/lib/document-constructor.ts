@@ -23,30 +23,52 @@ export type PreviewData = {
   objectName: string;
 };
 
-export const templateMap: Record<string, ConstructorTemplateConfig> = Object.fromEntries(
-  templateCatalog.map((tpl) => [
-    tpl.id,
-    {
-      id: tpl.id,
-      name: tpl.name,
-      description: tpl.description,
-      docType: tpl.docType as DocTemplateKind,
-      status: (tpl.status as 'free' | 'pro' | 'business') ?? 'free',
-      accentColor: tpl.accentColor,
-      headerStyle: tpl.headerStyle as ConstructorTemplateConfig['headerStyle'],
-      showStamp: tpl.showStamp,
-      showSignature: tpl.showSignature,
-    },
-  ]),
-);
+const buildTemplateMap = (catalog: any[]) =>
+  Object.fromEntries(
+    catalog.map((tpl) => [
+      tpl.id,
+      {
+        id: tpl.id,
+        name: tpl.name,
+        description: tpl.description,
+        docType: tpl.docType as DocTemplateKind,
+        status: (tpl.status as 'free' | 'pro' | 'business') ?? 'free',
+        accentColor: tpl.accentColor,
+        headerStyle: tpl.headerStyle as ConstructorTemplateConfig['headerStyle'],
+        showStamp: tpl.showStamp,
+        showSignature: tpl.showSignature,
+      },
+    ]),
+  );
+
+let runtimeCatalog = templateCatalog;
+let runtimeMap: Record<string, ConstructorTemplateConfig> = buildTemplateMap(templateCatalog);
+
+export const registerTemplateCatalog = (templates: Array<ConstructorTemplateConfig | { id: string; name: string; docType: DocTemplateKind; description?: string; accentColor?: string; headerStyle?: string; showSignature?: boolean; showStamp?: boolean }>) => {
+  if (!Array.isArray(templates) || templates.length === 0) return;
+  runtimeCatalog = templates.map((tpl: any) => ({
+    id: tpl.id,
+    name: tpl.name,
+    description: tpl.description,
+    docType: tpl.docType,
+    status: (tpl as any).status ?? 'free',
+    accentColor: tpl.accentColor,
+    headerStyle: tpl.headerStyle,
+    showStamp: tpl.showStamp,
+    showSignature: tpl.showSignature,
+  }));
+  runtimeMap = buildTemplateMap(runtimeCatalog);
+};
+
+export const templateMap = runtimeMap;
 
 export const getTemplateConfig = (id: string | undefined | null): ConstructorTemplateConfig | null => {
   if (!id) return null;
-  return templateMap[id] || null;
+  return runtimeMap[id] || null;
 };
 
 export const getTemplatesByType = (docType: DocTemplateKind, allowed: Array<'free' | 'pro' | 'business'>) =>
-  templateCatalog.filter((tpl) => tpl.docType === docType && allowed.includes(tpl.status as any));
+  runtimeCatalog.filter((tpl) => tpl.docType === docType && allowed.includes(tpl.status as any));
 
 export const demoPreviewData: PreviewData = {
   contractor: {

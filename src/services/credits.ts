@@ -456,6 +456,56 @@ export async function refundCreditsInTransaction(
   return { lotId, summary };
 }
 
+export async function expireCreditLot(params: {
+  userId: string;
+  lotId: string;
+  reason?: string;
+  metadata?: Record<string, any>;
+}) {
+  const { userId, lotId, reason, metadata } = params;
+  if (!userId || !lotId) {
+    throw new Error('User ID and lot ID are required.');
+  }
+
+  return withMongoTransaction(async (ctx) => {
+    const lot = await ctx.db
+      .collection('credit_lots')
+      .findOne({ _id: lotId, userId }, withSession(ctx.session));
+    if (!lot) {
+      throw new Error('Лот не найден.');
+    }
+
+    const remaining = lot.remaining || 0;
+    if (remaining <= 0) {
+      return { expired: 0 };
+    }
+
+    const now = new Date();
+    await ctx.db.collection('credit_lots').updateOne(
+      { _id: lotId },
+      { $set: { remaining: 0, expiredAt: now } },
+      withSession(ctx.session),
+    );
+
+    await ctx.db.collection('credit_ledger').insertOne(
+      {
+        _id: nanoid(),
+        userId,
+        type: 'expire' as CreditLedgerType,
+        amount: remaining,
+        lotId,
+        reason: reason || 'expired',
+        createdAt: now,
+        metadata: { lotType: lot.type, ...metadata },
+      },
+      withSession(ctx.session),
+    );
+
+    await updateUserCreditSummaryInTransaction(ctx, userId);
+    return { expired: remaining };
+  });
+}
+
 export async function getCreditHistory(userId: string, limit: number = 50) {
   const db = await getDb();
   return db

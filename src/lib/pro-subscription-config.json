@@ -3,5 +3,6 @@
   "durationsMonths": [6, 9, 12],
   "lifetimeMonths": 24,
   "sbpPhone": "+79114185037",
-  "sbpBank": "Сбербанк"
+  "sbpBank": "Сбербанк",
+  "sbpPaymentLink": ""
 }

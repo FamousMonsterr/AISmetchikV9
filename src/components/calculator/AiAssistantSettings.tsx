@@ -39,6 +39,11 @@ export function AiAssistantSettings({
     const preference = user?.planModelPreferences?.[planKey];
     const resolvedModel = useMemo(() => resolvePlanModelId(effectivePlan, preference), [effectivePlan, preference]);
     const displayModel = canSelectModel ? selectedModel : resolvedModel;
+    const displayLabel = useMemo(() => {
+        if (effectivePlan === 'Free') return 'Базовая модель';
+        if (effectivePlan === 'PRO') return 'PRO модель';
+        return getModelLabel(displayModel) || 'Модель определяется тарифом';
+    }, [effectivePlan, displayModel]);
     const planModelOptions = useMemo(() => getPlanModelOptions(effectivePlan), [effectivePlan]);
 
     return (
@@ -67,7 +72,7 @@ export function AiAssistantSettings({
                             </Select>
                         ) : (
                             <div className="flex items-center justify-between rounded-md border px-3 py-2 text-sm">
-                                <span className="text-muted-foreground">{getModelLabel(displayModel) || 'Модель определяется тарифом'}</span>
+                                <span className="text-muted-foreground">{displayLabel}</span>
                                 <PlanBadge plan="Business" size="xs" onClick={onBusinessFeatureClick} />
                             </div>
                         )}

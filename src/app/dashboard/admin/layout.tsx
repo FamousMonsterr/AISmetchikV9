@@ -32,6 +32,7 @@ const navGroups = [
             { href: "/dashboard/admin/users", label: "Пользователи", icon: Users },
             { href: "/dashboard/admin/pro-payments", label: "Оплаты PRO", icon: BadgeDollarSign },
             { href: "/dashboard/admin/credit-payments", label: "Оплаты кредитов", icon: BadgeDollarSign },
+            { href: "/dashboard/admin/service-requests", label: "Заявки", icon: Handshake },
             { href: "/dashboard/admin/tickets", label: "Тикеты", icon: Ticket },
             { href: "/dashboard/admin/partner-requests", label: "Партнёры", icon: Handshake },
             { href: "/dashboard/admin/feedback-surveys", label: "Опросы", icon: MessageSquareQuote },
@@ -99,6 +100,8 @@ const warmUpIndexes = async () => {
             query(collection(db, 'users'), where('telegramChatId', '!=', null), limit(1)),
             query(collection(db, 'project_event_logs'), limit(1)),
             query(collection(db, 'credit_purchase_orders'), limit(1)),
+            query(collection(db, 'pro_subscription_orders'), limit(1)),
+            query(collection(db, 'service_requests'), limit(1)),
         ];
         // We run them, but we don't care about the result.
         // The simple act of querying triggers the index creation on the backend if it doesn't exist.

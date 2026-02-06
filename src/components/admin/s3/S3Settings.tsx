@@ -59,7 +59,7 @@ export function S3Settings({ settings, setSettings, isPending }: { settings: Env
   const [bucketList, setBucketList] = useState<string[]>([]);
   const [isBucketsLoading, setIsBucketsLoading] = useState(false);
   const [newBucketName, setNewBucketName] = useState('');
-  const [newBucketPurpose, setNewBucketPurpose] = useState<'avatars' | 'user_docs' | 'project_docs'>('avatars');
+  const [newBucketPurpose, setNewBucketPurpose] = useState<'analysis' | 'avatars' | 'user_docs' | 'project_docs'>('avatars');
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -111,7 +111,12 @@ export function S3Settings({ settings, setSettings, isPending }: { settings: Env
 
     const trimmed = newBucketName.trim();
     const nextSettings: EnvSettings = { ...settings };
-    if (newBucketPurpose === 'avatars') {
+    if (newBucketPurpose === 'analysis') {
+      nextSettings.s3BucketName = trimmed;
+      if (presetId) {
+        nextSettings.s3ActivePresetId = presetId;
+      }
+    } else if (newBucketPurpose === 'avatars') {
       nextSettings.s3AvatarBucketName = trimmed;
       nextSettings.s3AvatarPresetId = presetId || '';
     } else if (newBucketPurpose === 'user_docs') {
@@ -459,6 +464,7 @@ export function S3Settings({ settings, setSettings, isPending }: { settings: Env
                         <Select value={newBucketPurpose} onValueChange={(value) => setNewBucketPurpose(value as any)} disabled={isPending}>
                           <SelectTrigger className="h-8 w-48 text-xs"><SelectValue /></SelectTrigger>
                           <SelectContent>
+                            <SelectItem value="analysis">Основной анализ</SelectItem>
                             <SelectItem value="avatars">Аватары</SelectItem>
                             <SelectItem value="user_docs">Документы пользователя</SelectItem>
                             <SelectItem value="project_docs">Документы проектов</SelectItem>
@@ -474,7 +480,34 @@ export function S3Settings({ settings, setSettings, isPending }: { settings: Env
                     ))}
                   </datalist>
 
-                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+                    <div className="space-y-2 rounded-md border p-3">
+                      <Label>Бакет анализа</Label>
+                      <Input
+                        list="s3-bucket-list"
+                        value={settings.s3BucketName || ''}
+                        onChange={(e) => setSettings({ ...settings, s3BucketName: e.target.value })}
+                        placeholder="analysis-bucket"
+                        disabled={isPending}
+                      />
+                      <Select
+                        value={settings.s3ActivePresetId || '__active__'}
+                        onValueChange={(value) => setSettings({ ...settings, s3ActivePresetId: value === '__active__' ? '' : value })}
+                        disabled={isPending}
+                      >
+                        <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Активное" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="__active__">Активное хранилище</SelectItem>
+                          {presets.map((p) => (
+                            <SelectItem key={`analysis-preset-${p.id}`} value={p.id}>{p.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <div className="flex items-center space-x-2">
+                        <Switch id="analysis-public" checked={settings.s3BucketIsPublic} onCheckedChange={(checked) => setSettings({ ...settings, s3BucketIsPublic: checked })} disabled={isPending} />
+                        <Label htmlFor="analysis-public" className="text-xs">Публичный</Label>
+                      </div>
+                    </div>
                     <div className="space-y-2 rounded-md border p-3">
                       <Label>Бакет аватаров</Label>
                       <Input

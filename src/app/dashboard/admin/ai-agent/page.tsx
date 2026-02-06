@@ -8,11 +8,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Save, Bot, Thermometer, BrainCircuit, Link, Trash2, PlusCircle, DownloadCloud, Info, FileJson, Edit, ChevronsUpDown } from "lucide-react";
+import { Loader2, Save, Bot, BrainCircuit, Link, Trash2, PlusCircle, DownloadCloud, Info, FileJson, Edit, ChevronsUpDown } from "lucide-react";
 import { getAiAgentConfig, updateAiAgentConfig, type AiAgentConfig } from '@/actions/adminActions';
 import { useAppContext } from '@/contexts/AppContext';
 import { Switch } from '@/components/ui/switch';
-import { Slider } from '@/components/ui/slider';
 import { Separator } from '@/components/ui/separator';
 import { ModelConfigDialog } from '@/components/admin/dialogs/ModelConfigDialog';
 import { AddModelFromProviderDialog } from '@/components/admin/dialogs/AddModelFromProviderDialog';
@@ -315,15 +314,8 @@ const moveEngine = (engine: string, direction: 'up' | 'down') => {
                   </AlertDialog>
                 </div>
             </CardHeader>
-            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
-                <div className="space-y-2">
-                     <Label className="flex items-center gap-2"><Thermometer className="h-4 w-4"/>Температура (креативность)</Label>
-                     <div className="flex items-center gap-2">
-                        <Slider value={[modelInfo.temperature]} onValueChange={(v) => handleModelConfigChange(index, 'temperature', v[0])} min={0} max={2} step={0.1} disabled={isPending}/>
-                        <Input type="number" className="w-20 text-center" value={modelInfo.temperature} onChange={e => handleModelConfigChange(index, 'temperature', Number(e.target.value))} disabled={isPending}/>
-                     </div>
-                </div>
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 items-center pt-6">
+            <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 items-center">
                     <div className="flex items-center space-x-2"><Switch id={`thoughts-${index}`} checked={modelInfo.supportsThoughts} onCheckedChange={c => handleModelConfigChange(index, 'supportsThoughts', c)} /><Label htmlFor={`thoughts-${index}`}>Мысли</Label></div>
                     <div className="flex items-center space-x-2"><Switch id={`images-${index}`} checked={modelInfo.canGenerateImages} onCheckedChange={c => handleModelConfigChange(index, 'canGenerateImages', c)} /><Label htmlFor={`images-${index}`}>Картинки</Label></div>
                     <div className="flex items-center space-x-2"><Switch id={`audio-${index}`} checked={modelInfo.canProcessAudio} onCheckedChange={c => handleModelConfigChange(index, 'canProcessAudio', c)} /><Label htmlFor={`audio-${index}`}>Аудио</Label></div>

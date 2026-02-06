@@ -83,6 +83,7 @@ export function PurchaseCreditsDialog({ isOpen, onClose, selectedPackage }: Purc
     const [receiptFile, setReceiptFile] = useState<File | null>(null);
     const sbpPhone = proConfig.sbpPhone || '+79114185037';
     const sbpBank = proConfig.sbpBank || 'Сбербанк';
+    const sbpLink = proConfig.sbpPaymentLink || '';
 
 
     useEffect(() => {
@@ -240,7 +241,7 @@ export function PurchaseCreditsDialog({ isOpen, onClose, selectedPackage }: Purc
                 }
                 toast({
                     title: 'Чек отправлен',
-                    description: 'Проверка оплаты займет до 24 часов.',
+                    description: result.message || 'Проверка оплаты займет до 24 часов.',
                 });
                 onClose();
             } catch (error: any) {
@@ -299,6 +300,13 @@ export function PurchaseCreditsDialog({ isOpen, onClose, selectedPackage }: Purc
                                     Переведите <strong>{selectedPackage.totalPrice.toLocaleString('ru-RU')} ₽</strong> по номеру {sbpPhone}.
                                 </div>
                                 <div className="text-xs text-muted-foreground">Банк получателя: {sbpBank}.</div>
+                                {sbpLink && (
+                                  <div>
+                                    <Button asChild variant="outline" size="sm">
+                                      <a href={sbpLink} target="_blank" rel="noreferrer">Открыть ссылку СБП</a>
+                                    </Button>
+                                  </div>
+                                )}
                                 <div className="flex items-center gap-2">
                                     <input
                                         type="file"
@@ -309,8 +317,8 @@ export function PurchaseCreditsDialog({ isOpen, onClose, selectedPackage }: Purc
                                     {receiptFile && <span className="text-xs text-muted-foreground">{receiptFile.name}</span>}
                                 </div>
                                 <div className="text-xs text-muted-foreground flex items-center gap-2">
-                                    <ShieldCheck className="h-4 w-4" />
-                                    Проверка платежа занимает до 24 часов.
+                                  <ShieldCheck className="h-4 w-4" />
+                                    Проверка платежа занимает до 24 часов. Кредиты доступны сразу.
                                 </div>
                             </AlertDescription>
                         </Alert>

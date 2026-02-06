@@ -80,11 +80,15 @@ function collectFunctions(sourceFile: SourceFile): FunctionEntry[] {
 }
 
 function getVariableKind(decl: VariableDeclaration): string {
-  try {
-    return decl.getDeclarationKind();
-  } catch {
-    return 'const';
+  const list = decl.getFirstAncestorByKind(SyntaxKind.VariableDeclarationList) as any;
+  if (list?.getDeclarationKind) {
+    return list.getDeclarationKind();
   }
+  const statement: any = decl.getVariableStatement?.();
+  if (statement?.getDeclarationKind) {
+    return statement.getDeclarationKind();
+  }
+  return 'const';
 }
 
 function collectVariables(sourceFile: SourceFile): VariableEntry[] {

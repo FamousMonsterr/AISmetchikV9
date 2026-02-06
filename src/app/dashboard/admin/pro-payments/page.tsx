@@ -2,11 +2,11 @@
 // @ts-nocheck
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, useTransition } from 'react';
+import { useCallback, useEffect, useState, useTransition } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, RefreshCcw, BadgeDollarSign, Check, X } from 'lucide-react';
+import { Loader2, RefreshCcw, Check, X, BadgeDollarSign } from 'lucide-react';
 import { useAppContext } from '@/contexts/AppContext';
 import { getProSubscriptionOrders, approveProSubscriptionOrder, rejectProSubscriptionOrder } from '@/actions/proSubscriptionActions';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -17,7 +17,7 @@ import { ru } from 'date-fns/locale';
 const statusLabels: Record<string, string> = {
   pending: 'Ожидает проверки',
   approved: 'Подтверждено',
-  auto_approved: 'Автоподтверждено',
+  auto_approved: 'Авто-подтверждено',
   rejected: 'Отклонено',
   invoice_issued: 'Счет выставлен',
 };
@@ -27,7 +27,7 @@ export default function ProPaymentsAdminPage() {
   const { toast } = useToast();
   const [orders, setOrders] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'invoice_issued' | 'approved' | 'auto_approved' | 'rejected'>('pending');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'invoice_issued' | 'approved' | 'rejected' | 'auto_approved'>('pending');
   const [isActionPending, startTransition] = useTransition();
 
   const loadOrders = useCallback(async () => {
@@ -91,7 +91,7 @@ export default function ProPaymentsAdminPage() {
       <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <CardTitle className="flex items-center gap-2"><BadgeDollarSign className="h-5 w-5" /> Оплаты PRO</CardTitle>
-          <CardDescription>Проверяйте оплаты и подтверждайте подписки.</CardDescription>
+          <CardDescription>Проверяйте оплаты подписок PRO.</CardDescription>
         </div>
         <div className="flex flex-wrap gap-2">
           {filters.map((filter) => (
@@ -139,13 +139,16 @@ export default function ProPaymentsAdminPage() {
                   const docUrl = order.receiptUrl || order.invoiceUrl;
                   const methodLabel = order.paymentMethod === 'legal' ? 'Юр. лицо' : 'СБП';
                   const statusLabel = statusLabels[order.status] || order.status;
+                  const durationLabel = order.isLifetime
+                    ? `Пожизненный (${order.planMonths} мес.)`
+                    : `${order.planMonths} мес.`;
                   return (
                     <TableRow key={order._id}>
                       <TableCell>
                         <div className="font-medium">{order.userEmail || order.userDisplayName || order.userId}</div>
                       </TableCell>
                       <TableCell>{methodLabel}</TableCell>
-                      <TableCell>{order.isLifetime ? 'Пожизненно' : `${order.planMonths} мес.`}</TableCell>
+                      <TableCell>{durationLabel}</TableCell>
                       <TableCell>{order.amount?.toLocaleString('ru-RU')} ₽</TableCell>
                       <TableCell><Badge variant="outline">{statusLabel}</Badge></TableCell>
                       <TableCell>

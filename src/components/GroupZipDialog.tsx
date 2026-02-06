@@ -22,7 +22,6 @@ import ActTemplate from '@/components/pdf/ActTemplate';
 import Ks2Template from '@/components/pdf/Ks2Template';
 import Ks3Template from '@/components/pdf/Ks3Template';
 import Ks6aTemplate from '@/components/pdf/Ks6aTemplate';
-import templateCatalog from '@/lib/quote-templates.json';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import { pdf } from '@react-pdf/renderer';
@@ -30,6 +29,8 @@ import { format } from 'date-fns';
 import { Loader2 } from 'lucide-react';
 import { useUserTemplates } from '@/hooks/use-user-templates';
 import type { TemplateStyleConfig } from '@/lib/template-utils';
+import { useDocumentTemplates } from '@/hooks/use-document-templates';
+import { filterTemplatesForPlan, resolveDefaultTemplateId } from '@/lib/document-template-utils';
 
 
 type DocumentType = 'proposal' | 'invoice' | 'contract' | 'act' | 'ks2' | 'ks3' | 'ks6a';
@@ -43,13 +44,6 @@ interface GroupZipDialogProps {
   projects: HistoryRequest[];
   companies: Company[];
 }
-
-const templateAccess = {
-  Free: ['free'],
-  PRO: ['free', 'pro'],
-  Business: ['free', 'pro', 'business'],
-  Enterprise: ['free', 'pro', 'business'],
-} as const;
 
 const sanitizeFileName = (name: string) => name.replace(/[\\/:*?"<>|]/g, '_').replace(/\s+/g, ' ').trim();
 
@@ -85,6 +79,7 @@ export function GroupZipDialog({ isOpen, onClose, projects, companies }: GroupZi
   const [isGenerating, startGenerating] = useTransition();
 
   const { templates: customTemplates } = useUserTemplates({ enabled: isOpen });
+  const { templates: globalTemplates, settings: templateSettings } = useDocumentTemplates({ enabled: isOpen });
   const customProposalTemplates = useMemo(
     () => customTemplates.filter((template) => template.docType === 'proposal'),
     [customTemplates],
@@ -93,27 +88,36 @@ export function GroupZipDialog({ isOpen, onClose, projects, companies }: GroupZi
     () => new Map(customProposalTemplates.map((template) => [template.id, template])),
     [customProposalTemplates],
   );
+  const globalTemplatesById = useMemo(
+    () => new Map(globalTemplates.map((template) => [template.id, template])),
+    [globalTemplates],
+  );
 
   const resolveTemplateIdFor = (type: DocumentType) => {
-    const allowed = templateAccess[effectivePlan ?? 'Free'] || ['free'];
-    const baseOptions = templateCatalog.filter(template => template.docType === type && allowed.includes(template.status as (typeof allowed)[number]));
+    const baseOptions = filterTemplatesForPlan(globalTemplates, templateSettings, effectivePlan, type as any);
     const customOptions = type === 'proposal' && effectivePlan !== 'Free' ? customProposalTemplates : [];
     const options = [...baseOptions, ...customOptions];
-    return user?.documentTemplates?.[type] || options[0]?.id || (type === 'invoice' ? 'invoice-1c-v1' : type === 'contract' ? 'contract-base-v1' : 'base-template-v1');
+    const fallbackId = type === 'invoice' ? 'invoice-1c-v1' : type === 'contract' ? 'contract-base-v1' : 'base-template-v1';
+    const defaultId = resolveDefaultTemplateId(templateSettings, effectivePlan, type as any, options[0]?.id || fallbackId);
+    return user?.documentTemplates?.[type] || defaultId || fallbackId;
   };
 
 
   const templateOptions = useMemo(() => {
-    const allowed = templateAccess[effectivePlan ?? 'Free'] || ['free'];
-    const baseOptions = templateCatalog.filter((template) => template.docType === docType && allowed.includes(template.status as (typeof allowed)[number]));
+    const baseOptions = filterTemplatesForPlan(globalTemplates, templateSettings, effectivePlan, docType as any);
     const customOptions = docType === 'proposal' && effectivePlan !== 'Free' ? customProposalTemplates : [];
+    if (effectivePlan === 'Free') {
+      const fallbackId = docType === 'invoice' ? 'invoice-1c-v1' : docType === 'contract' ? 'contract-base-v1' : 'base-template-v1';
+      const defaultId = resolveDefaultTemplateId(templateSettings, effectivePlan, docType as any, baseOptions[0]?.id || fallbackId);
+      return [...baseOptions.filter((tpl) => tpl.id === defaultId)];
+    }
     return [...baseOptions, ...customOptions];
-  }, [docType, effectivePlan, customProposalTemplates]);
+  }, [docType, effectivePlan, customProposalTemplates, globalTemplates, templateSettings]);
 
   const resolvedTemplateId = useMemo(() => {
     return activeTemplateId || resolveTemplateIdFor(docType);
   }, [activeTemplateId, docType, effectivePlan, user, customProposalTemplates]);
-  const activeTemplateConfig = customTemplatesById.get(resolvedTemplateId) || null;
+  const activeTemplateConfig = (customTemplatesById.get(resolvedTemplateId) || globalTemplatesById.get(resolvedTemplateId) || null) as TemplateStyleConfig | null;
 
   const groupName = useMemo(() => {
     const fallback = projects[0]?.analysisDetails?.objectName || projects[0]?.fileName || 'группа';

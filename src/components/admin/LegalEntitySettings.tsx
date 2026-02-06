@@ -14,12 +14,16 @@ import { useAppContext } from '@/contexts/AppContext';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { BottomGradient, LabelInputContainer } from '@/components/ui/aceternity-ui';
 import { Input } from '@/components/ui/input';
+import { suggestCompanyDetails, type DadataSuggestion } from '@/actions/companyActions';
 
 export function LegalEntitySettings() {
   const { toast } = useToast();
   const { user } = useAppContext();
   const [isLoading, setIsLoading] = useState(true);
   const [isPending, startTransition] = useTransition();
+  const [dadataQuery, setDadataQuery] = useState('');
+  const [dadataSuggestions, setDadataSuggestions] = useState<DadataSuggestion[]>([]);
+  const [isDadataLoading, setIsDadataLoading] = useState(false);
 
   const form = useForm<LegalEntity>({
     resolver: zodResolver(LegalEntitySchema),
@@ -59,6 +63,23 @@ export function LegalEntitySettings() {
     fetchSettings();
   }, [toast, form, user]);
 
+  useEffect(() => {
+    const query = dadataQuery.trim();
+    if (!/^\d{10,12}$/.test(query)) {
+      setDadataSuggestions([]);
+      return;
+    }
+    setIsDadataLoading(true);
+    suggestCompanyDetails(query)
+      .then((result) => {
+        setDadataSuggestions(result.suggestions || []);
+      })
+      .catch(() => {
+        setDadataSuggestions([]);
+      })
+      .finally(() => setIsDadataLoading(false));
+  }, [dadataQuery]);
+
   const onSubmit = (values: LegalEntity) => {
     if (!user || user.systemRole !== 'Super Admin') return;
     startTransition(async () => {
@@ -69,6 +90,17 @@ export function LegalEntitySettings() {
         toast({ title: "Ошибка", description: result.message, variant: "destructive" });
       }
     });
+  };
+
+  const handleSuggestionSelect = (suggestion: DadataSuggestion) => {
+    const data = suggestion.data;
+    form.setValue('name', data?.name?.full_with_opf || suggestion.value || '');
+    form.setValue('inn', data?.inn || '');
+    form.setValue('kpp', data?.kpp || '');
+    form.setValue('legalAddress', data?.address?.value || '');
+    form.setValue('ceoName', data?.management?.name || '');
+    setDadataQuery(suggestion.value || '');
+    setDadataSuggestions([]);
   };
   
   if (isLoading) {
@@ -103,9 +135,35 @@ export function LegalEntitySettings() {
         <CardTitle className="flex items-center gap-2"><Building />Реквизиты юр. лица</CardTitle>
         <CardDescription>Эти данные будут использоваться в договорах-офертах и счетах на оплату.</CardDescription>
       </CardHeader>
-       <Form {...form}>
+      <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)}>
           <CardContent className="space-y-6">
+                <div className="space-y-2">
+                    <FormLabel>Поиск по ИНН (DaData)</FormLabel>
+                    <div className="relative">
+                        <Input
+                          value={dadataQuery}
+                          onChange={(e) => setDadataQuery(e.target.value)}
+                          placeholder="Введите ИНН для автозаполнения"
+                          disabled={isPending}
+                        />
+                        {isDadataLoading && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin" />}
+                    </div>
+                    {dadataSuggestions.length > 0 && (
+                      <div className="rounded-md border bg-background shadow-sm max-h-48 overflow-auto">
+                        {dadataSuggestions.map((suggestion, idx) => (
+                          <button
+                            key={`${suggestion.value}-${idx}`}
+                            type="button"
+                            className="w-full text-left px-3 py-2 hover:bg-muted text-sm"
+                            onClick={() => handleSuggestionSelect(suggestion)}
+                          >
+                            {suggestion.value}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {renderFormField('name', 'Название организации / ФИО ИП')}
                     {renderFormField('ceoName', 'ФИО руководителя')}
