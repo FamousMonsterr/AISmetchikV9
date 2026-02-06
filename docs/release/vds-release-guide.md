@@ -15,7 +15,10 @@
 - `OPENROUTER_API_KEY`
 - `TELEGRAM_BOT_TOKEN`
 - `SMTP_*` (если нужны письма)
-- `S3_*` (если подключаете хранилище)
+- `S3_*` (если подключаете хранилище), включая:
+  - базовый бакет анализа: `S3_BUCKET_NAME`
+  - бакеты по назначению: `S3_AVATAR_BUCKET_NAME`, `S3_USER_DOCS_BUCKET_NAME`, `S3_PROJECT_DOCS_BUCKET_NAME`
+  - опциональные пресеты по назначению: `S3_AVATAR_PRESET_ID`, `S3_USER_DOCS_PRESET_ID`, `S3_PROJECT_DOCS_PRESET_ID`
 
 ## 3) Операции перед запуском
 1. Создать MongoDB индексы:
@@ -23,7 +26,11 @@
 2. Если это первый релиз после внедрения леджера кредитов:
    - `npm run credits:migrate`
 3. Проверить настройки `enterpriseEmail` в админке.
-4. Проверить S3 (endpoint/region/bucket/CORS).
+4. Проверить S3 (endpoint/region/бакеты/CORS), включая назначение бакетов:
+   - `analysis` — основной бакет
+   - `avatars` — аватары
+   - `user_docs` — счета/чеки/подписи/печати
+   - `project_docs` — КП/договоры/акты
 5. Включить `serverFunctionsEnabled` и режим `server` в админке при необходимости.
 
 ## 4) Запуск воркера
