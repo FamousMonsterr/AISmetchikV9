@@ -9,10 +9,18 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
+    "code:index": "node scripts/generate-code-index.ts",
     "migrate:firestore": "node scripts/migrate-firestore-to-mongo.ts",
     "mongo:indexes": "node scripts/create-mongo-indexes.ts",
+    "credits:migrate": "node scripts/migrate-credits-ledger.ts",
+    "credits:expire": "node scripts/expire-credits.ts",
+    "pro:auto-approve": "node scripts/auto-approve-pro-payments.ts",
+    "pro:monthly-credits": "node scripts/grant-pro-monthly-credits.ts",
     "worker:server-analysis": "node scripts/run-server-analysis-worker.js",
-    "bot:local": "TS_NODE_COMPILER_OPTIONS={\"module\":\"CommonJS\"} node -r ts-node/register/transpile-only -r tsconfig-paths/register scripts/telegram-bot.ts"
+    "bot:local": "TS_NODE_COMPILER_OPTIONS={\"module\":\"CommonJS\"} node -r ts-node/register/transpile-only -r tsconfig-paths/register scripts/telegram-bot.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@a2a-js/sdk": "^0.3.7",
@@ -93,14 +101,17 @@
     "@types/react-pdf": "^7.0.0",
     "@types/uuid": "^10.0.0",
     "@typescript-eslint/eslint-plugin": "^7.2.0",
+    "@playwright/test": "^1.49.2",
     "eslint": "^8",
     "eslint-config-next": "14.2.5",
     "null-loader": "^4.0.1",
     "postcss": "^8",
     "tailwindcss": "^3.4.1",
+    "ts-morph": "^22.0.0",
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^2.1.5"
   },
   "overrides": {
     "browserslist": "4.23.1"

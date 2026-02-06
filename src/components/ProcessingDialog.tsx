@@ -104,6 +104,7 @@ export function ProcessingDialog({ isOpen, onClose, file, model, temperature, in
     const cancelRequested = useRef(false);
     
     const modelInfo = useMemo(() => aiConfig.apiModels.find(m => m.value === model), [model]);
+    const effectiveTemperature = temperature ?? modelInfo?.temperature;
     const isSelectedOpenRouter = modelInfo?.provider === 'openrouter';
 
     // Determine which engine will be used
@@ -258,7 +259,7 @@ export function ProcessingDialog({ isOpen, onClose, file, model, temperature, in
                     body: JSON.stringify({
                         prompt: promptConfig.promptText,
                         file: fileDataForApi,
-                        model, temperature, includeThoughts,
+                        model, temperature: effectiveTemperature, includeThoughts,
                         userId: user!.uid,
                         pdfEngine: pdfEngineToUse, // Pass the determined engine
                     }),
@@ -427,7 +428,7 @@ export function ProcessingDialog({ isOpen, onClose, file, model, temperature, in
                             mimeType: file.type,
                             objectKey,
                             model,
-                            temperature,
+                            temperature: effectiveTemperature,
                             includeThoughts,
                         }),
                     });
@@ -478,7 +479,7 @@ export function ProcessingDialog({ isOpen, onClose, file, model, temperature, in
         };
         
         processFile();
-    }, [isOpen, file, user, isSelectedOpenRouter, effectivePdfEngine, model, temperature, includeThoughts, toast, router, onClose, setCurrentProject, serverSettingsLoaded, shouldUseServerPipeline, processingProjectId, objectId, objectName, onProjectProcessed]);
+    }, [isOpen, file, user, isSelectedOpenRouter, effectivePdfEngine, model, effectiveTemperature, includeThoughts, toast, router, onClose, setCurrentProject, serverSettingsLoaded, shouldUseServerPipeline, processingProjectId, objectId, objectName, onProjectProcessed]);
 
     const handleStop = async () => {
         if (!user) return;

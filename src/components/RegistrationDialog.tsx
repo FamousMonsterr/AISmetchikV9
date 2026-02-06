@@ -172,7 +172,7 @@ export function RegistrationDialog({ isOpen, onClose, initialPromoCode }: Regist
                                 <Gift className="h-4 w-4 text-green-600"/>
                                 <AlertTitle className="text-green-800">Бонус от друга!</AlertTitle>
                                 <AlertDescription className="text-green-700">
-                                   Вам будет начислено 100 бонусных кредитов на 90 дней.
+                                   Вам будет открыт доступ к PRO на {promoConfig.referralProgram.refereeBonus.proTrialDays} дней.
                                 </AlertDescription>
                             </Alert>
                         )}

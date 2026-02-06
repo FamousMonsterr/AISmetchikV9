@@ -8,6 +8,7 @@ import { createServerAnalysisJob } from '@/server-functions/analysis/jobService'
 import { runServerAnalysisJob } from '@/server-functions/analysis/jobRunner';
 import { SERVER_ANALYSIS_CREDIT_COST } from '@/server-functions/config';
 import { logProjectEvent } from '@/lib/logger';
+import { getCreditSummary } from '@/services/credits';
 
 const RequestSchema = z.object({
   userId: z.string().min(1),
@@ -49,8 +50,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Серверная обработка недоступна для текущего тарифа.' }, { status: 403 });
     }
 
-    const credits = userData.credits || 0;
-    if (credits < SERVER_ANALYSIS_CREDIT_COST) {
+    const creditSummary = await getCreditSummary(payload.userId, { refresh: true });
+    if (creditSummary.total < SERVER_ANALYSIS_CREDIT_COST) {
       return NextResponse.json({ error: 'Недостаточно кредитов для запуска серверного анализа.' }, { status: 402 });
     }
 

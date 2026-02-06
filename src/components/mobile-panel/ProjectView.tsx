@@ -43,7 +43,7 @@ export const ProjectView = ({ project: initialProject, onBack }: ProjectViewProp
     // Totals calculation based on current state
     const projectTotals = useMemo(() => {
         const specsWithManualSmr = project.outputSpecifications.map(item => {
-            if (item.itemType === 'device' || item.itemType === 'cable' || item.itemType === 'other') {
+            if (item.itemType === 'device' || item.itemType === 'cable' || item.itemType === 'cable_support' || item.itemType === 'other') {
                  // The actual distribution logic would be more complex
                  // For now, we can just override or use a simple distribution
                  // This is where the output from MobileCalculator's onSmrCostChange is used.

@@ -8,9 +8,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Copy, Bot, User as UserIcon, Send, Save, Loader2, Mail, Briefcase, KeySquare, Sun, Moon, Monitor } from 'lucide-react';
+import { Copy, Bot, User as UserIcon, Send, Save, Loader2, Mail, Briefcase, KeySquare, Sun, Moon, Monitor, Crown } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
-import { updateUserProfile } from '@/actions/userActions';
+import { updateUserProfile, updateMarketingConsent } from '@/actions/userActions';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { CheckCircle } from 'lucide-react';
@@ -22,6 +22,8 @@ import { syncTelegramChatId } from '@/actions/telegramActions';
 import { useTheme } from 'next-themes';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { SupportChat } from '@/components/support/SupportChat';
+import { Switch } from '@/components/ui/switch';
+import { UpgradeAccountDialog } from '@/components/UpgradeAccountDialog';
 import templateCatalog from '@/lib/quote-templates.json';
 
 
@@ -29,6 +31,8 @@ export default function ProfileTab() {
   const { user, setUser, telegramUser, effectivePlan } = useAppContext();
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
+  const [isUpgradeOpen, setIsUpgradeOpen] = useState(false);
+  const [upgradeTargetRole, setUpgradeTargetRole] = useState<'PRO' | 'Business' | 'Enterprise'>('PRO');
 
   const [displayName, setDisplayName] = useState(user?.displayName || '');
   const [telegramUsernameState, setTelegramUsernameState] = useState(user?.telegramUsername || '');
@@ -143,6 +147,32 @@ export default function ProfileTab() {
         });
       } else {
         toast({ title: "Ошибка", description: result.message, variant: "destructive" });
+      }
+    });
+  };
+
+  const openUpgradeDialog = (role: 'PRO' | 'Business' | 'Enterprise') => {
+    setUpgradeTargetRole(role);
+    setIsUpgradeOpen(true);
+  };
+
+  const currentPlan = effectivePlan || 'Free';
+  const nextPlan = currentPlan === 'Free' ? 'PRO' : currentPlan === 'PRO' ? 'Business' : currentPlan === 'Business' ? 'Enterprise' : null;
+  const nextPlanLabel = nextPlan === 'Business'
+    ? 'Business (от 3 пользователей)'
+    : nextPlan === 'Enterprise'
+      ? 'Enterprise (от 25 пользователей)'
+      : nextPlan;
+
+  const handleMarketingToggle = (checked: boolean) => {
+    if (!user) return;
+    startTransition(async () => {
+      const result = await updateMarketingConsent({ userId: user.uid, agreedToMarketing: checked });
+      if (result.success) {
+        setUser({ ...user, agreedToMarketing: checked });
+        toast({ title: 'Настройки рассылок обновлены', description: result.message });
+      } else {
+        toast({ title: 'Ошибка', description: result.message, variant: 'destructive' });
       }
     });
   };
@@ -362,6 +392,15 @@ export default function ProfileTab() {
             <Label>Кредиты</Label>
             <Input value={user?.credits || 0} readOnly disabled />
           </LabelInputContainer>
+          {nextPlan && (
+            <div className="space-y-2">
+              <Label>Следующий тариф</Label>
+              <Button onClick={() => openUpgradeDialog(nextPlan)} className="w-full justify-start">
+                <Crown className="mr-2 h-4 w-4" />
+                Перейти на {nextPlanLabel}
+              </Button>
+            </div>
+          )}
         </CardContent>
          <CardFooter>
             <button
@@ -376,6 +415,25 @@ export default function ProfileTab() {
             </button>
         </CardFooter>
       </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Рассылки и бонусы</CardTitle>
+          <CardDescription>Управляйте подпиской на рассылку и бонусными кредитами.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between rounded-lg border p-4">
+            <div>
+              <p className="font-medium">Подписка на рассылку</p>
+              <p className="text-sm text-muted-foreground">
+                Активная подписка дает +10 бонусных кредитов в месяц на PRO. Отключение вступит в силу со следующего периода.
+              </p>
+            </div>
+            <Switch checked={!!user?.agreedToMarketing} onCheckedChange={handleMarketingToggle} disabled={isPending} />
+          </div>
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader>
           <CardTitle>Настройки темы</CardTitle>
@@ -419,7 +477,7 @@ export default function ProfileTab() {
               <AlertTitle>Недоступно на Free</AlertTitle>
               <AlertDescription className="space-y-2">
                 <div>Настройка шаблонов доступна на PRO и выше.</div>
-                <Button size="sm" variant="outline" onClick={() => toast({ title: 'Запрос отправлен', description: 'Мы включим 3-дневный пробный доступ и уведомим вас.' })}>
+                <Button size="sm" variant="outline" onClick={() => openUpgradeDialog('PRO')}>
                   Запросить 3 дня PRO
                 </Button>
               </AlertDescription>
@@ -498,7 +556,7 @@ export default function ProfileTab() {
               <AlertTitle>Недоступно на Free</AlertTitle>
               <AlertDescription className="space-y-2">
                 <div>Загрузка подписи и печати доступна на PRO и выше.</div>
-                <Button size="sm" variant="outline" onClick={() => toast({ title: 'Запрос отправлен', description: 'Мы включим 3-дневный пробный доступ и уведомим вас.' })}>
+                <Button size="sm" variant="outline" onClick={() => openUpgradeDialog('PRO')}>
                   Запросить 3 дня PRO
                 </Button>
               </AlertDescription>
@@ -594,6 +652,12 @@ export default function ProfileTab() {
       </Card>
 
       <SupportChat />
+
+      <UpgradeAccountDialog
+        isOpen={isUpgradeOpen}
+        onClose={() => setIsUpgradeOpen(false)}
+        targetRole={upgradeTargetRole}
+      />
       
     </div>
   );

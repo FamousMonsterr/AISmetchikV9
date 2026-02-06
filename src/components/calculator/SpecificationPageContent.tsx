@@ -19,7 +19,6 @@ import { UpgradeAccountDialog } from '@/components/UpgradeAccountDialog';
 import { isEqual } from 'lodash';
 import { collection, getDocs, query, where, doc, onSnapshot, orderBy, getDoc } from '@/lib/mongoFirestore';
 import { db } from '@/lib/firebase';
-import aiConfig from '@/lib/ai-config.json';
 import { ProjectUpdateDialog } from '@/components/ProjectUpdateDialog';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -34,6 +33,8 @@ import { suggestItemPrices } from '@/ai/flows/suggest-item-prices-flow';
 import { AIProcessingDialog } from '@/components/AIProcessingDialog';
 import { getDefaultModel, getVoiceModel, generateJson } from '@/services/ai';
 import aiConstructorConfig from '@/lib/ai-constructor-config.json';
+import { PlanBadge } from '@/components/PlanBadge';
+import { getPlanModelOptions, resolvePlanModelId } from '@/lib/plan-models';
 
 import { SpecificationTable } from '@/components/calculator/SpecificationTable';
 import { AiRecommendations } from '@/components/calculator/AiRecommendations';
@@ -48,9 +49,9 @@ import { InvoiceHistory } from '../InvoiceHistory';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { ProcessingDialog } from '@/components/ProcessingDialog';
 import { GroupZipDialog } from '@/components/GroupZipDialog';
+import { classifyItemType } from '@/lib/item-type-classifier';
 
 
-const { apiModels } = aiConfig;
 
 export const dynamic = 'force-dynamic';
 
@@ -101,7 +102,6 @@ export default function SpecificationPageContent({ onBackToProjects }: Specifica
 
   // AI settings state moved up to the parent
   const [selectedModel, setSelectedModel] = useState(currentProject?.modelUsed || '');
-  const [temperature, setTemperature] = useState(0.2);
   const [includeThoughts, setIncludeThoughts] = useState(false);
   const [aiDialogState, setAiDialogState] = useState<{ isOpen: boolean; title: string; description: string; stages: { key: string; text: string }[], result: { success: boolean; message: string; rawResponse?: any; requestDetails?: any; } | null; currentStage?: string; }>({
     isOpen: false,
@@ -137,6 +137,12 @@ export default function SpecificationPageContent({ onBackToProjects }: Specifica
     return actionHistoryByProject[currentProject.id] ?? [];
   }, [actionHistoryByProject, currentProject?.id]);
   const isPro = effectivePlan === 'PRO' || effectivePlan === 'Business' || effectivePlan === 'Enterprise';
+  const canSelectModel = effectivePlan === 'Business' || effectivePlan === 'Enterprise';
+  const planKey = effectivePlan === 'PRO' ? 'pro' : 'free';
+  const planPreference = user?.planModelPreferences?.[planKey];
+  const planModelOptions = useMemo(() => getPlanModelOptions(effectivePlan), [effectivePlan]);
+  const planModelIds = useMemo(() => planModelOptions.map((model: any) => model.value), [planModelOptions]);
+  const resolvedPlanModel = useMemo(() => resolvePlanModelId(effectivePlan, planPreference), [effectivePlan, planPreference]);
   const proButtonClass = isPro ? "border-amber-300 bg-amber-50 text-amber-900 hover:bg-amber-100" : "";
   const withProLabel = (label: string) => isPro ? label : `${label} (PRO)`;
   const groupActionButtonClass = cn(
@@ -372,11 +378,19 @@ export default function SpecificationPageContent({ onBackToProjects }: Specifica
 
   useEffect(() => {
     if (!currentProject) return;
-    const model = currentProject.modelUsed || '';
-    setSelectedModel(model);
-    const modelConfig = aiConfig.apiModels.find(m => m.value === model);
-    setTemperature(modelConfig?.temperature || 0.2);
-  }, [currentProject?.id]);
+    let nextModel = currentProject.modelUsed || '';
+    if (!canSelectModel) {
+      nextModel = resolvedPlanModel;
+    } else if (planModelIds.length > 0 && !planModelIds.includes(nextModel)) {
+      nextModel = planModelIds.includes(resolvedPlanModel) ? resolvedPlanModel : planModelIds[0];
+    }
+    if (nextModel && nextModel !== selectedModel) {
+      setSelectedModel(nextModel);
+    }
+    if (nextModel && nextModel !== currentProject.modelUsed) {
+      updateCurrentProject({ modelUsed: nextModel }, `Модель AI установлена на ${nextModel}`);
+    }
+  }, [currentProject?.id, canSelectModel, resolvedPlanModel, planModelIds, selectedModel, updateCurrentProject]);
 
   useEffect(() => {
     if (!currentGroup || currentGroup.length === 0) return;
@@ -398,9 +412,8 @@ export default function SpecificationPageContent({ onBackToProjects }: Specifica
   }, [currentProject?.id]);
   
   const handleModelChange = (model: string) => {
+      if (!canSelectModel) return;
       setSelectedModel(model);
-      const modelConfig = aiConfig.apiModels.find(m => m.value === model);
-      setTemperature(modelConfig?.temperature || 0.2);
       updateCurrentProject({ modelUsed: model }, `Модель AI изменена на ${model}`);
   };
 
@@ -833,6 +846,29 @@ export default function SpecificationPageContent({ onBackToProjects }: Specifica
               throw new Error("Сумма СМР должна быть больше 0.");
             }
 
+            const pricingAnalysisDetails = useGroupScope
+              ? targets.map(project => ({
+                  projectId: project.id,
+                  fileName: project.fileName,
+                  analysisDetails: project.analysisDetails || null,
+                }))
+              : (currentProject.analysisDetails || null);
+
+            const pricingQuoteConfig = useGroupScope
+              ? targets.map(project => ({
+                  projectId: project.id,
+                  fileName: project.fileName,
+                  quoteConfig: project.quoteConfig || initialQuoteConfig,
+                }))
+              : (currentProject.quoteConfig || initialQuoteConfig);
+
+            const pricingCalculatorInputs = {
+              complexityMultiplier: lastComplexityMultiplierRef.current ?? 1,
+              maxInstallationHeight: currentProject.analysisDetails?.maxInstallationHeight || null,
+              groupMode: Boolean(useGroupScope),
+              projectsInScope: targets.length,
+            };
+
             setAiDialogState(prev => ({...prev, currentStage: 'ai'}));
             const result = await generateJson({
                 prompt: aiConstructorConfig.prompts.find(p => p.id === 'suggestPricesPrompt')?.promptText || '',
@@ -841,6 +877,9 @@ export default function SpecificationPageContent({ onBackToProjects }: Specifica
                 groupedItems,
                 totalSmrCost,
                 currency: 'RUB',
+                analysisDetails: pricingAnalysisDetails,
+                quoteConfig: pricingQuoteConfig,
+                calculatorInputs: pricingCalculatorInputs,
             });
             
             setAiDialogState(prev => ({
@@ -968,19 +1007,21 @@ export default function SpecificationPageContent({ onBackToProjects }: Specifica
     setAiDialogState(prev => ({...prev, isOpen: false}));
   };
 
-  const { devicesCount, cableMeters } = useMemo(() => {
-    if (!currentProject) return { devicesCount: 0, cableMeters: 0 };
+  const { devicesCount, cableMeters, cableSupportMeters } = useMemo(() => {
+    if (!currentProject) return { devicesCount: 0, cableMeters: 0, cableSupportMeters: 0 };
     
     let devices = 0;
     let cable = 0;
+    let cableSupport = 0;
 
     currentProject.outputSpecifications.forEach((item: SpecificationItem) => {
         if (item.isInformational) return;
         if (item.itemType === 'device') devices += item.quantityToInstall || 0;
         if (item.itemType === 'cable') cable += item.quantityToInstall || 0;
+        if (item.itemType === 'cable_support') cableSupport += item.quantityToInstall || 0;
     });
     
-    return { devicesCount: devices, cableMeters: cable };
+    return { devicesCount: devices, cableMeters: cable, cableSupportMeters: cableSupport };
 
   }, [currentProject]);
 
@@ -1048,19 +1089,7 @@ export default function SpecificationPageContent({ onBackToProjects }: Specifica
 
   const ensureItemType = (item: SpecificationItem): SpecificationItem => {
     if (item.itemType) return item;
-    const unit = (item.unit || 'шт').toLowerCase();
-    const lowerName = (item.name || '').toLowerCase();
-    let itemType: SpecificationItem['itemType'];
-    if (unit === 'м' || unit === 'метр' || lowerName.includes('кабель')) {
-      itemType = 'cable';
-    } else if (unit === 'шт' || unit === 'компл') {
-      itemType = 'device';
-    } else if (['стяжка', 'дюбель', 'бирка', 'скоба', 'трубка', 'гильза', 'наконечник'].some(c => lowerName.includes(c))) {
-      itemType = 'consumable';
-    } else {
-      itemType = 'other';
-    }
-    return { ...item, itemType };
+    return { ...item, itemType: classifyItemType(item.name, item.unit) };
   };
 
   const findInsertionIndex = (specs: SpecificationItem[], item: SpecificationItem) => {
@@ -1360,7 +1389,7 @@ export default function SpecificationPageContent({ onBackToProjects }: Specifica
             comment: item.comment || '',
             isInformational: false,
             isRecommended: false,
-            itemType: ['device', 'cable', 'consumable', 'other'].includes(item.itemType) ? item.itemType : 'other',
+            itemType: ['device', 'cable', 'cable_support', 'consumable', 'other'].includes(item.itemType) ? item.itemType : 'other',
           });
         });
       }
@@ -1625,7 +1654,6 @@ export default function SpecificationPageContent({ onBackToProjects }: Specifica
                 actionType={refineAction}
                 project={currentProject}
                 selectedModel={selectedModel}
-                temperature={temperature}
                 includeThoughts={includeThoughts}
                 onProjectUpdate={handleAiProjectUpdate}
             />
@@ -1654,7 +1682,6 @@ export default function SpecificationPageContent({ onBackToProjects }: Specifica
           onClose={handleGroupProcessingClose}
           file={groupUploadFile}
           model={selectedModel}
-          temperature={temperature}
           includeThoughts={includeThoughts}
           objectId={currentProject.objectId ?? null}
           objectName={currentProject.objectName ?? null}
@@ -1855,7 +1882,7 @@ export default function SpecificationPageContent({ onBackToProjects }: Specifica
                       >
                         <Plus className="h-4 w-4" />
                         <span className="ml-1 hidden sm:inline">{withProLabel("Добавить")}</span>
-                        {!isPro && <span className="ml-1 text-[10px] uppercase text-muted-foreground sm:hidden">PRO</span>}
+                        {!isPro && <PlanBadge plan="PRO" size="xs" className="ml-1 sm:hidden" />}
                       </Button>
                     </TabsList>
                   </Tabs>
@@ -1882,12 +1909,9 @@ export default function SpecificationPageContent({ onBackToProjects }: Specifica
               <AiAssistantSettings 
                 selectedModel={selectedModel}
                 onModelChange={handleModelChange}
-                temperature={temperature}
-                onTemperatureChange={setTemperature}
                 includeThoughts={includeThoughts}
                 onThoughtsChange={setIncludeThoughts}
                 onProFeatureClick={() => handleFeatureClick(false, 'PRO')}
-                onBusinessFeatureClick={() => handleFeatureClick(false, 'Business')}
               />
             </AccordionItem>
 
@@ -1896,6 +1920,7 @@ export default function SpecificationPageContent({ onBackToProjects }: Specifica
                     initialProjectData={currentProject} 
                     calculatedDevices={devicesCount} 
                     calculatedCable={cableMeters} 
+                    calculatedCableSupport={cableSupportMeters}
                     onProFeatureClick={() => handleFeatureClick(false, 'PRO')}
                     onApplyPricesFromPrivateBase={() => setIsPriceBaseDialogOpen(true)}
                 onSmrCostChange={setSmrCost}

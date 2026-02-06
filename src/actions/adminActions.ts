@@ -17,6 +17,7 @@ import { XMLParser, XMLBuilder } from 'fast-xml-parser';
 import { S3Client, PutObjectCommand, GetObjectCommand, GetBucketCorsCommand, PutBucketCorsCommand, DeleteBucketCorsCommand, ListBucketsCommand, CreateBucketCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { logUserAction, logAiApiCall, type ActionType } from '@/lib/logger';
+import { grantCredits, refundCredits } from '@/services/credits';
 import { startManagedBot, stopManagedBot, getBotRuntimeStatus, forceUnlockBot } from '@/server-functions/telegram/controller';
 import { registerTelegramWebhook, clearTelegramWebhook } from '@/server-functions/webhooks/telegram';
 
@@ -140,23 +141,22 @@ export const addCreditsToUser = async (data: z.infer<typeof AddCreditsSchema>): 
   try {
     const userRef = doc(db, 'users', targetUid);
     const userDoc = await getDoc(userRef);
-    
     if (!userDoc.exists()) {
         return { success: false, message: 'Пользователь не найден.' };
     }
 
-    const currentCredits = userDoc.data().credits || 0;
-    const newCredits = currentCredits + amount;
-
-    await updateDoc(userRef, { 
-        credits: newCredits,
-        updatedAt: serverTimestamp() 
+    const result = await grantCredits({
+        userId: targetUid,
+        amount,
+        type: 'purchased',
+        source: 'admin_add',
+        metadata: { adminId: currentUserId },
     });
 
     await logUserAction(currentUserId, 'ADMIN_ADD_CREDITS', {
       targetUserId: targetUid,
       amountAdded: amount,
-      newBalance: newCredits,
+      newBalance: result.summary.total,
     });
 
     return { success: true, message: `${amount} кредитов успешно начислено.` };
@@ -292,18 +292,16 @@ export const returnCreditAndResolveTicket = async (data: z.infer<typeof ResolveT
     const { ticketId, userId, creditAmount, currentUserId } = validation.data;
     
     const ticketRef = doc(db, 'requests', ticketId);
-    const userRef = doc(db, 'users', userId);
 
     try {
         const batch = writeBatch(db);
 
-        const userDoc = await getDoc(userRef);
-        if (!userDoc.exists()) {
-            throw new Error('Пользователь для возврата кредита не найден.');
-        }
-        const currentCredits = userDoc.data().credits || 0;
-        const newCredits = currentCredits + creditAmount;
-        batch.update(userRef, { credits: newCredits });
+        await refundCredits({
+            userId,
+            amount: creditAmount,
+            reason: 'ticket_refund',
+            metadata: { ticketId, adminId: currentUserId },
+        });
 
         batch.update(ticketRef, { 
             status: 'success', 
@@ -462,7 +460,7 @@ export const updatePrompts = async (currentUserId: string, newPrompts: Prompt[])
 // --- Trial Activation ---
 const ActivateTrialSchema = z.object({
   userId: z.string().min(1),
-  plan: z.enum(['PRO', 'Business', 'Enterprise']),
+  plan: z.enum(['PRO']),
 });
 
 export const activateTrial = async (data: z.infer<typeof ActivateTrialSchema>): Promise<{ success: boolean; message: string }> => {
@@ -493,6 +491,7 @@ export const activateTrial = async (data: z.infer<typeof ActivateTrialSchema>): 
             plan: plan, // Temporarily upgrade plan
             planExpiresAt: trialExpiresAt, 
             hasUsedTrial: true,
+            planSource: 'trial',
             updatedAt: serverTimestamp(),
         });
         
@@ -660,9 +659,21 @@ export const updateStandardSections = async (currentUserId: string, newSections:
 };
 
 // --- AI Agent Config Management ---
+export interface AiPlanModelConfig {
+  defaultModel?: string;
+  abTestModels?: string[];
+  availableModels?: string[];
+}
+
 export interface AiAgentConfig {
   providers: Record<string, { name: string; baseUrl: string; pdfProcessingPriority?: ('native' | 'mistral-ocr' | 'pdf-text')[] }>;
   apiModels: any[];
+  planModels?: {
+    free?: AiPlanModelConfig;
+    pro?: AiPlanModelConfig;
+    business?: AiPlanModelConfig;
+    enterprise?: AiPlanModelConfig;
+  };
 }
 
 

@@ -31,16 +31,46 @@ import { sendFileToTelegramUser } from '@/actions/telegramActions';
 const recommendedValues = {
     normDevicesPerShift: 24,
     normCablePerShift: 50, // Renamed from normTracePerShift
+    normCableSupportPerShift: 35,
     shiftCost: 3004,
     infraCost: 3996,
     marginPercent: 60,
     complexityMultiplier: 1.1,
 };
 
+const COMPLEXITY_MIN = 0.5;
+const COMPLEXITY_MAX = 10;
+
+const complexityPresets: Array<{ label: string; value: number }> = [
+    { label: 'До 3м', value: 1.0 },
+    { label: '4-6м', value: 1.2 },
+    { label: '6-10м', value: 1.4 },
+    { label: 'Сложный доступ', value: 1.8 },
+    { label: 'Высотные >10м', value: 2.2 },
+];
+
+const clampComplexity = (value: number) => {
+    if (!Number.isFinite(value)) return recommendedValues.complexityMultiplier;
+    return Math.min(COMPLEXITY_MAX, Math.max(COMPLEXITY_MIN, value));
+};
+
+const getRecommendedComplexityByHeight = (heightRaw?: string | null) => {
+    if (!heightRaw) return null;
+    const match = heightRaw.match(/(\d+(?:[.,]\d+)?)/);
+    if (!match) return null;
+    const height = Number(match[1].replace(',', '.'));
+    if (!Number.isFinite(height)) return null;
+    if (height <= 3) return 1.0;
+    if (height <= 6) return 1.2;
+    if (height <= 10) return 1.4;
+    return 1.8;
+};
+
 interface CalculatorProps {
     initialProjectData?: HistoryRequest | null;
     calculatedDevices: number;
     calculatedCable: number; // Renamed
+    calculatedCableSupport: number;
     onProFeatureClick: () => void;
     onApplyPricesFromPrivateBase: () => void;
     onSmrCostChange: (cost: number) => void; // Callback to notify parent of cost changes
@@ -76,6 +106,7 @@ export function Calculator(props: CalculatorProps) {
         initialProjectData,
         calculatedDevices,
         calculatedCable,
+        calculatedCableSupport,
         onProFeatureClick,
         onApplyPricesFromPrivateBase,
         onSmrCostChange,
@@ -91,7 +122,7 @@ export function Calculator(props: CalculatorProps) {
     type CostCalculationMethod = 'perShift' | 'perMonth';
     
     const numericFields = new Set([
-        'normDevicesPerShift', 'normCablePerShift',
+        'normDevicesPerShift', 'normCablePerShift', 'normCableSupportPerShift',
         'shiftCost', 'infraCost', 'marginPercent', 'bargainPercent', 'unforeseenPercent',
         'complexityMultiplier', 'pnrValue', 'agencyPercent', 'discountValue', 'monthlySalary',
     ]);
@@ -106,10 +137,9 @@ export function Calculator(props: CalculatorProps) {
     const isPro = effectivePlan === 'PRO' || effectivePlan === 'Business' || effectivePlan === 'Enterprise';
 
     useEffect(() => {
-        if (initialProjectData?.analysisDetails?.maxInstallationHeight) {
-            const heightStr = initialProjectData.analysisDetails.maxInstallationHeight;
-            if (heightStr.includes('6')) setInputValues(prev => ({ ...prev, complexityMultiplier: 1.2 }));
-            else if (heightStr.includes('4')) setInputValues(prev => ({ ...prev, complexityMultiplier: 1.1 }));
+        const recommendedByHeight = getRecommendedComplexityByHeight(initialProjectData?.analysisDetails?.maxInstallationHeight);
+        if (recommendedByHeight) {
+            setInputValues(prev => ({ ...prev, complexityMultiplier: clampComplexity(recommendedByHeight) }));
         }
     }, [initialProjectData]);
 
@@ -120,13 +150,14 @@ export function Calculator(props: CalculatorProps) {
     );
 
     const { totalInstallationCost: recommendedSmrCost } = useMemo(() => {
-        const { normDevicesPerShift, normCablePerShift, infraCost, marginPercent, complexityMultiplier } = inputValues;
+        const { normDevicesPerShift, normCablePerShift, normCableSupportPerShift, infraCost, marginPercent, complexityMultiplier } = inputValues;
         const deviceShifts = normDevicesPerShift > 0 ? calculatedDevices / normDevicesPerShift : 0;
         const cableShifts = normCablePerShift > 0 ? calculatedCable / normCablePerShift : 0;
-        const totalShifts = deviceShifts + cableShifts;
+        const cableSupportShifts = normCableSupportPerShift > 0 ? calculatedCableSupport / normCableSupportPerShift : 0;
+        const totalShifts = deviceShifts + cableShifts + cableSupportShifts;
         const totalInstallationCost = totalShifts * (calculatedShiftCost + infraCost) * (1 + marginPercent / 100) * complexityMultiplier;
         return { totalInstallationCost };
-    }, [inputValues, calculatedDevices, calculatedCable, calculatedShiftCost]);
+    }, [inputValues, calculatedDevices, calculatedCable, calculatedCableSupport, calculatedShiftCost]);
 
     const [manualSmrCost, setManualSmrCost] = useState<number | null>(null);
     const [desiredTotalInput, setDesiredTotalInput] = useState<string>('');
@@ -137,8 +168,9 @@ export function Calculator(props: CalculatorProps) {
             setManualSmrCost(externalUpdates.manualSmrCost ?? null);
         }
         if (typeof externalUpdates.complexityMultiplier === 'number') {
-            setInputValues(prev => ({ ...prev, complexityMultiplier: externalUpdates.complexityMultiplier as number }));
-            onComplexityChange?.(externalUpdates.complexityMultiplier as number);
+            const normalizedComplexity = clampComplexity(externalUpdates.complexityMultiplier as number);
+            setInputValues(prev => ({ ...prev, complexityMultiplier: normalizedComplexity }));
+            onComplexityChange?.(normalizedComplexity);
         }
         onExternalUpdatesApplied?.();
     }, [externalUpdates, onExternalUpdatesApplied, onComplexityChange]);
@@ -173,14 +205,18 @@ export function Calculator(props: CalculatorProps) {
     };
 
     const handleInputChange = (field: keyof typeof inputValues, value: string | number | boolean) => {
-        const finalValue = numericFields.has(field) ? Number(value) : value;
+        let finalValue = numericFields.has(field) ? Number(value) : value;
+        if (field === 'complexityMultiplier' && typeof finalValue === 'number') {
+            finalValue = clampComplexity(finalValue);
+        }
         setInputValues(prev => ({ ...prev, [field]: finalValue }));
         if (field === 'complexityMultiplier' && typeof finalValue === 'number') {
             onComplexityChange?.(finalValue);
         }
     };
     
-    const handleSliderChange = (value: number[]) => handleInputChange('complexityMultiplier', 1 + value[0] / 100);
+    const handleSliderChange = (value: number[]) => handleInputChange('complexityMultiplier', value[0]);
+    const handlePresetClick = (value: number) => handleInputChange('complexityMultiplier', value);
 
     const handleModeSwitch = (checked: boolean) => {
         const newMode = checked ? 'advanced' : 'simple';
@@ -282,16 +318,30 @@ export function Calculator(props: CalculatorProps) {
                     <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2"><Label>Количество приборов</Label><Input value={calculatedDevices} readOnly disabled/></div>
                         <div className="space-y-2"><Label>Метры кабеля</Label><Input value={calculatedCable} readOnly disabled/></div>
+                        <div className="space-y-2"><Label>Метры кабеленесущей конструкции</Label><Input value={calculatedCableSupport} readOnly disabled/></div>
                     </CardContent>
                 </Card>
                 <Card>
                     <CardHeader><CardTitle>2. Коэффициент сложности</CardTitle></CardHeader>
                     <CardContent>
                         <div className="flex items-center gap-4">
-                            <Slider value={[(inputValues.complexityMultiplier - 1) * 100]} max={100} step={5} onValueChange={handleSliderChange} />
+                            <Slider value={[inputValues.complexityMultiplier]} min={COMPLEXITY_MIN} max={COMPLEXITY_MAX} step={0.1} onValueChange={handleSliderChange} />
                             <span className="font-bold text-lg w-24 text-right">x{inputValues.complexityMultiplier.toFixed(2)}</span>
                         </div>
-                        <p className="text-xs text-muted-foreground mt-2">Рекомендации: x1.1 - работы до 4м; x1.2 - работы от 4м до 6м; x1.5 - сложные условия.</p>
+                        <div className="mt-3 flex flex-wrap gap-2">
+                            {complexityPresets.map((preset) => (
+                                <Button
+                                    key={preset.label}
+                                    type="button"
+                                    variant={Math.abs(inputValues.complexityMultiplier - preset.value) < 0.01 ? 'default' : 'outline'}
+                                    size="sm"
+                                    onClick={() => handlePresetClick(preset.value)}
+                                >
+                                    {preset.label} · x{preset.value.toFixed(1)}
+                                </Button>
+                            ))}
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-2">Диапазон: x0.5 - x10.0. Выберите пресет или настройте точное значение ползунком.</p>
                     </CardContent>
                 </Card>
                 {inputValues.mode === 'advanced' && (
@@ -299,7 +349,7 @@ export function Calculator(props: CalculatorProps) {
                         <Card>
                             <CardHeader><CardTitle>3. Нормы и ставки</CardTitle></CardHeader>
                             <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <fieldset className="space-y-4 p-4 border rounded-md"><legend className="text-sm font-medium -ml-1 px-1">Нормы выработки</legend><div className="space-y-2"><Label>Приборов в смену</Label><Input type="number" value={inputValues.normDevicesPerShift} onChange={e => handleInputChange('normDevicesPerShift', e.target.value)} /></div><div className="space-y-2"><Label>Кабеля в смену, м</Label><Input type="number" value={inputValues.normCablePerShift} onChange={e => handleInputChange('normCablePerShift', e.target.value)} /></div></fieldset>
+                                <fieldset className="space-y-4 p-4 border rounded-md"><legend className="text-sm font-medium -ml-1 px-1">Нормы выработки</legend><div className="space-y-2"><Label>Приборов в смену</Label><Input type="number" value={inputValues.normDevicesPerShift} onChange={e => handleInputChange('normDevicesPerShift', e.target.value)} /></div><div className="space-y-2"><Label>Кабеля в смену, м</Label><Input type="number" value={inputValues.normCablePerShift} onChange={e => handleInputChange('normCablePerShift', e.target.value)} /></div><div className="space-y-2"><Label>Кабеленесущих конструкций в смену, м</Label><Input type="number" value={inputValues.normCableSupportPerShift} onChange={e => handleInputChange('normCableSupportPerShift', e.target.value)} /></div></fieldset>
                                 <fieldset className="space-y-4 p-4 border rounded-md"><legend className="text-sm font-medium -ml-1 px-1">Стоимость смены</legend><RadioGroup value={inputValues.costCalculationMethod} onValueChange={(v) => handleInputChange('costCalculationMethod', v)} className="mb-2"><div className="flex items-center space-x-2"><RadioGroupItem value="perShift"/><Label>Ставка за смену</Label></div><div className="flex items-center space-x-2"><RadioGroupItem value="perMonth"/><Label>Оклад в месяц</Label></div></RadioGroup>{inputValues.costCalculationMethod === 'perShift' ? (<div className="space-y-2"><Label>Ставка за смену</Label><Input type="number" value={inputValues.shiftCost} onChange={e => handleInputChange('shiftCost', e.target.value)} /></div>) : (<div className="space-y-2"><Label>Оклад в месяц (брутто)</Label><Input type="number" value={inputValues.monthlySalary} onChange={e => handleInputChange('monthlySalary', e.target.value)} /></div>)}<div className="space-y-2"><Label>Инфраструктурный коэф.</Label><Input type="number" value={inputValues.infraCost} onChange={e => handleInputChange('infraCost', e.target.value)} /></div></fieldset>
                             </CardContent>
                         </Card>

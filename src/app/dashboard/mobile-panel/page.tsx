@@ -16,11 +16,12 @@ import { InsufficientCreditsDialog } from '@/components/InsufficientCreditsDialo
 import { HistorySection } from '@/components/dashboard/HistorySection';
 import { Button } from '@/components/ui/button';
 import { ProjectView } from '@/components/mobile-panel/ProjectView';
+import { resolvePlanModelId } from '@/lib/plan-models';
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50 MB
 
 export default function MobilePanelPage() {
-    const { user, userAvailableModels, setCurrentProject: setGlobalProject } = useAppContext();
+    const { user, effectivePlan, setCurrentProject: setGlobalProject } = useAppContext();
     const { toast } = useToast();
 
     const [localCurrentProject, setLocalCurrentProject] = useState<HistoryRequest | null>(null);
@@ -30,9 +31,9 @@ export default function MobilePanelPage() {
     const [searchQuery, setSearchQuery] = useState('');
     const [isLoading, setIsLoading] = useState(true);
 
-    const selectedModel = useMemo(() => {
-        return userAvailableModels.find(m => m.isDefault)?.value || userAvailableModels[0]?.value || '';
-    }, [userAvailableModels]);
+    const planKey = effectivePlan === 'PRO' ? 'pro' : 'free';
+    const preference = user?.planModelPreferences?.[planKey];
+    const selectedModel = useMemo(() => resolvePlanModelId(effectivePlan, preference), [effectivePlan, preference]);
 
     // Load last project on initial mount
     useEffect(() => {

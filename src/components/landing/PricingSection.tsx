@@ -55,7 +55,7 @@ const featureList = [
     { feature: "Импорт/Экспорт базы цен", free: false, pro: true, business: true, enterprise: true },
     { feature: "Группировка проектов по объектам", free: false, pro: true, business: true, enterprise: true },
     { feature: "Приоритетная поддержка", free: false, pro: true, business: true, enterprise: true },
-    { feature: "Количество пользователей", free: "1", pro: "1", business: "до 25", enterprise: "∞" },
+    { feature: "Количество пользователей", free: "1", pro: "1", business: "3–24", enterprise: "от 25" },
     { feature: "API-доступ и CRM интеграции", free: false, pro: false, business: true, enterprise: true },
     { feature: "Персональный менеджер", free: false, pro: false, business: true, enterprise: true },
     { feature: "White Label, свой домен и On-premise", free: false, pro: false, business: false, enterprise: true },
@@ -108,7 +108,6 @@ const FeatureComparisonTable = () => (
 export const PricingSection = () => {
     const [isLegalEntityModalOpen, setIsLegalEntityModalOpen] = useState(false);
     const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
-    const [billingCycle, setBillingCycle] = useState<'month' | 'half' | 'year'>('year');
     const [employeeCount, setEmployeeCount] = useState(1);
 
     const handleCorporateClick = (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -121,16 +120,8 @@ export const PricingSection = () => {
         setIsRegisterModalOpen(true);
     }
 
-    const getPrice = (basePrice: number) => {
-        switch (billingCycle) {
-            case 'half': return basePrice * 0.9;
-            case 'year': return basePrice * 0.75;
-            default: return basePrice;
-        }
-    };
-    
-    const proPrice = getPrice(2990);
-    const businessPrice = getPrice(2000);
+    const proPrice = 2990;
+    const businessPrice = 2000;
 
     const plans = {
         free: { name: "Тариф FREE", description: "Для знакомства с сервисом и небольших задач.", price: "Бесплатно", cta: "Начать бесплатно" },
@@ -139,10 +130,6 @@ export const PricingSection = () => {
         enterprise: { name: "Тариф ENTERPRISE", description: "Для крупных компаний и максимальной кастомизации.", price: "Индивидуально", cta: "Запросить Демо" }
     };
     
-    const showFreePro = employeeCount <= 1;
-    const showBusiness = employeeCount >= 2 && employeeCount <= 25;
-    const showEnterpriseOnly = employeeCount > 25;
-
     return (
         <>
         <LegalEntityRegistrationDialog isOpen={isLegalEntityModalOpen} onClose={() => setIsLegalEntityModalOpen(false)} />
@@ -153,11 +140,6 @@ export const PricingSection = () => {
                     <h2 className="text-3xl font-bold text-foreground">Тарифы и цены</h2>
                     <p className="text-muted-foreground mt-2">Выберите план и пополняйте баланс кредитов по мере необходимости.</p>
                      <div className="mt-6 flex flex-col sm:flex-row justify-center items-center gap-4">
-                        <div className="flex rounded-lg p-1 bg-muted">
-                            <button onClick={() => setBillingCycle('month')} className={cn("px-3 py-1 text-sm rounded-md", billingCycle === 'month' && 'bg-background shadow-sm')}>1 мес.</button>
-                            <button onClick={() => setBillingCycle('half')} className={cn("px-3 py-1 text-sm rounded-md", billingCycle === 'half' && 'bg-background shadow-sm')}>6 мес. <Badge variant="destructive" className="ml-1">-10%</Badge></button>
-                            <button onClick={() => setBillingCycle('year')} className={cn("px-3 py-1 text-sm rounded-md", billingCycle === 'year' && 'bg-background shadow-sm')}>12 мес. <Badge variant="destructive" className="ml-1">-25%</Badge></button>
-                        </div>
                          <div className="flex items-center gap-2">
                              <Label htmlFor="employees">Сотрудников:</Label>
                              <Input 
@@ -190,18 +172,18 @@ export const PricingSection = () => {
                             <li className="flex items-center gap-2"><CheckCircle className="h-5 w-5 text-primary" /><span>Приложение PWA и Telegram</span></li>
                         </ul>
                     </PlanCard>
-                   <PlanCard plan={plans.business} href="#" onCtaClick={handleCorporateClick} isDisabled={employeeCount < 2 || employeeCount > 25}>
+                   <PlanCard plan={plans.business} href="#" onCtaClick={handleCorporateClick} isDisabled={employeeCount < 3 || employeeCount >= 25}>
                       <ul className="space-y-3 text-muted-foreground flex-grow">
                          <li className="flex items-center gap-2"><CheckCircle className="h-5 w-5 text-green-500" /><span>Все функции PRO</span></li>
-                         <li className="flex items-center gap-2"><Users className="h-5 w-5 text-green-500" /><span>до 25 сотрудников</span></li>
+                         <li className="flex items-center gap-2"><Users className="h-5 w-5 text-green-500" /><span>от 3 до 24 сотрудников</span></li>
                          <li className="flex items-center gap-2"><CheckCircle className="h-5 w-5 text-green-500" /><span>Интеграция с CRM (API)</span></li>
                          <li className="flex items-center gap-2"><CheckCircle className="h-5 w-5 text-green-500" /><span>Персональный менеджер</span></li>
                       </ul>
                   </PlanCard>
-                   <PlanCard plan={plans.enterprise} href="#" onCtaClick={handleCorporateClick}>
+                   <PlanCard plan={plans.enterprise} href="#" onCtaClick={handleCorporateClick} isDisabled={employeeCount < 25}>
                        <ul className="space-y-3 text-muted-foreground flex-grow">
                           <li className="flex items-center gap-2"><CheckCircle className="h-5 w-5 text-green-500" /><span>Все функции BUSINESS</span></li>
-                          <li className="flex items-center gap-2"><Infinity className="h-5 w-5 text-green-500" /><span>Неограниченно сотрудников</span></li>
+                          <li className="flex items-center gap-2"><Infinity className="h-5 w-5 text-green-500" /><span>от 25 сотрудников</span></li>
                           <li className="flex items-center gap-2"><CheckCircle className="h-5 w-5 text-green-500" /><span>White Label и свой домен</span></li>
                           <li className="flex items-center gap-2"><CheckCircle className="h-5 w-5 text-green-500" /><span>Развертывание On-premise</span></li>
                       </ul>

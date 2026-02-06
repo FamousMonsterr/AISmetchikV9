@@ -14,6 +14,7 @@ import { getStandardSections } from '@/actions/adminActions';
 import { Input } from './ui/input';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 import { updatePriceBase } from '@/actions/userActions';
+import { PlanBadge } from '@/components/PlanBadge';
 
 interface PrivatePriceDialogProps {
   isOpen: boolean;
@@ -239,9 +240,7 @@ export function PrivatePriceDialog({
               <HardDrive className="mr-2 h-4 w-4" />
               Подключить S3
               {!isBusiness && (
-                <span className="ml-2 text-[10px] uppercase tracking-wide border border-blue-200 text-blue-600 px-1.5 rounded">
-                  Business
-                </span>
+                <PlanBadge plan="Business" size="xs" className="ml-2" />
               )}
             </Button>
           </div>

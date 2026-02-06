@@ -45,6 +45,18 @@ export async function generateJson(params: AiServiceParams & { responseMimeType?
         const groupedItemsString = JSON.stringify(params.groupedItems || [], null, 2);
         processedPrompt = processedPrompt.replace('{{groupedItems}}', groupedItemsString);
     }
+    if (processedPrompt.includes('{{analysisDetails}}')) {
+        const analysisDetailsString = JSON.stringify(params.analysisDetails || null, null, 2);
+        processedPrompt = processedPrompt.replace('{{analysisDetails}}', analysisDetailsString);
+    }
+    if (processedPrompt.includes('{{quoteConfig}}')) {
+        const quoteConfigString = JSON.stringify(params.quoteConfig || null, null, 2);
+        processedPrompt = processedPrompt.replace('{{quoteConfig}}', quoteConfigString);
+    }
+    if (processedPrompt.includes('{{calculatorInputs}}')) {
+        const calculatorInputsString = JSON.stringify(params.calculatorInputs || null, null, 2);
+        processedPrompt = processedPrompt.replace('{{calculatorInputs}}', calculatorInputsString);
+    }
     if (params.totalSmrCost !== undefined) {
         processedPrompt = processedPrompt.replace('{{totalSmrCost}}', String(params.totalSmrCost));
     }

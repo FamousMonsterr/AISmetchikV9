@@ -78,6 +78,7 @@ const ItemToPriceSchema = z.object({
   brand: z.string().optional().nullable().default('').describe('The brand of the item, if available.'),
   unit: z.string().describe('The unit of measurement for the item/work.'),
   quantity: z.number().describe('The quantity of the item.'),
+  itemType: z.enum(['device', 'cable', 'cable_support', 'consumable', 'other']).optional().describe('Preset item category from the project, if available.'),
 });
 
 

@@ -15,10 +15,39 @@ import { useAppContext, type HistoryRequest, type SpecificationItem } from '@/co
 const recommendedValues = {
     normDevicesPerShift: 24,
     normCablePerShift: 50,
+    normCableSupportPerShift: 35,
     shiftCost: 3004,
     infraCost: 3996,
     marginPercent: 60,
     complexityMultiplier: 1.1,
+};
+
+const COMPLEXITY_MIN = 0.5;
+const COMPLEXITY_MAX = 10;
+
+const complexityPresets: Array<{ label: string; value: number }> = [
+    { label: 'До 3м', value: 1.0 },
+    { label: '4-6м', value: 1.2 },
+    { label: '6-10м', value: 1.4 },
+    { label: 'Сложно', value: 1.8 },
+    { label: '>10м', value: 2.2 },
+];
+
+const clampComplexity = (value: number) => {
+    if (!Number.isFinite(value)) return recommendedValues.complexityMultiplier;
+    return Math.min(COMPLEXITY_MAX, Math.max(COMPLEXITY_MIN, value));
+};
+
+const getRecommendedComplexityByHeight = (heightRaw?: string | null) => {
+    if (!heightRaw) return null;
+    const match = heightRaw.match(/(\d+(?:[.,]\d+)?)/);
+    if (!match) return null;
+    const height = Number(match[1].replace(',', '.'));
+    if (!Number.isFinite(height)) return null;
+    if (height <= 3) return 1.0;
+    if (height <= 6) return 1.2;
+    if (height <= 10) return 1.4;
+    return 1.8;
 };
 
 interface MobileCalculatorProps {
@@ -42,23 +71,24 @@ export function MobileCalculator({ project, onSmrCostChange }: MobileCalculatorP
     const isPro = effectivePlan === 'PRO' || effectivePlan === 'Business' || effectivePlan === 'Enterprise';
 
     useEffect(() => {
-        if (project?.analysisDetails?.maxInstallationHeight) {
-            const heightStr = project.analysisDetails.maxInstallationHeight;
-            if (heightStr.includes('6')) setInputValues(prev => ({ ...prev, complexityMultiplier: 1.2 }));
-            else if (heightStr.includes('4')) setInputValues(prev => ({ ...prev, complexityMultiplier: 1.1 }));
+        const recommendedByHeight = getRecommendedComplexityByHeight(project?.analysisDetails?.maxInstallationHeight);
+        if (recommendedByHeight) {
+            setInputValues(prev => ({ ...prev, complexityMultiplier: clampComplexity(recommendedByHeight) }));
         }
     }, [project]);
 
-    const { devicesCount, cableMeters } = useMemo(() => {
-        if (!project) return { devicesCount: 0, cableMeters: 0 };
+    const { devicesCount, cableMeters, cableSupportMeters } = useMemo(() => {
+        if (!project) return { devicesCount: 0, cableMeters: 0, cableSupportMeters: 0 };
         let devices = 0;
         let cable = 0;
+        let cableSupport = 0;
         project.outputSpecifications.forEach((item: SpecificationItem) => {
             if (item.isInformational) return;
             if (item.itemType === 'device') devices += item.quantityToInstall || 0;
             if (item.itemType === 'cable') cable += item.quantityToInstall || 0;
+            if (item.itemType === 'cable_support') cableSupport += item.quantityToInstall || 0;
         });
-        return { devicesCount: devices, cableMeters: cable };
+        return { devicesCount: devices, cableMeters: cable, cableSupportMeters: cableSupport };
     }, [project]);
 
     const calculatedShiftCost = useMemo(() => (inputValues.costCalculationMethod === 'perMonth')
@@ -68,25 +98,30 @@ export function MobileCalculator({ project, onSmrCostChange }: MobileCalculatorP
     );
 
     const { totalInstallationCost: recommendedSmrCost } = useMemo(() => {
-        const { normDevicesPerShift, normCablePerShift, infraCost, marginPercent, complexityMultiplier } = inputValues;
+        const { normDevicesPerShift, normCablePerShift, normCableSupportPerShift, infraCost, marginPercent, complexityMultiplier } = inputValues;
         const deviceShifts = normDevicesPerShift > 0 ? devicesCount / normDevicesPerShift : 0;
         const cableShifts = normCablePerShift > 0 ? cableMeters / normCablePerShift : 0;
-        const totalShifts = deviceShifts + cableShifts;
+        const cableSupportShifts = normCableSupportPerShift > 0 ? cableSupportMeters / normCableSupportPerShift : 0;
+        const totalShifts = deviceShifts + cableShifts + cableSupportShifts;
         const totalInstallationCost = totalShifts * (calculatedShiftCost + infraCost) * (1 + marginPercent / 100) * complexityMultiplier;
         return { totalInstallationCost };
-    }, [inputValues, devicesCount, cableMeters, calculatedShiftCost]);
+    }, [inputValues, devicesCount, cableMeters, cableSupportMeters, calculatedShiftCost]);
     
     useEffect(() => {
         onSmrCostChange(recommendedSmrCost);
     }, [recommendedSmrCost, onSmrCostChange]);
 
     const handleInputChange = (field: keyof typeof inputValues, value: string | number | boolean) => {
-        const numericFields = new Set(['normDevicesPerShift', 'normCablePerShift', 'shiftCost', 'infraCost', 'marginPercent', 'monthlySalary']);
-        const finalValue = numericFields.has(field as string) ? Number(value) : value;
+        const numericFields = new Set(['normDevicesPerShift', 'normCablePerShift', 'normCableSupportPerShift', 'shiftCost', 'infraCost', 'marginPercent', 'monthlySalary']);
+        let finalValue = numericFields.has(field as string) ? Number(value) : value;
+        if (field === 'complexityMultiplier' && typeof finalValue === 'number') {
+            finalValue = clampComplexity(finalValue);
+        }
         setInputValues(prev => ({ ...prev, [field]: finalValue }));
     };
     
-    const handleSliderChange = (value: number[]) => handleInputChange('complexityMultiplier', 1 + value[0] / 100);
+    const handleSliderChange = (value: number[]) => handleInputChange('complexityMultiplier', value[0]);
+    const handlePresetClick = (value: number) => handleInputChange('complexityMultiplier', value);
 
     const handleModeSwitch = (checked: boolean) => {
         const newMode = checked ? 'advanced' : 'simple';
@@ -111,8 +146,25 @@ export function MobileCalculator({ project, onSmrCostChange }: MobileCalculatorP
             <div className="space-y-2">
                 <Label>Коэффициент сложности</Label>
                 <div className="flex items-center gap-4">
-                    <Slider value={[(inputValues.complexityMultiplier - 1) * 100]} max={100} step={5} onValueChange={handleSliderChange} />
+                    <Slider value={[inputValues.complexityMultiplier]} min={COMPLEXITY_MIN} max={COMPLEXITY_MAX} step={0.1} onValueChange={handleSliderChange} />
                     <span className="font-bold w-16 text-right">x{inputValues.complexityMultiplier.toFixed(2)}</span>
+                </div>
+                <div className="mt-2 flex flex-wrap gap-2">
+                    {complexityPresets.map((preset) => (
+                        <button
+                            key={preset.label}
+                            type="button"
+                            className={cn(
+                                "rounded-md border px-2 py-1 text-xs",
+                                Math.abs(inputValues.complexityMultiplier - preset.value) < 0.01
+                                    ? "border-primary bg-primary/10 text-primary"
+                                    : "border-border text-muted-foreground"
+                            )}
+                            onClick={() => handlePresetClick(preset.value)}
+                        >
+                            {preset.label}
+                        </button>
+                    ))}
                 </div>
             </div>
 
@@ -121,6 +173,7 @@ export function MobileCalculator({ project, onSmrCostChange }: MobileCalculatorP
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2"><Label>Приборов/смена</Label><Input type="number" value={inputValues.normDevicesPerShift} onChange={e => handleInputChange('normDevicesPerShift', e.target.value)} /></div>
                         <div className="space-y-2"><Label>Кабеля/смена, м</Label><Input type="number" value={inputValues.normCablePerShift} onChange={e => handleInputChange('normCablePerShift', e.target.value)} /></div>
+                        <div className="space-y-2 col-span-2"><Label>Кабеленесущих конструкций/смена, м</Label><Input type="number" value={inputValues.normCableSupportPerShift} onChange={e => handleInputChange('normCableSupportPerShift', e.target.value)} /></div>
                     </div>
                      <RadioGroup value={inputValues.costCalculationMethod} onValueChange={(v) => handleInputChange('costCalculationMethod', v)} className="flex pt-2"><div className="flex items-center space-x-2"><RadioGroupItem value="perShift"/><Label>Ставка</Label></div><div className="flex items-center space-x-2 ml-4"><RadioGroupItem value="perMonth"/><Label>Оклад</Label></div></RadioGroup>
                     {inputValues.costCalculationMethod === 'perShift' ? (

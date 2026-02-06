@@ -37,6 +37,9 @@ import { getPendingFile, deletePendingFile } from '@/lib/pwa-helpers';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Label } from "@/components/ui/label";
 import { GlassButton } from "@/components/ui/glass-button";
+import { PlanBadge } from "@/components/PlanBadge";
+import { PlanModelPreference } from "@/components/PlanModelPreference";
+import { getModelLabel, resolvePlanModelId } from "@/lib/plan-models";
 
 
 const LARGE_FILE_THRESHOLD_MB = 50; // 5 MB threshold for PDF editor
@@ -81,7 +84,8 @@ const PwaPrompt = () => {
 export default function DashboardPage() {
   const {
     user,
-    userAvailableModels, // Use models from context
+    userAvailableModels, // Plan-based models from context
+    effectivePlan,
   } = useAppContext();
   const { toast } = useToast();
   
@@ -131,24 +135,30 @@ export default function DashboardPage() {
   }, []);
 
   const [selectedModel, setSelectedModel] = useState<string>('');
-  
-  const currentModelConfig = useMemo(() => userAvailableModels.find((m: any) => m.value === selectedModel), [selectedModel, userAvailableModels]);
+  const canSelectModel = effectivePlan === 'Business' || effectivePlan === 'Enterprise';
+  const planKey = effectivePlan === 'PRO' ? 'pro' : 'free';
+  const preference = user?.planModelPreferences?.[planKey];
+  const resolvedModel = useMemo(() => resolvePlanModelId(effectivePlan, preference), [effectivePlan, preference]);
 
   useEffect(() => {
-    // This effect runs when available models change (e.g., due to proxy toggle or user data load)
-    if (userAvailableModels.length > 0) {
-        const currentModelIsValid = userAvailableModels.some(m => m.value === selectedModel);
-        if (!currentModelIsValid) {
-            // If the current model is no longer valid, select the best default
-            const defaultModel = userAvailableModels.find((m:any) => m.isDefault) || userAvailableModels[0];
-            if (defaultModel) {
-                setSelectedModel(defaultModel.value);
-            }
-        }
-    } else {
-        setSelectedModel(''); // No models available
+    if (!userAvailableModels.length) {
+      setSelectedModel(resolvedModel || '');
+      return;
     }
-  }, [userAvailableModels, selectedModel]);
+    if (!canSelectModel) {
+      setSelectedModel(resolvedModel || '');
+      return;
+    }
+    const currentModelIsValid = userAvailableModels.some((model: any) => model.value === selectedModel);
+    if (!currentModelIsValid) {
+      const defaultModel = userAvailableModels.find((model: any) => model.isDefault) || userAvailableModels[0];
+      if (defaultModel) {
+        setSelectedModel(defaultModel.value);
+      }
+    }
+  }, [userAvailableModels, selectedModel, canSelectModel, resolvedModel]);
+
+  const activeModel = canSelectModel ? (selectedModel || resolvedModel) : resolvedModel;
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     if (acceptedFiles.length > 0) {
@@ -212,7 +222,7 @@ export default function DashboardPage() {
          <ProcessingDialog
             isOpen={isProcessingDialogOpen}
             file={selectedFile}
-            model={selectedModel}
+            model={activeModel}
             onClose={() => setIsProcessingDialogOpen(false)}
         />
     )}
@@ -255,30 +265,44 @@ export default function DashboardPage() {
          <Card className="bg-card/50 flex flex-col">
             <CardHeader>
                 <CardTitle>Настройки анализа</CardTitle>
-                <CardDescription>Выберите модель и параметры для обработки</CardDescription>
+                <CardDescription>
+                    {canSelectModel
+                      ? 'Выберите модель и параметры для обработки'
+                      : 'Модель определяется тарифом. При A/B тесте можно выбрать предпочтительный вариант.'}
+                </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4 flex-grow">
                  <div className="space-y-2">
                      <Label>AI Модель</Label>
-                    <Select value={selectedModel} onValueChange={setSelectedModel}>
-                        <SelectTrigger>
-                            <SelectValue placeholder="Выберите модель AI..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {userAvailableModels.length > 0 ? (
-                                userAvailableModels.map((model: any) => (
-                                    <SelectItem key={model.value} value={model.value}>
-                                        {model.label}
+                    {canSelectModel ? (
+                        <Select value={selectedModel} onValueChange={setSelectedModel}>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Выберите модель AI..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {userAvailableModels.length > 0 ? (
+                                    userAvailableModels.map((model: any) => (
+                                        <SelectItem key={model.value} value={model.value}>
+                                            {model.label}
+                                        </SelectItem>
+                                    ))
+                                ) : (
+                                    <SelectItem value="no-models" disabled>
+                                        Модели не доступны
                                     </SelectItem>
-                                ))
-                            ) : (
-                                <SelectItem value="no-models" disabled>
-                                    Модели не доступны
-                                </SelectItem>
-                            )}
-                        </SelectContent>
-                    </Select>
+                                )}
+                            </SelectContent>
+                        </Select>
+                    ) : (
+                        <div className="flex items-center justify-between rounded-md border px-3 py-2 text-sm">
+                            <span className="text-muted-foreground">
+                                {getModelLabel(activeModel) || 'Модель определяется тарифом'}
+                            </span>
+                            <PlanBadge plan="Business" size="xs" />
+                        </div>
+                    )}
                  </div>
+                 <PlanModelPreference />
             </CardContent>
             <CardFooter>
                  <GlassButton onClick={() => selectedFile && handleStartAnalysis(selectedFile)} className="w-full" disabled={!selectedFile || isProcessingDialogOpen} icon={<Sparkles className="mr-2 h-4 w-4"/>}>
