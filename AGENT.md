@@ -121,6 +121,8 @@
 - Все “запросы по почте” заменены на внутренние заявки в коллекции `service_requests`.
 - Типы: `plan_upgrade`, `s3_storage`, `crm_connector`, `estimate_department`, `partner_status`.
 - Админ‑панель: `/dashboard/admin/service-requests` (статусы `new`/`in_progress`/`approved`/`rejected`).
+- Клиентский хук: `src/hooks/use-service-request.ts` (единый тост + pending).
+- UI‑карточка запросов: `src/components/requests/RequestFeatureCard.tsx` (framer‑motion + CSS `request-card`).
 
 ## PRO подписка (СБП + счет)
 - Физ. лицо: СБП + чек (S3 `user_docs`), сразу выдается PRO на 1 день, проверка до 24 часов.

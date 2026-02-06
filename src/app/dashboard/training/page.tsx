@@ -7,14 +7,13 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { BookOpen, AlertTriangle, PlayCircle, Pencil, Sparkles, Target, FileText, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAppContext } from '@/contexts/AppContext';
-import { useState, useEffect, useTransition } from 'react';
+import { useState, useEffect } from 'react';
 import { getKnowledgeBaseArticles, KnowledgeBaseArticle } from '@/actions/adminActions';
 import { onSnapshot, collection, query, orderBy } from '@/lib/mongoFirestore';
 import { db } from '@/lib/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PlanBadge } from '@/components/PlanBadge';
-import { createServiceRequest } from '@/actions/serviceRequestActions';
-import { useToast } from '@/hooks/use-toast';
+import { useServiceRequest } from '@/hooks/use-service-request';
 
 const KnowledgeBaseVideo = ({ title, description, videoUrl }: { title: string, description: string, videoUrl: string }) => {
     return (
@@ -45,8 +44,7 @@ const KnowledgeBaseVideo = ({ title, description, videoUrl }: { title: string, d
 
 export default function TrainingPage() {
   const { user } = useAppContext();
-  const { toast } = useToast();
-  const [isRequestPending, startRequest] = useTransition();
+  const { isPending: isRequestPending, submit: submitRequest } = useServiceRequest({ source: 'training' });
   const canAccess = user?.plan === 'Enterprise' || user?.systemRole === 'Super Admin';
   const [articles, setArticles] = useState<KnowledgeBaseArticle[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -342,21 +340,7 @@ export default function TrainingPage() {
   }, []);
 
   const handleEnterpriseRequest = () => {
-    if (!user) return;
-    startRequest(async () => {
-      const result = await createServiceRequest({
-        userId: user.uid,
-        userName: user.displayName || '',
-        userEmail: user.email || '',
-        type: 'plan_upgrade',
-        payload: { targetPlan: 'Enterprise (от 25 пользователей)', source: 'training' },
-      });
-      if (result.success) {
-        toast({ title: 'Заявка отправлена', description: result.message });
-      } else {
-        toast({ title: 'Ошибка', description: result.message, variant: 'destructive' });
-      }
-    });
+    submitRequest({ type: 'plan_upgrade', payload: { targetPlan: 'Enterprise (от 25 пользователей)' } });
   };
 
   if (!canAccess) {

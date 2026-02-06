@@ -1,11 +1,11 @@
 // src/app/dashboard/billing/page.tsx
 "use client";
 
-import { useState, useTransition } from 'react';
+import { useState } from 'react';
 import { useAppContext } from "@/contexts/AppContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Check, Mail, Loader2, Star, Zap, TrendingUp, KeySquare, HardDrive, Crown } from "lucide-react";
+import { Check, Mail, Star, Zap, TrendingUp, KeySquare, HardDrive, Crown } from "lucide-react";
 import { Badge } from '@/components/ui/badge';
 import plansConfig from '@/lib/plans-config.json';
 import { cn } from '@/lib/utils';
@@ -14,37 +14,22 @@ import { InvoiceHistory } from '@/components/InvoiceHistory';
 import { CreditHistory } from '@/components/CreditHistory';
 import { UpgradeAccountDialog } from '@/components/UpgradeAccountDialog';
 import { getNextPlan, getPlanLabel } from '@/lib/plan-utils';
-import { useToast } from '@/hooks/use-toast';
-import { createServiceRequest } from '@/actions/serviceRequestActions';
+import { useServiceRequest } from '@/hooks/use-service-request';
+import { RequestFeatureCard } from '@/components/requests/RequestFeatureCard';
 
 const { creditPackages, enterprisePackage } = plansConfig;
 
 export default function BillingPage() {
   const { user, effectivePlan } = useAppContext();
-  const { toast } = useToast();
-  const [isRequestPending, startRequestTransition] = useTransition();
+  const { isPending: isRequestPending, submit: submitRequest } = useServiceRequest({ source: 'billing' });
 
   const [isPurchaseDialogOpen, setIsPurchaseDialogOpen] = useState(false);
   const [selectedPackage, setSelectedPackage] = useState<CreditPackage | null>(null);
   const [isUpgradeOpen, setIsUpgradeOpen] = useState(false);
   const [upgradeTargetRole, setUpgradeTargetRole] = useState<'PRO' | 'Business' | 'Enterprise'>('PRO');
 
-  const submitRequest = (type: 's3_storage' | 'estimate_department' | 'crm_connector') => {
-    if (!user) return;
-    startRequestTransition(async () => {
-      const result = await createServiceRequest({
-        userId: user.uid,
-        userName: user.displayName || '',
-        userEmail: user.email || '',
-        type,
-        payload: { source: 'billing' },
-      });
-      if (result.success) {
-        toast({ title: 'Заявка отправлена', description: result.message });
-      } else {
-        toast({ title: 'Ошибка', description: result.message, variant: 'destructive' });
-      }
-    });
+  const submitRequestCard = (type: 's3_storage' | 'estimate_department' | 'crm_connector') => {
+    submitRequest({ type });
   };
 
   const handlePurchaseClick = (pkg: CreditPackage) => {
@@ -167,71 +152,48 @@ export default function BillingPage() {
             </div>
        </div>
 
-       <Card>
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2"><HardDrive /> Собственное S3 Хранилище</CardTitle>
-                <CardDescription>Подключите ваше S3-совместимое хранилище (например, Cloud.ru) для максимальной безопасности и контроля.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <ul className="space-y-2 text-sm">
-                    <li className="flex items-center gap-2"><Check className="h-4 w-4 text-green-500"/> Файлы хранятся в вашем бакете, а не у нас.</li>
-                    <li className="flex items-center gap-2"><Check className="h-4 w-4 text-green-500"/> Полный контроль над жизненным циклом и доступом к файлам.</li>
-                    <li className="flex items-center gap-2"><Check className="h-4 w-4 text-green-500"/> Идеально для корпоративных политик безопасности.</li>
-                </ul>
-            </CardContent>
-            <CardFooter>
-                 <Button variant="secondary" onClick={() => submitRequest('s3_storage')} disabled={isRequestPending}>
-                    {isRequestPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <KeySquare className="mr-2 h-4 w-4" />}
-                    Запросить подключение S3
-                </Button>
-            </CardFooter>
-        </Card>
+       <RequestFeatureCard
+        icon={<HardDrive className="h-5 w-5" />}
+        title="Собственное S3 Хранилище"
+        description="Подключите ваше S3-совместимое хранилище (например, Cloud.ru) для максимальной безопасности и контроля."
+        features={[
+          'Файлы хранятся в вашем бакете, а не у нас.',
+          'Полный контроль над жизненным циклом и доступом к файлам.',
+          'Идеально для корпоративных политик безопасности.',
+        ]}
+        ctaLabel="Запросить подключение S3"
+        ctaIcon={<KeySquare className="mr-2 h-4 w-4" />}
+        onCta={() => submitRequestCard('s3_storage')}
+        isPending={isRequestPending}
+      />
 
-       <Card>
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2"><Mail /> CRM коннектор</CardTitle>
-                <CardDescription>Подключение CRM (AmoCRM, Bitrix24, 1С и др.) доступно на Business/Enterprise.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <ul className="space-y-2 text-sm">
-                    <li className="flex items-center gap-2"><Check className="h-4 w-4 text-green-500"/> Автоматизация обработки смет.</li>
-                    <li className="flex items-center gap-2"><Check className="h-4 w-4 text-green-500"/> Передача данных о смете в сделку.</li>
-                    <li className="flex items-center gap-2"><Check className="h-4 w-4 text-green-500"/> Персональная настройка под процессы.</li>
-                </ul>
-            </CardContent>
-            <CardFooter>
-                <Button variant="secondary" onClick={() => submitRequest('crm_connector')} disabled={isRequestPending}>
-                  {isRequestPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Mail className="mr-2 h-4 w-4" />}
-                  Запросить CRM коннектор
-                </Button>
-            </CardFooter>
-       </Card>
+      <RequestFeatureCard
+        icon={<Mail className="h-5 w-5" />}
+        title="CRM коннектор"
+        description="Подключение CRM (AmoCRM, Bitrix24, 1С и др.) доступно на Business/Enterprise."
+        features={[
+          'Автоматизация обработки смет.',
+          'Передача данных о смете в сделку.',
+          'Персональная настройка под процессы.',
+        ]}
+        ctaLabel="Запросить CRM коннектор"
+        ctaIcon={<Mail className="mr-2 h-4 w-4" />}
+        onCta={() => submitRequestCard('crm_connector')}
+        isPending={isRequestPending}
+      />
       
-       <Card className="bg-gradient-to-r from-primary/10 to-accent/10">
-        <CardHeader>
-          <CardTitle>{enterprisePackage.name}</CardTitle>
-          <CardDescription>{enterprisePackage.credits}</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-            <div className="text-2xl font-bold">
-                {enterprisePackage.price}
-            </div>
-            <ul className="space-y-2 text-sm text-muted-foreground">
-            {enterprisePackage.features.map(feature => (
-                <li key={feature} className="flex items-center">
-                <Check className="h-4 w-4 mr-2 text-green-500" />
-                {feature}
-                </li>
-            ))}
-            </ul>
-        </CardContent>
-        <CardFooter>
-            <Button variant="secondary" className="w-full sm:w-auto" onClick={() => submitRequest('estimate_department')} disabled={isRequestPending}>
-                {isRequestPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Mail className="mr-2 h-4 w-4" />}
-                Обсудить условия
-            </Button>
-        </CardFooter>
-      </Card>
+      <RequestFeatureCard
+        icon={<Mail className="h-5 w-5" />}
+        title={enterprisePackage.name}
+        description={enterprisePackage.credits}
+        priceLabel={enterprisePackage.price}
+        features={enterprisePackage.features}
+        ctaLabel="Обсудить условия"
+        ctaIcon={<Mail className="mr-2 h-4 w-4" />}
+        onCta={() => submitRequestCard('estimate_department')}
+        isPending={isRequestPending}
+        variant="gradient"
+      />
       
       <InvoiceHistory />
 
