@@ -6,8 +6,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Info, Settings2, Trash2, Eye, EyeOff, Shield, Sparkles } from "lucide-react";
-import { getBucketCors, putBucketCors, deleteBucketCors } from '@/actions/adminActions';
+import { Loader2, Info, Settings2, Trash2, Eye, EyeOff, Shield, Sparkles, FolderPlus, RefreshCcw } from "lucide-react";
+import { getBucketCors, putBucketCors, deleteBucketCors, listBuckets, createBucket } from '@/actions/adminActions';
 import type { EnvSettings } from '@/actions/adminActions';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
@@ -55,12 +55,22 @@ export function S3Settings({ settings, setSettings, isPending }: { settings: Env
   const [allowedOrigin, setAllowedOrigin] = useState('');
   const [s3Preset, setS3Preset] = useState<'custom' | 'cloudru' | 'beget' | 'yandex'>('custom');
   const [newPresetName, setNewPresetName] = useState('');
+  const [bucketPresetId, setBucketPresetId] = useState<string>('__active__');
+  const [bucketList, setBucketList] = useState<string[]>([]);
+  const [isBucketsLoading, setIsBucketsLoading] = useState(false);
+  const [newBucketName, setNewBucketName] = useState('');
+  const [newBucketPurpose, setNewBucketPurpose] = useState<'avatars' | 'user_docs' | 'project_docs'>('avatars');
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
       setAllowedOrigin(window.location.origin);
     }
   }, []);
+
+  useEffect(() => {
+    if (!settings?.s3StorageEnabled) return;
+    loadBuckets();
+  }, [bucketPresetId, settings?.s3StorageEnabled]);
 
   useEffect(() => {
     // Try to infer provider from active preset
@@ -73,6 +83,50 @@ export function S3Settings({ settings, setSettings, isPending }: { settings: Env
   }, [settings?.s3ActivePresetId, settings?.s3Presets]);
 
   const presets = settings?.s3Presets || [];
+  const resolvePresetId = (value: string) => (value === '__active__' || !value ? undefined : value);
+
+  const loadBuckets = async () => {
+    if (!settings) return;
+    setIsBucketsLoading(true);
+    const presetId = resolvePresetId(bucketPresetId);
+    const result = await listBuckets(presetId);
+    if (result.success && result.buckets) {
+      setBucketList(result.buckets.filter(Boolean));
+    } else {
+      toast({ title: 'Ошибка', description: result.message, variant: 'destructive' });
+    }
+    setIsBucketsLoading(false);
+  };
+
+  const handleCreateBucket = async () => {
+    if (!settings || !newBucketName.trim()) return;
+    setIsActionLoading(true);
+    const presetId = resolvePresetId(bucketPresetId);
+    const result = await createBucket({ bucketName: newBucketName.trim(), presetId });
+    if (!result.success) {
+      toast({ title: 'Ошибка', description: result.message, variant: 'destructive' });
+      setIsActionLoading(false);
+      return;
+    }
+
+    const trimmed = newBucketName.trim();
+    const nextSettings: EnvSettings = { ...settings };
+    if (newBucketPurpose === 'avatars') {
+      nextSettings.s3AvatarBucketName = trimmed;
+      nextSettings.s3AvatarPresetId = presetId || '';
+    } else if (newBucketPurpose === 'user_docs') {
+      nextSettings.s3UserDocsBucketName = trimmed;
+      nextSettings.s3UserDocsPresetId = presetId || '';
+    } else {
+      nextSettings.s3ProjectDocsBucketName = trimmed;
+      nextSettings.s3ProjectDocsPresetId = presetId || '';
+    }
+    setSettings(nextSettings);
+    setNewBucketName('');
+    await loadBuckets();
+    toast({ title: 'Готово', description: result.message });
+    setIsActionLoading(false);
+  };
 
   const applyDefaults = (provider: typeof s3Preset) => {
     if (!settings) return;
@@ -356,13 +410,155 @@ export function S3Settings({ settings, setSettings, isPending }: { settings: Env
                  </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                    <div className="space-y-2">
-                      <Label>Персональный бакет (аватары и файлы пользователя)</Label>
+                      <Label>Персональный бакет (legacy fallback)</Label>
                       <Input value={settings.s3PersonalBucketName || ''} onChange={(e) => setSettings({ ...settings, s3PersonalBucketName: e.target.value })} placeholder="my-personal-bucket" disabled={isPending || !settings.s3StorageEnabled}/>
+                      <p className="text-xs text-muted-foreground">Используется только если не задан отдельный бакет для аватаров.</p>
                    </div>
                    <div className="flex items-center space-x-2 pt-6">
                       <Switch id="personal-public-bucket-toggle" checked={settings.s3PersonalBucketIsPublic} onCheckedChange={(checked) => setSettings({...settings, s3PersonalBucketIsPublic: checked})} disabled={isPending}/>
                       <Label htmlFor="personal-public-bucket-toggle">Публичный персональный бакет</Label>
                    </div>
+                </div>
+
+                <div className="space-y-3 rounded-lg border p-4">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <h4 className="font-semibold">Назначение бакетов</h4>
+                      <p className="text-xs text-muted-foreground">Выберите или создайте бакеты для разных типов файлов.</p>
+                    </div>
+                    <Button variant="outline" size="sm" onClick={loadBuckets} disabled={isPending || isBucketsLoading}>
+                      {isBucketsLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCcw className="mr-2 h-4 w-4" />}
+                      Обновить список
+                    </Button>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Хранилище для выбора</Label>
+                      <Select value={bucketPresetId} onValueChange={setBucketPresetId} disabled={isPending || presets.length === 0}>
+                        <SelectTrigger><SelectValue placeholder="Активное хранилище" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="__active__">Активное хранилище</SelectItem>
+                          {presets.map((p) => (
+                            <SelectItem key={`bucket-preset-${p.id}`} value={p.id}>{p.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Создать новый бакет</Label>
+                      <div className="flex gap-2">
+                        <Input value={newBucketName} onChange={(e) => setNewBucketName(e.target.value)} placeholder="new-bucket-name" disabled={isPending} />
+                        <Button variant="outline" onClick={handleCreateBucket} disabled={isPending || isActionLoading || !newBucketName.trim()}>
+                          <FolderPlus className="mr-2 h-4 w-4" />
+                          Создать
+                        </Button>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Label className="text-xs text-muted-foreground">Назначить для:</Label>
+                        <Select value={newBucketPurpose} onValueChange={(value) => setNewBucketPurpose(value as any)} disabled={isPending}>
+                          <SelectTrigger className="h-8 w-48 text-xs"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="avatars">Аватары</SelectItem>
+                            <SelectItem value="user_docs">Документы пользователя</SelectItem>
+                            <SelectItem value="project_docs">Документы проектов</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </div>
+
+                  <datalist id="s3-bucket-list">
+                    {bucketList.map((bucket) => (
+                      <option key={`bucket-${bucket}`} value={bucket} />
+                    ))}
+                  </datalist>
+
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                    <div className="space-y-2 rounded-md border p-3">
+                      <Label>Бакет аватаров</Label>
+                      <Input
+                        list="s3-bucket-list"
+                        value={settings.s3AvatarBucketName || ''}
+                        onChange={(e) => setSettings({ ...settings, s3AvatarBucketName: e.target.value })}
+                        placeholder="avatars-bucket"
+                        disabled={isPending}
+                      />
+                      <Select
+                        value={settings.s3AvatarPresetId || '__active__'}
+                        onValueChange={(value) => setSettings({ ...settings, s3AvatarPresetId: value === '__active__' ? '' : value })}
+                        disabled={isPending}
+                      >
+                        <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Активное" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="__active__">Активное хранилище</SelectItem>
+                          {presets.map((p) => (
+                            <SelectItem key={`avatars-preset-${p.id}`} value={p.id}>{p.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <div className="flex items-center space-x-2">
+                        <Switch id="avatars-public" checked={settings.s3AvatarBucketIsPublic} onCheckedChange={(checked) => setSettings({ ...settings, s3AvatarBucketIsPublic: checked })} disabled={isPending} />
+                        <Label htmlFor="avatars-public" className="text-xs">Публичный</Label>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2 rounded-md border p-3">
+                      <Label>Документы пользователя</Label>
+                      <Input
+                        list="s3-bucket-list"
+                        value={settings.s3UserDocsBucketName || ''}
+                        onChange={(e) => setSettings({ ...settings, s3UserDocsBucketName: e.target.value })}
+                        placeholder="user-docs-bucket"
+                        disabled={isPending}
+                      />
+                      <Select
+                        value={settings.s3UserDocsPresetId || '__active__'}
+                        onValueChange={(value) => setSettings({ ...settings, s3UserDocsPresetId: value === '__active__' ? '' : value })}
+                        disabled={isPending}
+                      >
+                        <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Активное" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="__active__">Активное хранилище</SelectItem>
+                          {presets.map((p) => (
+                            <SelectItem key={`user-docs-preset-${p.id}`} value={p.id}>{p.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <div className="flex items-center space-x-2">
+                        <Switch id="user-docs-public" checked={settings.s3UserDocsBucketIsPublic} onCheckedChange={(checked) => setSettings({ ...settings, s3UserDocsBucketIsPublic: checked })} disabled={isPending} />
+                        <Label htmlFor="user-docs-public" className="text-xs">Публичный</Label>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2 rounded-md border p-3">
+                      <Label>Документы проектов</Label>
+                      <Input
+                        list="s3-bucket-list"
+                        value={settings.s3ProjectDocsBucketName || ''}
+                        onChange={(e) => setSettings({ ...settings, s3ProjectDocsBucketName: e.target.value })}
+                        placeholder="project-docs-bucket"
+                        disabled={isPending}
+                      />
+                      <Select
+                        value={settings.s3ProjectDocsPresetId || '__active__'}
+                        onValueChange={(value) => setSettings({ ...settings, s3ProjectDocsPresetId: value === '__active__' ? '' : value })}
+                        disabled={isPending}
+                      >
+                        <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Активное" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="__active__">Активное хранилище</SelectItem>
+                          {presets.map((p) => (
+                            <SelectItem key={`project-docs-preset-${p.id}`} value={p.id}>{p.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <div className="flex items-center space-x-2">
+                        <Switch id="project-docs-public" checked={settings.s3ProjectDocsBucketIsPublic} onCheckedChange={(checked) => setSettings({ ...settings, s3ProjectDocsBucketIsPublic: checked })} disabled={isPending} />
+                        <Label htmlFor="project-docs-public" className="text-xs">Публичный</Label>
+                      </div>
+                    </div>
+                  </div>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                    <div className="space-y-2">

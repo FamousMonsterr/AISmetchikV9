@@ -104,6 +104,7 @@ export function ProcessingDialog({ isOpen, onClose, file, model, temperature, in
     const cancelRequested = useRef(false);
     
     const modelInfo = useMemo(() => aiConfig.apiModels.find(m => m.value === model), [model]);
+    const effectiveTemperature = temperature ?? modelInfo?.temperature;
     const isSelectedOpenRouter = modelInfo?.provider === 'openrouter';
 
     // Determine which engine will be used
@@ -258,7 +259,7 @@ export function ProcessingDialog({ isOpen, onClose, file, model, temperature, in
                     body: JSON.stringify({
                         prompt: promptConfig.promptText,
                         file: fileDataForApi,
-                        model, temperature, includeThoughts,
+                        model, temperature: effectiveTemperature, includeThoughts,
                         userId: user!.uid,
                         pdfEngine: pdfEngineToUse, // Pass the determined engine
                     }),
@@ -351,7 +352,7 @@ export function ProcessingDialog({ isOpen, onClose, file, model, temperature, in
                     const isExpired = !expirationDate || expirationDate < new Date();
                     if (isExpired) {
                        toast({ title: "Ссылка на файл истекла", description: "Обновляем ссылку в S3 кеше." });
-                       const refreshResponse = await fetch("/api/s3-refresh-url", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ objectKey: data.objectKey }), });
+                       const refreshResponse = await fetch("/api/s3-refresh-url", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ objectKey: data.objectKey, bucketType: 'analysis' }), });
                        if (!refreshResponse.ok) throw new Error("Не удалось обновить ссылку на S3 файл.");
                        const { newAccessUrl, newExpirationTimestamp } = await refreshResponse.json();
                        await updateDoc(s3CacheRef, { accessUrl: newAccessUrl, urlExpirationTimestamp: new Timestamp(Math.floor(newExpirationTimestamp / 1000), 0) });
@@ -368,7 +369,7 @@ export function ProcessingDialog({ isOpen, onClose, file, model, temperature, in
                     toast({ title: "Ссылка не найдена", description: "Файла нет в кеше, нужна загрузка в S3." });
                     setStage('getting_s3_url');
                     await setProjectStage('s3_upload');
-                    const presignedUrlResponse = await fetch("/api/s3-upload", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ fileName: file.name, fileType: file.type }) });
+                    const presignedUrlResponse = await fetch("/api/s3-upload", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ fileName: file.name, fileType: file.type, bucketType: 'analysis' }) });
                     if (!presignedUrlResponse.ok) throw new Error((await presignedUrlResponse.json()).error || "Не удалось получить ссылку для загрузки в S3.");
                     const { uploadUrl, accessUrl, objectKey: uploadObjectKey, urlExpirationTimestamp } = await presignedUrlResponse.json();
 
@@ -427,7 +428,7 @@ export function ProcessingDialog({ isOpen, onClose, file, model, temperature, in
                             mimeType: file.type,
                             objectKey,
                             model,
-                            temperature,
+                            temperature: effectiveTemperature,
                             includeThoughts,
                         }),
                     });
@@ -478,7 +479,7 @@ export function ProcessingDialog({ isOpen, onClose, file, model, temperature, in
         };
         
         processFile();
-    }, [isOpen, file, user, isSelectedOpenRouter, effectivePdfEngine, model, temperature, includeThoughts, toast, router, onClose, setCurrentProject, serverSettingsLoaded, shouldUseServerPipeline, processingProjectId, objectId, objectName, onProjectProcessed]);
+    }, [isOpen, file, user, isSelectedOpenRouter, effectivePdfEngine, model, effectiveTemperature, includeThoughts, toast, router, onClose, setCurrentProject, serverSettingsLoaded, shouldUseServerPipeline, processingProjectId, objectId, objectName, onProjectProcessed]);
 
     const handleStop = async () => {
         if (!user) return;

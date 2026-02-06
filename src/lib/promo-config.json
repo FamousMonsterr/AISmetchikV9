@@ -3,9 +3,9 @@
     "WARNING_COMMENT": "ВНИМАНИЕ! Этот файл содержит конфигурацию для промо-акций и реферальной программы.",
     "referralProgram": {
         "referrerBonus": {
-            "rub": 500,
-            "credits": 5,
-            "description": "500 рублей (эквивалент 5 кредитов)"
+            "rub": 1000,
+            "credits": 10,
+            "description": "1000 рублей (эквивалент 10 кредитов)"
         },
         "refereeBonus": {
             "proTrialDays": 30,

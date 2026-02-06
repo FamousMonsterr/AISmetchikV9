@@ -3,11 +3,12 @@
 
 import { z } from 'zod';
 import { db } from '@/lib/firebase';
-import { collection, doc, getDoc, runTransaction, writeBatch, updateDoc } from '@/lib/mongoFirestoreServer';
+import { collection, doc, getDoc, writeBatch, updateDoc } from '@/lib/mongoFirestoreServer';
 import { getUserPriceBase } from './userActions';
 import { suggestPrivatePricesFlow } from '@/ai/flows/suggest-private-prices-flow';
 import { logUserAction } from '@/lib/logger';
 import type { HistoryRequest, AppUser } from '@/contexts/AppContext';
+import { deductCredits } from '@/services/credits';
 
 const BatchPriceUpdateSchema = z.object({
   userId: z.string().min(1),
@@ -24,27 +25,18 @@ export const runBatchPriceUpdate = async (data: z.infer<typeof BatchPriceUpdateS
   const { userId, projectIds, selectedSections } = validation.data;
 
   try {
-    // Transaction to check credits and deduct them
-    await runTransaction(db, async (transaction) => {
-      const userRef = doc(db, 'users', userId);
-      const userDoc = await transaction.get(userRef);
-      if (!userDoc.exists()) throw new Error('Пользователь не найден.');
-      
-      const cost = projectIds.length;
-      const currentCredits = (userDoc.data() as AppUser).credits || 0;
-      if (currentCredits < cost) {
-        throw new Error(`Недостаточно кредитов. Требуется: ${cost}, доступно: ${currentCredits}.`);
-      }
-      
-      // Deduct credits
-      transaction.update(userRef, { credits: currentCredits - cost });
-      
-      await logUserAction(userId, 'CREDIT_DEDUCTION', { 
-          amount: cost, 
-          reason: 'Batch Price Update', 
-          projectCount: projectIds.length,
-          newBalance: currentCredits - cost 
-      });
+    const cost = projectIds.length;
+    const deduction = await deductCredits({
+      userId,
+      amount: cost,
+      reason: 'batch_price_update',
+      metadata: { projectCount: projectIds.length },
+    });
+    await logUserAction(userId, 'CREDIT_DEDUCTION', { 
+        amount: cost, 
+        reason: 'Batch Price Update', 
+        projectCount: projectIds.length,
+        newBalance: deduction.summary.total 
     });
 
     // Get user's price base

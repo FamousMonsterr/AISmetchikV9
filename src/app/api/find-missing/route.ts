@@ -1,11 +1,11 @@
 // src/app/api/find-missing/route.ts
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { db } from '@/lib/firebase';
-import { doc, getDoc, runTransaction, updateDoc, increment } from '@/lib/mongoFirestoreServer';
 import { findMissingItemsFlow, type FindMissingItemsInput, type FindMissingItemsOutput } from '@/ai/flows/find-missing-items-flow';
 import type { AiSpecificationItem } from '@/ai/genkit-schemas';
 import { nanoid } from 'nanoid';
+import { classifyItemType } from '@/lib/item-type-classifier';
+import { deductCreditsInTransaction, withMongoTransaction } from '@/services/credits';
 
 const FIND_MISSING_COST = 1;
 
@@ -25,21 +25,6 @@ const FindMissingRequestSchema = z.object({
   projectId: z.string().min(1),
 });
 
-const getItemType = (name?: string, unit?: string) => {
-  const normalizedUnit = (unit || 'шт').toLowerCase();
-  const lowerName = (name || '').toLowerCase();
-  if (normalizedUnit === 'м' || normalizedUnit === 'метр' || lowerName.includes('кабель')) {
-    return 'cable';
-  }
-  if (normalizedUnit === 'шт' || normalizedUnit === 'компл') {
-    return 'device';
-  }
-  if (['стяжка', 'дюбель', 'бирка', 'скоба', 'трубка', 'гильза', 'наконечник'].some(c => lowerName.includes(c))) {
-    return 'consumable';
-  }
-  return 'other';
-};
-
 // We need a function to hydrate the items for the UI, adding default fields
 function hydrateNewItemsForUI(aiItems: AiSpecificationItem[]): any[] {
   if (!Array.isArray(aiItems)) return [];
@@ -53,7 +38,7 @@ function hydrateNewItemsForUI(aiItems: AiSpecificationItem[]): any[] {
     quantityReserve: item.r,
     unit: item.u || 'шт',
     isInformational: item.isInf,
-    itemType: getItemType(item.n, item.u),
+    itemType: classifyItemType(item.n, item.u),
     // Add default UI-specific fields
     status: 'На утверждение' as const, 
     materialPrice: 0,
@@ -74,33 +59,31 @@ export async function POST(request: Request) {
     const { userId, fileUri, fileName, mimeType, existingItems, model: modelOverride, projectId } = validation.data;
     
     // --- Transaction to ensure atomicity ---
-    const findResult = await runTransaction(db, async (transaction) => {
-        const userDocRef = doc(db, 'users', userId);
-        const userDoc = await transaction.get(userDocRef);
-
-        if (!userDoc.exists() || (userDoc.data().credits || 0) < FIND_MISSING_COST) {
-            throw new Error('Недостаточно кредитов для выполнения операции.');
-        }
-
+    const findResult = await withMongoTransaction(async (ctx) => {
         const findInput: FindMissingItemsInput = {
             userId,
             fileUri,
             fileName,
             mimeType,
-            existingItems, // This now matches what the flow needs
+            existingItems,
             model: modelOverride,
         };
 
         const findOutput: FindMissingItemsOutput = await findMissingItemsFlow(findInput);
-        
-        // Deduct credits only AFTER a successful AI call
-        const currentCredits = userDoc.data().credits || 0;
-        transaction.update(userDocRef, { credits: currentCredits - FIND_MISSING_COST });
 
-        // Increment AI call count on the project
-        const projectRef = doc(db, 'requests', projectId);
-        transaction.update(projectRef, { aiCallCount: increment(1) });
-        
+        await deductCreditsInTransaction(ctx, {
+            userId,
+            amount: FIND_MISSING_COST,
+            reason: 'find_missing',
+            metadata: { projectId },
+        });
+
+        await ctx.db.collection('requests').updateOne(
+            { _id: projectId },
+            { $inc: { aiCallCount: 1 } },
+            ctx.session ? { session: ctx.session } : undefined,
+        );
+
         return findOutput;
     });
 

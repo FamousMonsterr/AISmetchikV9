@@ -106,7 +106,7 @@ export default function TemplatesAdminPage() {
         <Card>
           <CardHeader>
             <CardTitle>Конструктор шаблонов</CardTitle>
-            <CardDescription>Выберите шаблон и экспортируйте предпросмотр. Сохранение в базе пока заглушка.</CardDescription>
+            <CardDescription>Выберите шаблон и экспортируйте предпросмотр. Пользовательский конструктор доступен в профиле.</CardDescription>
           </CardHeader>
         </Card>
       </div>
@@ -171,7 +171,7 @@ export default function TemplatesAdminPage() {
             <div>Тип: {activeConfig.docType}</div>
             <div>Доступ: {activeConfig.status}</div>
             {activeConfig.accentColor && <div>Цвет акцента: {activeConfig.accentColor}</div>}
-            <div className="text-xs text-amber-600">Сохранение настроек конструктором пока не подключено (заглушка).</div>
+            <div className="text-xs text-muted-foreground">Редактирование пользовательских шаблонов доступно в профиле.</div>
           </CardContent>
         </Card>
       )}

@@ -12,6 +12,8 @@ import type { HistoryRequest, AnalysisDetails, QuoteConfig, PriceBaseItem, Speci
 import { DEFAULT_SERVER_QUOTE_CONFIG } from '@/server-functions/config';
 import { logProjectEvent, logUserAction } from '@/lib/logger';
 import { AiSpecificationItemSchema, ExtractProjectSpecificationsOutputSchema } from '@/ai/genkit-schemas';
+import { deductCredits, deductCreditsInTransaction, refundCredits, withMongoTransaction } from '@/services/credits';
+import { getPlanModelIds } from '@/lib/plan-models';
 
 
 // --- Profile Management ---
@@ -121,6 +123,40 @@ export const updateUserProfile = async (data: z.infer<typeof UpdateProfileSchema
   }
 };
 
+// --- Plan Model Preference (A/B test) ---
+const UpdatePlanModelPreferenceSchema = z.object({
+  userId: z.string().min(1, 'Необходимо указать ID пользователя.'),
+  plan: z.enum(['Free', 'PRO']),
+  model: z.string().min(1, 'Необходимо указать модель.'),
+});
+
+export const updatePlanModelPreference = async (data: z.infer<typeof UpdatePlanModelPreferenceSchema>): Promise<{ success: boolean; message: string }> => {
+  const validation = UpdatePlanModelPreferenceSchema.safeParse(data);
+  if (!validation.success) {
+    return { success: false, message: 'Неверные данные для выбора модели.' };
+  }
+  const { userId, plan, model } = validation.data;
+  const allowedModels = new Set(getPlanModelIds(plan));
+  if (!allowedModels.has(model)) {
+    return { success: false, message: 'Выбранная модель недоступна для этого тарифа.' };
+  }
+
+  try {
+    const preferenceKey = plan === 'PRO' ? 'pro' : 'free';
+    const userRef = doc(db, 'users', userId);
+    await updateDoc(userRef, {
+      [`planModelPreferences.${preferenceKey}`]: model,
+      updatedAt: serverTimestamp(),
+    } as any);
+
+    await logUserAction(userId, 'MODEL_PREFERENCE_SET', { plan, model });
+    return { success: true, message: 'Предпочтение сохранено.' };
+  } catch (error: any) {
+    console.error("Error updating plan model preference:", error);
+    return { success: false, message: error.message || 'Не удалось сохранить выбор.' };
+  }
+};
+
 export const logThirdPartyConsent = async (userId: string, source: string = 'purchase_dialog'): Promise<{ success: boolean; message: string }> => {
   if (!userId) {
     return { success: false, message: 'Не указан пользователь.' };
@@ -131,6 +167,34 @@ export const logThirdPartyConsent = async (userId: string, source: string = 'pur
     return { success: true, message: 'Согласие зафиксировано.' };
   } catch (error: any) {
     return { success: false, message: error.message || 'Не удалось зафиксировать согласие.' };
+  }
+};
+
+const MarketingConsentSchema = z.object({
+  userId: z.string().min(1),
+  agreedToMarketing: z.boolean(),
+});
+
+export const updateMarketingConsent = async (data: z.infer<typeof MarketingConsentSchema>): Promise<{ success: boolean; message: string }> => {
+  const validation = MarketingConsentSchema.safeParse(data);
+  if (!validation.success) {
+    return { success: false, message: 'Неверные данные.' };
+  }
+
+  const { userId, agreedToMarketing } = validation.data;
+  const userRef = doc(db, 'users', userId);
+  try {
+    await updateDoc(userRef, {
+      agreedToMarketing,
+      marketingConsentUpdatedAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
+
+    await logUserAction(userId, 'MARKETING_CONSENT_UPDATE', { agreedToMarketing });
+    return { success: true, message: 'Настройка рассылок обновлена.' };
+  } catch (error: any) {
+    console.error("Marketing consent update failed:", error);
+    return { success: false, message: 'Не удалось обновить настройку рассылок.' };
   }
 };
 
@@ -209,20 +273,8 @@ export const sendPasswordReset = async (data: z.infer<typeof PasswordResetSchema
 
 
 export const deductCredit = async (userId: string, amount: number): Promise<{success: boolean, message?: string}> => {
-  const userRef = doc(db, 'users', userId);
   try {
-    await runTransaction(db, async (transaction) => {
-      const userDoc = await transaction.get(userRef);
-      if (!userDoc.exists()) {
-        throw new Error("Пользователь не найден.");
-      }
-      const currentCredits = userDoc.data().credits || 0;
-      if (currentCredits < amount) {
-        throw new Error("Недостаточно кредитов.");
-      }
-      const newCredits = currentCredits - amount;
-      transaction.update(userRef, { credits: newCredits });
-    });
+    await deductCredits({ userId, amount, reason: 'manual_deduct' });
     return { success: true };
   } catch (error: any) {
     console.error("Credit deduction transaction failed:", error);
@@ -366,45 +418,50 @@ export const finalizeProjectCreation = async (
   creditCost: number,
   initialAiResponse?: any,
 ): Promise<{ success: boolean; message: string; project: HistoryRequest | null; }> => {
-  const userRef = doc(db, 'users', userId);
   const projectRef = doc(collection(db, 'requests'));
 
   try {
-    await runTransaction(db, async (transaction) => {
-      // 1. Get user document
-      const userDoc = await transaction.get(userRef);
-      if (!userDoc.exists()) throw new Error('Пользователь не найден.');
-      
-      const currentCredits = userDoc.data().credits || 0;
-      if (currentCredits < creditCost) throw new Error('Недостаточно кредитов для сохранения проекта.');
+    await withMongoTransaction(async (ctx) => {
+      const now = new Date();
+      const userDoc = await ctx.db.collection('users').findOne({ _id: userId }, ctx.session ? { session: ctx.session } : undefined);
+      if (!userDoc) throw new Error('Пользователь не найден.');
 
-      // 2. Update user's credits and project count
-      const newCredits = currentCredits - creditCost;
-      transaction.update(userRef, { credits: newCredits, projectCount: increment(1) });
+      await deductCreditsInTransaction(ctx, {
+        userId,
+        amount: creditCost,
+        reason: 'project_create',
+        metadata: { projectId: projectRef.id },
+      });
 
-      // 3. Create the new project document
+      await ctx.db.collection('users').updateOne(
+        { _id: userId },
+        { $inc: { projectCount: 1 }, $set: { updatedAt: now } },
+        ctx.session ? { session: ctx.session } : undefined,
+      );
+
       const finalProjectData = {
         ...projectData,
-        userId: userId,
-        timestamp: serverTimestamp(),
-        updatedAt: serverTimestamp(),
+        userId,
+        timestamp: now,
+        updatedAt: now,
         cost: creditCost,
         status: 'success',
-        isMainVersion: true, // New projects are always main versions
-        version: 1, // It's the first version
-        parentProjectId: projectRef.id, // It is its own parent
+        isMainVersion: true,
+        version: 1,
+        parentProjectId: projectRef.id,
         actionHistory: [],
       };
-      transaction.set(projectRef, finalProjectData);
-      
-      // 4. Create AI accuracy cache document
+      await ctx.db.collection('requests').insertOne(
+        { _id: projectRef.id, ...finalProjectData },
+        ctx.session ? { session: ctx.session } : undefined,
+      );
+
       if (projectData.fileSha1 && initialAiResponse) {
-          const cacheRef = doc(db, 'file_analysis_cache', projectData.fileSha1);
-          transaction.set(cacheRef, {
-              originalAiResponse: initialAiResponse,
-              createdAt: serverTimestamp(),
-              reportCount: 0,
-          }, { merge: true });
+        await ctx.db.collection('file_analysis_cache').updateOne(
+          { _id: projectData.fileSha1 },
+          { $set: { originalAiResponse: initialAiResponse, createdAt: now, reportCount: 0 } },
+          { upsert: true, ...(ctx.session ? { session: ctx.session } : {}) },
+        );
       }
     });
 
@@ -504,16 +561,14 @@ export const returnCreditForFailedRequest = async (data: z.infer<typeof ReturnCr
 
     const { userId, creditAmount } = validation.data;
     
-    const userRef = doc(db, 'users', userId);
-
     try {
-        const userDoc = await getDoc(userRef);
-        if (!userDoc.exists()) throw new Error('Пользователь не найден.');
-        
-        const currentCredits = userDoc.data().credits || 0;
-        const newCredits = currentCredits + creditAmount;
-        await updateDoc(userRef, { credits: newCredits });
-        
+        await refundCredits({
+            userId,
+            amount: creditAmount,
+            reason: 'request_failed_refund',
+            metadata: { source: 'request_failed' },
+        });
+
         await logUserAction(userId, 'CREDIT_REFUND', {
             amount: creditAmount,
         });
@@ -961,39 +1016,53 @@ export const finalizeProcessingRequest = async (data: z.infer<typeof FinalizePro
     const projectRef = doc(db, 'requests', projectId);
 
     try {
-        await runTransaction(db, async (transaction) => {
-            const userDoc = await transaction.get(userRef);
-            if (!userDoc.exists()) throw new Error('Пользователь не найден.');
-            const projectDoc = await transaction.get(projectRef);
-            if (!projectDoc.exists()) throw new Error('Проект не найден.');
-            const projectData = projectDoc.data() as HistoryRequest;
-            if (projectData.userId !== userId) throw new Error('Нет доступа к проекту.');
-            if (projectData.status === 'success') throw new Error('Проект уже завершен.');
-            const currentCredits = userDoc.data().credits || 0;
-            if (currentCredits < creditCost) throw new Error('Недостаточно кредитов.');
+        await withMongoTransaction(async (ctx) => {
+            const now = new Date();
+            const userDoc = await ctx.db.collection('users').findOne({ _id: userId }, ctx.session ? { session: ctx.session } : undefined);
+            if (!userDoc) throw new Error('Пользователь не найден.');
+            const projectDoc = await ctx.db.collection('requests').findOne({ _id: projectId }, ctx.session ? { session: ctx.session } : undefined);
+            if (!projectDoc) throw new Error('Проект не найден.');
+            if (projectDoc.userId !== userId) throw new Error('Нет доступа к проекту.');
+            if (projectDoc.status === 'success') throw new Error('Проект уже завершен.');
 
-            transaction.update(userRef, { credits: currentCredits - creditCost, projectCount: increment(1) });
+            await deductCreditsInTransaction(ctx, {
+                userId,
+                amount: creditCost,
+                reason: 'analysis_finalize',
+                metadata: { projectId },
+            });
 
-            transaction.update(projectRef, {
-                ...rest,
-                status: 'success',
-                cost: creditCost,
-                outputSpecifications,
-                quoteConfig: quoteConfig || projectData.quoteConfig || DEFAULT_SERVER_QUOTE_CONFIG,
-                aiComment: aiComment ?? '',
-                analysisDetails: analysisDetails ?? null,
-                importantExtractionNotes: importantExtractionNotes ?? [],
-                aiCallCount: aiCallCount ?? 0,
-                updatedAt: serverTimestamp(),
-            } as any);
+            await ctx.db.collection('users').updateOne(
+                { _id: userId },
+                { $inc: { projectCount: 1 }, $set: { updatedAt: now } },
+                ctx.session ? { session: ctx.session } : undefined,
+            );
+
+            await ctx.db.collection('requests').updateOne(
+                { _id: projectId },
+                {
+                    $set: {
+                        ...rest,
+                        status: 'success',
+                        cost: creditCost,
+                        outputSpecifications,
+                        quoteConfig: quoteConfig || projectDoc.quoteConfig || DEFAULT_SERVER_QUOTE_CONFIG,
+                        aiComment: aiComment ?? '',
+                        analysisDetails: analysisDetails ?? null,
+                        importantExtractionNotes: importantExtractionNotes ?? [],
+                        aiCallCount: aiCallCount ?? 0,
+                        updatedAt: now,
+                    },
+                },
+                ctx.session ? { session: ctx.session } : undefined,
+            );
 
             if (rest.fileSha1 && initialAiResponse) {
-                const cacheRef = doc(db, 'file_analysis_cache', rest.fileSha1);
-                transaction.set(cacheRef, {
-                    originalAiResponse: initialAiResponse,
-                    createdAt: serverTimestamp(),
-                    reportCount: 0,
-                }, { merge: true });
+                await ctx.db.collection('file_analysis_cache').updateOne(
+                    { _id: rest.fileSha1 },
+                    { $set: { originalAiResponse: initialAiResponse, createdAt: now, reportCount: 0 } },
+                    { upsert: true, ...(ctx.session ? { session: ctx.session } : {}) },
+                );
             }
         });
 

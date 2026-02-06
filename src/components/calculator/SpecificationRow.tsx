@@ -218,6 +218,10 @@ export const SpecificationRow = React.memo(({ item, index, quoteConfig, onUpdate
                                          <Checkbox id={`isCable-${item.id}`} checked={item.itemType === 'cable'} onCheckedChange={() => handleItemTypeChange('cable')} />
                                          <Label htmlFor={`isCable-${item.id}`} className="font-normal flex items-center gap-1.5"><Cable className="h-4 w-4 text-muted-foreground"/>Кабель</Label>
                                      </div>
+                                     <div className="flex items-center space-x-2">
+                                         <Checkbox id={`isCableSupport-${item.id}`} checked={item.itemType === 'cable_support'} onCheckedChange={() => handleItemTypeChange('cable_support')} />
+                                         <Label htmlFor={`isCableSupport-${item.id}`} className="font-normal flex items-center gap-1.5"><Cable className="h-4 w-4 text-muted-foreground"/>Кабеленесущая конструкция</Label>
+                                     </div>
                                       <div className="flex items-center space-x-2">
                                          <Checkbox id={`isConsumable-${item.id}`} checked={item.itemType === 'consumable'} onCheckedChange={() => handleItemTypeChange('consumable')} />
                                          <Label htmlFor={`isConsumable-${item.id}`} className="font-normal flex items-center gap-1.5"><Wrench className="h-4 w-4 text-muted-foreground"/>Расходник</Label>

@@ -15,7 +15,8 @@ import { z } from 'zod';
 import { updateUserPwaStatus, saveProjectVersion } from '@/actions/userActions';
 import { useToast } from '@/hooks/use-toast';
 import { useTheme } from "next-themes";
-import aiConfig from '@/lib/ai-config.json';
+import { getPlanModelOptions } from '@/lib/plan-models';
+import type { ClassifiedItemType } from '@/lib/item-type-classifier';
 
 
 export type SystemRole = 'User' | 'Admin' | 'Super Admin';
@@ -55,8 +56,13 @@ export interface AppUser {
   isPWAUser?: boolean; // New for PWA tracking
 
   credits: number;
-  promoCredits?: number; // New for referral bonus
-  promoCreditsExpireAt?: Date | null; // New for referral bonus
+  promoCredits?: number; // Legacy referral bonus (migrated to bonusCredits)
+  promoCreditsExpireAt?: Date | null; // Legacy referral bonus (migrated)
+  bonusCredits?: number;
+  purchasedCredits?: number;
+  bonusCreditsExpireAt?: Date | null;
+  purchasedCreditsExpireAt?: Date | null;
+  creditsUpdatedAt?: any;
   createdAt?: any; // Can be Firebase Timestamp or Date
   updatedAt?: any;
 
@@ -77,6 +83,13 @@ export interface AppUser {
   originalPlan?: UserPlan | null; 
   planExpiresAt?: any | null; // Timestamp
   hasUsedTrial?: boolean;
+  planSource?: 'trial' | 'paid' | 'pending_payment' | null;
+  pendingProOrderId?: string | null;
+  pendingProExpiresAt?: any | null;
+  planModelPreferences?: {
+    free?: string;
+    pro?: string;
+  };
   
   // Manager/Partner
   managerId?: string | null;
@@ -92,6 +105,7 @@ export interface AppUser {
   termsAgreedAt?: any; // Timestamp for main consent
   agreedToMarketing?: boolean;
   agreedToThirdParty?: boolean;
+  proMonthlyBonusLastGrantedAt?: any | null;
 
   // Notifications
   seenNotifications?: string[];
@@ -114,7 +128,7 @@ export interface AppUser {
 }
 
 export type ItemStatus = 'На утверждение' | 'Утверждено' | 'Уточнить';
-export type ItemType = 'device' | 'cable' | 'consumable' | 'other';
+export type ItemType = ClassifiedItemType;
 
 // This is the single source of truth for the SpecificationItem type throughout the app.
 // It uses full, descriptive names for UI and DB consistency.
@@ -397,7 +411,7 @@ interface AppState {
   isLoading: boolean; // Add a loading state
   effectivePlan: UserPlan; // Calculated plan including trial
   effectiveRole: UserRole;
-  userAvailableModels: any[]; // New: models from user data
+  userAvailableModels: any[]; // Models available for current plan
   
   resetAppContextState: () => void;
   
@@ -523,11 +537,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [isTransitioning, startTransition] = useTransition();
 
   const userAvailableModels = useMemo(() => {
-    if (!user || !user.availableModels) return [];
-    let available = (aiConfig.apiModels || []).filter((model: any) => user.availableModels.includes(model.value));
-    
-    return available;
-  }, [user]);
+    if (!user) return [];
+    return getPlanModelOptions(effectivePlan);
+  }, [user, effectivePlan]);
 
   const checkUserPlan = useCallback(async (userToCheck: AppUser) => {
     let changed = false;
@@ -544,6 +556,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 plan: tempPlan,
                 originalPlan: null,
                 planExpiresAt: null,
+                planSource: null,
                 updatedAt: serverTimestamp()
             });
         }

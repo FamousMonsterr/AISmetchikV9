@@ -6,10 +6,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Button } from '@/components/ui/button';
 import { Loader2, Star, CheckCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useAppContext, UserPlan, UserRole } from '@/contexts/AppContext';
+import { useAppContext, UserPlan } from '@/contexts/AppContext';
 import { activateTrial, getAppSettings } from '@/actions/adminActions';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
-import Link from 'next/link';
+import { PurchaseProDialog } from '@/components/PurchaseProDialog';
 
 interface UpgradeAccountDialogProps {
   isOpen: boolean;
@@ -24,6 +24,7 @@ export function UpgradeAccountDialog({ isOpen, onClose, targetRole, featureName 
   const [isPending, startTransition] = useTransition();
   const [enterpriseEmail, setEnterpriseEmail] = useState('support@example.com');
   const [isLoadingEmail, setIsLoadingEmail] = useState(false);
+  const [isPurchaseOpen, setIsPurchaseOpen] = useState(false);
 
   const handleActivateTrial = () => {
     if (!user) return;
@@ -55,14 +56,19 @@ export function UpgradeAccountDialog({ isOpen, onClose, targetRole, featureName 
   const isAlreadyOnHigherPlan = currentRoleIndex >= targetRoleIndex;
   const isRequestOnly = targetRole === 'Business' || targetRole === 'Enterprise';
   const isTrialAvailable = targetRole === 'PRO';
+  const targetRoleLabel = targetRole === 'Business'
+    ? 'Business (от 3 пользователей)'
+    : targetRole === 'Enterprise'
+      ? 'Enterprise (от 25 пользователей)'
+      : targetRole;
   const planExpiresAt = user?.planExpiresAt instanceof Date
     ? user.planExpiresAt
     : (user?.planExpiresAt as any)?.toDate?.();
   const expiresText = planExpiresAt ? new Date(planExpiresAt).toLocaleDateString('ru-RU') : null;
 
   const descriptionText = featureName 
-    ? `Функция "${featureName}" доступна только на тарифах ${targetRole} и выше.`
-    : `Эта функция доступна только на тарифах ${targetRole} и выше.`;
+    ? `Функция "${featureName}" доступна только на тарифах ${targetRoleLabel} и выше.`
+    : `Эта функция доступна только на тарифах ${targetRoleLabel} и выше.`;
 
   useEffect(() => {
     if (!isOpen || !isRequestOnly) return;
@@ -73,15 +79,22 @@ export function UpgradeAccountDialog({ isOpen, onClose, targetRole, featureName 
       .finally(() => setIsLoadingEmail(false));
   }, [isOpen, isRequestOnly]);
 
-  const mailtoHref = `mailto:${enterpriseEmail}?subject=${encodeURIComponent(`Запрос на тариф ${targetRole}`)}`;
+  useEffect(() => {
+    if (!isOpen) {
+      setIsPurchaseOpen(false);
+    }
+  }, [isOpen]);
+
+  const mailtoHref = `mailto:${enterpriseEmail}?subject=${encodeURIComponent(`Запрос на тариф ${targetRoleLabel}`)}`;
 
   return (
+    <>
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Star className="h-6 w-6 text-amber-500" />
-            Перейти на тариф {targetRole}?
+            Перейти на тариф {targetRoleLabel}?
           </DialogTitle>
           <DialogDescription>
             {descriptionText} Разблокируйте полный потенциал EstimateAI.
@@ -93,7 +106,7 @@ export function UpgradeAccountDialog({ isOpen, onClose, targetRole, featureName 
                 <CheckCircle className="h-4 w-4 text-green-600" />
                 <AlertTitle className="text-green-800">Функция уже доступна</AlertTitle>
                 <AlertDescription className="text-green-700">
-                   Ваш тариф "{effectivePlan}" уже выше или равен {targetRole}. {expiresText ? `Оплачено до ${expiresText}.` : 'Подписка активна.'}
+                   Ваш тариф "{effectivePlan}" уже выше или равен {targetRoleLabel}. {expiresText ? `Оплачено до ${expiresText}.` : 'Подписка активна.'}
                 </AlertDescription>
             </Alert>
           ) : isRequestOnly ? (
@@ -101,7 +114,7 @@ export function UpgradeAccountDialog({ isOpen, onClose, targetRole, featureName 
               <CheckCircle className="h-4 w-4 text-blue-700" />
               <AlertTitle className="text-blue-900">Подключение по запросу</AlertTitle>
               <AlertDescription className="text-blue-800">
-                Тариф {targetRole} подключается только по заявке. Пробный период для Business/Enterprise не предусмотрен.
+                Тариф {targetRoleLabel} подключается только по заявке. Пробный период для Business/Enterprise не предусмотрен.
               </AlertDescription>
             </Alert>
           ) : hasUsedTrial ? (
@@ -117,7 +130,7 @@ export function UpgradeAccountDialog({ isOpen, onClose, targetRole, featureName 
                 <CheckCircle className="h-4 w-4 text-green-600"/>
                 <AlertTitle className="text-green-800">Активируйте бесплатный пробный период!</AlertTitle>
                 <AlertDescription className="text-green-700">
-                  Получите полный доступ ко всем функциям тарифа **{targetRole} на 3 дня** абсолютно бесплатно.
+                  Получите полный доступ ко всем функциям тарифа **{targetRoleLabel} на 3 дня** абсолютно бесплатно.
                 </AlertDescription>
             </Alert>
           )}
@@ -128,22 +141,32 @@ export function UpgradeAccountDialog({ isOpen, onClose, targetRole, featureName 
               isRequestOnly ? (
                 <Button asChild variant="secondary" disabled={isLoadingEmail}>
                   <a href={mailtoHref}>
-                    {isLoadingEmail ? "Загрузка..." : `Запросить ${targetRole}`}
+                    {isLoadingEmail ? "Загрузка..." : `Запросить ${targetRoleLabel}`}
                   </a>
                 </Button>
-              ) : hasUsedTrial ? (
-                <Button asChild>
-                  <Link href="/dashboard/billing">Перейти к оплате</Link>
-                </Button>
               ) : (
-                <Button onClick={handleActivateTrial} disabled={isPending || !isTrialAvailable}>
-                  {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Попробовать {targetRole} бесплатно
-                </Button>
+                <>
+                  <Button variant="secondary" onClick={() => setIsPurchaseOpen(true)}>
+                    Перейти к оплате
+                  </Button>
+                  {!hasUsedTrial && (
+                    <Button onClick={handleActivateTrial} disabled={isPending || !isTrialAvailable}>
+                      {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      Попробовать {targetRoleLabel} бесплатно
+                    </Button>
+                  )}
+                </>
               )
           )}
         </DialogFooter>
       </DialogContent>
     </Dialog>
+    {targetRole === 'PRO' && (
+      <PurchaseProDialog
+        isOpen={isPurchaseOpen}
+        onClose={() => setIsPurchaseOpen(false)}
+      />
+    )}
+    </>
   );
 }

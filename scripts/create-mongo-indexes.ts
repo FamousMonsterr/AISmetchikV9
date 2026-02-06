@@ -40,6 +40,13 @@ async function run() {
     db.collection('project_event_logs').createIndex({ source: 1, timestamp: -1 }),
     db.collection('project_event_logs').createIndex({ model: 1, timestamp: -1 }),
     db.collection('project_event_logs').createIndex({ tags: 1, timestamp: -1 }),
+    db.collection('credit_lots').createIndex({ userId: 1, type: 1, remaining: -1 }),
+    db.collection('credit_lots').createIndex({ userId: 1, expiresAt: 1 }),
+    db.collection('credit_ledger').createIndex({ userId: 1, createdAt: -1 }),
+    db.collection('credit_ledger').createIndex({ lotId: 1 }),
+    db.collection('pro_subscription_orders').createIndex({ status: 1, createdAt: -1 }),
+    db.collection('pro_subscription_orders').createIndex({ userId: 1, createdAt: -1 }),
+    db.collection('pro_subscription_orders').createIndex({ autoApproveAt: 1 }),
   ]);
 
   await client.close();

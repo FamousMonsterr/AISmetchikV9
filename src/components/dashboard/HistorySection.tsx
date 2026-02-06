@@ -200,7 +200,7 @@ export function HistorySection({
             try {
                 let accessUrl = item.fileUri;
                 if (item.s3ObjectKey) {
-                    const refresh = await fetch('/api/s3-refresh-url', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ objectKey: item.s3ObjectKey }) });
+                    const refresh = await fetch('/api/s3-refresh-url', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ objectKey: item.s3ObjectKey, bucketType: 'analysis' }) });
                     if (refresh.ok) {
                         const { newAccessUrl } = await refresh.json();
                         accessUrl = newAccessUrl;

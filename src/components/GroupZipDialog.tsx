@@ -28,6 +28,8 @@ import { saveAs } from 'file-saver';
 import { pdf } from '@react-pdf/renderer';
 import { format } from 'date-fns';
 import { Loader2 } from 'lucide-react';
+import { useUserTemplates } from '@/hooks/use-user-templates';
+import type { TemplateStyleConfig } from '@/lib/template-utils';
 
 
 type DocumentType = 'proposal' | 'invoice' | 'contract' | 'act' | 'ks2' | 'ks3' | 'ks6a';
@@ -82,21 +84,36 @@ export function GroupZipDialog({ isOpen, onClose, projects, companies }: GroupZi
   const [activeTemplateId, setActiveTemplateId] = useState<string>('');
   const [isGenerating, startGenerating] = useTransition();
 
+  const { templates: customTemplates } = useUserTemplates({ enabled: isOpen });
+  const customProposalTemplates = useMemo(
+    () => customTemplates.filter((template) => template.docType === 'proposal'),
+    [customTemplates],
+  );
+  const customTemplatesById = useMemo(
+    () => new Map(customProposalTemplates.map((template) => [template.id, template])),
+    [customProposalTemplates],
+  );
+
   const resolveTemplateIdFor = (type: DocumentType) => {
     const allowed = templateAccess[effectivePlan ?? 'Free'] || ['free'];
-    const options = templateCatalog.filter(template => template.docType === type && allowed.includes(template.status as (typeof allowed)[number]));
+    const baseOptions = templateCatalog.filter(template => template.docType === type && allowed.includes(template.status as (typeof allowed)[number]));
+    const customOptions = type === 'proposal' && effectivePlan !== 'Free' ? customProposalTemplates : [];
+    const options = [...baseOptions, ...customOptions];
     return user?.documentTemplates?.[type] || options[0]?.id || (type === 'invoice' ? 'invoice-1c-v1' : type === 'contract' ? 'contract-base-v1' : 'base-template-v1');
   };
 
 
   const templateOptions = useMemo(() => {
     const allowed = templateAccess[effectivePlan ?? 'Free'] || ['free'];
-    return templateCatalog.filter((template) => template.docType === docType && allowed.includes(template.status as (typeof allowed)[number]));
-  }, [docType, effectivePlan]);
+    const baseOptions = templateCatalog.filter((template) => template.docType === docType && allowed.includes(template.status as (typeof allowed)[number]));
+    const customOptions = docType === 'proposal' && effectivePlan !== 'Free' ? customProposalTemplates : [];
+    return [...baseOptions, ...customOptions];
+  }, [docType, effectivePlan, customProposalTemplates]);
 
   const resolvedTemplateId = useMemo(() => {
     return activeTemplateId || resolveTemplateIdFor(docType);
-  }, [activeTemplateId, docType, effectivePlan, user]);
+  }, [activeTemplateId, docType, effectivePlan, user, customProposalTemplates]);
+  const activeTemplateConfig = customTemplatesById.get(resolvedTemplateId) || null;
 
   const groupName = useMemo(() => {
     const fallback = projects[0]?.analysisDetails?.objectName || projects[0]?.fileName || 'группа';
@@ -234,6 +251,7 @@ export function GroupZipDialog({ isOpen, onClose, projects, companies }: GroupZi
   ): Promise<{ blob: Blob; fileName: string } | null> => {
     if (!projects.length) return null;
     const templateId = resolveTemplateIdFor(type);
+    const templateConfig = customTemplatesById.get(templateId) || null;
     const groupTitle = projects[0]?.analysisDetails?.objectName || projects[0]?.fileName || 'Группа проектов';
     const safeGroupName = sanitizeFileName(groupTitle);
 
@@ -252,6 +270,7 @@ export function GroupZipDialog({ isOpen, onClose, projects, companies }: GroupZi
           company={contractor}
           sections={sections}
           templateId={templateId}
+          templateConfig={templateConfig as TemplateStyleConfig | null}
           signatureUrl={user?.signatureUrl || null}
           stampUrl={user?.stampUrl || null}
           includeSummary={true}
@@ -392,6 +411,7 @@ export function GroupZipDialog({ isOpen, onClose, projects, companies }: GroupZi
           signatureBuffer,
           stampBuffer,
           templateId: resolvedTemplateId,
+          templateConfig: activeTemplateConfig as TemplateStyleConfig | null,
         });
         return { blob, fileName: `КП_${baseName}.docx` };
       }
@@ -403,6 +423,7 @@ export function GroupZipDialog({ isOpen, onClose, projects, companies }: GroupZi
         <DocumentTemplate
           {...docParams}
           templateId={resolvedTemplateId}
+          templateConfig={activeTemplateConfig as TemplateStyleConfig | null}
           signatureUrl={signatureUrl}
           stampUrl={stampUrl}
         />
@@ -772,7 +793,9 @@ export function GroupZipDialog({ isOpen, onClose, projects, companies }: GroupZi
                 <SelectTrigger><SelectValue placeholder="Выберите шаблон" /></SelectTrigger>
                 <SelectContent>
                   {templateOptions.map((template) => (
-                    <SelectItem key={template.id} value={template.id}>{template.name}</SelectItem>
+                    <SelectItem key={template.id} value={template.id}>
+                      {template.userId ? `${template.name} (ваш)` : template.name}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>

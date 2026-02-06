@@ -142,7 +142,7 @@ export function SupportChat({ className }: { className?: string } = {}) {
   if (!user) return null;
 
   return (
-    <Card className={cn(className)}>
+    <Card className={cn("flex h-full max-h-[70vh] flex-col", className)}>
       <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <CardTitle>Связь с менеджером</CardTitle>
@@ -157,7 +157,7 @@ export function SupportChat({ className }: { className?: string } = {}) {
           Обновить
         </Button>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="flex flex-1 flex-col gap-4">
         {thread && (
           <div className="text-xs text-muted-foreground flex flex-wrap gap-4">
             <span>Статус: {thread.status === 'closed' ? 'Закрыт' : 'Открыт'}</span>
@@ -171,7 +171,7 @@ export function SupportChat({ className }: { className?: string } = {}) {
             <Loader2 className="h-8 w-8 animate-spin" />
           </div>
         ) : (
-          <ScrollArea className="h-64 rounded-md border p-4">
+          <ScrollArea className="flex-1 min-h-[180px] rounded-md border p-4">
             {messages.length === 0 ? (
               <div className="text-sm text-muted-foreground">Сообщений пока нет. Напишите менеджеру ниже.</div>
             ) : (

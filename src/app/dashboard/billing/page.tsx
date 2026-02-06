@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 import { useAppContext } from "@/contexts/AppContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Check, Mail, Loader2, Star, Zap, TrendingUp, KeySquare, HardDrive } from "lucide-react";
+import { Check, Mail, Loader2, Star, Zap, TrendingUp, KeySquare, HardDrive, Crown } from "lucide-react";
 import { getAppSettings } from '@/actions/adminActions';
 import { Badge } from '@/components/ui/badge';
 import type { AppSettings } from '@/actions/adminActions';
@@ -13,6 +13,9 @@ import plansConfig from '@/lib/plans-config.json';
 import { cn } from '@/lib/utils';
 import { PurchaseCreditsDialog, type CreditPackage } from '@/components/PurchaseCreditsDialog';
 import { InvoiceHistory } from '@/components/InvoiceHistory';
+import { CreditHistory } from '@/components/CreditHistory';
+import { UpgradeAccountDialog } from '@/components/UpgradeAccountDialog';
+import { getNextPlan, getPlanLabel } from '@/lib/plan-utils';
 
 const { creditPackages, enterprisePackage } = plansConfig;
 
@@ -23,6 +26,8 @@ export default function BillingPage() {
 
   const [isPurchaseDialogOpen, setIsPurchaseDialogOpen] = useState(false);
   const [selectedPackage, setSelectedPackage] = useState<CreditPackage | null>(null);
+  const [isUpgradeOpen, setIsUpgradeOpen] = useState(false);
+  const [upgradeTargetRole, setUpgradeTargetRole] = useState<'PRO' | 'Business' | 'Enterprise'>('PRO');
 
   useEffect(() => {
     const fetchEmail = async () => {
@@ -46,6 +51,16 @@ export default function BillingPage() {
     setIsPurchaseDialogOpen(true);
   };
 
+  const currentPlan = effectivePlan || 'Free';
+  const nextPlan = getNextPlan(currentPlan);
+  const nextPlanLabel = getPlanLabel(nextPlan);
+
+  const handleUpgradeClick = () => {
+    if (!nextPlan) return;
+    setUpgradeTargetRole(nextPlan);
+    setIsUpgradeOpen(true);
+  };
+
 
   return (
     <>
@@ -56,16 +71,27 @@ export default function BillingPage() {
                 <CardTitle>Текущий тарифный план</CardTitle>
               </CardHeader>
               <CardContent className="flex-grow space-y-4">
-                <Badge className="text-lg py-1 px-4" variant={effectivePlan === 'PRO' ? "default" : "secondary"}>{effectivePlan || 'Free'}</Badge>
+                <Badge className="text-lg py-1 px-4" variant={currentPlan === 'Free' ? "secondary" : "default"}>{currentPlan}</Badge>
                 <p className="text-muted-foreground">
-                    {effectivePlan === 'PRO' ? 'Вам доступны все PRO-функции, включая приватную базу цен и расширенные лимиты.' : 'Вы используете бесплатный тариф. Перейдите на PRO, чтобы разблокировать все возможности.'}
+                    {currentPlan === 'PRO'
+                      ? 'Вам доступны все PRO-функции, включая приватную базу цен и расширенные лимиты.'
+                      : currentPlan === 'Business'
+                        ? 'Вам доступны все PRO-функции плюс бизнес-возможности и корпоративные интеграции.'
+                        : currentPlan === 'Enterprise'
+                          ? 'Вам доступны все корпоративные возможности и максимальные лимиты.'
+                          : 'Вы используете бесплатный тариф. Перейдите на PRO, чтобы разблокировать все возможности.'}
                 </p>
               </CardContent>
               <CardFooter>
-                 {effectivePlan !== 'PRO' && (
+                 {nextPlan ? (
+                    <Button onClick={handleUpgradeClick}>
+                        <Crown className="mr-2 h-4 w-4" />
+                        Перейти на {nextPlanLabel}
+                    </Button>
+                 ) : (
                     <Button disabled>
                         <Star className="mr-2 h-4 w-4" />
-                        Перейти на PRO (скоро)
+                        Максимальный тариф активен
                     </Button>
                  )}
               </CardFooter>
@@ -77,9 +103,13 @@ export default function BillingPage() {
               <CardContent>
                 <div className="text-5xl font-bold text-primary">{user?.credits ?? 0}</div>
                 <p className="text-muted-foreground mt-1">кредитов на обработку файлов</p>
-                 {user?.promoCredits && user?.promoCredits > 0 && user?.promoCreditsExpireAt && (
+                 <div className="mt-3 space-y-1 text-sm text-muted-foreground">
+                  <div>Купленные: <span className="font-semibold text-foreground">{user?.purchasedCredits ?? 0}</span></div>
+                  <div>Бонусные: <span className="font-semibold text-foreground">{user?.bonusCredits ?? 0}</span></div>
+                 </div>
+                 {(user?.bonusCredits ?? 0) > 0 && user?.bonusCreditsExpireAt && (
                   <p className="text-sm text-green-600 mt-2">
-                    + {user.promoCredits} бонусных кредитов до {new Date(user.promoCreditsExpireAt).toLocaleDateString()}
+                    Бонусные кредиты действуют до {new Date(user.bonusCreditsExpireAt).toLocaleDateString()}
                   </p>
                 )}
               </CardContent>
@@ -147,9 +177,18 @@ export default function BillingPage() {
                 </ul>
             </CardContent>
             <CardFooter>
-                 <Button disabled>
-                    <KeySquare className="mr-2 h-4 w-4" />
-                    Подключить (в разработке для Business и Enterprise)
+                 <Button asChild variant="secondary" disabled={isLoadingEmail}>
+                    {isLoadingEmail ? (
+                      <span className="flex items-center">
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin"/>
+                        Загрузка...
+                      </span>
+                    ) : (
+                      <a href={`mailto:${enterpriseEmail}?subject=Запрос на подключение S3 (Business/Enterprise)`}>
+                        <KeySquare className="mr-2 h-4 w-4" />
+                        Запросить подключение S3
+                      </a>
+                    )}
                 </Button>
             </CardFooter>
         </Card>
@@ -190,6 +229,15 @@ export default function BillingPage() {
       </Card>
       
       <InvoiceHistory />
+
+      {user?.uid && (
+        <CreditHistory
+          currentUserId={user.uid}
+          targetUserId={user.uid}
+          title="История кредитов"
+          description="Все начисления, списания и сгорания."
+        />
+      )}
       
       <p className="text-center text-sm text-muted-foreground">Оплата для Юр. лиц и ИП доступна по запросу.</p>
     </div>
@@ -201,6 +249,12 @@ export default function BillingPage() {
             selectedPackage={selectedPackage}
         />
     )}
+
+    <UpgradeAccountDialog
+      isOpen={isUpgradeOpen}
+      onClose={() => setIsUpgradeOpen(false)}
+      targetRole={upgradeTargetRole}
+    />
     </>
   );
 }

@@ -3,6 +3,7 @@ import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 import type { SpecificationItem, AiSpecificationItem, ItemType } from '@/contexts/AppContext';
 import { nanoid } from "nanoid";
+import { classifyItemType } from '@/lib/item-type-classifier';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -14,19 +15,7 @@ export function hydrateSpecificationsForDB(aiItems: AiSpecificationItem[], isRec
   
   return aiItems.map(item => {
     const unit = item.u || 'шт';
-    let itemType: ItemType;
-    const lowerName = item.n?.toLowerCase() || '';
-
-    if (unit.toLowerCase() === 'м' || unit.toLowerCase() === 'метр' || lowerName.includes('кабель')) {
-        itemType = 'cable';
-    } else if (unit.toLowerCase() === 'шт' || unit.toLowerCase() === 'компл') {
-        // More sophisticated device detection can be added here
-        itemType = 'device';
-    } else if (['стяжка', 'дюбель', 'бирка', 'скоба', 'трубка', 'гильза', 'наконечник'].some(c => lowerName.includes(c))) {
-        itemType = 'consumable';
-    } else {
-        itemType = 'other';
-    }
+    const itemType: ItemType = classifyItemType(item.n, unit);
 
     // New status logic
     const status: SpecificationItem['status'] = itemType === 'other' ? 'На утверждение' : 'Утверждено';

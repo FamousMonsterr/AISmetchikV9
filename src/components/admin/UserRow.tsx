@@ -5,7 +5,7 @@ import { TableRow, TableCell } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, UserCog, CreditCard, Ban, ShieldCheck, Archive, ShieldX } from "lucide-react";
+import { MoreHorizontal, UserCog, CreditCard, Ban, ShieldCheck, Archive, ShieldX, History } from "lucide-react";
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { type AppUser } from "@/contexts/AppContext";
@@ -16,6 +16,7 @@ interface UserRowProps {
     currentUserId: string;
     onOpenPermissionsModal: () => void;
     onOpenCreditsModal: () => void;
+    onOpenCreditHistory: () => void;
     onOpenConfirmDialog: (type: ActionType) => void;
 }
 
@@ -26,7 +27,7 @@ const safeFormatDate = (timestamp: any): string => {
     return format(date, 'dd.MM.yyyy', { locale: ru });
 }
 
-export function UserRow({ user, currentUserId, onOpenPermissionsModal, onOpenCreditsModal, onOpenConfirmDialog }: UserRowProps) {
+export function UserRow({ user, currentUserId, onOpenPermissionsModal, onOpenCreditsModal, onOpenCreditHistory, onOpenConfirmDialog }: UserRowProps) {
     const isCurrentUser = user.uid === currentUserId;
     const superAdminEmail = process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAIL;
     const isProtectedAdmin = !!superAdminEmail && user.email === superAdminEmail;
@@ -65,6 +66,10 @@ export function UserRow({ user, currentUserId, onOpenPermissionsModal, onOpenCre
                         <DropdownMenuItem onClick={onOpenCreditsModal}>
                             <CreditCard className="mr-2 h-4 w-4" />
                             Начислить кредиты
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={onOpenCreditHistory}>
+                            <History className="mr-2 h-4 w-4" />
+                            История кредитов
                         </DropdownMenuItem>
                         {!isCurrentUser && !isProtectedAdmin && (
                             <>

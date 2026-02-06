@@ -8,6 +8,7 @@ import { format } from 'date-fns';
 import type { Company, SpecificationItem, AnalysisDetails, QuoteConfig } from '@/contexts/AppContext';
 import { calculateItemSum } from '@/lib/calculation';
 import { getTemplateConfig } from '@/lib/document-constructor';
+import type { TemplateStyleConfig } from '@/lib/template-utils';
 
 // --- Font Registration ---
 // Register fonts by URL. This is more reliable than Base64 for some environments.
@@ -151,6 +152,7 @@ interface DocumentTemplateProps {
     signatureUrl?: string | null;
     stampUrl?: string | null;
     templateId?: string;
+    templateConfig?: TemplateStyleConfig | null;
 }
 
 
@@ -164,12 +166,21 @@ const DocumentTemplate = ({
     signatureUrl,
     stampUrl,
     templateId,
+    templateConfig,
 }: DocumentTemplateProps) => {
   const tpl = getTemplateConfig(templateId || 'base-template-v1');
-  const accentColor = tpl?.accentColor || '#0f172a';
-  const headerStyle = tpl?.headerStyle || 'standard';
-  const isCompact = headerStyle === 'compact' || templateId === 'pro-template-compact-v1';
-  const isModern = headerStyle === 'modern' || templateId === 'business-template-modern-v1';
+  const resolved = templateConfig || tpl;
+  const accentColor = resolved?.accentColor || '#0f172a';
+  const headerStyle = resolved?.headerStyle
+    || (templateId === 'pro-template-compact-v1'
+      ? 'compact'
+      : templateId === 'business-template-modern-v1'
+        ? 'modern'
+        : 'standard');
+  const isCompact = headerStyle === 'compact';
+  const isModern = headerStyle === 'modern';
+  const showSignature = resolved?.showSignature !== false;
+  const showStamp = resolved?.showStamp !== false;
 
   const pageStyle = [
     baseStyles.page,
@@ -289,10 +300,10 @@ const DocumentTemplate = ({
             </View>
         </View>
 
-        {(signatureUrl || stampUrl) && tpl?.showSignature !== false && (
+        {(signatureUrl || stampUrl) && showSignature && (
             <View style={{ marginTop: 20, flexDirection: 'row', gap: 16 }}>
                 {signatureUrl && <Image src={signatureUrl} style={{ width: 140, height: 70 }} />}
-                {stampUrl && tpl?.showStamp !== false && <Image src={stampUrl} style={{ width: 120, height: 120 }} />}
+                {stampUrl && showStamp && <Image src={stampUrl} style={{ width: 120, height: 120 }} />}
             </View>
         )}
     </Page>

@@ -10,7 +10,7 @@ import { ShieldAlert } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Users, Ticket, Settings, Terminal, FileClock, Send, Library, LayoutDashboard, Bell, Bot, Handshake, Server, Palette, MessageSquareQuote, BarChart2, Palette as TemplateIcon, ServerCog, Activity, Search, ChevronDown } from "lucide-react";
+import { Users, Ticket, Settings, Terminal, FileClock, Send, Library, LayoutDashboard, Bell, Bot, Handshake, Server, Palette, MessageSquareQuote, BarChart2, Palette as TemplateIcon, ServerCog, Activity, Search, ChevronDown, BadgeDollarSign } from "lucide-react";
 import { query, collection, getDocs, limit, where } from "@/lib/mongoFirestore";
 import { db } from "@/lib/firebase";
 import { motion, AnimatePresence } from "framer-motion";
@@ -30,6 +30,8 @@ const navGroups = [
         icon: Users,
         links: [
             { href: "/dashboard/admin/users", label: "Пользователи", icon: Users },
+            { href: "/dashboard/admin/pro-payments", label: "Оплаты PRO", icon: BadgeDollarSign },
+            { href: "/dashboard/admin/credit-payments", label: "Оплаты кредитов", icon: BadgeDollarSign },
             { href: "/dashboard/admin/tickets", label: "Тикеты", icon: Ticket },
             { href: "/dashboard/admin/partner-requests", label: "Партнёры", icon: Handshake },
             { href: "/dashboard/admin/feedback-surveys", label: "Опросы", icon: MessageSquareQuote },
@@ -96,6 +98,7 @@ const warmUpIndexes = async () => {
             query(collection(db, 'requests'), where('status', '==', 'reported'), limit(1)),
             query(collection(db, 'users'), where('telegramChatId', '!=', null), limit(1)),
             query(collection(db, 'project_event_logs'), limit(1)),
+            query(collection(db, 'credit_purchase_orders'), limit(1)),
         ];
         // We run them, but we don't care about the result.
         // The simple act of querying triggers the index creation on the backend if it doesn't exist.

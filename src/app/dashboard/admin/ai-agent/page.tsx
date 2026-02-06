@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Save, Bot, Thermometer, BrainCircuit, Link, Trash2, PlusCircle, DownloadCloud, Info, FileJson, Edit, ChevronsUpDown } from "lucide-react";
 import { getAiAgentConfig, updateAiAgentConfig, type AiAgentConfig } from '@/actions/adminActions';
@@ -18,6 +19,7 @@ import { AddModelFromProviderDialog } from '@/components/admin/dialogs/AddModelF
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
+import { Checkbox } from '@/components/ui/checkbox';
 
 
 export default function AdminAiAgentPage() {
@@ -171,10 +173,85 @@ const moveEngine = (engine: string, direction: 'up' | 'down') => {
     });
   };
 
+  const getPlanModels = (current: AiAgentConfig) => ({
+    free: current.planModels?.free || {},
+    pro: current.planModels?.pro || {},
+    business: current.planModels?.business || {},
+    enterprise: current.planModels?.enterprise || {},
+  });
+
+  const updatePlanModelField = (planKey: 'free' | 'pro' | 'business' | 'enterprise', field: 'defaultModel' | 'abTestModels' | 'availableModels', value: any) => {
+    setConfig(prev => {
+      if (!prev) return null;
+      const planModels = getPlanModels(prev);
+      return {
+        ...prev,
+        planModels: {
+          ...planModels,
+          [planKey]: {
+            ...planModels[planKey],
+            [field]: value,
+          },
+        },
+      };
+    });
+  };
+
+  const togglePlanModelList = (planKey: 'free' | 'pro' | 'business' | 'enterprise', field: 'abTestModels' | 'availableModels', modelId: string) => {
+    setConfig(prev => {
+      if (!prev) return null;
+      const planModels = getPlanModels(prev);
+      const currentList = new Set(planModels[planKey]?.[field] || []);
+      if (currentList.has(modelId)) {
+        currentList.delete(modelId);
+      } else {
+        currentList.add(modelId);
+      }
+      return {
+        ...prev,
+        planModels: {
+          ...planModels,
+          [planKey]: {
+            ...planModels[planKey],
+            [field]: Array.from(currentList),
+          },
+        },
+      };
+    });
+  };
+
   const handleSave = () => {
     if (!user || user.systemRole !== 'Super Admin' || !config) return;
     startTransition(async () => {
-      const result = await updateAiAgentConfig(user.uid, config);
+      const validModelIds = new Set(config.apiModels.map((model: any) => model.value));
+      const sanitize = (values?: string[]) => (values || []).filter((value) => validModelIds.has(value));
+      const sanitizeDefault = (value?: string) => (value && validModelIds.has(value) ? value : '');
+      const preparedConfig: AiAgentConfig = {
+        ...config,
+        planModels: config.planModels ? {
+          free: {
+            ...config.planModels.free,
+            defaultModel: sanitizeDefault(config.planModels.free?.defaultModel),
+            abTestModels: sanitize(config.planModels.free?.abTestModels),
+          },
+          pro: {
+            ...config.planModels.pro,
+            defaultModel: sanitizeDefault(config.planModels.pro?.defaultModel),
+            abTestModels: sanitize(config.planModels.pro?.abTestModels),
+          },
+          business: {
+            ...config.planModels.business,
+            defaultModel: sanitizeDefault(config.planModels.business?.defaultModel),
+            availableModels: sanitize(config.planModels.business?.availableModels),
+          },
+          enterprise: {
+            ...config.planModels.enterprise,
+            defaultModel: sanitizeDefault(config.planModels.enterprise?.defaultModel),
+            availableModels: sanitize(config.planModels.enterprise?.availableModels),
+          },
+        } : undefined,
+      };
+      const result = await updateAiAgentConfig(user.uid, preparedConfig);
       if (result.success) {
         toast({ title: "Успешно", description: result.message });
       } else {
@@ -190,6 +267,30 @@ const moveEngine = (engine: string, direction: 'up' | 'down') => {
         </div>
     )
   }
+
+  const planModels = getPlanModels(config);
+  const modelOptions = config.apiModels || [];
+
+  const renderPlanModelChecklist = (
+    planKey: 'free' | 'pro' | 'business' | 'enterprise',
+    field: 'abTestModels' | 'availableModels',
+    selectedValues: string[]
+  ) => {
+    return (
+      <div className="grid gap-2">
+        {modelOptions.map((model: any) => (
+          <label key={`${planKey}-${field}-${model.value}`} className="flex items-center justify-between rounded-md border p-2">
+            <span className="text-sm">{model.label}</span>
+            <Checkbox
+              checked={selectedValues.includes(model.value)}
+              onCheckedChange={() => togglePlanModelList(planKey, field, model.value)}
+              disabled={isPending}
+            />
+          </label>
+        ))}
+      </div>
+    );
+  };
 
   const renderModelSettings = (modelInfo: any, index: number) => {
     return (
@@ -325,6 +426,89 @@ const moveEngine = (engine: string, direction: 'up' | 'down') => {
             </TabsContent>
         ))}
       </Tabs>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Модели по тарифам</CardTitle>
+          <CardDescription>Настройте модель для Free/PRO и список доступных моделей для Business/Enterprise. Для Free/PRO можно включить A/B тест, добавив несколько моделей.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-8">
+          <div className="grid gap-6 lg:grid-cols-2">
+            <div className="space-y-4">
+              <h4 className="text-sm font-semibold">Free</h4>
+              <div className="space-y-2">
+                <Label htmlFor="plan-free-default">Модель по умолчанию</Label>
+                <Select
+                  value={planModels.free.defaultModel || ''}
+                  onValueChange={(value) => updatePlanModelField('free', 'defaultModel', value)}
+                  disabled={isPending}
+                >
+                  <SelectTrigger id="plan-free-default">
+                    <SelectValue placeholder="Выберите модель" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {modelOptions.map((model: any) => (
+                      <SelectItem key={`free-default-${model.value}`} value={model.value}>
+                        {model.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>A/B тест моделей (покажем пользователю выбор)</Label>
+                {renderPlanModelChecklist('free', 'abTestModels', planModels.free.abTestModels || [])}
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <h4 className="text-sm font-semibold">PRO</h4>
+              <div className="space-y-2">
+                <Label htmlFor="plan-pro-default">Модель по умолчанию</Label>
+                <Select
+                  value={planModels.pro.defaultModel || ''}
+                  onValueChange={(value) => updatePlanModelField('pro', 'defaultModel', value)}
+                  disabled={isPending}
+                >
+                  <SelectTrigger id="plan-pro-default">
+                    <SelectValue placeholder="Выберите модель" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {modelOptions.map((model: any) => (
+                      <SelectItem key={`pro-default-${model.value}`} value={model.value}>
+                        {model.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>A/B тест моделей (покажем пользователю выбор)</Label>
+                {renderPlanModelChecklist('pro', 'abTestModels', planModels.pro.abTestModels || [])}
+              </div>
+            </div>
+          </div>
+
+          <Separator />
+
+          <div className="grid gap-6 lg:grid-cols-2">
+            <div className="space-y-4">
+              <h4 className="text-sm font-semibold">Business</h4>
+              <div className="space-y-2">
+                <Label>Доступные модели</Label>
+                {renderPlanModelChecklist('business', 'availableModels', planModels.business.availableModels || [])}
+              </div>
+            </div>
+            <div className="space-y-4">
+              <h4 className="text-sm font-semibold">Enterprise</h4>
+              <div className="space-y-2">
+                <Label>Доступные модели</Label>
+                {renderPlanModelChecklist('enterprise', 'availableModels', planModels.enterprise.availableModels || [])}
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
         <Card>
             <CardHeader>

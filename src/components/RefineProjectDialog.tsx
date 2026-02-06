@@ -25,7 +25,6 @@ interface RefineProjectDialogProps {
   actionType: string; // Now a string from config
   project: HistoryRequest | null;
   selectedModel: string;
-  temperature: number;
   includeThoughts: boolean;
   onProjectUpdate?: (nextProject: HistoryRequest, actionDescription: string) => void;
 }

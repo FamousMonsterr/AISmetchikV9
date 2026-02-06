@@ -32,6 +32,10 @@ function buildPrompt(input: SuggestItemPricesInput): string {
 
     prompt = prompt.replace('{{currency}}', input.currency || 'RUB');
     prompt = prompt.replace('{{items}}', itemsString);
+    prompt = prompt.replace('{{groupedItems}}', '[]');
+    prompt = prompt.replace('{{analysisDetails}}', 'null');
+    prompt = prompt.replace('{{quoteConfig}}', 'null');
+    prompt = prompt.replace('{{calculatorInputs}}', 'null');
     prompt = prompt.replace('{{totalSmrCost}}', String(input.totalSmrCost || '0'));
     
     return prompt;

@@ -16,6 +16,7 @@ import { ConfirmActionDialog, type ActionType } from '@/components/admin/dialogs
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { UserRow } from '@/components/admin/UserRow';
 import { BulkUpdateDialog } from '@/components/admin/dialogs/BulkUpdateDialog';
+import { UserCreditHistoryDialog } from '@/components/admin/dialogs/UserCreditHistoryDialog';
 
 type SortKey = keyof AppUser | 'credits' | 'createdAt';
 
@@ -29,6 +30,7 @@ export default function AdminUsersPage() {
   const [selectedUser, setSelectedUser] = useState<AppUser | null>(null);
   const [isPermissionsModalOpen, setIsPermissionsModalOpen] = useState(false);
   const [isCreditsModalOpen, setIsCreditsModalOpen] = useState(false);
+  const [isCreditHistoryOpen, setIsCreditHistoryOpen] = useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [isBulkUpdateOpen, setIsBulkUpdateOpen] = useState(false);
   const [actionType, setActionType] = useState<ActionType | null>(null);
@@ -94,6 +96,11 @@ export default function AdminUsersPage() {
   const handleOpenCreditsModal = (user: AppUser) => {
     setSelectedUser(user);
     setIsCreditsModalOpen(true);
+  };
+
+  const handleOpenCreditHistory = (user: AppUser) => {
+    setSelectedUser(user);
+    setIsCreditHistoryOpen(true);
   };
 
   const handleOpenConfirmDialog = (user: AppUser, type: ActionType) => {
@@ -183,12 +190,13 @@ export default function AdminUsersPage() {
                 </TableHeader>
                 <TableBody>
                    {userList.map((user) => (
-                      <UserRow 
+                     <UserRow 
                          key={user.uid}
                          user={user}
                          currentUserId={currentUser!.uid}
                          onOpenPermissionsModal={() => handleOpenPermissionsModal(user)}
                          onOpenCreditsModal={() => handleOpenCreditsModal(user)}
+                         onOpenCreditHistory={() => handleOpenCreditHistory(user)}
                          onOpenConfirmDialog={(action) => handleOpenConfirmDialog(user, action)}
                       />
                    ))}
@@ -238,6 +246,15 @@ export default function AdminUsersPage() {
       
       {isCreditsModalOpen && selectedUser && currentUser && (
           <AddCreditsDialog isOpen={isCreditsModalOpen} onClose={() => setIsCreditsModalOpen(false)} onSuccess={fetchUsers} user={selectedUser} currentUserId={currentUser.uid} />
+      )}
+
+      {isCreditHistoryOpen && selectedUser && currentUser && (
+          <UserCreditHistoryDialog
+            isOpen={isCreditHistoryOpen}
+            onClose={() => setIsCreditHistoryOpen(false)}
+            currentUserId={currentUser.uid}
+            user={selectedUser}
+          />
       )}
        
       {isConfirmOpen && selectedUser && currentUser && (

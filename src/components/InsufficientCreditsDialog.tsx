@@ -67,7 +67,7 @@ export function InsufficientCreditsDialog({ isOpen, onClose }: InsufficientCredi
                     {isNavigating ? <Loader2 className="mr-3 h-5 w-5 animate-spin"/> : <Gift className="mr-3 h-5 w-5"/>}
                      <div className="text-left">
                         <p className="font-semibold">Пригласить друга</p>
-                        <p className="text-xs text-muted-foreground">Получите {referralBonus.credits} кредитов за каждого друга.</p>
+                        <p className="text-xs text-muted-foreground">Получите {referralBonus.credits} бонусных кредитов за каждого друга.</p>
                     </div>
                 </Button>
            </div>

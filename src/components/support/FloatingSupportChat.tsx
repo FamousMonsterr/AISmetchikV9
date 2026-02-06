@@ -13,7 +13,7 @@ export function FloatingSupportChat() {
   return (
     <div className="fixed bottom-4 right-4 z-40 flex flex-col items-end gap-2">
       {isOpen && (
-        <div className="w-[360px] max-w-[90vw]">
+        <div className="w-[360px] max-w-[90vw] h-[520px] max-h-[70vh]">
           <SupportChat className="shadow-xl" />
         </div>
       )}

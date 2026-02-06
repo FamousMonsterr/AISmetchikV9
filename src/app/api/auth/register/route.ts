@@ -4,6 +4,8 @@ import bcrypt from 'bcryptjs';
 import { nanoid } from 'nanoid';
 import { getDb } from '@/lib/mongodb';
 import modelsConfig from '@/lib/ai-config.json';
+import promoConfig from '@/lib/promo-config.json';
+import { grantCredits } from '@/services/credits';
 
 export async function POST(req: Request) {
   const body = await req.json().catch(() => null);
@@ -67,15 +69,36 @@ export async function POST(req: Request) {
 
   if (body.promoCode) {
     userData.referredBy = body.promoCode;
-    if (body.referralCode) {
-      const expirationDate = new Date();
-      expirationDate.setDate(expirationDate.getDate() + 90);
-      userData.promoCredits = 100;
-      userData.promoCreditsExpireAt = expirationDate;
-    }
+  }
+  if (body.referralCode) {
+    const trialDays = promoConfig?.referralProgram?.refereeBonus?.proTrialDays || 30;
+    const trialExpiresAt = new Date();
+    trialExpiresAt.setDate(trialExpiresAt.getDate() + trialDays);
+    userData.originalPlan = 'Free';
+    userData.plan = 'PRO';
+    userData.planExpiresAt = trialExpiresAt;
+    userData.planSource = 'trial';
+    userData.hasUsedTrial = true;
   }
 
   await db.collection('users').insertOne(userData);
+
+  if (body.promoCode) {
+    const referrer = await db.collection('users').findOne({ _id: body.promoCode });
+    if (referrer?._id) {
+      try {
+        await grantCredits({
+          userId: referrer._id,
+          amount: promoConfig?.referralProgram?.referrerBonus?.credits || 10,
+          type: 'bonus',
+          source: 'referral_bonus',
+          metadata: { refereeId: userId },
+        });
+      } catch (error) {
+        console.warn('Failed to grant referral bonus', error);
+      }
+    }
+  }
 
   return NextResponse.json({ id: userId });
 }

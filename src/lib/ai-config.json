@@ -80,5 +80,35 @@
             "isServiceModel": false,
             "isVoiceModel": false
         }
-    ]
+    ],
+    "planModels": {
+        "free": {
+            "defaultModel": "openai/gpt-4o-mini",
+            "abTestModels": []
+        },
+        "pro": {
+            "defaultModel": "openai/gpt-4o-mini",
+            "abTestModels": []
+        },
+        "business": {
+            "availableModels": [
+                "openai/gpt-4o-mini",
+                "bytedance-seed/seed-1.6",
+                "google/gemini-3-flash-preview",
+                "google/gemini-3-pro-preview",
+                "google/gemini-2.5-flash-lite",
+                "google/gemini-2.5-pro"
+            ]
+        },
+        "enterprise": {
+            "availableModels": [
+                "openai/gpt-4o-mini",
+                "bytedance-seed/seed-1.6",
+                "google/gemini-3-flash-preview",
+                "google/gemini-3-pro-preview",
+                "google/gemini-2.5-flash-lite",
+                "google/gemini-2.5-pro"
+            ]
+        }
+    }
 }

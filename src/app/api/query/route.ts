@@ -22,6 +22,7 @@ const userOwnedCollections = new Set([
   'companies',
   'priceBaseItems',
   'invoices',
+  'user_templates',
   'partner_requests',
   'bug_reports',
 ]);

@@ -2,7 +2,7 @@
 "use client";
 
 import { GlassCard } from '@/components/ui/glass-card';
-import { Badge } from '@/components/ui/badge';
+import { PlanBadge } from '@/components/PlanBadge';
 import { Star } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -59,7 +59,7 @@ export const FeaturesSection = () => {
                                 <div className="flex flex-col h-full">
                                     <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
                                         {feature.title}
-                                        {feature.pro && <Badge variant="outline" className="text-amber-500 border-amber-400"><Star className="h-3 w-3 mr-1" />PRO</Badge>}
+                                        {feature.pro && <PlanBadge plan="PRO" icon={<Star className="h-3 w-3" />} />}
                                     </h3>
                                     <p className="text-sm text-muted-foreground mt-2 flex-grow">{feature.description}</p>
                                     <p className="text-sm font-semibold text-primary mt-4">{feature.benefit}</p>
