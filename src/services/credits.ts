@@ -37,7 +37,7 @@ async function ensureLotsFromUserDoc(ctx: TransactionContext, userId: string) {
     .countDocuments({ userId }, withSession(ctx.session));
   if (existingLots > 0) return;
 
-  const user = await ctx.db.collection('users').findOne({ _id: userId }, withSession(ctx.session));
+  const user = await ctx.db.collection('users').findOne({ _id: userId as any }, withSession(ctx.session));
   if (!user) return;
 
   const legacyBonus = user.bonusCredits ?? user.promoCredits ?? 0;
@@ -202,7 +202,7 @@ export async function getCreditSummary(userId: string, options: { refresh?: bool
   }
 
   const db = await getDb();
-  const user = await db.collection('users').findOne({ _id: userId });
+  const user = await db.collection('users').findOne({ _id: userId as any });
   return {
     total: user?.credits || 0,
     bonus: user?.bonusCredits || 0,
@@ -400,11 +400,11 @@ export async function refundCreditsInTransaction(
   if (originalDebitId) {
     const originalDebit = await ctx.db
       .collection('credit_ledger')
-      .findOne({ _id: originalDebitId, userId, type: 'debit' }, withSession(ctx.session));
+      .findOne({ _id: originalDebitId as any, userId, type: 'debit' }, withSession(ctx.session));
     if (originalDebit?.lotId) {
       const lot = await ctx.db
         .collection('credit_lots')
-        .findOne({ _id: originalDebit.lotId }, withSession(ctx.session));
+        .findOne({ _id: originalDebit.lotId as any }, withSession(ctx.session));
       if (lot && (!lot.expiresAt || lot.expiresAt > now)) {
         targetLot = lot;
         targetType = lot.type || 'purchased';
@@ -470,7 +470,7 @@ export async function expireCreditLot(params: {
   return withMongoTransaction(async (ctx) => {
     const lot = await ctx.db
       .collection('credit_lots')
-      .findOne({ _id: lotId, userId }, withSession(ctx.session));
+      .findOne({ _id: lotId as any, userId }, withSession(ctx.session));
     if (!lot) {
       throw new Error('Лот не найден.');
     }

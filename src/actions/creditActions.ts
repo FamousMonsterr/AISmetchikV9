@@ -23,7 +23,7 @@ export type CreditHistoryEntry = {
 
 async function isAdmin(userId: string): Promise<boolean> {
   const db = await getDb();
-  const user = await db.collection('users').findOne({ _id: userId });
+  const user = await db.collection('users').findOne({ _id: userId as any });
   if (!user) return false;
   return user.systemRole === 'Admin' || user.systemRole === 'Super Admin';
 }

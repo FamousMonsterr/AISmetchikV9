@@ -341,6 +341,50 @@ export default function TrainingPage() {
     return () => unsubscribe();
   }, []);
 
+  const handleEnterpriseRequest = () => {
+    if (!user) return;
+    startRequest(async () => {
+      const result = await createServiceRequest({
+        userId: user.uid,
+        userName: user.displayName || '',
+        userEmail: user.email || '',
+        type: 'plan_upgrade',
+        payload: { targetPlan: 'Enterprise (от 25 пользователей)', source: 'training' },
+      });
+      if (result.success) {
+        toast({ title: 'Заявка отправлена', description: result.message });
+      } else {
+        toast({ title: 'Ошибка', description: result.message, variant: 'destructive' });
+      }
+    });
+  };
+
+  if (!canAccess) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2"><BookOpen />База знаний</CardTitle>
+          <CardDescription>Материалы доступны только на Enterprise.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Alert>
+            <AlertTitle>Доступ ограничен</AlertTitle>
+            <AlertDescription>
+              База обучения доступна для Enterprise. Для подключения оставьте заявку.
+            </AlertDescription>
+          </Alert>
+          <div className="flex items-center gap-3">
+            <Button onClick={handleEnterpriseRequest} disabled={isRequestPending}>
+              {isRequestPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Запросить Enterprise
+            </Button>
+            <PlanBadge plan="Enterprise" size="xs" />
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <Card>
@@ -478,46 +522,3 @@ export default function TrainingPage() {
     </div>
   );
 }
-  const handleEnterpriseRequest = () => {
-    if (!user) return;
-    startRequest(async () => {
-      const result = await createServiceRequest({
-        userId: user.uid,
-        userName: user.displayName || '',
-        userEmail: user.email || '',
-        type: 'plan_upgrade',
-        payload: { targetPlan: 'Enterprise (от 25 пользователей)', source: 'training' },
-      });
-      if (result.success) {
-        toast({ title: 'Заявка отправлена', description: result.message });
-      } else {
-        toast({ title: 'Ошибка', description: result.message, variant: 'destructive' });
-      }
-    });
-  };
-
-  if (!canAccess) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2"><BookOpen />База знаний</CardTitle>
-          <CardDescription>Материалы доступны только на Enterprise.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <Alert>
-            <AlertTitle>Доступ ограничен</AlertTitle>
-            <AlertDescription>
-              База обучения доступна для Enterprise. Для подключения оставьте заявку.
-            </AlertDescription>
-          </Alert>
-          <div className="flex items-center gap-3">
-            <Button onClick={handleEnterpriseRequest} disabled={isRequestPending}>
-              {isRequestPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-              Запросить Enterprise
-            </Button>
-            <PlanBadge plan="Enterprise" size="xs" />
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }

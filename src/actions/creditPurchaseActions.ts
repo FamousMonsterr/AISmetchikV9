@@ -51,7 +51,7 @@ const findPackage = (name: string) => creditPackages.find((pkg) => pkg.name === 
 
 async function isAdmin(userId: string) {
   const db = await getDb();
-  const user = await db.collection('users').findOne({ _id: userId });
+  const user = await db.collection('users').findOne({ _id: userId as any });
   return user?.systemRole === 'Admin' || user?.systemRole === 'Super Admin';
 }
 
@@ -68,7 +68,7 @@ async function notifyAdmins(title: string, content: string, metadata: Record<str
   await Promise.all(
     admins.map((admin) =>
       dispatchNotification({
-        userId: admin._id,
+        userId: String(admin._id),
         title,
         content,
         type: 'important',
@@ -95,7 +95,7 @@ export async function createSbpCreditOrder(data: z.infer<typeof SbpOrderSchema>)
   }
 
   const db = await getDb();
-  const user = await db.collection('users').findOne({ _id: userId });
+  const user = await db.collection('users').findOne({ _id: userId as any });
   if (!user) {
     return { success: false, message: 'Пользователь не найден.' };
   }
@@ -103,7 +103,7 @@ export async function createSbpCreditOrder(data: z.infer<typeof SbpOrderSchema>)
   const orderId = nanoid();
   const now = new Date();
   await db.collection('credit_purchase_orders').insertOne({
-    _id: orderId,
+    _id: orderId as any,
     userId,
     userEmail: user.email || null,
     userDisplayName: user.displayName || null,
@@ -129,7 +129,7 @@ export async function createSbpCreditOrder(data: z.infer<typeof SbpOrderSchema>)
   });
 
   await db.collection('credit_purchase_orders').updateOne(
-    { _id: orderId },
+    { _id: orderId as any },
     { $set: { grantedLotId: granted.lotId, grantedAt: new Date() } },
   );
 
@@ -164,7 +164,7 @@ export async function createLegalCreditOrder(data: z.infer<typeof LegalOrderSche
   }
 
   const db = await getDb();
-  const user = await db.collection('users').findOne({ _id: userId });
+  const user = await db.collection('users').findOne({ _id: userId as any });
   if (!user) {
     return { success: false, message: 'Пользователь не найден.' };
   }
@@ -172,7 +172,7 @@ export async function createLegalCreditOrder(data: z.infer<typeof LegalOrderSche
   const orderId = nanoid();
   const now = new Date();
   await db.collection('credit_purchase_orders').insertOne({
-    _id: orderId,
+    _id: orderId as any,
     userId,
     userEmail: user.email || null,
     userDisplayName: user.displayName || null,
@@ -198,7 +198,7 @@ export async function createLegalCreditOrder(data: z.infer<typeof LegalOrderSche
   });
 
   await db.collection('credit_purchase_orders').updateOne(
-    { _id: orderId },
+    { _id: orderId as any },
     { $set: { grantedLotId: granted.lotId, grantedAt: new Date() } },
   );
 
@@ -250,7 +250,7 @@ export async function approveCreditPurchaseOrder(data: z.infer<typeof OrderActio
   }
 
   const db = await getDb();
-  const order = await db.collection('credit_purchase_orders').findOne({ _id: orderId });
+  const order = await db.collection('credit_purchase_orders').findOne({ _id: orderId as any });
   if (!order) {
     return { success: false, message: 'Заказ не найден.' };
   }
@@ -269,13 +269,13 @@ export async function approveCreditPurchaseOrder(data: z.infer<typeof OrderActio
       metadata: { orderId: order._id, packageName: order.packageName },
     });
     await db.collection('credit_purchase_orders').updateOne(
-      { _id: orderId },
+      { _id: orderId as any },
       { $set: { grantedLotId: granted.lotId, grantedAt: new Date() } },
     );
   }
 
   await db.collection('credit_purchase_orders').updateOne(
-    { _id: orderId },
+    { _id: orderId as any },
     { $set: { status: 'approved', approvedAt: new Date(), approvedBy: adminUserId, updatedAt: new Date() } },
   );
 
@@ -295,7 +295,7 @@ export async function rejectCreditPurchaseOrder(data: z.infer<typeof OrderAction
   }
 
   const db = await getDb();
-  const order = await db.collection('credit_purchase_orders').findOne({ _id: orderId });
+  const order = await db.collection('credit_purchase_orders').findOne({ _id: orderId as any });
   if (!order) {
     return { success: false, message: 'Заказ не найден.' };
   }
@@ -317,7 +317,7 @@ export async function rejectCreditPurchaseOrder(data: z.infer<typeof OrderAction
   }
 
   await db.collection('credit_purchase_orders').updateOne(
-    { _id: orderId },
+    { _id: orderId as any },
     { $set: { status: 'rejected', rejectedAt: new Date(), rejectedBy: adminUserId, rejectionReason: reason || null, updatedAt: new Date() } },
   );
 
@@ -337,7 +337,7 @@ export async function autoApproveCreditPurchaseOrders() {
   let processed = 0;
   for (const order of pending) {
     await db.collection('credit_purchase_orders').updateOne(
-      { _id: order._id },
+      { _id: order._id as any },
       { $set: { status: 'auto_approved', approvedAt: new Date(), updatedAt: new Date() } },
     );
     await logUserAction(order.userId, 'CREDIT_PAYMENT_AUTO_APPROVED', { orderId: order._id, credits: order.credits, amount: order.amount });

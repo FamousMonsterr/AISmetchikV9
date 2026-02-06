@@ -34,7 +34,7 @@ export function useUserTemplates(options: UseUserTemplatesOptions = {}) {
     const unsubscribe = onSnapshot(
       q,
       (snapshot) => {
-        const nextTemplates = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() } as UserTemplate));
+        const nextTemplates = snapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() } as UserTemplate));
         setTemplates(nextTemplates);
         setIsLoading(false);
       },

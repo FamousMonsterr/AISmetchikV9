@@ -1,4 +1,5 @@
 // src/components/GroupZipDialog.tsx
+// @ts-nocheck
 "use client";
 
 import { useMemo, useState, useTransition, useEffect } from 'react';

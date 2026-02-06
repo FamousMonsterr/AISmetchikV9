@@ -36,7 +36,7 @@ const UpdateStatusSchema = z.object({
 
 async function isAdmin(userId: string) {
   const dbClient = await getDb();
-  const user = await dbClient.collection('users').findOne({ _id: userId });
+  const user = await dbClient.collection('users').findOne({ _id: userId as any });
   return user?.systemRole === 'Admin' || user?.systemRole === 'Super Admin';
 }
 

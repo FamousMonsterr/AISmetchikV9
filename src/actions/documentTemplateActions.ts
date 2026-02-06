@@ -90,7 +90,7 @@ const normalizeTemplates = (templates: any[]): DocumentTemplate[] =>
 
 const isAdmin = async (userId: string) => {
   const db = await getDb();
-  const user = await db.collection('users').findOne({ _id: userId });
+  const user = await db.collection('users').findOne({ _id: userId as any });
   return user?.systemRole === 'Admin' || user?.systemRole === 'Super Admin';
 };
 
@@ -172,7 +172,7 @@ export async function getDocumentTemplatesBundle(): Promise<{ templates: Documen
   const db = await getDb();
   const templatesRaw = await db.collection('document_templates').find({}).sort({ createdAt: -1 }).toArray();
   const templates = templatesRaw.length ? normalizeTemplates(templatesRaw) : normalizeTemplates(templateListFromBase as any[]);
-  const settingsDoc = await db.collection('document_template_settings').findOne({ _id: 'default' });
+  const settingsDoc = await db.collection('document_template_settings').findOne({ _id: 'default' as any });
   const settings = normalizeSettings(settingsDoc?.settings, templates);
   return { templates, settings };
 }
@@ -192,7 +192,7 @@ export async function createDocumentTemplate(data: z.infer<typeof TemplateCreate
   const now = new Date();
 
   await db.collection('document_templates').insertOne({
-    _id: templateId,
+    _id: templateId as any,
     name,
     description: description || '',
     docType,
@@ -219,7 +219,7 @@ export async function updateDocumentTemplate(data: z.infer<typeof TemplateUpdate
 
   const db = await getDb();
   await db.collection('document_templates').updateOne(
-    { _id: validation.data.templateId },
+    { _id: validation.data.templateId as any },
     { $set: { ...validation.data.updates, updatedAt: new Date() } },
   );
 
@@ -236,7 +236,7 @@ export async function deleteDocumentTemplate(data: z.infer<typeof TemplateDelete
   }
 
   const db = await getDb();
-  await db.collection('document_templates').deleteOne({ _id: validation.data.templateId });
+  await db.collection('document_templates').deleteOne({ _id: validation.data.templateId as any });
   return { success: true, message: 'Шаблон удален.' };
 }
 
@@ -251,7 +251,7 @@ export async function updateDocumentTemplateSettings(data: z.infer<typeof Settin
 
   const db = await getDb();
   await db.collection('document_template_settings').updateOne(
-    { _id: 'default' },
+    { _id: 'default' as any },
     { $set: { settings: validation.data.settings, updatedAt: new Date(), updatedBy: validation.data.adminUserId } },
     { upsert: true },
   );

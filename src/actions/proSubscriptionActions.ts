@@ -53,7 +53,7 @@ const addHours = (base: Date, hours: number) => new Date(base.getTime() + hours 
 
 async function isAdminUser(userId: string) {
   const db = await getDb();
-  const user = await db.collection('users').findOne({ _id: userId });
+  const user = await db.collection('users').findOne({ _id: userId as any });
   return user?.systemRole === 'Admin' || user?.systemRole === 'Super Admin';
 }
 
@@ -70,7 +70,7 @@ async function notifyAdmins(title: string, content: string, metadata: Record<str
   await Promise.all(
     admins.map((admin) =>
       dispatchNotification({
-        userId: admin._id,
+        userId: String(admin._id),
         title,
         content,
         type: 'important',
@@ -108,12 +108,12 @@ async function applyPendingPro(user: any, orderId: string) {
   }
 
   const db = await getDb();
-  await db.collection('users').updateOne({ _id: user._id }, { $set: updates });
+  await db.collection('users').updateOne({ _id: user._id as any }, { $set: updates });
 }
 
 async function applyPaidPro(order: any, status: OrderStatus, actorId?: string) {
   const db = await getDb();
-  const user = await db.collection('users').findOne({ _id: order.userId });
+  const user = await db.collection('users').findOne({ _id: order.userId as any });
   if (!user) return;
 
   const now = new Date();
@@ -131,9 +131,9 @@ async function applyPaidPro(order: any, status: OrderStatus, actorId?: string) {
     updatedAt: now,
   };
 
-  await db.collection('users').updateOne({ _id: order.userId }, { $set: updates });
+  await db.collection('users').updateOne({ _id: order.userId as any }, { $set: updates });
   await db.collection('pro_subscription_orders').updateOne(
-    { _id: order._id },
+    { _id: order._id as any },
     {
       $set: {
         status,
@@ -163,12 +163,12 @@ async function applyPaidPro(order: any, status: OrderStatus, actorId?: string) {
 
 async function rejectPendingPro(order: any, reason?: string, actorId?: string) {
   const db = await getDb();
-  const user = await db.collection('users').findOne({ _id: order.userId });
+  const user = await db.collection('users').findOne({ _id: order.userId as any });
   const now = new Date();
 
   if (user?.planSource === 'pending_payment' && user?.pendingProOrderId === order._id) {
     await db.collection('users').updateOne(
-      { _id: order.userId },
+      { _id: order.userId as any },
       {
         $set: {
           plan: user.originalPlan || 'Free',
@@ -183,13 +183,13 @@ async function rejectPendingPro(order: any, reason?: string, actorId?: string) {
     );
   } else if (user?.pendingProOrderId === order._id) {
     await db.collection('users').updateOne(
-      { _id: order.userId },
+      { _id: order.userId as any },
       { $set: { pendingProOrderId: null, pendingProExpiresAt: null, updatedAt: now } },
     );
   }
 
   await db.collection('pro_subscription_orders').updateOne(
-    { _id: order._id },
+    { _id: order._id as any },
     {
       $set: {
         status: 'rejected',
@@ -224,7 +224,7 @@ export async function createSbpProSubscriptionOrder(data: z.infer<typeof SbpOrde
   }
 
   const db = await getDb();
-  const user = await db.collection('users').findOne({ _id: userId });
+  const user = await db.collection('users').findOne({ _id: userId as any });
   if (!user) {
     return { success: false, message: 'Пользователь не найден.' };
   }
@@ -236,7 +236,7 @@ export async function createSbpProSubscriptionOrder(data: z.infer<typeof SbpOrde
   const autoApproveAt = addHours(now, AUTO_APPROVE_HOURS);
 
   await db.collection('pro_subscription_orders').insertOne({
-    _id: orderId,
+    _id: orderId as any,
     userId,
     userEmail: user.email || null,
     userDisplayName: user.displayName || null,
@@ -288,7 +288,7 @@ export async function createLegalProSubscriptionOrder(data: z.infer<typeof Legal
   }
 
   const db = await getDb();
-  const user = await db.collection('users').findOne({ _id: userId });
+  const user = await db.collection('users').findOne({ _id: userId as any });
   if (!user) {
     return { success: false, message: 'Пользователь не найден.' };
   }
@@ -299,7 +299,7 @@ export async function createLegalProSubscriptionOrder(data: z.infer<typeof Legal
   const amount = resolveAmount(months);
 
   await db.collection('pro_subscription_orders').insertOne({
-    _id: orderId,
+    _id: orderId as any,
     userId,
     userEmail: user.email || null,
     userDisplayName: user.displayName || null,
@@ -369,7 +369,7 @@ export async function approveProSubscriptionOrder(data: z.infer<typeof OrderActi
   }
 
   const db = await getDb();
-  const order = await db.collection('pro_subscription_orders').findOne({ _id: orderId });
+  const order = await db.collection('pro_subscription_orders').findOne({ _id: orderId as any });
   if (!order) {
     return { success: false, message: 'Заказ не найден.' };
   }
@@ -393,7 +393,7 @@ export async function rejectProSubscriptionOrder(data: z.infer<typeof OrderActio
   }
 
   const db = await getDb();
-  const order = await db.collection('pro_subscription_orders').findOne({ _id: orderId });
+  const order = await db.collection('pro_subscription_orders').findOne({ _id: orderId as any });
   if (!order) {
     return { success: false, message: 'Заказ не найден.' };
   }

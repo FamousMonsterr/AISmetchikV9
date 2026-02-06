@@ -51,7 +51,7 @@ export async function createUserTemplate(data: z.infer<typeof TemplateCreateSche
 
   const { userId, name, docType, description, accentColor, headerStyle, showSignature, showStamp } = validation.data;
   const db = await getDb();
-  const user = await db.collection('users').findOne({ _id: userId });
+  const user = await db.collection('users').findOne({ _id: userId as any });
   if (!user) {
     return { success: false, message: 'Пользователь не найден.' };
   }
@@ -72,7 +72,7 @@ export async function createUserTemplate(data: z.infer<typeof TemplateCreateSche
   const sanitizedColor = normalizeHexColor(accentColor);
 
   await db.collection('user_templates').insertOne({
-    _id: templateId,
+    _id: templateId as any,
     userId,
     name,
     docType,
@@ -97,7 +97,7 @@ export async function updateUserTemplate(data: z.infer<typeof TemplateUpdateSche
 
   const { userId, templateId, updates } = validation.data;
   const db = await getDb();
-  const existing = await db.collection('user_templates').findOne({ _id: templateId, userId });
+  const existing = await db.collection('user_templates').findOne({ _id: templateId as any, userId });
   if (!existing) {
     return { success: false, message: 'Шаблон не найден.' };
   }
@@ -113,7 +113,7 @@ export async function updateUserTemplate(data: z.infer<typeof TemplateUpdateSche
   if (typeof updates.showSignature === 'boolean') payload.showSignature = updates.showSignature;
   if (typeof updates.showStamp === 'boolean') payload.showStamp = updates.showStamp;
 
-  await db.collection('user_templates').updateOne({ _id: templateId, userId }, { $set: payload });
+  await db.collection('user_templates').updateOne({ _id: templateId as any, userId }, { $set: payload });
   await logUserAction(userId, 'TEMPLATE_UPDATED', { templateId });
 
   return { success: true, message: 'Шаблон обновлен.' };
@@ -127,17 +127,17 @@ export async function deleteUserTemplate(data: z.infer<typeof TemplateDeleteSche
 
   const { userId, templateId } = validation.data;
   const db = await getDb();
-  const existing = await db.collection('user_templates').findOne({ _id: templateId, userId });
+  const existing = await db.collection('user_templates').findOne({ _id: templateId as any, userId });
   if (!existing) {
     return { success: false, message: 'Шаблон не найден.' };
   }
 
-  await db.collection('user_templates').deleteOne({ _id: templateId, userId });
+  await db.collection('user_templates').deleteOne({ _id: templateId as any, userId });
 
-  const user = await db.collection('users').findOne({ _id: userId });
+  const user = await db.collection('users').findOne({ _id: userId as any });
   if (user?.documentTemplates?.proposal === templateId) {
     await db.collection('users').updateOne(
-      { _id: userId },
+      { _id: userId as any },
       { $set: { 'documentTemplates.proposal': 'base-template-v1', updatedAt: new Date() } },
     );
   }
