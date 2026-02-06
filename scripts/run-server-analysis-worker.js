@@ -1,3 +1,4 @@
+require('./bootstrap');
 require('dotenv/config');
 process.env.TS_NODE_COMPILER_OPTIONS = JSON.stringify({ module: "CommonJS", moduleResolution: "node" });
 process.env.TS_NODE_TRANSPILE_ONLY = "1";

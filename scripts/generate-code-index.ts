@@ -1,4 +1,5 @@
 // scripts/generate-code-index.ts
+import './bootstrap';
 import fs from 'fs';
 import path from 'path';
 import { Project, SyntaxKind, type SourceFile, type VariableDeclaration } from 'ts-morph';

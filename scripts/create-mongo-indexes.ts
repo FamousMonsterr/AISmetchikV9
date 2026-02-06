@@ -1,5 +1,5 @@
 // @ts-nocheck
-
+import './bootstrap';
 import 'dotenv/config';
 import { MongoClient } from 'mongodb';
 

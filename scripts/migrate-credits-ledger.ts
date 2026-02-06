@@ -1,4 +1,5 @@
 // scripts/migrate-credits-ledger.ts
+import './bootstrap';
 import 'dotenv/config';
 import { nanoid } from 'nanoid';
 import { getDb } from '../src/lib/mongodb';

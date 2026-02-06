@@ -1,4 +1,5 @@
 // scripts/auto-approve-pro-payments.ts
+import './bootstrap';
 import 'dotenv/config';
 import { autoApproveProSubscriptionOrders } from '../src/actions/proSubscriptionActions';
 

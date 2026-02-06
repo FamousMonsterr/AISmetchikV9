@@ -113,11 +113,14 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
         }
     };
 
+  const canAccessTraining = user?.plan === 'Enterprise';
   const menuItems = [
       { href: "/dashboard", label: "Проекты", icon: <Home className="h-5 w-5 shrink-0" /> },
       { href: "/dashboard/mobile-panel", label: "Пульт", icon: <Waypoints className="h-5 w-5 shrink-0" />, mobileOnly: true },
       { href: "/dashboard/bonus", label: "Партнерам", icon: <Handshake className="h-5 w-5 shrink-0" /> },
-      { href: "/dashboard/training", label: "База знаний", icon: <BookOpen className="h-5 w-5 shrink-0" /> }
+      ...(canAccessTraining
+        ? [{ href: "/dashboard/training", label: "База знаний", icon: <BookOpen className="h-5 w-5 shrink-0" /> }]
+        : []),
   ];
     
     const adminMenuItem = { href: "/dashboard/admin", label: "Админ-панель", icon: <Shield className="h-5 w-5 shrink-0" /> };

@@ -1,4 +1,5 @@
 // scripts/expire-credits.ts
+import './bootstrap';
 import 'dotenv/config';
 import { getDb } from '../src/lib/mongodb';
 import { expireCreditsForUser } from '../src/services/credits';

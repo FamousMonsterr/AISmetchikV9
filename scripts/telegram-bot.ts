@@ -1,5 +1,6 @@
 // scripts/telegram-bot.ts
 // Run with: npm run bot:local
+import './bootstrap';
 export {};
 
 require('dotenv/config');

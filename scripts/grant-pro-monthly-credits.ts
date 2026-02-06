@@ -1,4 +1,5 @@
 // scripts/grant-pro-monthly-credits.ts
+import './bootstrap';
 import 'dotenv/config';
 import { grantMonthlyMarketingBonuses } from '../src/actions/marketingActions';
 
