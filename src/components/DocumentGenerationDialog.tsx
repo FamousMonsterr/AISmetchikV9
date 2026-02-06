@@ -129,7 +129,7 @@ export function DocumentGenerationDialog({ isOpen, onClose, project, specificati
         const refreshResponse = await fetch('/api/s3-refresh-url', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ objectKey }),
+            body: JSON.stringify({ objectKey, bucketType: 'user_docs' }),
         });
         if (!refreshResponse.ok) {
             throw new Error((await refreshResponse.json()).error || 'Не удалось обновить ссылку.');
@@ -330,7 +330,7 @@ export function DocumentGenerationDialog({ isOpen, onClose, project, specificati
                     const presignedUrlResponse = await fetch('/api/s3-upload', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ fileName: invoiceFileName, fileType: invoiceBlob.type }),
+                        body: JSON.stringify({ fileName: invoiceFileName, fileType: invoiceBlob.type, bucketType: 'project_docs' }),
                     });
                     if (!presignedUrlResponse.ok) {
                         throw new Error((await presignedUrlResponse.json()).error || 'Не удалось получить ссылку для загрузки в S3.');

@@ -158,7 +158,7 @@ export function PurchaseCreditsDialog({ isOpen, onClose, selectedPackage }: Purc
             const presignedUrlResponse = await fetch("/api/s3-upload", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ fileName, fileType: blob.type }),
+                body: JSON.stringify({ fileName, fileType: blob.type, bucketType: 'user_docs' }),
             });
             if (!presignedUrlResponse.ok) {
                 throw new Error((await presignedUrlResponse.json()).error || "Не удалось получить ссылку для загрузки в S3.");

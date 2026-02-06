@@ -237,7 +237,7 @@ export default function ProfileTab() {
     }));
   }, [canEditTemplates, templateOptions]);
 
-  const uploadAsset = async (file: File, bucketType?: 'default' | 'personal') => {
+  const uploadAsset = async (file: File, bucketType?: 'analysis' | 'avatars' | 'user_docs' | 'project_docs' | 'default' | 'personal') => {
     const presignedUrlResponse = await fetch("/api/s3-upload", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -268,7 +268,7 @@ export default function ProfileTab() {
     if (type === 'stamp') setIsUploadingStamp(true);
     if (type === 'avatar') setIsUploadingAvatar(true);
     try {
-      const uploaded = await uploadAsset(file, type === 'avatar' ? 'personal' : 'default');
+      const uploaded = await uploadAsset(file, type === 'avatar' ? 'avatars' : 'user_docs');
       if (type === 'signature') {
         setSignatureState({ url: uploaded.accessUrl, objectKey: uploaded.objectKey, expiresAt: uploaded.urlExpirationTimestamp });
       } else if (type === 'stamp') {

@@ -777,6 +777,15 @@ export interface EnvSettings {
     s3PresignedUrlExpiration?: number;
     s3PersonalBucketName?: string;
     s3PersonalBucketIsPublic?: boolean;
+    s3AvatarBucketName?: string;
+    s3AvatarBucketIsPublic?: boolean;
+    s3AvatarPresetId?: string;
+    s3UserDocsBucketName?: string;
+    s3UserDocsBucketIsPublic?: boolean;
+    s3UserDocsPresetId?: string;
+    s3ProjectDocsBucketName?: string;
+    s3ProjectDocsBucketIsPublic?: boolean;
+    s3ProjectDocsPresetId?: string;
     s3Presets?: Array<{
         id: string;
         name: string;
@@ -835,6 +844,15 @@ const EnvSettingsSchema = z.object({
     s3PresignedUrlExpiration: z.number().int().min(1).optional(),
     s3PersonalBucketName: z.string().optional().or(z.literal('')),
     s3PersonalBucketIsPublic: z.boolean().optional(),
+    s3AvatarBucketName: z.string().optional().or(z.literal('')),
+    s3AvatarBucketIsPublic: z.boolean().optional(),
+    s3AvatarPresetId: z.string().optional().or(z.literal('')),
+    s3UserDocsBucketName: z.string().optional().or(z.literal('')),
+    s3UserDocsBucketIsPublic: z.boolean().optional(),
+    s3UserDocsPresetId: z.string().optional().or(z.literal('')),
+    s3ProjectDocsBucketName: z.string().optional().or(z.literal('')),
+    s3ProjectDocsBucketIsPublic: z.boolean().optional(),
+    s3ProjectDocsPresetId: z.string().optional().or(z.literal('')),
     s3Presets: z.array(z.any()).optional(),
     s3ActivePresetId: z.string().optional().or(z.literal('')),
     s3SecondaryEnabled: z.boolean().optional(),
@@ -869,6 +887,12 @@ const SECRET_FIELDS: Array<keyof EnvSettings> = [
     's3BucketName',
     's3TenantId',
     's3PersonalBucketName',
+    's3AvatarBucketName',
+    's3AvatarPresetId',
+    's3UserDocsBucketName',
+    's3UserDocsPresetId',
+    's3ProjectDocsBucketName',
+    's3ProjectDocsPresetId',
     's3Presets',
     's3ActivePresetId',
     's3SecondaryPresetId',
@@ -912,6 +936,15 @@ const ENV_FILE_MAP: Record<string, (settings: EnvSettings) => string | undefined
     S3_PRESIGNED_URL_EXPIRATION: (s) => s.s3PresignedUrlExpiration !== undefined ? String(s.s3PresignedUrlExpiration) : undefined,
     S3_PERSONAL_BUCKET_NAME: (s) => s.s3PersonalBucketName,
     S3_PERSONAL_BUCKET_IS_PUBLIC: (s) => s.s3PersonalBucketIsPublic !== undefined ? String(!!s.s3PersonalBucketIsPublic) : undefined,
+    S3_AVATAR_BUCKET_NAME: (s) => s.s3AvatarBucketName,
+    S3_AVATAR_BUCKET_IS_PUBLIC: (s) => s.s3AvatarBucketIsPublic !== undefined ? String(!!s.s3AvatarBucketIsPublic) : undefined,
+    S3_AVATAR_PRESET_ID: (s) => s.s3AvatarPresetId,
+    S3_USER_DOCS_BUCKET_NAME: (s) => s.s3UserDocsBucketName,
+    S3_USER_DOCS_BUCKET_IS_PUBLIC: (s) => s.s3UserDocsBucketIsPublic !== undefined ? String(!!s.s3UserDocsBucketIsPublic) : undefined,
+    S3_USER_DOCS_PRESET_ID: (s) => s.s3UserDocsPresetId,
+    S3_PROJECT_DOCS_BUCKET_NAME: (s) => s.s3ProjectDocsBucketName,
+    S3_PROJECT_DOCS_BUCKET_IS_PUBLIC: (s) => s.s3ProjectDocsBucketIsPublic !== undefined ? String(!!s.s3ProjectDocsBucketIsPublic) : undefined,
+    S3_PROJECT_DOCS_PRESET_ID: (s) => s.s3ProjectDocsPresetId,
 };
 
 const envLine = (key: string, value: string) => `${key}="${value.replace(/"/g, '\\"')}"`;
@@ -1437,7 +1470,12 @@ export const getFeedbackStats = async () => {
 
 // --- S3 Management ---
 
-export async function getS3Client(preferredPresetId?: string, options?: { bucketType?: 'default' | 'personal' }): Promise<{
+type BucketType = 'default' | 'analysis' | 'personal' | 'avatars' | 'user_docs' | 'project_docs';
+
+export async function getS3Client(
+    preferredPresetId?: string,
+    options?: { bucketType?: BucketType; allowBucketless?: boolean }
+): Promise<{
     s3Client: S3Client;
     settings: EnvSettings;
     config: {
@@ -1454,9 +1492,7 @@ export async function getS3Client(preferredPresetId?: string, options?: { bucket
     presetId?: string;
 }> {
     const settings = await getEnvSettings({ allowInternal: true });
-    if (options?.bucketType === 'personal' && !settings.s3PersonalBucketName) {
-        throw new Error("S3 personal bucket is not configured in the admin panel.");
-    }
+    const bucketType = options?.bucketType || 'default';
 
     const resolveConfig = (presetId?: string) => {
         const preset = settings.s3Presets?.find((p) => p.id === presetId);
@@ -1474,20 +1510,64 @@ export async function getS3Client(preferredPresetId?: string, options?: { bucket
             presignedUrlExpiration: cfg.s3PresignedUrlExpiration ?? settings.s3PresignedUrlExpiration,
             provider,
         };
-        if (options?.bucketType === 'personal') {
+        return resolved;
+    };
+
+    const resolveBucketForPurpose = (cfg: ReturnType<typeof resolveConfig>) => {
+        if (bucketType === 'analysis' || bucketType === 'default') {
             return {
-                ...resolved,
-                bucketName: settings.s3PersonalBucketName || resolved.bucketName,
-                bucketIsPublic: settings.s3PersonalBucketIsPublic ?? resolved.bucketIsPublic,
+                bucketName: cfg.bucketName,
+                bucketIsPublic: cfg.bucketIsPublic,
             };
         }
-        return resolved;
+        if (bucketType === 'personal') {
+            return {
+                bucketName: settings.s3PersonalBucketName || cfg.bucketName,
+                bucketIsPublic: settings.s3PersonalBucketIsPublic ?? cfg.bucketIsPublic,
+            };
+        }
+        if (bucketType === 'avatars') {
+            return {
+                bucketName: settings.s3AvatarBucketName || settings.s3PersonalBucketName || cfg.bucketName,
+                bucketIsPublic: settings.s3AvatarBucketIsPublic ?? settings.s3PersonalBucketIsPublic ?? cfg.bucketIsPublic,
+            };
+        }
+        if (bucketType === 'user_docs') {
+            return {
+                bucketName: settings.s3UserDocsBucketName || cfg.bucketName,
+                bucketIsPublic: settings.s3UserDocsBucketIsPublic ?? cfg.bucketIsPublic,
+            };
+        }
+        if (bucketType === 'project_docs') {
+            return {
+                bucketName: settings.s3ProjectDocsBucketName || cfg.bucketName,
+                bucketIsPublic: settings.s3ProjectDocsBucketIsPublic ?? cfg.bucketIsPublic,
+            };
+        }
+        return {
+            bucketName: cfg.bucketName,
+            bucketIsPublic: cfg.bucketIsPublic,
+        };
+    };
+
+    const resolvePresetForPurpose = () => {
+        if (preferredPresetId) return preferredPresetId;
+        if (bucketType === 'avatars' && settings.s3AvatarPresetId) return settings.s3AvatarPresetId;
+        if (bucketType === 'user_docs' && settings.s3UserDocsPresetId) return settings.s3UserDocsPresetId;
+        if (bucketType === 'project_docs' && settings.s3ProjectDocsPresetId) return settings.s3ProjectDocsPresetId;
+        return settings.s3ActivePresetId;
     };
 
     const tryCreate = (presetId?: string) => {
         const cfg = resolveConfig(presetId);
-        if (!settings.s3StorageEnabled || !cfg.endpoint || !cfg.region || !cfg.accessKeyId || !cfg.secretAccessKey || !cfg.bucketName) {
+        const resolvedBucket = resolveBucketForPurpose(cfg);
+        const bucketName = resolvedBucket.bucketName;
+        const bucketIsPublic = resolvedBucket.bucketIsPublic;
+        if (!settings.s3StorageEnabled || !cfg.endpoint || !cfg.region || !cfg.accessKeyId || !cfg.secretAccessKey) {
             throw new Error("S3 storage is not configured or enabled completely in the admin panel.");
+        }
+        if (!options?.allowBucketless && !bucketName) {
+            throw new Error("S3 bucket name is not configured for the selected purpose.");
         }
         const shouldUseTenant = cfg.provider === 'cloudru' && !!cfg.tenantId;
         const accessKeyId = shouldUseTenant ? `${cfg.tenantId}:${cfg.accessKeyId}` : cfg.accessKeyId;
@@ -1500,11 +1580,12 @@ export async function getS3Client(preferredPresetId?: string, options?: { bucket
           },
           forcePathStyle: true,
         });
-        return { s3Client, presetId, settings, config: cfg };
+        return { s3Client, presetId, settings, config: { ...cfg, bucketName, bucketIsPublic } };
     };
 
     try {
-        return tryCreate(preferredPresetId || settings.s3ActivePresetId);
+        const presetId = resolvePresetForPurpose();
+        return tryCreate(presetId);
     } catch (primaryError) {
         if (settings.s3SecondaryEnabled && settings.s3SecondaryPresetId) {
             try {
@@ -1519,7 +1600,7 @@ export async function getS3Client(preferredPresetId?: string, options?: { bucket
 
 export const testS3Connection = async (presetId?: string): Promise<{ success: boolean; message: string; }> => {
     try {
-        const { s3Client } = await getS3Client(presetId);
+        const { s3Client } = await getS3Client(presetId, { allowBucketless: true });
         await s3Client.send(new ListBucketsCommand({}));
         return { success: true, message: "Соединение с S3 успешно установлено." };
     } catch(e: any) {
@@ -1529,7 +1610,7 @@ export const testS3Connection = async (presetId?: string): Promise<{ success: bo
 
 export const listBuckets = async (presetId?: string): Promise<{ success: boolean; message: string; buckets?: string[]; }> => {
     try {
-        const { s3Client } = await getS3Client(presetId);
+        const { s3Client } = await getS3Client(presetId, { allowBucketless: true });
         const { Buckets } = await s3Client.send(new ListBucketsCommand({}));
         return { success: true, message: "Список бакетов получен.", buckets: Buckets?.map(b => b.Name || '') || [] };
     } catch (e: any) {
@@ -1539,7 +1620,7 @@ export const listBuckets = async (presetId?: string): Promise<{ success: boolean
 
 export const createBucket = async ({ bucketName, presetId }: { bucketName: string, presetId?: string }): Promise<{ success: boolean; message: string; }> => {
     try {
-        const { s3Client } = await getS3Client(presetId);
+        const { s3Client } = await getS3Client(presetId, { allowBucketless: true });
         await s3Client.send(new CreateBucketCommand({ Bucket: bucketName }));
         return { success: true, message: `Бакет "${bucketName}" успешно создан.` };
     } catch (e: any) {
