@@ -3,10 +3,28 @@ const path = require('path');
 
 const LOG_FLAG = '__LOCAL_LOG_ATTACHED__';
 
+function rotateLogFile(logPath) {
+  try {
+    if (!fs.existsSync(logPath)) return;
+    const stats = fs.statSync(logPath);
+    if (!stats.size) return;
+    const archiveFile = process.env.LOCAL_LOG_ARCHIVE_FILE || 'old.localhost.log';
+    const archivePath = path.isAbsolute(archiveFile) ? archiveFile : path.join(process.cwd(), archiveFile);
+    const content = fs.readFileSync(logPath);
+    const header = `\n[LOCAL LOG ARCHIVE] ${new Date().toISOString()}\n`;
+    fs.appendFileSync(archivePath, header);
+    fs.appendFileSync(archivePath, content);
+    fs.truncateSync(logPath, 0);
+  } catch {
+    // ignore rotation errors
+  }
+}
+
 function attachLocalLogFile() {
   if (globalThis[LOG_FLAG]) return;
   const logFile = process.env.LOCAL_LOG_FILE || '.localhost.log';
   const logPath = path.isAbsolute(logFile) ? logFile : path.join(process.cwd(), logFile);
+  rotateLogFile(logPath);
   const logStream = fs.createWriteStream(logPath, { flags: 'a' });
 
   const wrapWrite = (originalWrite, stream) => {
