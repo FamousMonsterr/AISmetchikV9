@@ -1,7 +1,4 @@
 x-app: &app_base
-  build:
-    context: ..
-    dockerfile: Dockerfile
   restart: unless-stopped
   env_file:
     - ../.env
@@ -16,6 +13,10 @@ x-app: &app_base
 services:
   web:
     <<: *app_base
+    image: ai-smetchik-app:latest
+    build:
+      context: ..
+      dockerfile: Dockerfile
     ports:
       - "3000:3000"
     healthcheck:
@@ -27,6 +28,7 @@ services:
 
   worker:
     <<: *app_base
+    image: ai-smetchik-app:latest
     command: npm run worker:server-analysis
 
   nginx:

@@ -58,6 +58,7 @@ jobs:
           username: ${{ secrets.VDS_SSH_USER }}
           key: ${{ secrets.VDS_SSH_KEY }}
           port: ${{ secrets.VDS_SSH_PORT || '22' }}
+          command_timeout: 30m
           script_stop: true
           script: |
             set -e
@@ -65,6 +66,11 @@ jobs:
             git fetch origin main
             git checkout main
             git pull --ff-only origin main
+            df -h
+            docker system df || true
+            docker container prune -f || true
+            docker image prune -af || true
+            docker builder prune -af || true
             docker compose --env-file deploy/.env.vds -f deploy/docker-compose.vds.yml up -d --build --remove-orphans
             curl -fsS http://127.0.0.1:3000/api/health
             docker image prune -f

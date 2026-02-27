@@ -1,7 +1,4 @@
 x-app: &app_base
-  build:
-    context: ..
-    dockerfile: Dockerfile
   restart: unless-stopped
   env_file:
     - ../.env
@@ -16,6 +13,10 @@ x-app: &app_base
 services:
   web:
     <<: *app_base
+    image: ai-smetchik-app:latest
+    build:
+      context: ..
+      dockerfile: Dockerfile
     healthcheck:
       test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:3000/api/health || exit 1"]
       interval: 30s
@@ -25,6 +26,7 @@ services:
 
   worker:
     <<: *app_base
+    image: ai-smetchik-app:latest
     command: npm run worker:server-analysis
 
   nginx:
