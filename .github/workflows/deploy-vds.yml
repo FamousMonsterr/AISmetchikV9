@@ -67,7 +67,7 @@ jobs:
           key: ${{ secrets.VDS_SSH_KEY }}
           port: ${{ secrets.VDS_SSH_PORT || '22' }}
           command_timeout: 30m
-          script_stop: true
+          script_stop: false
           script: |
             set -ex
             TLS_DOMAIN="${{ secrets.VDS_DOMAIN }}"
