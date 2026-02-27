@@ -11,10 +11,42 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    outputs:
+      ready: ${{ steps.check.outputs.ready }}
+    steps:
+      - name: Check required deploy secrets
+        id: check
+        env:
+          VDS_SSH_HOST: ${{ secrets.VDS_SSH_HOST }}
+          VDS_SSH_USER: ${{ secrets.VDS_SSH_USER }}
+          VDS_SSH_KEY: ${{ secrets.VDS_SSH_KEY }}
+          VDS_DEPLOY_PATH: ${{ secrets.VDS_DEPLOY_PATH }}
+        run: |
+          missing=0
+          for var in VDS_SSH_HOST VDS_SSH_USER VDS_SSH_KEY VDS_DEPLOY_PATH; do
+            if [ -z "${!var}" ]; then
+              echo "::warning::Missing secret: ${var}"
+              missing=1
+            fi
+          done
+
+          if [ "$missing" -eq 1 ]; then
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Deploy skipped: configure required secrets first."
+            exit 0
+          fi
+
+          echo "ready=true" >> "$GITHUB_OUTPUT"
+          echo "Deploy secrets are configured."
+
   deploy:
+    needs: preflight
     if: >-
-      github.event_name == 'workflow_dispatch' ||
-      (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main')
+      (github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main')) &&
+      needs.preflight.outputs.ready == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
@@ -25,11 +57,11 @@ jobs:
           host: ${{ secrets.VDS_SSH_HOST }}
           username: ${{ secrets.VDS_SSH_USER }}
           key: ${{ secrets.VDS_SSH_KEY }}
-          port: ${{ secrets.VDS_SSH_PORT }}
+          port: ${{ secrets.VDS_SSH_PORT || '22' }}
           script_stop: true
           script: |
             set -e
-            cd "${{ secrets.VDS_DEPLOY_PATH }}"
+            cd "${{ secrets.VDS_DEPLOY_PATH || '/opt/ai-smetchik' }}"
             git fetch origin main
             git checkout main
             git pull --ff-only origin main
