@@ -72,5 +72,5 @@ jobs:
             docker image prune -af || true
             docker builder prune -af || true
             docker compose --env-file deploy/.env.vds -f deploy/docker-compose.vds.yml up -d --build --remove-orphans
-            curl -fsS http://127.0.0.1:3000/api/health
+            curl -fsS http://127.0.0.1/api/health
             docker image prune -f
