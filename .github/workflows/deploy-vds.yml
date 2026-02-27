@@ -72,6 +72,7 @@ jobs:
             docker image prune -af || true
             docker builder prune -af || true
             docker compose --env-file deploy/.env.vds -f deploy/docker-compose.vds.yml up -d --build --remove-orphans
+            docker compose --env-file deploy/.env.vds -f deploy/docker-compose.vds.yml restart nginx
             for i in $(seq 1 30); do
               if curl -fsS http://127.0.0.1/api/health; then
                 break
