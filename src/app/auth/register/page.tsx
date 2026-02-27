@@ -3,7 +3,7 @@
 
 import { useState, useTransition, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { signIn } from 'next-auth/react';
+import { getSession, signIn } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
@@ -92,6 +92,10 @@ function RegisterForm() {
         const loginResult = await signIn('credentials', { email, password, redirect: false });
         if (!loginResult || loginResult.error) {
           throw new Error('Регистрация прошла, но не удалось войти автоматически.');
+        }
+        const session = await getSession();
+        if (!session?.user?.id) {
+          throw new Error("Сессия не установлена после входа. Проверьте NEXTAUTH_URL/AUTH_TRUST_HOST и HTTPS (TLS).");
         }
 
         toast({ title: "Регистрация прошла успешно!" });

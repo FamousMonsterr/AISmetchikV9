@@ -54,7 +54,11 @@ export default function LoginPage() {
         }
 
         const session = await getSession();
-        const userId = session?.user?.id ?? email;
+        const sessionUserId = session?.user?.id;
+        if (!sessionUserId) {
+          throw new Error("Сессия не установлена после входа. Проверьте NEXTAUTH_URL/AUTH_TRUST_HOST и HTTPS (TLS).");
+        }
+        const userId = sessionUserId;
         
         // Check for first login
         const isFirstLogin = !localStorage.getItem(`hasLoggedIn_${userId}`);

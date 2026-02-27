@@ -13,6 +13,7 @@ function normalizeId(id: any): string {
 }
 
 export const authOptions: NextAuthOptions = {
+  trustHost: true,
   session: {
     strategy: 'jwt',
   },
