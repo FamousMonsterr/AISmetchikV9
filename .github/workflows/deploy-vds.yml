@@ -69,10 +69,12 @@ jobs:
           command_timeout: 30m
           script_stop: true
           script: |
-            set -e
+            set -ex
             TLS_DOMAIN="${{ secrets.VDS_DOMAIN }}"
             TLS_EMAIL="${{ secrets.LETSENCRYPT_EMAIL }}"
-            COMPOSE="docker compose --env-file deploy/.env.vds -f deploy/docker-compose.vds.yml"
+            compose_cmd() {
+              docker compose --env-file deploy/.env.vds -f deploy/docker-compose.vds.yml "$@"
+            }
             cd "${{ secrets.VDS_DEPLOY_PATH || '/opt/ai-smetchik' }}"
             git fetch origin main
             git checkout main
@@ -90,7 +92,7 @@ jobs:
               sed "s/__DOMAIN__/_/g" deploy/nginx/default.http.conf > deploy/nginx/default.conf
             fi
 
-            $COMPOSE up -d --build --remove-orphans
+            compose_cmd up -d --build --remove-orphans
 
             if [ -n "$TLS_DOMAIN" ] && [ -n "$TLS_EMAIL" ]; then
               docker run --rm \
@@ -105,12 +107,12 @@ jobs:
                 --keep-until-expiring
 
               sed "s/__DOMAIN__/$TLS_DOMAIN/g" deploy/nginx/default.https.conf > deploy/nginx/default.conf
-              $COMPOSE up -d --build --remove-orphans
-              $COMPOSE restart nginx
+              compose_cmd up -d --build --remove-orphans
+              compose_cmd restart nginx
             fi
 
             for i in $(seq 1 30); do
-              if $COMPOSE exec -T web wget -q -O /dev/null http://127.0.0.1:3000/api/health; then
+              if compose_cmd exec -T web wget -q -O /dev/null http://127.0.0.1:3000/api/health; then
                 break
               fi
               if [ "$i" -eq 30 ]; then
