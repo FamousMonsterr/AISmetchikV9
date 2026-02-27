@@ -14,6 +14,7 @@ import { incrementAiCallCount } from '@/actions/userActions';
 import { refineItemsFlow, type RefineItemsInput, type RefineItemsOutput } from '@/ai/flows/refine-items-flow';
 import { findMissingItemsFlow, type FindMissingItemsInput } from '@/ai/flows/find-missing-items-flow';
 import { UpgradeAccountDialog } from './UpgradeAccountDialog';
+import { getProjectDisplayName } from '@/lib/project-labels';
 import aiConstructorConfig from '@/lib/ai-constructor-config.json';
 
 
@@ -310,7 +311,7 @@ export function RefineProjectDialog({ isOpen, onClose, actionType, project, sele
                     <AlertTitle>Внимание</AlertTitle>
                     <AlertDescription>
                       Процесс доработки использует тот же файл, что и при первоначальном анализе. Убедитесь, что это верный контекст для вашей задачи.
-                      <p className="font-medium text-foreground mt-2 truncate" title={project?.fileName}>Файл: {project?.fileName}</p>
+                      <p className="font-medium text-foreground mt-2 truncate" title={getProjectDisplayName(project)}>Проект: {getProjectDisplayName(project)}</p>
                     </AlertDescription>
                 </Alert>
             </div>

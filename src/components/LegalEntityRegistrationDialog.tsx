@@ -52,7 +52,7 @@ const createFormSchema = (isPartner: boolean) => z.object({
 export function LegalEntityRegistrationDialog({ isOpen, onClose, isRegistration = false, isPartnerRegistration = false }: { isOpen: boolean; onClose: () => void; isRegistration?: boolean, isPartnerRegistration?: boolean }) {
   const router = useRouter();
   const { toast } = useToast();
-  const { user } = useAppContext();
+  const { user, setNavigating } = useAppContext();
   const [isPending, startTransition] = useTransition();
 
   const [dadataQuery, setDadataQuery] = useState('');
@@ -143,6 +143,7 @@ export function LegalEntityRegistrationDialog({ isOpen, onClose, isRegistration 
                 description: result.message,
             });
             if (isRegistration) {
+              setNavigating(true);
               router.push('/dashboard');
             }
             onClose();
@@ -163,8 +164,8 @@ export function LegalEntityRegistrationDialog({ isOpen, onClose, isRegistration 
           <DialogTitle>{isPartnerRegistration ? 'Заявка на партнерство' : 'Заявка для юридических лиц'}</DialogTitle>
           <DialogDescription>
             {isPartnerRegistration 
-                ? 'Оставьте заявку, чтобы стать официальным партнером и начать зарабатывать.'
-                : 'Оставьте заявку, и наш менеджер свяжется с вами для обсуждения корпоративных условий.'
+                ? 'Короткая заявка — ответим быстро.'
+                : 'Короткая заявка — пришлем условия.'
             }
           </DialogDescription>
         </DialogHeader>

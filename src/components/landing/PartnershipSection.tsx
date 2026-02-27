@@ -6,11 +6,14 @@ import { Button } from "../ui/button";
 import { GlassCard } from "../ui/glass-card";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useRouter } from "next/navigation";
+import { useAppContext } from "@/contexts/AppContext";
 
 export const PartnershipSection = () => {
     const router = useRouter();
+    const { setNavigating } = useAppContext();
 
     const handleNavigate = () => {
+        setNavigating(true);
         router.push('/partnership');
     };
 

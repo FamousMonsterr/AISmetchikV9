@@ -20,10 +20,41 @@ import { logUserAction, logAiApiCall, type ActionType } from '@/lib/logger';
 import { grantCredits, refundCredits } from '@/services/credits';
 import { startManagedBot, stopManagedBot, getBotRuntimeStatus, forceUnlockBot } from '@/server-functions/telegram/controller';
 import { registerTelegramWebhook, clearTelegramWebhook } from '@/server-functions/webhooks/telegram';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 
 
 // This fix is necessary for node-telegram-bot-api to work correctly with Buffers in some environments.
 process.env.NTBA_FIX_350 = '1';
+
+function isAdminRole(role?: string | null) {
+    return role === 'Admin' || role === 'Super Admin';
+}
+
+async function ensureAdminActor(currentUserId?: string): Promise<string> {
+    const session = await getServerSession(authOptions);
+    const sessionUserId = session?.user?.id;
+    const sessionRole = (session?.user as any)?.systemRole;
+
+    if (sessionUserId) {
+        if (!isAdminRole(sessionRole)) {
+            throw new Error('Недостаточно прав.');
+        }
+        if (currentUserId && currentUserId !== sessionUserId) {
+            throw new Error('Идентификатор администратора не совпадает с активной сессией.');
+        }
+        return sessionUserId;
+    }
+
+    if (!currentUserId) {
+        throw new Error('Не удалось определить администратора запроса.');
+    }
+    const userDoc = await getDoc(doc(db, 'users', currentUserId));
+    if (!isAdminRole(userDoc.data()?.systemRole)) {
+        throw new Error('Недостаточно прав.');
+    }
+    return currentUserId;
+}
 
 // Helper to get Super Admin Email from settings first, then env
 async function getSuperAdminEmail(): Promise<string | undefined> {
@@ -32,7 +63,7 @@ async function getSuperAdminEmail(): Promise<string | undefined> {
 }
 
 export const getAllUsers = async (): Promise<AppUser[]> => {
-    // Verification is now done on the client-side before calling this action.
+    await ensureAdminActor();
     const usersCollection = collection(db, 'users');
     const userSnapshot = await getDocs(usersCollection);
     const userList = userSnapshot.docs.map(doc => ({
@@ -74,6 +105,12 @@ export const updateUserPermissions = async (data: z.infer<typeof UpdateUserPermi
   }
 
   const { currentUserId, targetUid, updates } = validation.data;
+  let actorId = currentUserId;
+  try {
+    actorId = await ensureAdminActor(currentUserId);
+  } catch (e: any) {
+    return { success: false, message: e.message || 'Недостаточно прав.' };
+  }
   
   const targetUserDoc = await getDoc(doc(db, 'users', targetUid));
   const targetUserData = targetUserDoc.data();
@@ -86,7 +123,7 @@ export const updateUserPermissions = async (data: z.infer<typeof UpdateUserPermi
   }
 
   // Prevent Super Admin from demoting themselves, but allow other self-edits.
-  if (currentUserId === targetUid && 'systemRole' in updates && updates.systemRole !== 'Super Admin') {
+  if (actorId === targetUid && 'systemRole' in updates && updates.systemRole !== 'Super Admin') {
       return { success: false, message: 'Супер-администратор не может понизить собственную роль.' };
   }
 
@@ -112,7 +149,7 @@ export const updateUserPermissions = async (data: z.infer<typeof UpdateUserPermi
 
     await updateDoc(userRef, finalUpdates);
 
-    await logUserAction(currentUserId, 'ADMIN_UPDATE_USER', {
+      await logUserAction(actorId, 'ADMIN_UPDATE_USER', {
       targetUserId: targetUid,
       updatedFields: Object.keys(updates),
     });
@@ -137,6 +174,12 @@ export const addCreditsToUser = async (data: z.infer<typeof AddCreditsSchema>): 
   }
 
   const { currentUserId, targetUid, amount } = validation.data;
+  let actorId = currentUserId;
+  try {
+    actorId = await ensureAdminActor(currentUserId);
+  } catch (e: any) {
+    return { success: false, message: e.message || 'Недостаточно прав.' };
+  }
   
   try {
     const userRef = doc(db, 'users', targetUid);
@@ -150,10 +193,10 @@ export const addCreditsToUser = async (data: z.infer<typeof AddCreditsSchema>): 
         amount,
         type: 'purchased',
         source: 'admin_add',
-        metadata: { adminId: currentUserId },
+        metadata: { adminId: actorId },
     });
 
-    await logUserAction(currentUserId, 'ADMIN_ADD_CREDITS', {
+    await logUserAction(actorId, 'ADMIN_ADD_CREDITS', {
       targetUserId: targetUid,
       amountAdded: amount,
       newBalance: result.summary.total,
@@ -179,6 +222,12 @@ export const setUserStatus = async (data: z.infer<typeof SetUserStatusSchema>): 
     }
 
     const { currentUserId, targetUid, status } = validation.data;
+    let actorId = currentUserId;
+    try {
+        actorId = await ensureAdminActor(currentUserId);
+    } catch (e: any) {
+        return { success: false, message: e.message || 'Недостаточно прав.' };
+    }
 
     const targetUserDoc = await getDoc(doc(db, 'users', targetUid));
     const targetUserData = targetUserDoc.data();
@@ -188,7 +237,7 @@ export const setUserStatus = async (data: z.infer<typeof SetUserStatusSchema>): 
         return { success: false, message: 'Этот Супер-администратор защищен и не может быть заблокирован.' };
     }
 
-    if (currentUserId === targetUid) {
+    if (actorId === targetUid) {
         return { success: false, message: 'Супер-администратор не может заблокировать сам себя.' };
     }
 
@@ -199,7 +248,7 @@ export const setUserStatus = async (data: z.infer<typeof SetUserStatusSchema>): 
             updatedAt: serverTimestamp() 
         });
 
-        await logUserAction(currentUserId, 'ADMIN_SET_USER_STATUS', {
+        await logUserAction(actorId, 'ADMIN_SET_USER_STATUS', {
           targetUserId: targetUid,
           newStatus: status,
         });
@@ -224,6 +273,12 @@ export const archiveUser = async (data: z.infer<typeof ArchiveUserSchema>): Prom
     }
 
     const { currentUserId, targetUid } = validation.data;
+    let actorId = currentUserId;
+    try {
+        actorId = await ensureAdminActor(currentUserId);
+    } catch (e: any) {
+        return { success: false, message: e.message || 'Недостаточно прав.' };
+    }
 
     const targetUserDoc = await getDoc(doc(db, 'users', targetUid));
     const targetUserData = targetUserDoc.data();
@@ -233,7 +288,7 @@ export const archiveUser = async (data: z.infer<typeof ArchiveUserSchema>): Prom
     }
 
 
-    if (currentUserId === targetUid) {
+    if (actorId === targetUid) {
         return { success: false, message: 'Супер-администратор не может архивировать сам себя.' };
     }
     
@@ -244,7 +299,7 @@ export const archiveUser = async (data: z.infer<typeof ArchiveUserSchema>): Prom
             status: 'blocked'
         });
         
-        await logUserAction(currentUserId, 'ADMIN_ARCHIVE_USER', {
+        await logUserAction(actorId, 'ADMIN_ARCHIVE_USER', {
             targetUserId: targetUid,
         });
 
@@ -290,6 +345,12 @@ export const returnCreditAndResolveTicket = async (data: z.infer<typeof ResolveT
     }
 
     const { ticketId, userId, creditAmount, currentUserId } = validation.data;
+    let actorId = currentUserId;
+    try {
+        actorId = await ensureAdminActor(currentUserId);
+    } catch (e: any) {
+        return { success: false, message: e.message || 'Недостаточно прав.' };
+    }
     
     const ticketRef = doc(db, 'requests', ticketId);
 
@@ -300,18 +361,18 @@ export const returnCreditAndResolveTicket = async (data: z.infer<typeof ResolveT
             userId,
             amount: creditAmount,
             reason: 'ticket_refund',
-            metadata: { ticketId, adminId: currentUserId },
+            metadata: { ticketId, adminId: actorId },
         });
 
         batch.update(ticketRef, { 
             status: 'success', 
             resolvedAt: serverTimestamp(),
-            resolvedBy: currentUserId,
+            resolvedBy: actorId,
         });
         
         await batch.commit();
         
-        await logUserAction(currentUserId, 'ADMIN_RESOLVE_TICKET', {
+        await logUserAction(actorId, 'ADMIN_RESOLVE_TICKET', {
             ticketId: ticketId,
             targetUserId: userId,
             creditAmount: creditAmount,
@@ -332,6 +393,14 @@ export interface AppSettings {
     serverFunctionsMode: 'client' | 'server';
     serverFunctionsPaidOnly: boolean;
     serverFunctionsAllowedPlans?: UserPlan[];
+    analysisPipelineVersion: 'v1' | 'v2';
+    aiExecutionProvider: 'openrouter' | 'local_hf';
+    localHfEnabled: boolean;
+    backendBaseUrl?: string;
+    frontendBaseUrl?: string;
+    allowedFrontendOrigins?: string[];
+    jwtIssuer?: string;
+    jwtAudience?: string;
 }
 
 const AppSettingsSchema = z.object({
@@ -340,6 +409,14 @@ const AppSettingsSchema = z.object({
     serverFunctionsMode: z.enum(['client', 'server']).optional().default('client'),
     serverFunctionsPaidOnly: z.boolean().optional().default(true),
     serverFunctionsAllowedPlans: z.array(z.enum(['Free', 'PRO', 'Business', 'Enterprise'])).optional(),
+    analysisPipelineVersion: z.enum(['v1', 'v2']).optional().default('v1'),
+    aiExecutionProvider: z.enum(['openrouter', 'local_hf']).optional().default('openrouter'),
+    localHfEnabled: z.boolean().optional().default(false),
+    backendBaseUrl: z.string().url('Неверный URL backendBaseUrl.').optional().or(z.literal('')),
+    frontendBaseUrl: z.string().url('Неверный URL frontendBaseUrl.').optional().or(z.literal('')),
+    allowedFrontendOrigins: z.array(z.string().url('Неверный URL в allowedFrontendOrigins.')).optional(),
+    jwtIssuer: z.string().optional().or(z.literal('')),
+    jwtAudience: z.string().optional().or(z.literal('')),
 });
 
 export const getAppSettings = async (): Promise<AppSettings> => {
@@ -354,11 +431,33 @@ export const getAppSettings = async (): Promise<AppSettings> => {
             serverFunctionsMode: data.serverFunctionsMode ?? 'client',
             serverFunctionsPaidOnly: data.serverFunctionsPaidOnly ?? true,
             serverFunctionsAllowedPlans: data.serverFunctionsAllowedPlans ?? ['PRO', 'Business', 'Enterprise'],
+            analysisPipelineVersion: data.analysisPipelineVersion ?? 'v1',
+            aiExecutionProvider: data.aiExecutionProvider ?? 'openrouter',
+            localHfEnabled: data.localHfEnabled ?? false,
+            backendBaseUrl: data.backendBaseUrl || '',
+            frontendBaseUrl: data.frontendBaseUrl || '',
+            allowedFrontendOrigins: data.allowedFrontendOrigins || [],
+            jwtIssuer: data.jwtIssuer || '',
+            jwtAudience: data.jwtAudience || '',
         };
     } catch (error) {
         console.error("Error getting app settings:", error);
         // Return default empty state on error
-        return { enterpriseEmail: '', serverFunctionsEnabled: false, serverFunctionsMode: 'client', serverFunctionsPaidOnly: true, serverFunctionsAllowedPlans: ['PRO', 'Business', 'Enterprise'] };
+        return {
+            enterpriseEmail: '',
+            serverFunctionsEnabled: false,
+            serverFunctionsMode: 'client',
+            serverFunctionsPaidOnly: true,
+            serverFunctionsAllowedPlans: ['PRO', 'Business', 'Enterprise'],
+            analysisPipelineVersion: 'v1',
+            aiExecutionProvider: 'openrouter',
+            localHfEnabled: false,
+            backendBaseUrl: '',
+            frontendBaseUrl: '',
+            allowedFrontendOrigins: [],
+            jwtIssuer: '',
+            jwtAudience: '',
+        };
     }
 };
 
@@ -370,11 +469,13 @@ export const updateAppSettings = async (currentUserId: string, data: AppSettings
         return { success: false, message: firstError || 'Неверные данные.' };
     }
     
+    let actorId = currentUserId;
     try {
+        actorId = await ensureAdminActor(currentUserId);
         const settingsRef = doc(db, 'configs', 'appSettings');
         await setDoc(settingsRef, validation.data, { merge: true });
 
-        await logUserAction(currentUserId, 'ADMIN_UPDATE_SETTINGS', {
+        await logUserAction(actorId, 'ADMIN_UPDATE_SETTINGS', {
             updatedSettings: validation.data,
         });
 
@@ -470,6 +571,11 @@ export const activateTrial = async (data: z.infer<typeof ActivateTrialSchema>): 
     }
 
     const { userId, plan } = validation.data;
+    try {
+        await ensureAdminActor();
+    } catch (e: any) {
+        return { success: false, message: e.message || 'Недостаточно прав.' };
+    }
     const userRef = doc(db, 'users', userId);
 
     try {
@@ -758,6 +864,9 @@ export interface EnvSettings {
     ozonBankApiToken?: string;
     ozonBankSyncPath?: string;
     openRouterApiKey?: string;
+    localHfBaseUrl?: string;
+    localHfModelId?: string;
+    localHfApiKey?: string;
     defaultFallbackModel?: string;
     mongoUri?: string;
     mongoDbName?: string;
@@ -828,6 +937,9 @@ const EnvSettingsSchema = z.object({
     ozonBankApiToken: z.string().optional().or(z.literal('')),
     ozonBankSyncPath: z.string().optional().or(z.literal('')),
     openRouterApiKey: z.string().optional().or(z.literal('')),
+    localHfBaseUrl: z.string().url('Неверный URL для локальной HF модели.').optional().or(z.literal('')),
+    localHfModelId: z.string().optional().or(z.literal('')),
+    localHfApiKey: z.string().optional().or(z.literal('')),
     defaultFallbackModel: z.string().optional().or(z.literal('')),
     mongoUri: z.string().url('Неверный URL MongoDB.').optional().or(z.literal('')),
     mongoDbName: z.string().optional().or(z.literal('')),
@@ -883,6 +995,7 @@ const SECRET_FIELDS: Array<keyof EnvSettings> = [
     'dadataApiSecret',
     'ozonBankApiToken',
     'openRouterApiKey',
+    'localHfApiKey',
     'mongoUri',
     'mongoDbName',
     'smtpUser',
@@ -927,6 +1040,9 @@ const ENV_FILE_MAP: Record<string, (settings: EnvSettings) => string | undefined
     OZON_BANK_API_TOKEN: (s) => s.ozonBankApiToken,
     OZON_BANK_SYNC_PATH: (s) => s.ozonBankSyncPath,
     OPENROUTER_API_KEY: (s) => s.openRouterApiKey,
+    LOCAL_HF_BASE_URL: (s) => s.localHfBaseUrl,
+    LOCAL_HF_MODEL_ID: (s) => s.localHfModelId,
+    LOCAL_HF_API_KEY: (s) => s.localHfApiKey,
     DEFAULT_FALLBACK_MODEL: (s) => s.defaultFallbackModel,
     SMTP_ENABLED: (s) => s.smtpEnabled !== undefined ? String(!!s.smtpEnabled) : undefined,
     SMTP_HOST: (s) => s.smtpHost,
@@ -998,8 +1114,6 @@ export type ConnectivityStatus = {
     openrouter: { ok: boolean; message: string };
 };
 
-const isAdminRole = (role?: string | null) => role === 'Admin' || role === 'Super Admin';
-
 export const getEnvSettings = async (options: GetEnvOptions = {}): Promise<EnvSettings> => {
     const { requesterId, requireAdmin, allowInternal, stripSecrets } = options;
 
@@ -1040,11 +1154,8 @@ export const getPublicEnvSettings = async (): Promise<EnvSettings> => {
 
 export async function testConnectivity(options: { requesterId?: string; requireAdmin?: boolean } = {}): Promise<{ success: boolean; status: ConnectivityStatus; message?: string }> {
     const { requesterId, requireAdmin } = options;
-    if (requireAdmin && requesterId) {
-        const userDoc = await getDoc(doc(db, 'users', requesterId));
-        if (!isAdminRole(userDoc.data()?.systemRole)) {
-            throw new Error('Недостаточно прав.');
-        }
+    if (requireAdmin) {
+        await ensureAdminActor(requesterId);
     }
 
     const env = await getEnvSettings({ allowInternal: true });
@@ -1096,10 +1207,12 @@ export const updateEnvSettings = async (currentUserId: string, data: EnvSettings
         return { success: false, message: firstError || 'Неверные данные.' };
     }
     
+    let actorId = currentUserId;
     try {
+        actorId = await ensureAdminActor(currentUserId);
         const settingsRef = doc(db, 'configs', 'envSettings');
         await setDoc(settingsRef, validation.data, { merge: true });
-        await logUserAction(currentUserId, 'ADMIN_UPDATE_ENV_SETTINGS', {});
+        await logUserAction(actorId, 'ADMIN_UPDATE_ENV_SETTINGS', {});
         await persistEnvFile(validation.data);
         return { success: true, message: 'Переменные окружения успешно обновлены. Изменения могут примениться не сразу.' };
     } catch (error) {
@@ -1379,11 +1492,14 @@ const COLLECTIONS_TO_WIPE = [
     'user_logs',
     'bug_reports',
     'notifications',
-    'file_analysis_cache'
+    'file_analysis_cache',
+    'file_markdown_cache'
 ];
 
 export const wipeAllData = async (currentUserId: string): Promise<{ success: boolean; message: string; }> => {
+    let actorId = currentUserId;
     try {
+        actorId = await ensureAdminActor(currentUserId);
         let deletedDocsCount = 0;
 
         for (const collectionName of COLLECTIONS_TO_WIPE) {
@@ -1395,7 +1511,7 @@ export const wipeAllData = async (currentUserId: string): Promise<{ success: boo
 
             for (const docSnap of snapshot.docs) {
                  // CRITICAL: Do not delete the super admin's own user document
-                if (collectionName === 'users' && docSnap.id === currentUserId) {
+                if (collectionName === 'users' && docSnap.id === actorId) {
                     continue;
                 }
                 
@@ -1416,7 +1532,7 @@ export const wipeAllData = async (currentUserId: string): Promise<{ success: boo
             }
         }
         
-        await logUserAction(currentUserId, 'ADMIN_WIPE_ALL_DATA', { deletedDocsCount });
+        await logUserAction(actorId, 'ADMIN_WIPE_ALL_DATA', { deletedDocsCount });
         return { success: true, message: `Операция завершена. Удалено ${deletedDocsCount} документов.`};
 
     } catch (error: any) {
@@ -1433,6 +1549,11 @@ const BulkUpdateSchema = z.object({
 });
 
 export async function updateUsersInBulk(data: z.infer<typeof BulkUpdateSchema>) {
+    try {
+        await ensureAdminActor();
+    } catch (e: any) {
+        return { success: false, message: e.message || 'Недостаточно прав.' };
+    }
     const validation = BulkUpdateSchema.safeParse(data);
     if (!validation.success) {
         return { success: false, message: "Неверные данные для массового обновления." };

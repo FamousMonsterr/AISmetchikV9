@@ -17,6 +17,7 @@ import { LegalEntityRegistrationDialog } from '@/components/LegalEntityRegistrat
 import { usePathname, useRouter } from 'next/navigation';
 import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '../ui/alert-dialog';
 import { motion } from "framer-motion";
+import { useAppContext } from '@/contexts/AppContext';
 
 
 const NavItemWithAlert = ({ href, children, onNavigate, isMobile = false }: { href: string; children: React.ReactNode; onNavigate: () => void; isMobile?: boolean; }) => {
@@ -95,6 +96,7 @@ const ThemeSwitcher = () => {
 export const Header = () => {
     const pathname = usePathname();
     const router = useRouter();
+    const { setNavigating } = useAppContext();
     const isPartnershipPage = pathname === '/partnership';
 
     const [isOpen, setIsOpen] = useState(false);
@@ -124,6 +126,11 @@ export const Header = () => {
     const secondaryAction = (
         <CtaButton href="/auth/login" variant="secondary" size="sm">Войти</CtaButton>
     );
+
+    const handleNavigate = (href: string) => {
+        setNavigating(true);
+        router.push(href);
+    };
     
     return (
         <>
@@ -146,7 +153,7 @@ export const Header = () => {
                 {navItems.map((item) => {
                     const isAlertLink = item.href === '/partnership' || item.href === '/';
                     if (isAlertLink) {
-                        return <NavItemWithAlert key={item.href} href={item.href} onNavigate={() => router.push(item.href)}>{item.label}</NavItemWithAlert>;
+                        return <NavItemWithAlert key={item.href} href={item.href} onNavigate={() => handleNavigate(item.href)}>{item.label}</NavItemWithAlert>;
                     }
                     return (
                         <motion.a key={item.href} href={item.href} className='px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-300 text-muted-foreground hover:text-foreground hover:bg-secondary active:opacity-80' whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
@@ -172,7 +179,7 @@ export const Header = () => {
                                 return (
                                      <div key={item.href}>
                                         {isAlertLink ? (
-                                            <NavItemWithAlert href={item.href} onNavigate={() => router.push(item.href)} isMobile={true}>{item.label}</NavItemWithAlert>
+                                            <NavItemWithAlert href={item.href} onNavigate={() => handleNavigate(item.href)} isMobile={true}>{item.label}</NavItemWithAlert>
                                         ) : (
                                             <NavLink href={item.href}>{item.label}</NavLink>
                                         )}

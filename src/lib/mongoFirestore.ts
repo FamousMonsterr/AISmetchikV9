@@ -41,6 +41,79 @@ type QueryRef = {
 };
 
 const isServer = typeof window === 'undefined';
+const CLIENT_QUERY_CACHE_TTL_MS = Number(process.env.NEXT_PUBLIC_QUERY_CACHE_TTL_MS || 900);
+const CLIENT_QUERY_MAX_CACHE_ENTRIES = Number(process.env.NEXT_PUBLIC_QUERY_CACHE_MAX_ENTRIES || 200);
+const REALTIME_CHANGE_DEBOUNCE_MS = Number(process.env.NEXT_PUBLIC_REALTIME_CHANGE_DEBOUNCE_MS || 180);
+const REALTIME_POLL_INTERVAL_MS = Math.max(3000, Number(process.env.NEXT_PUBLIC_REALTIME_POLL_INTERVAL_MS || 10000));
+
+type ClientCacheEntry = {
+  expiresAt: number;
+  payload: any;
+};
+
+const clientQueryCache = new Map<string, ClientCacheEntry>();
+const clientInFlightQueries = new Map<string, Promise<any>>();
+
+function buildClientQueryKey(descriptor: any) {
+  return JSON.stringify(descriptor);
+}
+
+function readClientCache(key: string): any | null {
+  const entry = clientQueryCache.get(key);
+  if (!entry) return null;
+  if (Date.now() > entry.expiresAt) {
+    clientQueryCache.delete(key);
+    return null;
+  }
+  return entry.payload;
+}
+
+function writeClientCache(key: string, payload: any) {
+  if (CLIENT_QUERY_CACHE_TTL_MS <= 0) return;
+  clientQueryCache.set(key, {
+    payload,
+    expiresAt: Date.now() + CLIENT_QUERY_CACHE_TTL_MS,
+  });
+  if (clientQueryCache.size > CLIENT_QUERY_MAX_CACHE_ENTRIES) {
+    const overflow = clientQueryCache.size - CLIENT_QUERY_MAX_CACHE_ENTRIES;
+    for (let i = 0; i < overflow; i += 1) {
+      const oldestKey = clientQueryCache.keys().next().value;
+      if (!oldestKey) break;
+      clientQueryCache.delete(oldestKey);
+    }
+  }
+}
+
+async function requestQueryPayload(descriptor: any): Promise<any> {
+  const key = buildClientQueryKey(descriptor);
+  const cached = readClientCache(key);
+  if (cached) return cached;
+
+  const inFlight = clientInFlightQueries.get(key);
+  if (inFlight) return inFlight;
+
+  const reqPromise = (async () => {
+    const res = await fetch('/api/query', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(descriptor),
+    });
+    if (!res.ok) {
+      throw new FirebaseError('realtime/fetch-failed', await res.text());
+    }
+    const payload = await res.json();
+    writeClientCache(key, payload);
+    return payload;
+  })();
+
+  clientInFlightQueries.set(key, reqPromise);
+  try {
+    return await reqPromise;
+  } finally {
+    clientInFlightQueries.delete(key);
+  }
+}
 
 export function collection(_db: unknown, name: string): CollectionRef {
   return { name };
@@ -232,16 +305,7 @@ export function onSnapshot(
 
   const fetchSnapshot = async () => {
     try {
-      const res = await fetch('/api/query', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify(descriptor),
-      });
-      if (!res.ok) {
-        throw new FirebaseError('realtime/fetch-failed', await res.text());
-      }
-      const payload = await res.json();
+      const payload = await requestQueryPayload(descriptor);
       if (descriptor.type === 'doc') {
         onNext(createDocSnapshot(payload.doc ?? null, descriptor.collection));
       } else {
@@ -259,9 +323,8 @@ export function onSnapshot(
   }
 
   if (realtimeMode === 'polling') {
-    const intervalMs = 5000;
     fetchSnapshot();
-    const intervalId = window.setInterval(fetchSnapshot, intervalMs);
+    const intervalId = window.setInterval(fetchSnapshot, REALTIME_POLL_INTERVAL_MS);
     return () => window.clearInterval(intervalId);
   }
 
@@ -278,17 +341,82 @@ export function onSnapshot(
     }
   }
 
-  const eventSource = new EventSource(url.toString());
-  eventSource.addEventListener('change', () => {
-    fetchSnapshot();
-  });
-  eventSource.onerror = () => {
-    onError?.(new FirebaseError('realtime/connection-failed', 'Realtime connection failed.'));
+  let eventSource: EventSource | null = null;
+  let pollingIntervalId: number | null = null;
+  let switchedToPolling = false;
+  let debounceTimer: number | null = null;
+  let fetchInProgress = false;
+  let shouldRefetchAfterCurrent = false;
+
+  const runFetch = async () => {
+    if (fetchInProgress) {
+      shouldRefetchAfterCurrent = true;
+      return;
+    }
+    fetchInProgress = true;
+    try {
+      await fetchSnapshot();
+    } finally {
+      fetchInProgress = false;
+      if (shouldRefetchAfterCurrent) {
+        shouldRefetchAfterCurrent = false;
+        debounceTimer = window.setTimeout(() => {
+          debounceTimer = null;
+          runFetch();
+        }, REALTIME_CHANGE_DEBOUNCE_MS);
+      }
+    }
   };
 
-  fetchSnapshot();
+  const scheduleFetch = (delay = 0) => {
+    if (debounceTimer) {
+      window.clearTimeout(debounceTimer);
+      debounceTimer = null;
+    }
+    debounceTimer = window.setTimeout(() => {
+      debounceTimer = null;
+      runFetch();
+    }, Math.max(0, delay));
+  };
+
+  const switchToPollingFallback = () => {
+    if (switchedToPolling) return;
+    switchedToPolling = true;
+    if (eventSource) {
+      eventSource.close();
+      eventSource = null;
+    }
+    onError?.(new FirebaseError('realtime/connection-failed', 'Realtime SSE недоступен, переключаемся на polling.'));
+    fetchSnapshot();
+    pollingIntervalId = window.setInterval(fetchSnapshot, REALTIME_POLL_INTERVAL_MS);
+  };
+
+  try {
+    eventSource = new EventSource(url.toString());
+    eventSource.addEventListener('change', () => {
+      scheduleFetch(REALTIME_CHANGE_DEBOUNCE_MS);
+    });
+    eventSource.onerror = () => {
+      switchToPollingFallback();
+    };
+  } catch {
+    switchToPollingFallback();
+  }
+
+  scheduleFetch(0);
 
   return () => {
-    eventSource.close();
+    if (debounceTimer) {
+      window.clearTimeout(debounceTimer);
+      debounceTimer = null;
+    }
+    if (pollingIntervalId) {
+      window.clearInterval(pollingIntervalId);
+      pollingIntervalId = null;
+    }
+    if (eventSource) {
+      eventSource.close();
+      eventSource = null;
+    }
   };
 }

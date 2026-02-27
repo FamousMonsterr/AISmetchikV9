@@ -36,6 +36,7 @@ import { getDefaultModel, getVoiceModel, generateJson } from '@/services/ai';
 import aiConstructorConfig from '@/lib/ai-constructor-config.json';
 import { PlanBadge } from '@/components/PlanBadge';
 import { getPlanModelOptions, resolvePlanModelId } from '@/lib/plan-models';
+import { getProjectDisplayName, getProjectVersionLabel } from '@/lib/project-labels';
 
 import { SpecificationTable } from '@/components/calculator/SpecificationTable';
 import { AiRecommendations } from '@/components/calculator/AiRecommendations';
@@ -58,6 +59,7 @@ export const dynamic = 'force-dynamic';
 
 interface SpecificationPageContentProps {
     onBackToProjects?: () => void;
+    variant?: 'default' | 'pwa';
 }
 
 type SyncPriceOption = {
@@ -73,9 +75,9 @@ type SyncPriceConflict = {
   options: SyncPriceOption[];
 };
 
-export default function SpecificationPageContent({ onBackToProjects }: SpecificationPageContentProps) {
+export default function SpecificationPageContent({ onBackToProjects, variant = 'default' }: SpecificationPageContentProps) {
   const router = useRouter();
-  const { user, currentProject, setCurrentProject, currentGroup, setCurrentGroup, effectivePlan, resetAppContextState, isNavigating } = useAppContext();
+  const { user, currentProject, setCurrentProject, currentGroup, setCurrentGroup, effectivePlan, resetAppContextState, isNavigating, setNavigating } = useAppContext();
   const { toast } = useToast();
   
   const [isSaving, startSavingTransition] = useTransition();
@@ -735,6 +737,7 @@ export default function SpecificationPageContent({ onBackToProjects }: Specifica
                  if (onBackToProjects) {
                     onBackToProjects();
                  } else {
+                    setNavigating(true);
                     router.push('/dashboard');
                  }
              }
@@ -1551,8 +1554,10 @@ export default function SpecificationPageContent({ onBackToProjects }: Specifica
 
   const resolvedActiveProjectId = activeProjectId ?? currentProject.id ?? currentGroup?.[0]?.id ?? '';
   
+  const isPwa = variant === 'pwa';
+
   return (
-    <div className={cn("w-full transition-colors", isGroupWorkActive && "bg-blue-50/20 dark:bg-blue-950/20")}>
+    <div className={cn("w-full transition-colors", isGroupWorkActive && "bg-blue-50/20 dark:bg-blue-950/20", isPwa && "pwa-panel")}>
       <UpgradeAccountDialog isOpen={isUpgradeModalOpen} onClose={() => setIsUpgradeModalOpen(false)} targetRole={upgradeTargetRole} />
       <Dialog open={isSyncDialogOpen} onOpenChange={setIsSyncDialogOpen}>
         <DialogContent className="max-w-3xl">
@@ -1664,7 +1669,7 @@ export default function SpecificationPageContent({ onBackToProjects }: Specifica
           onProjectSelect={handleLoadVersion}
           currentProject={currentProject}
           dialogTitle="Просмотр версий"
-          dialogDescription={`Загрузите любую из сохраненных версий для проекта "${currentProject.fileName}".`}
+          dialogDescription={`Загрузите любую из сохраненных версий для проекта "${getProjectDisplayName(currentProject)}".`}
         />
         {isRefineDialogOpen && (
             <RefineProjectDialog
@@ -1717,8 +1722,8 @@ export default function SpecificationPageContent({ onBackToProjects }: Specifica
         />
       )}
       
-      <div className="flex flex-col lg:flex-row gap-6 items-start">
-        <div className="w-full lg:w-96 lg:sticky lg:top-4 space-y-4 flex-shrink-0 order-1 lg:order-2">
+      <div className={cn("flex flex-col lg:flex-row gap-6 items-start", isPwa && "gap-4")}>
+        <div className={cn("w-full lg:w-96 lg:sticky lg:top-4 space-y-4 flex-shrink-0 order-1 lg:order-2", isPwa && "space-y-3")}>
           <TotalsAndActions
             specifications={currentProject.outputSpecifications.filter(item => !item.isRecommended)}
             quoteConfig={currentProject.quoteConfig || initialQuoteConfig}
@@ -1805,7 +1810,7 @@ export default function SpecificationPageContent({ onBackToProjects }: Specifica
                             ? "text-slate-800/90 dark:text-slate-100/90"
                             : "text-foreground/90"
                         )}
-                        title={currentProject.objectName || currentProject.fileName}
+                        title={getProjectDisplayName(currentProject)}
                       >
                         Группа: {currentProject.objectName || "Без названия"}
                       </CardTitle>
@@ -1888,9 +1893,9 @@ export default function SpecificationPageContent({ onBackToProjects }: Specifica
                           key={project.id}
                           value={project.id}
                           className="max-w-[16rem] truncate transition-colors hover:bg-muted/50 active:bg-muted/70 dark:hover:bg-muted/30 dark:active:bg-muted/40 data-[state=active]:bg-background/70 data-[state=active]:text-foreground data-[state=active]:shadow-sm dark:data-[state=active]:bg-muted/20"
-                          title={project.fileName}
+                        title={getProjectDisplayName(project)}
                         >
-                          {project.fileName || "Без названия"}
+                        {getProjectDisplayName(project)}
                         </TabsTrigger>
                       ))}
                       <Button
@@ -1914,12 +1919,18 @@ export default function SpecificationPageContent({ onBackToProjects }: Specifica
              <CardHeader>
                 <div className="flex items-center justify-between gap-4">
                     <div className="flex-1 min-w-0">
-                        <CardTitle className="truncate" title={currentProject.fileName}>{currentProject.fileName}</CardTitle>
-                        <Button variant="link" className="p-0 h-auto text-muted-foreground" onClick={() => setIsVersionDialogOpen(true)}>
-                            Версия {currentProject.version || 'N/A'} {currentProject.isMainVersion && '(Основная)'}
-                        </Button>
+                        <CardTitle className="truncate" title={getProjectDisplayName(currentProject)}>
+                          {getProjectDisplayName(currentProject)}
+                        </CardTitle>
+                        <div className="flex items-center gap-2">
+                          <Button variant="link" className="p-0 h-auto text-muted-foreground" onClick={() => setIsVersionDialogOpen(true)}>
+                              {getProjectVersionLabel(currentProject)} {currentProject.isMainVersion && '(Основная)'}
+                          </Button>
+                        </div>
                     </div>
-                     <Button variant="ghost" size="sm" onClick={onBackToProjects ? onBackToProjects : () => router.push('/dashboard')}><ArrowLeft className="mr-2 h-4 w-4"/>К проектам</Button>
+                     <Button variant="ghost" size="sm" onClick={onBackToProjects ? onBackToProjects : () => { setNavigating(true); router.push('/dashboard'); }}>
+                        <ArrowLeft className="mr-2 h-4 w-4"/>{isPwa ? "Назад" : "К проектам"}
+                     </Button>
                 </div>
             </CardHeader>
           </Card>

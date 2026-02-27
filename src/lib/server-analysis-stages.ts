@@ -5,6 +5,8 @@ export type ServerStageKey =
   | 's3_cache'
   | 's3_upload'
   | 'analysis_cache'
+  | 'markdown_cache'
+  | 'ocr_markdown'
   | 'dispatch'
   | 'queued'
   | 'running'
@@ -20,6 +22,8 @@ export const SERVER_STAGE_ORDER: ServerStageKey[] = [
   's3_cache',
   's3_upload',
   'analysis_cache',
+  'markdown_cache',
+  'ocr_markdown',
   'dispatch',
   'queued',
   'running',
@@ -34,6 +38,8 @@ export const SERVER_STAGE_LABELS: Record<ServerStageKey, string> = {
   s3_cache: 'Проверка S3 кеша',
   s3_upload: 'Загрузка в S3',
   analysis_cache: 'Проверка кеша анализа',
+  markdown_cache: 'Проверка markdown кеша',
+  ocr_markdown: 'OCR в markdown',
   dispatch: 'Отправка в очередь',
   queued: 'В очереди',
   running: 'Запуск анализа',

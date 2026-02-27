@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Button } from '@/components/ui/button';
 import { HistoryRequest } from '@/contexts/AppContext';
 import { FileSymlink, Edit, FilePlus } from 'lucide-react';
+import { getProjectDisplayName } from '@/lib/project-labels';
 
 export type DuplicateAction = 'open' | 'version' | 'new';
 
@@ -38,7 +39,7 @@ export function DuplicateProjectDialog({ isOpen, onClose, project, onAction }: D
         <DialogHeader>
           <DialogTitle>Обнаружен дубликат</DialogTitle>
           <DialogDescription>
-            Проект с названием "{project.fileName}" уже есть в истории. Что вы хотите сделать?
+            Проект "{getProjectDisplayName(project)}" уже есть в истории. Что вы хотите сделать?
           </DialogDescription>
         </DialogHeader>
         <div className="py-4 space-y-3">

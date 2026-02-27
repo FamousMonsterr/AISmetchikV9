@@ -4,14 +4,18 @@ import { Logo } from '@/components/Logo';
 import Link from 'next/link';
 import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '../ui/alert-dialog';
 import { usePathname, useRouter } from 'next/navigation';
+import { useAppContext } from '@/contexts/AppContext';
 
 
 const FooterLink = ({ href, children }: { href: string, children: React.ReactNode }) => {
     const router = useRouter();
     const pathname = usePathname();
     const isPartnershipPage = pathname === '/partnership';
+    const { setNavigating } = useAppContext();
+    const shouldShowLoader = href.startsWith('/') && !href.includes('#');
 
     const handleNavigate = () => {
+        setNavigating(true);
         router.push(href);
     };
 
@@ -60,7 +64,7 @@ const FooterLink = ({ href, children }: { href: string, children: React.ReactNod
     }
     
     return (
-        <Link href={href} className="text-muted-foreground hover:text-foreground transition-colors">
+        <Link href={href} onClick={() => shouldShowLoader && setNavigating(true)} className="text-muted-foreground hover:text-foreground transition-colors">
             {children}
         </Link>
     );

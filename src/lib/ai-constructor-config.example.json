@@ -65,6 +65,20 @@
             "allowedRoles": ["Super Admin"]
         },
         {
+            "id": "ocrMarkdownPrompt",
+            "name": "OCR в markdown (V2)",
+            "description": "Преобразует исходный файл в структурированный markdown для последующего анализа.",
+            "promptText": "Этот промпт является коммерческой тайной и был удален из публичной версии.",
+            "allowedRoles": ["Super Admin"]
+        },
+        {
+            "id": "mainAnalysisV2",
+            "name": "Основной анализ V2 (из markdown)",
+            "description": "Строит спецификацию, выявляет нестыковки и предлагает цены по OCR markdown.",
+            "promptText": "Этот промпт является коммерческой тайной и был удален из публичной версии.",
+            "allowedRoles": ["Super Admin"]
+        },
+        {
             "id": "systemTypeAnalysis",
             "name": "Анализ метаданных проекта",
             "description": "Извлекает только название объекта, тип системы и шифр проекта.",

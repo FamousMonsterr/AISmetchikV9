@@ -3,9 +3,8 @@
 
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Download, Send, FileText, CheckCircle } from 'lucide-react';
+import { FileText, Settings2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useToast } from '@/hooks/use-toast';
 import { DocumentGenerationDialog } from '@/components/DocumentGenerationDialog';
 import { HistoryRequest, QuoteConfig, Company } from '@/contexts/AppContext';
 import { Input } from '../ui/input';
@@ -18,11 +17,11 @@ interface ActionBlockProps {
   price: number;
   setPrice: (price: number) => void;
   context?: 'top' | 'bottom';
+  onOpenCalculator?: () => void;
 }
 
-export const ActionBlock = ({ price, setPrice, project, quoteConfig, companies, context = 'top' }: ActionBlockProps) => {
+export const ActionBlock = ({ price, setPrice, project, quoteConfig, companies, context = 'top', onOpenCalculator }: ActionBlockProps) => {
     const [isDocGenOpen, setIsDocGenOpen] = useState(false);
-    const { toast } = useToast();
 
     const handleAction = () => {
         setIsDocGenOpen(true);
@@ -61,8 +60,18 @@ export const ActionBlock = ({ price, setPrice, project, quoteConfig, companies, 
                     className="flex items-center justify-center gap-2 bg-primary text-primary-foreground py-3 rounded-xl font-medium text-sm shadow-lg shadow-blue-200 dark:shadow-none"
                 >
                     <FileText size={18} />
-                    Сформировать документы
+                    Документы
                 </motion.button>
+                {context === 'top' && onOpenCalculator && (
+                    <motion.button
+                        whileTap={{ scale: 0.95 }}
+                        onClick={onOpenCalculator}
+                        className="flex items-center justify-center gap-2 border border-primary/30 text-primary py-3 rounded-xl font-medium text-sm bg-white/60 dark:bg-zinc-800/60"
+                    >
+                        <Settings2 size={18} />
+                        Калькулятор
+                    </motion.button>
+                )}
             </div>
         </div>
         </>

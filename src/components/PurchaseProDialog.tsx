@@ -313,10 +313,10 @@ export function PurchaseProDialog({ isOpen, onClose }: PurchaseProDialogProps) {
           {paymentMethod === 'individual' ? (
             <Alert>
               <PhoneCall className="h-4 w-4" />
-              <AlertTitle>Оплата по СБП</AlertTitle>
+              <AlertTitle>Оплата переводом (СБП)</AlertTitle>
               <AlertDescription className="space-y-3">
                 <div>Переведите <strong>{selectedPlan.price.toLocaleString('ru-RU')} ₽</strong> по номеру {sbpPhone}.</div>
-                <div className="text-xs text-muted-foreground">Банк получателя: {sbpBank}.</div>
+                <div className="text-xs text-muted-foreground">Банк: {sbpBank}.</div>
                 {sbpLink && (
                   <div>
                     <Button asChild variant="outline" size="sm">
@@ -335,7 +335,7 @@ export function PurchaseProDialog({ isOpen, onClose }: PurchaseProDialogProps) {
                 </div>
                 <div className="text-xs text-muted-foreground flex items-center gap-2">
                   <ShieldCheck className="h-4 w-4" />
-                  Проверка платежа занимает до 24 часов. На это время PRO активируется на 1 день.
+                  Проверка до 24 часов. PRO активируется на 1 день.
                 </div>
               </AlertDescription>
             </Alert>

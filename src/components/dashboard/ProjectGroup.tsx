@@ -43,9 +43,15 @@ export function ProjectGroup({ object, onEditGroup, onDownloadReport, onArchive,
                     </div>
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <Button size="sm" variant="outline" disabled={isActionDisabled} className={cn(isCompact && "h-8 px-2 text-xs")}>
-                                {isActionDisabled ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <ChevronDown className="mr-2 h-4 w-4" />}
-                                Действия с группой
+                            <Button
+                                size="icon"
+                                variant="outline"
+                                disabled={isActionDisabled}
+                                className={cn(isCompact && "h-8 w-8")}
+                                aria-label="Действия группы"
+                                title="Действия группы"
+                            >
+                                {isActionDisabled ? <Loader2 className="h-4 w-4 animate-spin"/> : <ChevronDown className="h-4 w-4" />}
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent>

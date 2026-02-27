@@ -1,5 +1,6 @@
 // src/server-functions/analysis/types.ts
 import type { Timestamp } from '@/lib/mongoFirestoreServer';
+import type { UserPlan } from '@/contexts/AppContext';
 
 export type ServerAnalysisJobStatus = 'queued' | 'running' | 'succeeded' | 'failed' | 'cancelled';
 
@@ -13,9 +14,18 @@ export interface ServerAnalysisJob {
   mimeType: string;
   objectKey?: string;
   model: string;
+  pipelineVersion?: 'v1' | 'v2';
+  executionProvider?: 'openrouter' | 'local_hf';
+  userPlan?: UserPlan;
+  idempotencyKey?: string;
   temperature?: number;
   includeThoughts?: boolean;
   creditCost: number;
+  claimedBy?: string | null;
+  claimedAt?: Date | Timestamp | null;
+  attempt?: number;
+  startedAt?: Date | Timestamp | null;
+  finishedAt?: Date | Timestamp | null;
   status: ServerAnalysisJobStatus;
   error?: string | null;
   resultRequestId?: string | null;
@@ -33,6 +43,10 @@ export interface CreateServerAnalysisJobInput {
   mimeType: string;
   objectKey?: string;
   model: string;
+  pipelineVersion?: 'v1' | 'v2';
+  executionProvider?: 'openrouter' | 'local_hf';
+  userPlan?: UserPlan;
+  idempotencyKey?: string;
   temperature?: number;
   includeThoughts?: boolean;
   creditCost: number;

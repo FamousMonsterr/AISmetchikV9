@@ -17,6 +17,8 @@ import type { HistoryRequest } from "@/contexts/AppContext";
 import { SERVER_STAGE_LABELS, SERVER_STAGE_ORDER, type ServerStageKey } from "@/lib/server-analysis-stages";
 import { Details } from '../Details';
 import { Input } from '../ui/input';
+import { getProjectDisplayName, getProjectVersionLabel } from '@/lib/project-labels';
+import { sanitizeAnalysisErrorForUi } from '@/lib/analysis-errors';
 
 const getStatusBadge = (status: HistoryRequest['status']) => {
     switch (status) {
@@ -39,6 +41,8 @@ const safeFormatDate = (timestamp: any): string => {
 
 export function ProjectCard({ item, isGrouped, onSelectionChange, selection, isActionPending, onViewResult, onUngroup, onArchive, onUnarchive, onReport, onDelete, onRenameProject, onViewVersions, activeTab, onRetry, density = 'comfortable' }: any) {
     const isActionDisabled = isActionPending;
+    const canViewResult = ['success', 'reported', 'draft'].includes(item.status);
+    const canReportResult = item.status === 'success' && activeTab !== 'archived';
     const [isRenaming, setIsRenaming] = useState(false);
     const [newName, setNewName] = useState(item.fileName);
     const isCompact = density === 'compact';
@@ -47,7 +51,7 @@ export function ProjectCard({ item, isGrouped, onSelectionChange, selection, isA
     const stageIndex = stageKey ? SERVER_STAGE_ORDER.indexOf(stageKey) : -1;
     const progressValue = stageIndex >= 0 ? Math.round(((stageIndex + 1) / SERVER_STAGE_ORDER.length) * 100) : 0;
     const showStage = stageLabel && ['processing', 'failed', 'cancelled'].includes(item.status);
-    const errorDetail = item.processingStageMessage || item.error;
+    const errorDetail = sanitizeAnalysisErrorForUi(item.processingStageMessage || item.error || '');
 
     const handleRename = () => {
         if (newName !== item.fileName && newName.trim() !== '') {
@@ -78,8 +82,18 @@ export function ProjectCard({ item, isGrouped, onSelectionChange, selection, isA
                             autoFocus
                         />
                     ) : (
-                        <p className="font-medium truncate cursor-pointer max-w-full" title={item.fileName} onClick={() => setIsRenaming(true)}>{item.fileName}</p>
+                        <p
+                          className="font-medium truncate cursor-pointer max-w-full"
+                          title={getProjectDisplayName(item)}
+                          onClick={() => setIsRenaming(true)}
+                        >
+                          {getProjectDisplayName(item)}
+                        </p>
                     )}
+                    <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
+                        <span>{getProjectVersionLabel(item)}</span>
+                        {item.isMainVersion && <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] text-primary">Основная</span>}
+                    </div>
                     <Details title="Детали">
                         <div className={cn("text-xs text-muted-foreground space-y-1", isCompact ? "mt-0.5" : "mt-1")}>
                             <p className="truncate"><strong>Версия:</strong> {item.version || 1}</p>
@@ -119,10 +133,16 @@ export function ProjectCard({ item, isGrouped, onSelectionChange, selection, isA
                     )}
                 </div>
                 <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2">
-                    <Button variant="outline" size="sm" onClick={() => onViewResult(item)} disabled={isActionDisabled}>
+                    <Button variant="outline" size="sm" onClick={() => onViewResult(item)} disabled={isActionDisabled || !canViewResult}>
                         {isActionDisabled ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Eye className="mr-2 h-4 w-4" />}
                         <span className="hidden sm:inline">Просмотр</span>
                     </Button>
+                    {canReportResult && (
+                        <Button variant="destructive" size="sm" onClick={() => onReport(item)} disabled={isActionDisabled}>
+                            <MessageSquareWarning className="mr-2 h-4 w-4" />
+                            <span className="hidden sm:inline">Пожаловаться</span>
+                        </Button>
+                    )}
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button variant="ghost" size="sm" className="h-auto px-2 py-1" disabled={isActionDisabled}>
@@ -160,12 +180,6 @@ export function ProjectCard({ item, isGrouped, onSelectionChange, selection, isA
                                             Восстановить
                                         </DropdownMenuItem>
                                      )}
-                                    {item.status === 'success' && (
-                                         <DropdownMenuItem onSelect={() => onReport(item)}>
-                                            <MessageSquareWarning className="mr-2 h-4 w-4 text-orange-500"/>
-                                            Пожаловаться
-                                        </DropdownMenuItem>
-                                    )}
                                     <DropdownMenuSeparator />
                                     <AlertDialog>
                                         <AlertDialogTrigger asChild>

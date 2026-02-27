@@ -1,7 +1,7 @@
 // src/app/dashboard/admin/ai-agent/page.tsx
 "use client";
 
-import { useState, useEffect, useTransition, useMemo } from 'react';
+import { useState, useEffect, useTransition, useMemo, useRef, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -30,6 +30,7 @@ export default function AdminAiAgentPage() {
   const [isModelDialogOpen, setIsModelDialogOpen] = useState(false);
   const [modelToEdit, setModelToEdit] = useState<{ model: any; index: number } | null>(null);
   const [isAddFromProviderDialogOpen, setIsAddFromProviderDialogOpen] = useState(false);
+  const loadedForUserRef = useRef<string | null>(null);
   
   const hasUnsavedChanges = useMemo(() => {
     // This logic needs to be implemented if you want to track changes
@@ -39,9 +40,15 @@ export default function AdminAiAgentPage() {
 
   useEffect(() => {
     if (!user || user.systemRole !== 'Super Admin') {
+      loadedForUserRef.current = null;
       setIsLoading(false);
       return;
     }
+    if (loadedForUserRef.current === user.uid) {
+      return;
+    }
+
+    loadedForUserRef.current = user.uid;
     const fetchConfig = async () => {
       setIsLoading(true);
       try {
@@ -58,7 +65,16 @@ export default function AdminAiAgentPage() {
       }
     };
     fetchConfig();
-  }, [user, toast]);
+  }, [user?.uid, user?.systemRole, toast]);
+
+  const handleCloseModelDialog = useCallback(() => {
+    setIsModelDialogOpen(false);
+    setModelToEdit(null);
+  }, []);
+
+  const handleCloseAddFromProviderDialog = useCallback(() => {
+    setIsAddFromProviderDialogOpen(false);
+  }, []);
 
   const handleProviderConfigChange = (providerId: string, key: string, value: any) => {
     setConfig(prev => {
@@ -302,11 +318,11 @@ const moveEngine = (engine: string, direction: 'up' | 'down') => {
                     <CardDescription>{modelInfo.value}</CardDescription>
                 </div>
                 <div className="flex items-center gap-1">
-                  <Button variant="ghost" size="icon" onClick={() => { setModelToEdit({ model: modelInfo, index }); setIsModelDialogOpen(true); }}>
+                  <Button type="button" variant="ghost" size="icon" onClick={() => { setModelToEdit({ model: modelInfo, index }); setIsModelDialogOpen(true); }}>
                       <Edit className="h-4 w-4"/>
                   </Button>
                   <AlertDialog>
-                    <AlertDialogTrigger asChild><Button variant="ghost" size="icon"><Trash2 className="h-4 w-4 text-destructive"/></Button></AlertDialogTrigger>
+                    <AlertDialogTrigger asChild><Button type="button" variant="ghost" size="icon"><Trash2 className="h-4 w-4 text-destructive"/></Button></AlertDialogTrigger>
                     <AlertDialogContent>
                         <AlertDialogHeader><AlertDialogTitle>Вы уверены?</AlertDialogTitle><AlertDialogDescription>Вы хотите удалить модель "{modelInfo.label}"?</AlertDialogDescription></AlertDialogHeader>
                         <AlertDialogFooter><AlertDialogCancel>Отмена</AlertDialogCancel><AlertDialogAction className="bg-destructive" onClick={() => handleRemoveModel(index)}>Удалить</AlertDialogAction></AlertDialogFooter>
@@ -339,14 +355,14 @@ const moveEngine = (engine: string, direction: 'up' | 'down') => {
     <>
     <ModelConfigDialog
         isOpen={isModelDialogOpen}
-        onClose={() => { setIsModelDialogOpen(false); setModelToEdit(null); }}
+        onClose={handleCloseModelDialog}
         onSave={handleSaveModel}
         initialData={modelToEdit?.model}
         editIndex={modelToEdit?.index}
     />
     <AddModelFromProviderDialog
         isOpen={isAddFromProviderDialogOpen}
-        onClose={() => setIsAddFromProviderDialogOpen(false)}
+        onClose={handleCloseAddFromProviderDialog}
         onAddModels={handleAddMultipleModels}
         existingModels={config.apiModels}
     />
@@ -361,7 +377,7 @@ const moveEngine = (engine: string, direction: 'up' | 'down') => {
                         <TabsTrigger key={providerId} value={providerId}>{providerConfig.name}</TabsTrigger>
                     ))}
             </TabsList>
-            <Button variant="outline" size="icon" onClick={() => setIsAddFromProviderDialogOpen(true)}>
+            <Button type="button" variant="outline" size="icon" onClick={() => setIsAddFromProviderDialogOpen(true)}>
                 <PlusCircle className="h-4 w-4" />
             </Button>
         </div>
@@ -388,10 +404,10 @@ const moveEngine = (engine: string, direction: 'up' | 'down') => {
                                         <div key={engine} className="flex items-center justify-between p-2 rounded-md hover:bg-muted">
                                             <span className="font-medium">{index + 1}. {engine}</span>
                                             <div className="flex gap-1">
-                                                <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => moveEngine(engine, 'up')} disabled={index === 0}>
+                                                <Button type="button" size="icon" variant="ghost" className="h-7 w-7" onClick={() => moveEngine(engine, 'up')} disabled={index === 0}>
                                                     <ChevronsUpDown className="h-4 w-4 transform -rotate-90"/>
                                                 </Button>
-                                                <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => moveEngine(engine, 'down')} disabled={index === (config.providers.openrouter.pdfProcessingPriority || []).length - 1}>
+                                                <Button type="button" size="icon" variant="ghost" className="h-7 w-7" onClick={() => moveEngine(engine, 'down')} disabled={index === (config.providers.openrouter.pdfProcessingPriority || []).length - 1}>
                                                     <ChevronsUpDown className="h-4 w-4 transform rotate-90"/>
                                                 </Button>
                                             </div>
@@ -399,7 +415,7 @@ const moveEngine = (engine: string, direction: 'up' | 'down') => {
                                     ))}
                                 </div>
                                 <Separator />
-                                <Button variant="outline" onClick={() => setIsAddFromProviderDialogOpen(true)}>
+                                <Button type="button" variant="outline" onClick={() => setIsAddFromProviderDialogOpen(true)}>
                                     <DownloadCloud className="mr-2 h-4 w-4" />
                                     Загрузить и добавить модели из OpenRouter
                                 </Button>
@@ -507,7 +523,7 @@ const moveEngine = (engine: string, direction: 'up' | 'down') => {
                 <CardTitle>Управление моделями</CardTitle>
             </CardHeader>
             <CardContent>
-                 <Button variant="outline" onClick={() => { setModelToEdit(null); setIsModelDialogOpen(true); }}>
+                 <Button type="button" variant="outline" onClick={() => { setModelToEdit(null); setIsModelDialogOpen(true); }}>
                     <PlusCircle className="mr-2 h-4 w-4" />
                     Добавить модель вручную
                 </Button>
@@ -517,7 +533,7 @@ const moveEngine = (engine: string, direction: 'up' | 'down') => {
       <div className="sticky bottom-6">
           <Card>
               <CardFooter className="pt-6">
-                  <Button onClick={handleSave} disabled={isPending || !hasUnsavedChanges} className="w-full">
+                  <Button type="button" onClick={handleSave} disabled={isPending || !hasUnsavedChanges} className="w-full">
                       {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                       Сохранить всю конфигурацию AI
                   </Button>

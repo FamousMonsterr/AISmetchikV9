@@ -14,10 +14,12 @@ import Link from 'next/link';
 import { BottomGradient, LabelInputContainer } from '@/components/ui/aceternity-ui';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useAppContext } from '@/contexts/AppContext';
 
 export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
+  const { setNavigating } = useAppContext();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoginPending, startLoginTransition] = useTransition();
@@ -44,6 +46,7 @@ export default function LoginPage() {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email }),
                 });
+                setNavigating(true);
                 router.push('/auth/set-password');
                 return;
             }
@@ -62,8 +65,8 @@ export default function LoginPage() {
         }
 
         toast({ title: "Вход выполнен успешно!" });
-        router.push('/dashboard');
-        router.refresh(); // Force a refresh to re-run the layout and fetch user data in the provider
+        setNavigating(true);
+        router.replace('/dashboard');
         } catch (error: any) {
         setError(error.message);
         toast({

@@ -86,7 +86,7 @@ export default function ProfileTab() {
     useEffect(() => {
     const fetchBotUrl = async () => {
             const settings = await getPublicEnvSettings();
-            setBotUrl(settings.nextPublicTelegramBotUrl || process.env.NEXT_PUBLIC_TELEGRAM_BOT_URL || 'https://t.me/Estimate_GPT_Bot');
+            setBotUrl(settings.nextPublicTelegramBotUrl || process.env.NEXT_PUBLIC_TELEGRAM_BOT_URL || 'https://t.me/AI_Smetchik_Bot');
         };
         fetchBotUrl();
     }, []);
@@ -362,6 +362,26 @@ export default function ProfileTab() {
         setStampState({ url: uploaded.accessUrl, objectKey: uploaded.objectKey, expiresAt: uploaded.urlExpirationTimestamp });
       } else {
         setAvatarState({ url: uploaded.accessUrl, objectKey: uploaded.objectKey, expiresAt: uploaded.urlExpirationTimestamp });
+        if (user) {
+          const result = await updateUserProfile({
+            userId: user.uid,
+            displayName,
+            telegramUsername: telegramUsernameState,
+            avatarUrl: uploaded.accessUrl,
+            avatarObjectKey: uploaded.objectKey,
+            avatarUrlExpirationTimestamp: typeof uploaded.urlExpirationTimestamp === 'number' ? uploaded.urlExpirationTimestamp : null,
+          });
+          if (result.success) {
+            setUser({
+              ...user,
+              avatarUrl: uploaded.accessUrl,
+              avatarObjectKey: uploaded.objectKey,
+              avatarUrlExpirationTimestamp: uploaded.urlExpirationTimestamp || null,
+            });
+          } else {
+            toast({ title: 'Ошибка', description: result.message, variant: 'destructive' });
+          }
+        }
       }
       toast({ title: 'Готово', description: 'Файл загружен и готов к использованию.' });
     } catch (error: any) {
@@ -390,6 +410,27 @@ export default function ProfileTab() {
       setStampState({ url: '', objectKey: '', expiresAt: null });
     } else {
       setAvatarState({ url: '', objectKey: '', expiresAt: null });
+      if (user) {
+        updateUserProfile({
+          userId: user.uid,
+          displayName,
+          telegramUsername: telegramUsernameState,
+          avatarUrl: null,
+          avatarObjectKey: null,
+          avatarUrlExpirationTimestamp: null,
+        }).then((result) => {
+          if (result.success) {
+            setUser({
+              ...user,
+              avatarUrl: null,
+              avatarObjectKey: null,
+              avatarUrlExpirationTimestamp: null,
+            });
+          } else {
+            toast({ title: 'Ошибка', description: result.message, variant: 'destructive' });
+          }
+        });
+      }
     }
   };
 
@@ -442,7 +483,10 @@ export default function ProfileTab() {
                       type="file"
                       accept="image/*"
                       className="hidden"
-                      onChange={(e) => handleAvatarSelect(e.target.files?.[0])}
+                      onChange={(e) => {
+                        handleAvatarSelect(e.target.files?.[0]);
+                        e.currentTarget.value = '';
+                      }}
                     />
                   </label>
                 </Button>

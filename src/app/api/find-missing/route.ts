@@ -1,11 +1,16 @@
 // src/app/api/find-missing/route.ts
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { findMissingItemsFlow, type FindMissingItemsInput, type FindMissingItemsOutput } from '@/ai/flows/find-missing-items-flow';
 import type { AiSpecificationItem } from '@/ai/genkit-schemas';
 import { nanoid } from 'nanoid';
 import { classifyItemType } from '@/lib/item-type-classifier';
 import { deductCreditsInTransaction, withMongoTransaction } from '@/services/credits';
+import { requireAuthenticatedUser, validateRequestedUserId } from '@/lib/api-auth';
+import { enforceRateLimit } from '@/lib/rate-limit';
+import { validateFileUriAgainstAllowlist } from '@/lib/file-uri-security';
+import { getDb } from '@/lib/mongodb';
+import { queueApiMetricLog } from '@/lib/api-metrics';
 
 const FIND_MISSING_COST = 1;
 
@@ -47,8 +52,21 @@ function hydrateNewItemsForUI(aiItems: AiSpecificationItem[]): any[] {
   }));
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+  const startedAt = Date.now();
   try {
+    const auth = await requireAuthenticatedUser();
+    if (!auth.ok) return auth.response;
+
+    const rateLimitResponse = enforceRateLimit({
+      request,
+      scope: 'api:find-missing',
+      userId: auth.user.id,
+      max: 10,
+      windowMs: 60_000,
+    });
+    if (rateLimitResponse) return rateLimitResponse;
+
     const body = await request.json();
     const validation = FindMissingRequestSchema.safeParse(body);
     
@@ -57,11 +75,27 @@ export async function POST(request: Request) {
     }
 
     const { userId, fileUri, fileName, mimeType, existingItems, model: modelOverride, projectId } = validation.data;
+    const userValidation = validateRequestedUserId(userId, auth.user.id);
+    if (!userValidation.ok) return userValidation.response;
+
+    const fileUriValidation = await validateFileUriAgainstAllowlist(fileUri);
+    if (!fileUriValidation.ok) {
+      return NextResponse.json({
+        success: false,
+        message: fileUriValidation.reason || 'Недопустимый fileUri.',
+      }, { status: 400 });
+    }
+
+    const db = await getDb();
+    const project = await db.collection('requests').findOne({ _id: projectId } as any);
+    if (!project || project.userId !== auth.user.id) {
+      return NextResponse.json({ success: false, message: 'Проект не найден или недоступен.' }, { status: 403 });
+    }
     
     // --- Transaction to ensure atomicity ---
     const findResult = await withMongoTransaction(async (ctx) => {
         const findInput: FindMissingItemsInput = {
-            userId,
+            userId: auth.user.id,
             fileUri,
             fileName,
             mimeType,
@@ -88,6 +122,14 @@ export async function POST(request: Request) {
     });
 
     const hydratedItems = hydrateNewItemsForUI(findResult.newlyFoundItems);
+    queueApiMetricLog({
+      ts: new Date().toISOString(),
+      endpoint: '/api/find-missing',
+      userId: auth.user.id,
+      status: 200,
+      durationMs: Date.now() - startedAt,
+      newlyFoundItems: hydratedItems.length,
+    });
 
     return NextResponse.json({
         success: true,
@@ -99,6 +141,13 @@ export async function POST(request: Request) {
   } catch (error: any) {
     console.error('[Find Missing API Route Error]', error);
     const errorMessage = error.message || 'Произошла неизвестная серверная ошибка при поиске.';
+    queueApiMetricLog({
+      ts: new Date().toISOString(),
+      endpoint: '/api/find-missing',
+      status: 500,
+      durationMs: Date.now() - startedAt,
+      error: errorMessage,
+    });
     return NextResponse.json({ success: false, message: errorMessage }, { status: 500 });
   }
 }

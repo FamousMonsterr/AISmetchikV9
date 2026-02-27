@@ -1,7 +1,7 @@
 // src/server-functions/analysis/worker.ts
 'use server';
 
-import { findQueuedJobs } from './jobService';
+import { claimNextQueuedJob } from './jobService';
 import { runServerAnalysisJob } from './jobRunner';
 
 export type WorkerRunResult = {
@@ -11,20 +11,23 @@ export type WorkerRunResult = {
 };
 
 export async function runServerAnalysisWorkerOnce(limitCount = 5): Promise<WorkerRunResult> {
-  const jobs = await findQueuedJobs(limitCount);
-  if (!jobs.length) {
-    return { processed: 0, jobIds: [], errors: [] };
-  }
-
   const errors: WorkerRunResult['errors'] = [];
   const jobIds: string[] = [];
-  for (const job of jobs) {
-    jobIds.push(job.id);
+  const workerId = process.env.WORKER_ID || `pid:${process.pid}`;
+
+  for (let i = 0; i < limitCount; i += 1) {
+    const claimedJob = await claimNextQueuedJob(workerId);
+    if (!claimedJob) break;
+    jobIds.push(claimedJob.id);
     try {
-      await runServerAnalysisJob(job.id);
+      await runServerAnalysisJob(claimedJob.id, { alreadyClaimed: true });
     } catch (error: any) {
-      errors.push({ jobId: job.id, message: error?.message || 'Worker job failed' });
+      errors.push({ jobId: claimedJob.id, message: error?.message || 'Worker job failed' });
     }
+  }
+
+  if (!jobIds.length) {
+    return { processed: 0, jobIds: [], errors: [] };
   }
 
   return { processed: jobIds.length, jobIds, errors };

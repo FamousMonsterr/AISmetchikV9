@@ -114,8 +114,8 @@ export function ModelConfigDialog({ isOpen, onClose, onSave, initialData, editIn
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={onClose} disabled={isPending}>Отмена</Button>
-          <Button onClick={handleConfirm} disabled={isPending || !modelId || !modelLabel}>
+          <Button type="button" variant="outline" onClick={onClose} disabled={isPending}>Отмена</Button>
+          <Button type="button" onClick={handleConfirm} disabled={isPending || !modelId || !modelLabel}>
             {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {isEditMode ? 'Сохранить изменения' : 'Добавить'}
           </Button>

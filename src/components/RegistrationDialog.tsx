@@ -17,6 +17,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { AnimatePresence, motion } from "framer-motion";
 import promoConfig from '@/lib/promo-config.json';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { useAppContext } from '@/contexts/AppContext';
 
 
 // --- ВНИМАНИЕ! СТРОГО ЗАПРЕЩЕНО МЕНЯТЬ, ПЕРЕМЕЩАТЬ ИЛИ УДАЛЯТЬ ЭТОТ ИМПОРТ ---
@@ -33,6 +34,7 @@ interface RegistrationDialogProps {
 export function RegistrationDialog({ isOpen, onClose, initialPromoCode }: RegistrationDialogProps) {
   const router = useRouter();
   const { toast } = useToast();
+  const { setNavigating } = useAppContext();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -95,6 +97,7 @@ export function RegistrationDialog({ isOpen, onClose, initialPromoCode }: Regist
         }
 
         toast({ title: "Регистрация прошла успешно!" });
+        setNavigating(true);
         router.push('/dashboard');
         router.refresh();
         onClose();

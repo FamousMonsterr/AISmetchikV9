@@ -32,6 +32,7 @@ interface OpenRouterParams {
     modelInfo: typeof aiConfig.apiModels[number] & { pdfEngineOverride?: 'pdf-text' | 'mistral-ocr' | 'native' };
     temperature?: number;
     file?: { fileUri: string; mimeType: string; fileName?: string } | null;
+    images?: Array<{ dataUri: string; mimeType?: string; source?: string }>;
     userId?: string;
     responseMimeType?: "application/json" | "text/plain";
     onAttempt?: (engine: PdfEngine, attempt: number) => void;
@@ -39,6 +40,18 @@ interface OpenRouterParams {
     pdfEngine?: PdfEngine;
     stream: boolean; // Explicitly control streaming
     baseUrl: string; // Explicitly pass the base URL
+}
+
+function sanitizeProviderFilename(fileName?: string): string {
+    const fallback = 'document.pdf';
+    if (!fileName) return fallback;
+    const trimmed = fileName.trim();
+    if (!trimmed) return fallback;
+    const sanitized = trimmed
+        .normalize('NFKD')
+        .replace(/[^\x20-\x7E]/g, '_')
+        .replace(/[^a-zA-Z0-9._-]/g, '_');
+    return sanitized || fallback;
 }
 
 // --- API Key Fetcher ---
@@ -87,6 +100,7 @@ async function tryGenerateWithEngine({
     modelInfo,
     temperature,
     file,
+    images,
     userId,
     responseMimeType,
     stream,
@@ -99,7 +113,7 @@ async function tryGenerateWithEngine({
         'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
         'HTTP-Referer': 'https://aismetchik.pro',
-        'X-Title': 'EstimateAI',
+        'X-Title': 'AI Smetchik',
     };
     
     const body: any = {
@@ -114,10 +128,23 @@ async function tryGenerateWithEngine({
         userContent.push({
             type: 'file',
             file: {
-                filename: file.fileName || 'document.pdf',
+                filename: sanitizeProviderFilename(file.fileName),
                 file_data: file.fileUri,
+                fileData: file.fileUri,
             },
         });
+    }
+
+    if (Array.isArray(images) && images.length > 0) {
+        for (const image of images) {
+            if (!image?.dataUri) continue;
+            userContent.push({
+                type: 'image_url',
+                image_url: {
+                    url: image.dataUri,
+                },
+            });
+        }
     }
     
     body.messages = [{ role: 'user', content: userContent }];

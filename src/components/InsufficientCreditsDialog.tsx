@@ -8,6 +8,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { CreditCard, Gift, Users, CalendarClock, AlertTriangle, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import promoConfig from '@/lib/promo-config.json';
+import { useAppContext } from '@/contexts/AppContext';
 
 interface InsufficientCreditsDialogProps {
   isOpen: boolean;
@@ -17,6 +18,7 @@ interface InsufficientCreditsDialogProps {
 export function InsufficientCreditsDialog({ isOpen, onClose }: InsufficientCreditsDialogProps) {
   const router = useRouter();
   const [isNavigating, startNavigation] = useTransition();
+  const { setNavigating } = useAppContext();
 
   const daysUntilNextMonth = useMemo(() => {
     const now = new Date();
@@ -27,6 +29,7 @@ export function InsufficientCreditsDialog({ isOpen, onClose }: InsufficientCredi
 
   const handleNavigation = (path: string) => {
     startNavigation(() => {
+        setNavigating(true);
         router.push(path);
         onClose();
     });

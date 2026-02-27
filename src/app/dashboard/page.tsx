@@ -33,6 +33,8 @@ import { GlassButton } from "@/components/ui/glass-button";
 import { PlanBadge } from "@/components/PlanBadge";
 import { getModelLabel, resolvePlanModelId } from "@/lib/plan-models";
 import { UpgradeAccountDialog } from "@/components/UpgradeAccountDialog";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { MobilePanelScreen } from "@/components/mobile-panel/MobilePanelScreen";
 
 
 const LARGE_FILE_THRESHOLD_MB = 50; // 5 MB threshold for PDF editor
@@ -63,7 +65,7 @@ const PwaPrompt = () => {
             <AppWindow className="h-4 w-4" />
             <AlertTitle>Установите приложение!</AlertTitle>
             <AlertDescription>
-                Установите EstimateAI на главный экран, чтобы отправлять файлы на анализ напрямую из WhatsApp, Telegram или Почты через меню "Поделиться".
+                Установите AI Smetchik на главный экран, чтобы отправлять файлы на анализ напрямую из WhatsApp, Telegram или Почты через меню "Поделиться".
                 <div className="mt-2 text-xs">
                   (Нажмите "Меню" в браузере → "Установить приложение")
                 </div>
@@ -81,6 +83,7 @@ export default function DashboardPage() {
     effectivePlan,
   } = useAppContext();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   
   const [isProcessingDialogOpen, setIsProcessingDialogOpen] = useState(false);
   
@@ -90,10 +93,10 @@ export default function DashboardPage() {
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
   const [isCreditsDialogOpen, setIsCreditsDialogOpen] = useState(false);
   const [isBusinessUpgradeOpen, setIsBusinessUpgradeOpen] = useState(false);
-  
 
   // PWA Share Target Handling
   useEffect(() => {
+    if (isMobile) return;
     const handleSharedFile = async () => {
         if (!user) return; // Only process if user is logged in
         const urlParams = new URLSearchParams(window.location.search);
@@ -187,6 +190,10 @@ export default function DashboardPage() {
     setIsProcessingDialogOpen(true);
   }
   
+  if (isMobile) {
+    return <MobilePanelScreen />;
+  }
+  
 
   return (
     <div className="w-full">
@@ -196,7 +203,7 @@ export default function DashboardPage() {
           <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                   <Bot className="h-6 w-6 text-primary"/>
-                  Добро пожаловать в EstimateAI!
+                  Добро пожаловать в AI Smetchik!
               </DialogTitle>
               <DialogDescription>
                   Рады видеть вас! Вот краткая инструкция для начала работы.

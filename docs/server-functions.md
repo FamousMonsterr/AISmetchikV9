@@ -24,12 +24,12 @@ Used for Free users or when server functions are disabled.
 Used when server functions are enabled and the plan is allowed.
 1. Client computes SHA1 and uploads file to S3 if needed.
 2. Client creates a draft project via `createProcessingRequest`.
-3. Client calls `POST /api/server-analysis` with file metadata.
+3. Client calls `POST /api/server-analysis` with file metadata (enqueue only).
 4. Server validates settings, plan, and credits.
-5. Job is created in `server_analysis_jobs` with status `queued`.
+5. Job is created in `server_analysis_jobs` with status `queued` and idempotency key.
 6. Project is linked to the job via `serverJobId` and stage `queued`.
 7. Worker processes queued jobs:
-   - Move job to `running`
+   - Atomically claim job (`queued -> running`) via `findOneAndUpdate`
    - Check `s3_file_cache` and `file_analysis_cache`
    - If cached: persist result and mark `succeeded`
    - Else: call AI (`generateJson`), validate, `finalizeProcessingRequest`
@@ -54,10 +54,8 @@ Target priority rule:
   - Free: 1
 
 Current implementation note:
-- `findQueuedJobs` uses FIFO by `createdAt`.
-- To enforce the priority rule, implement weighted round-robin selection
-  in `findQueuedJobs` or the worker by grouping queued jobs by plan and
-  applying the weights above.
+- Worker claims jobs with weighted round-robin by plan and atomic status transition.
+- Claiming by status filter (`queued`) protects against duplicate execution in parallel workers.
 
 ## Statuses and fields
 `server_analysis_jobs`:

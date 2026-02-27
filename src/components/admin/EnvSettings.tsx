@@ -213,6 +213,41 @@ export function EnvSettings() {
             <CardHeader><CardTitle className="flex items-center gap-2 text-base"><Power /> Ключи AI</CardTitle></CardHeader>
             <CardContent className="space-y-4">
                 <div className="space-y-2"><Label htmlFor="openRouterApiKey">Ключ API OpenRouter</Label><PasswordInput id="openRouterApiKey" value={settings.openRouterApiKey || ''} onChange={(e) => setSettings({ ...settings, openRouterApiKey: e.target.value })} placeholder="••••••••••" disabled={isPending} /></div>
+                <div className="rounded-md border p-3 space-y-3">
+                    <div className="text-sm font-medium">Local HF (заготовка на будущее)</div>
+                    <p className="text-xs text-muted-foreground">Используется только при включении в общих настройках (AI провайдер = local_hf и тумблер localHfEnabled).</p>
+                    <div className="space-y-2">
+                        <Label htmlFor="localHfBaseUrl">Local HF Base URL</Label>
+                        <Input
+                            id="localHfBaseUrl"
+                            type="url"
+                            value={settings.localHfBaseUrl || ''}
+                            onChange={(e) => setSettings({ ...settings, localHfBaseUrl: e.target.value })}
+                            placeholder="http://127.0.0.1:8000/v1/chat/completions"
+                            disabled={isPending}
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="localHfModelId">Local HF Model ID</Label>
+                        <Input
+                            id="localHfModelId"
+                            value={settings.localHfModelId || ''}
+                            onChange={(e) => setSettings({ ...settings, localHfModelId: e.target.value })}
+                            placeholder="my-org/my-finetuned-model"
+                            disabled={isPending}
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="localHfApiKey">Local HF API key (опционально)</Label>
+                        <PasswordInput
+                            id="localHfApiKey"
+                            value={settings.localHfApiKey || ''}
+                            onChange={(e) => setSettings({ ...settings, localHfApiKey: e.target.value })}
+                            placeholder="••••••••••"
+                            disabled={isPending}
+                        />
+                    </div>
+                </div>
             </CardContent>
         </Card>
         <Card>

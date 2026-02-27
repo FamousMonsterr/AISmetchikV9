@@ -1,7 +1,7 @@
 // src/components/specification/SpecificationRow.tsx
 "use client";
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -14,6 +14,7 @@ import { cn } from '@/lib/utils';
 import { Card, CardContent } from '../ui/card';
 import { Checkbox } from '../ui/checkbox';
 import { calculateItemSum } from '@/lib/calculation';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 
 const getStatusIcon = (status?: ItemStatus) => {
@@ -35,8 +36,11 @@ interface SpecificationRowProps {
 
 export const SpecificationRow = React.memo(({ item, index, quoteConfig, onUpdate, onRemove }: SpecificationRowProps) => {
     const itemSum = useMemo(() => calculateItemSum(item, quoteConfig), [item, quoteConfig]);
+    const isMobile = useIsMobile();
+    const [isExpanded, setIsExpanded] = useState(false);
     
     const showMaterialColumns = quoteConfig.showMaterialColumns !== false;
+    const isCollapsed = isMobile && !isExpanded;
 
 
     const handleItemTypeChange = (type: ItemType) => {
@@ -60,9 +64,9 @@ export const SpecificationRow = React.memo(({ item, index, quoteConfig, onUpdate
     
     return (
         <Card className="flex flex-col">
-            <CardContent className="p-3 space-y-3">
+            <CardContent className={cn("space-y-3", isMobile ? "p-2" : "p-3")}>
                 {/* Header with Title and Actions */}
-                <div className="flex items-start gap-2">
+                <div className={cn("flex items-start gap-2", isMobile && "gap-1.5")}>
                      <div className="pt-1 flex-shrink-0 flex items-center gap-2">
                          <span className="text-xs font-bold text-muted-foreground w-5 text-center block">{index + 1}</span>
                          <DropdownMenu>
@@ -87,8 +91,15 @@ export const SpecificationRow = React.memo(({ item, index, quoteConfig, onUpdate
                     <Textarea
                         value={item.name}
                         onChange={(e) => onUpdate(item.id, { name: e.target.value })}
-                        className="flex-grow min-w-0 text-base font-medium line-clamp-2"
-                        rows={1}
+                        className={cn(
+                            "flex-grow min-w-0 font-medium resize-none",
+                            isMobile ? "text-sm" : "text-base",
+                            isCollapsed ? "h-8 overflow-hidden whitespace-nowrap text-ellipsis" : "min-h-[64px]"
+                        )}
+                        rows={isMobile ? (isExpanded ? 3 : 1) : 1}
+                        onFocus={() => isMobile && setIsExpanded(true)}
+                        onBlur={() => isMobile && setIsExpanded(false)}
+                        onClick={() => isMobile && setIsExpanded(true)}
                         placeholder="Наименование"
                     />
                      <div className="flex-shrink-0">
@@ -109,7 +120,7 @@ export const SpecificationRow = React.memo(({ item, index, quoteConfig, onUpdate
                 </div>
 
                 {/* Main inputs */}
-                <div className="pl-8 flex flex-col sm:flex-row gap-4">
+                <div className={cn("flex flex-col sm:flex-row gap-4", isMobile ? "pl-6" : "pl-8")}>
                     {/* Quantity Module */}
                     <fieldset className="p-2 border rounded-md space-y-2 flex-1">
                         <legend className="px-1 text-xs font-medium text-muted-foreground -ml-1">Количество</legend>
@@ -169,7 +180,7 @@ export const SpecificationRow = React.memo(({ item, index, quoteConfig, onUpdate
                 </div>
 
                 {/* Collapsible Details */}
-                <div className="pl-8 pt-1">
+                <div className={cn("pt-1", isMobile ? "pl-6" : "pl-8")}>
                     <Details title="Детали">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div className="space-y-1">
@@ -236,7 +247,7 @@ export const SpecificationRow = React.memo(({ item, index, quoteConfig, onUpdate
                     </Details>
                 </div>
                  {/* Footer with Total */}
-                 <div className="pl-8 pt-2 flex justify-end items-center">
+                <div className={cn("pt-2 flex justify-end items-center", isMobile ? "pl-6" : "pl-8")}>
                    <div className="flex items-center gap-2">
                         <span className="text-sm text-muted-foreground">Итого:</span>
                        <span className="font-bold text-lg">{itemSum.toLocaleString('ru-RU')} ₽</span>

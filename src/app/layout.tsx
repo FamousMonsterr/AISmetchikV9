@@ -20,6 +20,8 @@ import { Gift } from 'lucide-react';
 import { CookieConsentDialog } from '@/components/CookieConsentDialog';
 import Script from 'next/script';
 import { SessionProvider } from 'next-auth/react';
+import { NavigationLoader } from '@/components/ui/navigation-loader';
+import { useAppContext } from '@/contexts/AppContext';
 
 
 const montserrat = Montserrat({
@@ -44,6 +46,7 @@ export const viewport: Viewport = {
 const SiteLayout = ({ children }: { children: React.ReactNode }) => {
     const pathname = usePathname();
     const isSpecialPage = pathname.startsWith('/dashboard') || pathname.startsWith('/auth') || pathname.startsWith('/legal');
+    const { setNavigating } = useAppContext();
 
     return (
         <div className="min-h-screen text-foreground overflow-x-hidden flex flex-col">
@@ -61,11 +64,11 @@ const SiteLayout = ({ children }: { children: React.ReactNode }) => {
 
             <main className="flex-grow relative z-10">
                 {!isSpecialPage && <CookieConsentDialog />}
-                 {pathname.startsWith('/dashboard') && (
+                {pathname.startsWith('/dashboard') && (
                     <StickyBanner storageKey="referral-banner">
-                        <span>✨ Пригласите друга и получите 100 кредитов!</span>
-                        <Button asChild variant="secondary" size="sm" className="ml-4 bg-white/10 text-white hover:bg-white/20">
-                            <Link href="/dashboard/bonus"><Gift className="h-4 w-4 mr-1"/> Получить бонус</Link>
+                        <span className="text-center sm:text-left">✨ Пригласите друга и получите 100 кредитов!</span>
+                        <Button asChild variant="secondary" size="sm" className="bg-white/10 text-white hover:bg-white/20">
+                            <Link href="/dashboard/bonus" onClick={() => setNavigating(true)}><Gift className="h-4 w-4 mr-1"/> Получить бонус</Link>
                         </Button>
                     </StickyBanner>
                 )}
@@ -138,6 +141,7 @@ export default function RootLayout({
                         <SiteLayout>
                             {children}
                         </SiteLayout>
+                        <NavigationLoader />
                         <Toaster />
                     </AppProvider>
                 </Suspense>

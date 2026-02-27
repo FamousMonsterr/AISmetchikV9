@@ -5,6 +5,7 @@ import { SpecificationRow } from './SpecificationRow';
 import { Button } from '@/components/ui/button';
 import { PlusCircle } from 'lucide-react';
 import type { SpecificationItem, QuoteConfig } from '@/contexts/AppContext';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface SpecificationTableProps {
   specifications: SpecificationItem[];
@@ -21,6 +22,7 @@ export function SpecificationTable({
   onRemove,
   onAddItem
 }: SpecificationTableProps) {
+    const isMobile = useIsMobile();
     
     return (
         <div className="space-y-3">
@@ -41,7 +43,7 @@ export function SpecificationTable({
              <div className="pt-4">
                 <Button variant="outline" onClick={onAddItem} className="w-full">
                     <PlusCircle className="mr-2 h-4 w-4" />
-                    Добавить позицию
+                    {isMobile ? "Добавить" : "Добавить позицию"}
                 </Button>
             </div>
         </div>

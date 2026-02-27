@@ -32,6 +32,9 @@ export function hydrateSpecificationsForDB(aiItems: AiSpecificationItem[], isRec
         isRecommended: isRecommended,
         status: status,
         itemType: itemType,
+        materialPrice: typeof item.mp === 'number' ? item.mp : undefined,
+        installationPrice: typeof item.ip === 'number' ? item.ip : undefined,
+        comment: item.c || undefined,
     }
   });
 }

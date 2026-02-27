@@ -35,6 +35,8 @@ import { ProjectCard } from '@/components/dashboard/ProjectCard';
 import { ProjectGroup } from '@/components/dashboard/ProjectGroup';
 import { LabelInputContainer } from '@/components/ui/aceternity-ui';
 import aiConfig from '@/lib/ai-config.json';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { getProjectDisplayName } from '@/lib/project-labels';
 
 
 export function HistorySection({ 
@@ -46,9 +48,10 @@ export function HistorySection({
     onProjectSelect?: (project: HistoryRequest) => void,
     searchTerm?: string
 }) {
-    const { user, setCurrentProject, setCurrentGroup, effectivePlan } = useAppContext();
+    const { user, setCurrentProject, setCurrentGroup, effectivePlan, setNavigating } = useAppContext();
     const { toast } = useToast();
     const router = useRouter();
+    const isMobile = useIsMobile();
 
     const [history, setHistory] = useState<HistoryRequest[]>([]);
     const [isLoadingHistory, setIsLoadingHistory] = useState(true);
@@ -66,7 +69,6 @@ export function HistorySection({
     const [projectsToUpdate, setProjectsToUpdate] = useState<HistoryRequest[]>([]);
     const [isGroupDialogOpen, setIsGroupDialogOpen] = useState(false);
     const [newGroupName, setNewGroupName] = useState("");
-    const [density, setDensity] = useState<'comfortable' | 'compact'>('comfortable');
     const [pendingGroupEdit, setPendingGroupEdit] = useState<{ name: string; projects: HistoryRequest[] } | null>(null);
     
     const [isVersionDialogOpen, setIsVersionDialogOpen] = useState(false);
@@ -185,7 +187,8 @@ export function HistorySection({
     const handleAction = useCallback(async (ids: string | string[], action: (data: any) => Promise<{ success: boolean; message: string; }>, params: any, successMessage?: string) => {
         if (!user) return;
         startActionTransition(async () => {
-            const result = await action({ ...params, requestIds: ids, userId: user.uid });
+            const normalizedIds = Array.isArray(ids) ? ids : [ids];
+            const result = await action({ ...params, requestIds: normalizedIds, userId: user.uid });
             if (result.success) {
                 toast({ title: "Успех!", description: successMessage || result.message });
             } else {
@@ -303,6 +306,7 @@ export function HistorySection({
             }
             setCurrentGroup(null);
             setCurrentProject(item);
+            setNavigating(true);
             router.push('/dashboard/calculator');
         });
     };
@@ -317,6 +321,7 @@ export function HistorySection({
     }
 
     const isPro = effectivePlan === 'PRO' || effectivePlan === 'Business' || effectivePlan === 'Enterprise';
+    const density: 'comfortable' | 'compact' = (isMobile || isMobilePanel) ? 'compact' : 'comfortable';
 
     const startGroupEdit = (object: { name: string, projects: HistoryRequest[] }) => {
         startNavigation(() => {
@@ -324,6 +329,11 @@ export function HistorySection({
             const [firstProject] = object.projects;
             setCurrentGroup(object.projects);
             setCurrentProject(firstProject || null);
+            if (isMobilePanel && onProjectSelect && firstProject) {
+                onProjectSelect(firstProject);
+                return;
+            }
+            setNavigating(true);
             router.push('/dashboard/calculator');
         });
     };
@@ -469,7 +479,7 @@ export function HistorySection({
                     onProjectSelect={handleLoadVersion}
                     currentProject={projectForVersions}
                     dialogTitle="Просмотр версий"
-                    dialogDescription={`Загрузите любую из сохраненных версий для проекта "${projectForVersions.fileName}".`}
+                    dialogDescription={`Загрузите любую из сохраненных версий для проекта "${getProjectDisplayName(projectForVersions)}".`}
                 />
             )}
             <AlertDialog open={isGroupDialogOpen} onOpenChange={setIsGroupDialogOpen}>
@@ -497,55 +507,38 @@ export function HistorySection({
             </AlertDialog>
             <Card className={isMobilePanel ? "border-none shadow-none bg-transparent" : ""}>
                  {!isMobilePanel && (
-                    <CardHeader className="sticky top-16 z-20 bg-background/90 backdrop-blur-sm">
-                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <CardHeader>
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                             <div className="flex-1">
                                 <CardTitle>История проектов</CardTitle>
                                 <CardDescription>Ваши последние расчеты и версии проектов.</CardDescription>
-                            </div>
-                            <div className="flex flex-wrap items-center gap-2">
-                                <div className="inline-flex rounded-md border border-border overflow-hidden">
-                                    <Button
-                                        variant={density === 'comfortable' ? 'secondary' : 'ghost'}
-                                        size="sm"
-                                        className="rounded-none"
-                                        onClick={() => setDensity('comfortable')}
-                                    >
-                                        Просторно
-                                    </Button>
-                                    <Button
-                                        variant={density === 'compact' ? 'secondary' : 'ghost'}
-                                        size="sm"
-                                        className="rounded-none border-l border-border"
-                                        onClick={() => setDensity('compact')}
-                                    >
-                                        Компактно
-                                    </Button>
-                                </div>
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={refreshHistory}
-                                    disabled={isLoadingHistory || isRefreshing}
-                                >
-                                    {isRefreshing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCcw className="mr-2 h-4 w-4" />}
-                                    Обновить
-                                </Button>
                             </div>
                         </div>
                     </CardHeader>
                 )}
                  <CardContent className={isMobilePanel ? "p-0" : ""}>
                     {!isMobilePanel && (
-                        <div className="mb-4">
-                            <div className="relative w-full">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                <Input 
-                                    placeholder="Поиск по названию, объекту..."
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="pl-10"
-                                />
+                        <div className="sticky top-16 z-20 mb-4 rounded-lg bg-background/95 pb-3 pt-2 backdrop-blur-sm">
+                            <div className="flex items-center gap-2">
+                                <div className="relative flex-1">
+                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                    <Input 
+                                        placeholder="Поиск по названию, объекту..."
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                        className="pl-10"
+                                    />
+                                </div>
+                                <Button
+                                    variant="outline"
+                                    size="icon"
+                                    onClick={refreshHistory}
+                                    disabled={isLoadingHistory || isRefreshing}
+                                    aria-label="Обновить"
+                                    title="Обновить"
+                                >
+                                    {isRefreshing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCcw className="h-4 w-4" />}
+                                </Button>
                             </div>
                         </div>
                     )}
@@ -553,26 +546,26 @@ export function HistorySection({
                         <div className="flex gap-2 mb-4 flex-wrap">
                             {activeTab === 'active' && (
                                 <>
-                                    <Button size="sm" variant="outline" onClick={() => handleUngroup(Array.from(selection))} disabled={isActionPending}>
-                                        <Unlink className="mr-2 h-4 w-4" />Открепить
+                                    <Button size="icon" variant="outline" onClick={() => handleUngroup(Array.from(selection))} disabled={isActionPending} aria-label="Открепить" title="Открепить">
+                                        <Unlink className="h-4 w-4" />
                                     </Button>
-                                    <Button size="sm" variant="outline" onClick={() => setIsGroupDialogOpen(true)} disabled={isActionPending}>
-                                        <GitMerge className="mr-2 h-4 w-4" />Сгруппировать
+                                    <Button size="icon" variant="outline" onClick={() => setIsGroupDialogOpen(true)} disabled={isActionPending} aria-label="Сгруппировать" title="Сгруппировать">
+                                        <GitMerge className="h-4 w-4" />
                                     </Button>
-                                    <Button size="sm" variant="outline" onClick={() => handleAction(Array.from(selection), archiveRequest, {}, "Проекты архивированы.")} disabled={isActionPending}>
-                                        <Archive className="mr-2 h-4 w-4"/>Архивировать ({selection.size})
+                                    <Button size="icon" variant="outline" onClick={() => handleAction(Array.from(selection), archiveRequest, {}, "Проекты архивированы.")} disabled={isActionPending} aria-label="Архивировать" title="Архивировать">
+                                        <Archive className="h-4 w-4"/>
                                     </Button>
                                 </>
                             )}
                             {activeTab === 'archived' && (
                                 <>
-                                    <Button size="sm" variant="outline" onClick={() => handleAction(Array.from(selection), unarchiveRequest, {}, "Проекты восстановлены.")} disabled={isActionPending}>
-                                        <ArchiveRestore className="mr-2 h-4 w-4"/>Восстановить ({selection.size})
+                                    <Button size="icon" variant="outline" onClick={() => handleAction(Array.from(selection), unarchiveRequest, {}, "Проекты восстановлены.")} disabled={isActionPending} aria-label="Восстановить" title="Восстановить">
+                                        <ArchiveRestore className="h-4 w-4"/>
                                     </Button>
                                     <AlertDialog>
                                         <AlertDialogTrigger asChild>
-                                            <Button size="sm" variant="destructive" disabled={isActionPending}>
-                                                <Trash2 className="mr-2 h-4 w-4"/>Удалить навсегда ({selection.size})
+                                            <Button size="icon" variant="destructive" disabled={isActionPending} aria-label="Удалить навсегда" title="Удалить навсегда">
+                                                <Trash2 className="h-4 w-4"/>
                                             </Button>
                                         </AlertDialogTrigger>
                                         <AlertDialogContent>

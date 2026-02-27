@@ -1,5 +1,5 @@
 
-# AI Сметчик (EstimateAI)
+# AI Smetchik
 
 **AI Сметчик** — это интеллектуальный SaaS-помощник для инженеров-сметчиков и монтажников слаботочных систем. Платформа автоматизирует рутинную работу по созданию смет, превращая часы ручного труда в минуты, и предоставляет инструменты для точного ценообразования и профессионального управления проектами.
 
@@ -42,8 +42,8 @@
 ### 2. Клонирование репозитория
 
 ```bash
-git clone https://github.com/ваш-репозиторий/estimate-ai.git
-cd estimate-ai
+git clone https://github.com/ваш-репозиторий/ai-smetchik.git
+cd ai-smetchik
 ```
 
 ### 3. Установка зависимостей
@@ -93,6 +93,81 @@ pnpm dev
 
 ---
 
+## 🚢 Релиз на VDS (Docker Compose)
+
+### 1. Подготовка сервера
+
+- Ubuntu 22.04+ (или совместимый Linux)
+- Установлены Docker и Docker Compose Plugin
+- Открыты порты `80/443` (и `22` для SSH)
+
+### 2. Клонирование проекта на VDS
+
+```bash
+git clone https://github.com/FamousMonsterr/AISmetchikV9.git /opt/ai-smetchik
+cd /opt/ai-smetchik
+```
+
+### 3. Настройка переменных
+
+1. Создайте production `.env` в корне проекта (по образцу `.env.example`).
+2. Создайте `deploy/.env.vds`:
+
+```bash
+cp deploy/.env.vds.example deploy/.env.vds
+```
+
+3. Проверьте `NEXTAUTH_URL` и `NEXT_PUBLIC_SITE_URL` на ваш домен.
+
+### 4. Запуск контейнеров
+
+```bash
+docker compose --env-file deploy/.env.vds -f deploy/docker-compose.vds.yml up -d --build
+```
+
+Проверка:
+
+```bash
+docker compose --env-file deploy/.env.vds -f deploy/docker-compose.vds.yml ps
+curl -fsS http://127.0.0.1:3000/api/health
+```
+
+Если Mongo локально на сервере нужна в том же compose:
+
+```bash
+COMPOSE_PROFILES=with-mongo docker compose --env-file deploy/.env.vds -f deploy/docker-compose.vds.yml up -d --build
+```
+
+---
+
+## 🔁 GitHub CI/CD (main -> VDS)
+
+В проекте используются workflow:
+
+- `.github/workflows/ci.yml` — lint/typecheck/test/build.
+- `.github/workflows/deploy-vds.yml` — деплой на VDS по SSH после пуша в `main` или вручную.
+
+### GitHub Secrets для деплоя
+
+Добавьте в `Settings -> Secrets and variables -> Actions`:
+
+- `VDS_SSH_HOST` — IP/домен VDS
+- `VDS_SSH_PORT` — обычно `22`
+- `VDS_SSH_USER` — пользователь SSH
+- `VDS_SSH_KEY` — приватный ключ (PEM/OpenSSH)
+- `VDS_DEPLOY_PATH` — путь к репозиторию на сервере, например `/opt/ai-smetchik`
+
+### Поток релиза
+
+1. Пуш в `main`
+2. Автоматически проходит `CI`
+3. Запускается `Deploy VDS`, на сервере выполняется:
+   - `git fetch && git checkout main && git pull --ff-only origin main`
+   - `docker compose ... up -d --build`
+4. Проверка `/api/health`
+
+---
+
 ## 🔁 Миграция Firestore → MongoDB
 
 Для переноса данных используйте скрипт `scripts/migrate-firestore-to-mongo.ts`.
@@ -119,6 +194,4 @@ pnpm dev
 ## 📄 Лицензия
 
 Этот проект является коммерческим продуктом. Исходный код предоставляется для ознакомления в рамках грантовой заявки. Любое несанкционированное копирование, распространение или использование в коммерческих целях без письменного разрешения запрещено.
-# AISmetchikV6
-# AISmetchikV6
-# AISmetchikV6
+ 

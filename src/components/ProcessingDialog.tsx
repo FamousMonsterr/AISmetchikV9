@@ -29,6 +29,7 @@ import { getAppSettings, type AppSettings } from '@/actions/adminActions';
 import { SERVER_ANALYSIS_CREDIT_COST } from '@/server-functions/config';
 import { SERVER_STAGE_LABELS, type ServerStageKey } from '@/lib/server-analysis-stages';
 import { reportUserBug } from '@/actions/adminActions';
+import { sanitizeAnalysisErrorForUi } from '@/lib/analysis-errors';
 
 
 const ANALYSIS_COST = SERVER_ANALYSIS_CREDIT_COST;
@@ -89,7 +90,7 @@ interface ProcessingDialogProps {
 }
 
 export function ProcessingDialog({ isOpen, onClose, file, model, temperature, includeThoughts, objectId, objectName, onProjectProcessed }: ProcessingDialogProps) {
-    const { user, setCurrentProject, effectivePlan } = useAppContext();
+    const { user, setCurrentProject, effectivePlan, setNavigating } = useAppContext();
     const { toast } = useToast();
     const router = useRouter();
 
@@ -100,6 +101,7 @@ export function ProcessingDialog({ isOpen, onClose, file, model, temperature, in
     const [serverSettingsLoaded, setServerSettingsLoaded] = useState(false);
     const [processingProjectId, setProcessingProjectId] = useState<string | null>(null);
     const [serverJobId, setServerJobId] = useState<string | null>(null);
+    const [serverStartConfirmed, setServerStartConfirmed] = useState(false);
     const processingStarted = useRef(false);
     const cancelRequested = useRef(false);
     
@@ -138,6 +140,7 @@ export function ProcessingDialog({ isOpen, onClose, file, model, temperature, in
         cancelRequested.current = false;
         setProcessingProjectId(null);
         setServerJobId(null);
+        setServerStartConfirmed(false);
     };
 
     useEffect(() => {
@@ -180,6 +183,7 @@ export function ProcessingDialog({ isOpen, onClose, file, model, temperature, in
             let objectKey: string | undefined;
             let draftId = processingProjectId;
             let lastStage: ServerStageKey | null = null;
+            const selectedPipelineVersion = serverSettings?.analysisPipelineVersion || 'v1';
 
             const ensureDraftExists = async (hash?: string, uri?: string, objKey?: string) => {
                 if (draftId) return draftId;
@@ -188,6 +192,7 @@ export function ProcessingDialog({ isOpen, onClose, file, model, temperature, in
                     fileName: file.name,
                     mimeType: file.type,
                     modelUsed: model,
+                    pipelineVersion: selectedPipelineVersion,
                     fileSha1: hash,
                     fileUri: uri,
                     s3ObjectKey: objKey,
@@ -240,17 +245,6 @@ export function ProcessingDialog({ isOpen, onClose, file, model, temperature, in
 
                 const isPdf = fileDataForApi?.mimeType === 'application/pdf';
                 const pdfEngineToUse = isPdf && isSelectedOpenRouter ? effectivePdfEngine : undefined;
-                if (isPdf && isSelectedOpenRouter) {
-                    toast({
-                        title: "Плагины для PDF",
-                        description: `Подключаем file-parser с engine: ${pdfEngineToUse || 'auto'}.`,
-                    });
-                }
-
-                toast({
-                    title: "Запрос в ИИ сформирован",
-                    description: `Модель: ${model}. Файл: ${fileDataForApi?.fileName || file?.name || '—'}.`,
-                });
 
                 setStage('sending_request');
                 const response = await fetch('/api/main-analysis', {
@@ -292,12 +286,16 @@ export function ProcessingDialog({ isOpen, onClose, file, model, temperature, in
                     fileSha1: hash,
                     modelUsed: model,
                     outputSpecifications: hydratedItems,
-                    aiComment: result.aiComment,
+                    aiComment: result.aiComment || result.aiGeneralComment,
                     analysisDetails: result.analysisDetails,
-                    importantExtractionNotes: result.importantExtractionNotes,
+                    importantExtractionNotes: [
+                        ...(result.importantExtractionNotes || []),
+                        ...((result.consistencyIssues || []).map((issue: any) => `Проверка: ${issue.message}${issue.recommendation ? ` (${issue.recommendation})` : ''}`)),
+                    ],
                     quoteConfig: initialQuoteConfig,
                     aiCallCount: 0,
                     s3ObjectKey: objectKey || null,
+                    pipelineVersion: selectedPipelineVersion,
                     initialAiResponse: result,
                 });
                 if (!finalizeResult.success || !finalizeResult.project) throw new Error(finalizeResult.message || "Не удалось сохранить проект.");
@@ -306,9 +304,11 @@ export function ProcessingDialog({ isOpen, onClose, file, model, temperature, in
                 setCurrentProject(finalizeResult.project);
                 onProjectProcessed?.(finalizeResult.project);
                 setStage('complete');
-                toast({title: "Анализ завершен!", description: `Проект "${file.name}" успешно обработан и сохранен.`});
                 onClose();
-                router.push('/dashboard/calculator');
+                if (!onProjectProcessed) {
+                    setNavigating(true);
+                    router.push('/dashboard/calculator');
+                }
             }
             
             try {
@@ -351,35 +351,28 @@ export function ProcessingDialog({ isOpen, onClose, file, model, temperature, in
                     })();
                     const isExpired = !expirationDate || expirationDate < new Date();
                     if (isExpired) {
-                       toast({ title: "Ссылка на файл истекла", description: "Обновляем ссылку в S3 кеше." });
                        const refreshResponse = await fetch("/api/s3-refresh-url", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ objectKey: data.objectKey, bucketType: 'analysis' }), });
                        if (!refreshResponse.ok) throw new Error("Не удалось обновить ссылку на S3 файл.");
                        const { newAccessUrl, newExpirationTimestamp } = await refreshResponse.json();
                        await updateDoc(s3CacheRef, { accessUrl: newAccessUrl, urlExpirationTimestamp: new Timestamp(Math.floor(newExpirationTimestamp / 1000), 0) });
                        fileUri = newAccessUrl;
-                       toast({ title: "Ссылка обновлена", description: "Получена новая ссылка доступа к файлу." });
                     } else {
                        fileUri = data.accessUrl;
-                       toast({ title: "Ссылка уже есть", description: "Используем актуальную ссылку из кеша." });
                     }
                     if (draftId && fileUri) {
                         await updateDoc(doc(db, 'requests', draftId), { fileUri, updatedAt: serverTimestamp() } as any);
                     }
                 } else {
-                    toast({ title: "Ссылка не найдена", description: "Файла нет в кеше, нужна загрузка в S3." });
                     setStage('getting_s3_url');
                     await setProjectStage('s3_upload');
                     const presignedUrlResponse = await fetch("/api/s3-upload", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ fileName: file.name, fileType: file.type, bucketType: 'analysis' }) });
                     if (!presignedUrlResponse.ok) throw new Error((await presignedUrlResponse.json()).error || "Не удалось получить ссылку для загрузки в S3.");
                     const { uploadUrl, accessUrl, objectKey: uploadObjectKey, urlExpirationTimestamp } = await presignedUrlResponse.json();
 
-                    toast({ title: "Ссылка получена", description: "Ссылка для загрузки в S3 получена." });
                     setStage('uploading_to_s3');
                     await axios.put(uploadUrl, file, { headers: { 'Content-Type': file.type } });
-                    toast({ title: "Файл загружен", description: "Файл загружен в S3 хранилище." });
                     
                     await setDoc(s3CacheRef, { fileSha1: fileHash, objectKey: uploadObjectKey, accessUrl, urlExpirationTimestamp: new Timestamp(Math.floor(urlExpirationTimestamp/1000), 0), createdAt: serverTimestamp(), fileName: file.name });
-                    toast({ title: "Ссылка сохранена", description: "Данные ссылки сохранены в кеше." });
                     fileUri = accessUrl;
                     objectKey = uploadObjectKey;
                     await ensureDraftExists(fileHash, fileUri, objectKey);
@@ -394,9 +387,14 @@ export function ProcessingDialog({ isOpen, onClose, file, model, temperature, in
                 await setProjectStage('analysis_cache');
                 const analysisCacheRef = doc(db, 'file_analysis_cache', fileHash);
                 const analysisCacheSnap = await getDoc(analysisCacheRef);
+                const cachedPipelineVersion = analysisCacheSnap.exists()
+                    ? ((analysisCacheSnap.data()?.pipelineVersion as 'v1' | 'v2' | undefined) || 'v1')
+                    : null;
+                const isCompatiblePipelineCache = cachedPipelineVersion
+                    ? cachedPipelineVersion === selectedPipelineVersion
+                    : false;
 
-                if (analysisCacheSnap.exists() && (analysisCacheSnap.data().reportCount || 0) < 3) {
-                    toast({ title: "Найден кеш анализа!", description: "Результат взят из кеша." });
+                if (analysisCacheSnap.exists() && (analysisCacheSnap.data().reportCount || 0) < 3 && isCompatiblePipelineCache) {
                     const cachedData = analysisCacheSnap.data().originalAiResponse as ExtractProjectSpecificationsOutput;
                     abortIfCancelled();
                     await ensureDraftExists(fileHash, fileUri, objectKey);
@@ -439,12 +437,14 @@ export function ProcessingDialog({ isOpen, onClose, file, model, temperature, in
                     setServerJobId(result.jobId);
                     await linkRequestToServerJob({ userId: user!.uid, projectId: draftId!, serverJobId: result.jobId });
                     await setProjectStage('queued', 'Задача поставлена в очередь');
-                    toast({ title: "Задача запущена", description: `ID: ${result.jobId}. Результат появится в истории проектов.` });
                     setStage('complete');
-                    onClose();
+                    setServerStartConfirmed(true);
                     return;
                 }
                 fileDataForApi = { fileUri: fileUri, mimeType: file.type, fileName: file.name };
+                if (selectedPipelineVersion === 'v2') {
+                    throw new Error('Пайплайн V2 доступен только в серверном режиме. Включите серверные функции в админке.');
+                }
 
 
                 setStage('preparing_request');
@@ -462,15 +462,17 @@ export function ProcessingDialog({ isOpen, onClose, file, model, temperature, in
                         await setProjectStage('cancelled', 'Процесс остановлен пользователем');
                     }
                 } else {
-                    setErrorMessage(e.message || 'Произошла неизвестная ошибка.');
+                    const rawErrorMessage = e?.message || 'Произошла неизвестная ошибка.';
+                    const userErrorMessage = sanitizeAnalysisErrorForUi(rawErrorMessage);
+                    setErrorMessage(userErrorMessage);
                     setStage('error');
                     if (draftId) {
-                        await failProcessingRequest({ userId: user!.uid, projectId: draftId, status: 'failed', error: e.message });
-                        await setProjectStage(lastStage || 'failed', e.message || 'Неизвестная ошибка');
+                        await failProcessingRequest({ userId: user!.uid, projectId: draftId, status: 'failed', error: userErrorMessage });
+                        await setProjectStage(lastStage || 'failed', userErrorMessage || 'Неизвестная ошибка');
                         await reportUserBug({
                             userId: user!.uid,
                             errorMessage: `Ошибка анализа (этап: ${SERVER_STAGE_LABELS[lastStage || 'failed'] || lastStage || 'unknown'})`,
-                            errorDetails: e.message || 'Неизвестная ошибка',
+                            errorDetails: rawErrorMessage,
                             fileUri: fileDataForApi?.fileUri,
                         });
                     }
@@ -510,15 +512,10 @@ export function ProcessingDialog({ isOpen, onClose, file, model, temperature, in
         .filter(([key]) => key !== 'idle' && key !== 'complete' && key !== 'error')
         .map(([key, value]) => ({ key: key as StageKey, ...value })), []);
 
-    const currentStageIndex = stages.findIndex(s => s.key === stage);
-    
-    if (shouldUseServerPipeline) {
-        return (
-            <>
-                <InsufficientCreditsDialog isOpen={isCreditsDialogOpen} onClose={() => setIsCreditsDialogOpen(false)} />
-            </>
-        );
-    }
+    const rawStageIndex = stages.findIndex(s => s.key === stage);
+    const currentStageIndex = rawStageIndex >= 0 ? rawStageIndex : (stage === 'complete' ? stages.length : -1);
+    const serverLaunchWarning = shouldUseServerPipeline && !serverStartConfirmed && isProcessing;
+    const serverLaunchSuccess = shouldUseServerPipeline && serverStartConfirmed && stage === 'complete';
 
     return (
         <>
@@ -528,11 +525,33 @@ export function ProcessingDialog({ isOpen, onClose, file, model, temperature, in
                     <DialogHeader>
                         <DialogTitle>Анализ документа</DialogTitle>
                         <DialogDescription>
-                             {errorMessage ? 'При обработке произошла ошибка.' : 'Процесс состоит из нескольких этапов. Пожалуйста, подождите.'}
+                             {errorMessage
+                                ? 'При обработке произошла ошибка.'
+                                : serverLaunchWarning
+                                    ? 'Не закрывайте экран, пока не запустится процесс обработки на сервере.'
+                                    : serverLaunchSuccess
+                                        ? 'Обработка файла запущена успешно. Мы пришлем уведомление, как файл будет обработан.'
+                                        : 'Процесс состоит из нескольких этапов. Пожалуйста, подождите.'}
                         </DialogDescription>
                     </DialogHeader>
                     <div className="py-4 max-h-[60vh] overflow-y-auto pr-2">
                         <div className="space-y-4">
+                           {serverLaunchWarning && (
+                                <Alert variant="default" className="bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800">
+                                    <AlertTitle className="text-amber-800 dark:text-amber-300">Важно</AlertTitle>
+                                    <AlertDescription className="text-amber-700 dark:text-amber-400">
+                                        Не закрывайте экран, пока не запустится процесс.
+                                    </AlertDescription>
+                                </Alert>
+                            )}
+                           {serverLaunchSuccess && (
+                                <Alert variant="default" className="bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800">
+                                    <AlertTitle className="text-green-800 dark:text-green-300">Серверная обработка запущена</AlertTitle>
+                                    <AlertDescription className="text-green-700 dark:text-green-400">
+                                        Обработка файла запущена успешно. Мы пришлем уведомление, как файл будет обработан.
+                                    </AlertDescription>
+                                </Alert>
+                            )}
                            {isSelectedOpenRouter && file?.type === 'application/pdf' && (
                                 <Alert variant="default" className="bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
                                     <AlertTitle className="text-blue-800 dark:text-blue-300">Движок обработки PDF</AlertTitle>
@@ -557,7 +576,11 @@ export function ProcessingDialog({ isOpen, onClose, file, model, temperature, in
                     </div>
                      <DialogFooter className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
                         <div className="text-xs text-muted-foreground">
-                            {isProcessing ? 'Вы можете скрыть окно, обработка продолжится в фоне.' : ''}
+                            {serverLaunchWarning
+                                ? 'Не закрывайте экран до подтверждения запуска серверной задачи.'
+                                : serverLaunchSuccess
+                                    ? 'Окно можно закрыть. Результат придет уведомлением и появится в истории.'
+                                    : (isProcessing ? 'Вы можете скрыть окно, обработка продолжится в фоне.' : '')}
                         </div>
                         <div className="flex gap-2">
                             {isProcessing && (
@@ -566,7 +589,7 @@ export function ProcessingDialog({ isOpen, onClose, file, model, temperature, in
                                 </Button>
                             )}
                             <Button onClick={onClose} variant="outline">
-                                Скрыть окно
+                                {serverLaunchSuccess ? 'Закрыть' : 'Скрыть окно'}
                             </Button>
                         </div>
                     </DialogFooter>

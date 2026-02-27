@@ -114,7 +114,7 @@ export default function PriceBasePage() {
         const worksheet = XLSX.utils.json_to_sheet(dataToExport);
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, "База цен");
-        XLSX.writeFile(workbook, "EstimateAI_PriceBase.xlsx");
+        XLSX.writeFile(workbook, "AI Smetchik_PriceBase.xlsx");
         toast({title: "Экспорт завершен", description: "Ваша база цен сохранена в Excel."});
     };
     

@@ -18,10 +18,12 @@ import {
   type SupportThread,
 } from '@/actions/supportActions';
 import { cn } from '@/lib/utils';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 export function SupportChat({ className }: { className?: string } = {}) {
   const { user } = useAppContext();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   const [thread, setThread] = useState<SupportThread | null>(null);
   const [manager, setManager] = useState<{ id: string; displayName: string; email: string | null } | null>(null);
   const [messages, setMessages] = useState<SupportMessage[]>([]);
@@ -142,23 +144,28 @@ export function SupportChat({ className }: { className?: string } = {}) {
   if (!user) return null;
 
   return (
-    <Card className={cn("flex h-full max-h-[70vh] flex-col", className)}>
-      <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+    <Card className={cn("flex h-full flex-col overflow-hidden", className)}>
+      <CardHeader className={cn("flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between", isMobile && "p-3")}>
         <div>
-          <CardTitle>Связь с менеджером</CardTitle>
-          <CardDescription>
-            {manager
-              ? `Ваш менеджер: ${manager.displayName}${manager.email ? ` (${manager.email})` : ''}`
-              : 'Менеджер будет назначен автоматически.'}
-          </CardDescription>
+          <CardTitle className={cn(isMobile && "text-base")}>Чат поддержки</CardTitle>
+          {!isMobile && (
+            <CardDescription>
+              {manager
+                ? `Ваш менеджер: ${manager.displayName}${manager.email ? ` (${manager.email})` : ''}`
+                : 'Менеджер будет назначен автоматически.'}
+            </CardDescription>
+          )}
+          {isMobile && manager && (
+            <div className="text-xs text-muted-foreground">{manager.displayName}</div>
+          )}
         </div>
-        <Button variant="outline" size="sm" onClick={refresh} disabled={isLoading || isRefreshing}>
-          {isRefreshing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCcw className="mr-2 h-4 w-4" />}
-          Обновить
+        <Button variant="outline" size={isMobile ? "icon" : "sm"} onClick={refresh} disabled={isLoading || isRefreshing} aria-label="Обновить">
+          {isRefreshing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCcw className="h-4 w-4" />}
+          {!isMobile && <span className="ml-2">Обновить</span>}
         </Button>
       </CardHeader>
-      <CardContent className="flex flex-1 flex-col gap-4">
-        {thread && (
+      <CardContent className={cn("flex flex-1 min-h-0 flex-col gap-3", isMobile && "p-3")}>
+        {!isMobile && thread && (
           <div className="text-xs text-muted-foreground flex flex-wrap gap-4">
             <span>Статус: {thread.status === 'closed' ? 'Закрыт' : 'Открыт'}</span>
             <span>Время первого ответа: {formatResponseTime(thread.firstResponseMs)}</span>
@@ -171,16 +178,16 @@ export function SupportChat({ className }: { className?: string } = {}) {
             <Loader2 className="h-8 w-8 animate-spin" />
           </div>
         ) : (
-          <ScrollArea className="flex-1 min-h-[180px] rounded-md border p-4">
+          <ScrollArea className={cn("flex-1 min-h-0 rounded-md border p-3", isMobile && "p-2")}>
             {messages.length === 0 ? (
-              <div className="text-sm text-muted-foreground">Сообщений пока нет. Напишите менеджеру ниже.</div>
+              <div className="text-sm text-muted-foreground">Сообщений пока нет.</div>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {messages.map((msg) => (
                   <div
                     key={msg.id}
                     className={cn(
-                      'max-w-[80%] rounded-lg px-3 py-2 text-sm',
+                      'max-w-[85%] rounded-lg px-3 py-2 text-sm',
                       msg.senderRole === 'user'
                         ? 'ml-auto bg-primary text-primary-foreground'
                         : 'bg-muted text-foreground',
@@ -198,29 +205,35 @@ export function SupportChat({ className }: { className?: string } = {}) {
           <Textarea
             value={messageText}
             onChange={(e) => setMessageText(e.target.value)}
-            placeholder="Опишите ваш вопрос менеджеру..."
-            rows={3}
+            placeholder="Ваш вопрос..."
+            rows={isMobile ? 2 : 3}
           />
           <div className="flex flex-wrap gap-2">
             <Button onClick={handleSend} disabled={isSending || !messageText.trim()}>
               {isSending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
-              Отправить
+              {!isMobile && "Отправить"}
             </Button>
             <Button
               variant="outline"
+              size={isMobile ? "icon" : "sm"}
               onClick={() => handleSatisfaction('satisfied')}
               disabled={!thread || thread.status === 'closed'}
+              aria-label="Ответ помог"
+              title="Ответ помог"
             >
-              <CheckCircle className="mr-2 h-4 w-4" />
-              Ответ помог
+              <CheckCircle className="h-4 w-4" />
+              {!isMobile && <span className="ml-2">Ответ помог</span>}
             </Button>
             <Button
               variant="outline"
+              size={isMobile ? "icon" : "sm"}
               onClick={() => handleSatisfaction('unsatisfied')}
               disabled={!thread}
+              aria-label="Ответ не помог"
+              title="Ответ не помог"
             >
-              <XCircle className="mr-2 h-4 w-4" />
-              Ответ не помог
+              <XCircle className="h-4 w-4" />
+              {!isMobile && <span className="ml-2">Ответ не помог</span>}
             </Button>
           </div>
         </div>

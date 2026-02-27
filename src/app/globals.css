@@ -171,6 +171,31 @@ body {
   }
 }
 
+@layer components {
+  .pwa-panel {
+    font-size: 0.875rem;
+    line-height: 1.35;
+  }
+  .pwa-panel .p-6 {
+    padding: 0.75rem !important;
+  }
+  .pwa-panel .pt-0 {
+    padding-top: 0 !important;
+  }
+  .pwa-panel .text-2xl {
+    font-size: 1.1rem !important;
+  }
+  .pwa-panel .text-xl {
+    font-size: 1rem !important;
+  }
+  .pwa-panel .text-lg {
+    font-size: 0.95rem !important;
+  }
+  .pwa-panel .gap-6 {
+    gap: 1rem !important;
+  }
+}
+
 /* Liquid Glass Specific Classes */
 .glass-effect {
   @apply backdrop-blur-lg bg-white/10 border border-white/20 rounded-2xl;

@@ -1,6 +1,6 @@
 // src/lib/pwa-helpers.ts
 
-const DB_NAME = 'EstimateAI-PWA-DB';
+const DB_NAME = 'AI Smetchik-PWA-DB';
 const DB_VERSION = 1;
 const PENDING_FILES_STORE = 'pending-files';
 

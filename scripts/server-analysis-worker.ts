@@ -1,24 +1,42 @@
 // scripts/server-analysis-worker.ts
-// Simple worker to be run via cron/pm2 for processing queued server analysis jobs.
+// Long-lived worker loop for processing queued server analysis jobs.
 import './bootstrap';
 export {};
 
 const { runServerAnalysisWorkerOnce } = require('../src/server-functions/analysis/worker');
 
-async function main() {
-  const result = await runServerAnalysisWorkerOnce(5);
-  if (!result.processed) {
-    console.log('No queued jobs found.');
-    return;
-  }
+const POLL_INTERVAL_MS = Math.max(1000, Number(process.env.SERVER_ANALYSIS_WORKER_POLL_MS || 2500));
+const BATCH_SIZE = Math.max(1, Number(process.env.SERVER_ANALYSIS_WORKER_BATCH_SIZE || 5));
 
-  console.log(`Processed ${result.processed} queued job(s).`);
-  if (result.errors.length) {
-    console.error(`Errors: ${result.errors.length}`);
-    for (const error of result.errors) {
-      console.error(`Job ${error.jobId} failed: ${error.message}`);
+let stopped = false;
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+async function runLoop() {
+  console.log(`[worker] started (batch=${BATCH_SIZE}, poll=${POLL_INTERVAL_MS}ms)`);
+  while (!stopped) {
+    try {
+      const result = await runServerAnalysisWorkerOnce(BATCH_SIZE);
+      if (result.processed) {
+        console.log(`[worker] processed=${result.processed}, errors=${result.errors.length}`);
+      }
+      if (result.errors.length) {
+        for (const error of result.errors) {
+          console.error(`[worker] job ${error.jobId} failed: ${error.message}`);
+        }
+      }
+    } catch (err: any) {
+      console.error('[worker] loop error:', err?.message || err);
     }
+    await sleep(POLL_INTERVAL_MS);
   }
+  console.log('[worker] stopped');
+}
+
+async function main() {
+  process.on('SIGINT', () => { stopped = true; });
+  process.on('SIGTERM', () => { stopped = true; });
+  await runLoop();
 }
 
 main().catch((err) => {

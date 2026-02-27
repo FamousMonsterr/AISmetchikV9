@@ -9,11 +9,13 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Loader2, AlertCircle, KeyRound } from 'lucide-react';
+import { useAppContext } from '@/contexts/AppContext';
 
 export default function ResetPasswordPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { toast } = useToast();
+  const { setNavigating } = useAppContext();
   const token = searchParams.get('token');
 
   const [password, setPassword] = useState('');
@@ -48,6 +50,7 @@ export default function ResetPasswordPage() {
         return;
       }
       toast({ title: 'Пароль обновлен', description: 'Теперь вы можете войти с новым паролем.' });
+      setNavigating(true);
       router.push('/auth/login');
     });
   };

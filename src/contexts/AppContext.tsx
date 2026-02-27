@@ -3,7 +3,7 @@
 "use client";
 
 import type React from 'react';
-import { createContext, useContext, useState, useCallback, useEffect, useMemo, useTransition } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect, useMemo, useTransition, useRef } from 'react';
 import { nanoid } from 'nanoid'; 
 import { doc, onSnapshot, updateDoc, serverTimestamp, getDoc, collection, query, where, getDocs, increment, Timestamp } from '@/lib/mongoFirestore';
 import { signOut, useSession } from 'next-auth/react';
@@ -234,6 +234,7 @@ export interface HistoryRequest {
   // Server orchestration
   serverJobId?: string | null;
   s3ObjectKey?: string | null;
+  pipelineVersion?: 'v1' | 'v2' | null;
   processingStage?: string | null;
   processingStageMessage?: string | null;
   processingStageUpdatedAt?: any;
@@ -500,6 +501,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [effectiveRole, setEffectiveRole] = useState<UserRole>('User');
   const { data: session, status } = useSession();
   const firebaseUser = session?.user ?? null;
+  const firebaseUserId = useMemo(() => {
+    const idValue = (firebaseUser as any)?.id;
+    if (typeof idValue === 'string') return idValue;
+    if (idValue == null) return '';
+    if (typeof idValue?.toString === 'function') return idValue.toString();
+    return String(idValue);
+  }, [firebaseUser]);
   const authLoading = status === 'loading';
   const authError = null;
   const router = useRouter();
@@ -536,6 +544,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const [isNavigating, setNavigating] = useState(false);
   const [isTransitioning, startTransition] = useTransition();
+  const userRef = useRef<AppUser | null>(null);
 
   const userAvailableModels = useMemo(() => {
     if (!user) return [];
@@ -577,6 +586,52 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     resetChangeCounter();
   }, []);
 
+  const toComparableTime = useCallback((value: any): number | null => {
+    if (!value) return null;
+    if (value instanceof Date) return value.getTime();
+    if (typeof value?.toDate === 'function') {
+      const d = value.toDate();
+      return d instanceof Date ? d.getTime() : null;
+    }
+    if (typeof value === 'number') return value;
+    if (typeof value === 'string') {
+      const parsed = Date.parse(value);
+      return Number.isNaN(parsed) ? null : parsed;
+    }
+    return null;
+  }, []);
+
+  const isSameUserSnapshot = useCallback((prev: AppUser | null, next: AppUser): boolean => {
+    if (!prev) return false;
+    if (prev.uid !== next.uid) return false;
+
+    const prevUpdatedAt = toComparableTime(prev.updatedAt);
+    const nextUpdatedAt = toComparableTime(next.updatedAt);
+    const prevCreditsUpdatedAt = toComparableTime(prev.creditsUpdatedAt);
+    const nextCreditsUpdatedAt = toComparableTime(next.creditsUpdatedAt);
+
+    if (prevUpdatedAt !== null && nextUpdatedAt !== null && prevUpdatedAt !== nextUpdatedAt) return false;
+    if (prevCreditsUpdatedAt !== null && nextCreditsUpdatedAt !== null && prevCreditsUpdatedAt !== nextCreditsUpdatedAt) return false;
+
+    // Fast-path fields that most often change and should immediately update UI.
+    if (prev.plan !== next.plan) return false;
+    if (prev.systemRole !== next.systemRole) return false;
+    if (prev.status !== next.status) return false;
+    if (prev.displayName !== next.displayName) return false;
+    if (prev.email !== next.email) return false;
+    if ((prev.credits || 0) !== (next.credits || 0)) return false;
+    if ((prev.bonusCredits || 0) !== (next.bonusCredits || 0)) return false;
+    if ((prev.purchasedCredits || 0) !== (next.purchasedCredits || 0)) return false;
+    if ((prev.telegramChatId || null) !== (next.telegramChatId || null)) return false;
+    if ((prev.isPWAUser || false) !== (next.isPWAUser || false)) return false;
+
+    return true;
+  }, [toComparableTime]);
+
+  useEffect(() => {
+    userRef.current = user;
+  }, [user]);
+
   useEffect(() => {
     if (authLoading) {
         setIsLoading(true);
@@ -589,8 +644,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setEffectiveRole('User');
         return;
     }
+    if (!firebaseUserId) {
+        console.error("Authenticated session has no user id. Forcing logout.");
+        signOut().then(() => setUser(null));
+        setIsLoading(false);
+        return;
+    }
 
-    const userDocRef = doc(db, 'users', firebaseUser.id);
+    const userDocRef = doc(db, 'users', firebaseUserId);
     const unsubscribe = onSnapshot(userDocRef, async (docSnap) => {
         if (docSnap.exists()) {
             const rawData = { uid: docSnap.id, ...docSnap.data() };
@@ -610,17 +671,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 userData.managerData = null;
             }
             
-            setUser(userData);
-            checkUserPlan(userData);
-            
-            if (telegram?.initData && !userData.telegramChatId) {
-                linkTelegramAccount({ initData: telegram.initData });
+            const userChanged = !isSameUserSnapshot(userRef.current, userData);
+            if (userChanged) {
+                setUser(userData);
             }
 
-            if (typeof window !== 'undefined') {
-                const isPwa = window.matchMedia('(display-mode: standalone)').matches;
-                if (isPwa && !userData.isPWAUser) {
-                    updateUserPwaStatus({ userId: userData.uid, isPWA: true });
+            if (userChanged) {
+                checkUserPlan(userData);
+
+                if (telegram?.initData && !userData.telegramChatId) {
+                    linkTelegramAccount({ initData: telegram.initData });
+                }
+
+                if (typeof window !== 'undefined') {
+                    const isPwa = window.matchMedia('(display-mode: standalone)').matches;
+                    if (isPwa && !userData.isPWAUser) {
+                        updateUserPwaStatus({ userId: userData.uid, isPWA: true });
+                    }
                 }
             }
 
@@ -637,7 +704,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
 
     return () => unsubscribe();
-  }, [firebaseUser, authLoading, authError, checkUserPlan, telegram]);
+  }, [firebaseUser, firebaseUserId, authLoading, authError, checkUserPlan, telegram, isSameUserSnapshot]);
   
    useEffect(() => {
     if (telegram) {

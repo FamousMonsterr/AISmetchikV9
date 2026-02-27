@@ -16,6 +16,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { AnimatePresence, motion } from "framer-motion";
 import promoConfig from '@/lib/promo-config.json';
+import { useAppContext } from '@/contexts/AppContext';
 
 
 // --- ВНИМАНИЕ! СТРОГО ЗАПРЕЩЕНО МЕНЯТЬ, ПЕРЕМЕЩАТЬ ИЛИ УДАЛЯТЬ ЭТОТ ИМПОРТ ---
@@ -28,6 +29,7 @@ function RegisterForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
+  const { setNavigating } = useAppContext();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -93,6 +95,7 @@ function RegisterForm() {
         }
 
         toast({ title: "Регистрация прошла успешно!" });
+        setNavigating(true);
         router.push('/dashboard');
         router.refresh();
       } catch (error: any) {

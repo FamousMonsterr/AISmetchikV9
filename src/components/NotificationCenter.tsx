@@ -126,6 +126,10 @@ export function NotificationCenter({ className, showLabel = false }: Notificatio
 
   const visibleNotifications = unreadNotifications.filter((n) => !hiddenIds.includes(n.id));
   const unreadCount = visibleNotifications.length;
+  const normalizeMarkdown = (content?: string) => {
+    if (!content) return '';
+    return content.replace(/\r\n/g, '\n').replace(/\n/g, '  \n');
+  };
 
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
@@ -145,7 +149,7 @@ export function NotificationCenter({ className, showLabel = false }: Notificatio
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="end" sideOffset={8} className="w-[calc(100vw-2rem)] max-w-[420px] p-0">
+      <PopoverContent align="end" sideOffset={8} className="w-[calc(100vw-1.5rem)] max-w-[420px] p-0">
         <div className="flex items-center justify-between border-b px-4 py-3">
           <div className="text-sm font-semibold">Уведомления</div>
           {unreadCount > 0 && (
@@ -167,10 +171,11 @@ export function NotificationCenter({ className, showLabel = false }: Notificatio
         )}
 
         {!isLoading && visibleNotifications.length > 0 && (
-          <ScrollArea className="max-h-[60vh]">
+          <ScrollArea className="max-h-[70vh]">
             <div className="divide-y">
               {visibleNotifications.map((notification) => {
                 const dateLabel = getNotificationDate(notification);
+                const markdown = normalizeMarkdown(notification.content);
                 return (
                   <div key={notification.id} className="px-4 py-4">
                     <div className="flex items-start justify-between gap-3">
@@ -194,31 +199,31 @@ export function NotificationCenter({ className, showLabel = false }: Notificatio
                       </div>
                     </div>
 
-                  <div className="prose prose-sm max-w-none pt-2">
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                      {notification.content}
-                    </ReactMarkdown>
-                  </div>
+                    <div className="prose prose-sm dark:prose-invert max-w-none pt-2 break-words">
+                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                        {markdown}
+                      </ReactMarkdown>
+                    </div>
 
-                  <div className="mt-3 flex items-center gap-2">
-                    <Button
-                      size="sm"
-                      onClick={() => markAsRead(notification)}
-                      disabled={processingId === notification.id}
-                    >
-                      {processingId === notification.id && (
-                        <Loader2 className="mr-2 h-3 w-3 animate-spin" />
-                      )}
-                      Прочитано
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => hideNotification(notification.id)}
-                    >
-                      Скрыть
-                    </Button>
-                  </div>
+                    <div className="mt-3 flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        onClick={() => markAsRead(notification)}
+                        disabled={processingId === notification.id}
+                      >
+                        {processingId === notification.id && (
+                          <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                        )}
+                        Прочитано
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => hideNotification(notification.id)}
+                      >
+                        Скрыть
+                      </Button>
+                    </div>
                   </div>
                 );
               })}

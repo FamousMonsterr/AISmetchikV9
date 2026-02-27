@@ -6,9 +6,23 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { NextRequest, NextResponse } from "next/server";
 import { getS3Client } from "@/actions/adminActions";
 import { nanoid } from 'nanoid';
+import { requireAuthenticatedUser } from '@/lib/api-auth';
+import { enforceRateLimit } from '@/lib/rate-limit';
 
 export async function POST(request: NextRequest) {
   try {
+    const auth = await requireAuthenticatedUser();
+    if (!auth.ok) return auth.response;
+
+    const rateLimitResponse = enforceRateLimit({
+      request,
+      scope: 'api:s3-upload:presign',
+      userId: auth.user.id,
+      max: 30,
+      windowMs: 60_000,
+    });
+    if (rateLimitResponse) return rateLimitResponse;
+
     const { fileName, fileType, presetId, bucketType } = await request.json();
 
     if (!fileName || !fileType) {

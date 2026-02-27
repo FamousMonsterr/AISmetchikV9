@@ -66,8 +66,8 @@ export function UpgradeAccountDialog({ isOpen, onClose, targetRole, featureName 
   const expiresText = planExpiresAt ? new Date(planExpiresAt).toLocaleDateString('ru-RU') : null;
 
   const descriptionText = featureName 
-    ? `Функция "${featureName}" доступна только на тарифах ${targetRoleLabel} и выше.`
-    : `Эта функция доступна только на тарифах ${targetRoleLabel} и выше.`;
+    ? `Функция «${featureName}» доступна с тарифа ${targetRoleLabel}.`
+    : `Доступно с тарифа ${targetRoleLabel}.`;
 
   useEffect(() => {
     if (!isOpen) {
@@ -104,7 +104,7 @@ export function UpgradeAccountDialog({ isOpen, onClose, targetRole, featureName 
             Перейти на тариф {targetRoleLabel}?
           </DialogTitle>
           <DialogDescription>
-            {descriptionText} Разблокируйте полный потенциал EstimateAI.
+            {descriptionText} Откройте полный доступ.
           </DialogDescription>
         </DialogHeader>
         <div className="py-4">
@@ -121,7 +121,7 @@ export function UpgradeAccountDialog({ isOpen, onClose, targetRole, featureName 
               <CheckCircle className="h-4 w-4 text-blue-700" />
               <AlertTitle className="text-blue-900">Подключение по запросу</AlertTitle>
               <AlertDescription className="text-blue-800">
-                Тариф {targetRoleLabel} подключается только по заявке. Пробный период для Business/Enterprise не предусмотрен.
+                Подключение по заявке. Менеджер свяжется и подготовит условия.
               </AlertDescription>
             </Alert>
           ) : hasUsedTrial ? (
@@ -137,7 +137,7 @@ export function UpgradeAccountDialog({ isOpen, onClose, targetRole, featureName 
                 <CheckCircle className="h-4 w-4 text-green-600"/>
                 <AlertTitle className="text-green-800">Активируйте бесплатный пробный период!</AlertTitle>
                 <AlertDescription className="text-green-700">
-                  Получите полный доступ ко всем функциям тарифа **{targetRoleLabel} на 3 дня** абсолютно бесплатно.
+                  Полный доступ на 3 дня бесплатно.
                 </AlertDescription>
             </Alert>
           )}

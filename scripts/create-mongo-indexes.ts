@@ -47,6 +47,14 @@ async function run() {
     db.collection('pro_subscription_orders').createIndex({ status: 1, createdAt: -1 }),
     db.collection('pro_subscription_orders').createIndex({ userId: 1, createdAt: -1 }),
     db.collection('pro_subscription_orders').createIndex({ autoApproveAt: 1 }),
+    db.collection('server_analysis_jobs').createIndex({ status: 1, createdAt: 1 }),
+    db.collection('server_analysis_jobs').createIndex({ status: 1, userPlan: 1, createdAt: 1 }),
+    db.collection('server_analysis_jobs').createIndex({ userId: 1, projectId: 1, createdAt: -1 }),
+    db.collection('server_analysis_jobs').createIndex({ idempotencyKey: 1, status: 1 }),
+    db.collection('server_analysis_jobs').createIndex({ fileSha1: 1, pipelineVersion: 1 }),
+    db.collection('file_analysis_cache').createIndex({ pipelineVersion: 1, createdAt: -1 }),
+    db.collection('file_markdown_cache').createIndex({ updatedAt: -1 }),
+    db.collection('s3_file_cache').createIndex({ createdAt: -1 }),
   ]);
 
   await client.close();

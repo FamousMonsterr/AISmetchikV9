@@ -15,6 +15,23 @@ import { AiSpecificationItemSchema, ExtractProjectSpecificationsOutputSchema } f
 import { deductCredits, deductCreditsInTransaction, refundCredits, withMongoTransaction } from '@/services/credits';
 import { getPlanModelIds } from '@/lib/plan-models';
 import { grantMarketingBonusForUser } from '@/actions/marketingActions';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+
+async function resolveActingUserId(userId?: string): Promise<string> {
+  const session = await getServerSession(authOptions);
+  const sessionUserId = session?.user?.id;
+  if (sessionUserId) {
+    if (userId && userId !== sessionUserId) {
+      throw new Error('Нельзя выполнять действие от имени другого пользователя.');
+    }
+    return sessionUserId;
+  }
+  if (!userId) {
+    throw new Error('Не удалось определить пользователя действия.');
+  }
+  return userId;
+}
 
 
 // --- Profile Management ---
@@ -48,7 +65,7 @@ export const updateUserProfile = async (data: z.infer<typeof UpdateProfileSchema
     return { success: false, message: errorMessage };
   }
 
-  const {
+  let {
     userId,
     displayName,
     telegramUsername,
@@ -63,6 +80,11 @@ export const updateUserProfile = async (data: z.infer<typeof UpdateProfileSchema
     avatarObjectKey,
     avatarUrlExpirationTimestamp,
   } = validation.data;
+  try {
+    userId = await resolveActingUserId(userId);
+  } catch (error: any) {
+    return { success: false, message: error.message || 'Недостаточно прав.' };
+  }
   const userRef = doc(db, 'users', userId);
 
   try {
@@ -136,7 +158,12 @@ export const updatePlanModelPreference = async (data: z.infer<typeof UpdatePlanM
   if (!validation.success) {
     return { success: false, message: 'Неверные данные для выбора модели.' };
   }
-  const { userId, plan, model } = validation.data;
+  let { userId, plan, model } = validation.data;
+  try {
+    userId = await resolveActingUserId(userId);
+  } catch (error: any) {
+    return { success: false, message: error.message || 'Недостаточно прав.' };
+  }
   const allowedModels = new Set(getPlanModelIds(plan));
   if (!allowedModels.has(model)) {
     return { success: false, message: 'Выбранная модель недоступна для этого тарифа.' };
@@ -159,8 +186,10 @@ export const updatePlanModelPreference = async (data: z.infer<typeof UpdatePlanM
 };
 
 export const logThirdPartyConsent = async (userId: string, source: string = 'purchase_dialog'): Promise<{ success: boolean; message: string }> => {
-  if (!userId) {
-    return { success: false, message: 'Не указан пользователь.' };
+  try {
+    userId = await resolveActingUserId(userId);
+  } catch (error: any) {
+    return { success: false, message: error.message || 'Недостаточно прав.' };
   }
 
   try {
@@ -182,7 +211,12 @@ export const updateMarketingConsent = async (data: z.infer<typeof MarketingConse
     return { success: false, message: 'Неверные данные.' };
   }
 
-  const { userId, agreedToMarketing } = validation.data;
+  let { userId, agreedToMarketing } = validation.data;
+  try {
+    userId = await resolveActingUserId(userId);
+  } catch (error: any) {
+    return { success: false, message: error.message || 'Недостаточно прав.' };
+  }
   const userRef = doc(db, 'users', userId);
   try {
     await updateDoc(userRef, {
@@ -211,7 +245,12 @@ export const updateUserPwaStatus = async (data: z.infer<typeof UpdatePwaStatusSc
     if (!validation.success) {
         return { success: false, message: 'Неверные данные.' };
     }
-    const { userId, isPWA } = validation.data;
+    let { userId, isPWA } = validation.data;
+    try {
+        userId = await resolveActingUserId(userId);
+    } catch (error: any) {
+        return { success: false, message: error.message || 'Недостаточно прав.' };
+    }
     const userRef = doc(db, 'users', userId);
     try {
         await updateDoc(userRef, { isPWAUser: isPWA, updatedAt: serverTimestamp() });
@@ -463,7 +502,7 @@ export const finalizeProjectCreation = async (
       if (projectData.fileSha1 && initialAiResponse) {
         await ctx.db.collection('file_analysis_cache').updateOne(
           { _id: projectData.fileSha1 },
-          { $set: { originalAiResponse: initialAiResponse, createdAt: now, reportCount: 0 } },
+          { $set: { originalAiResponse: initialAiResponse, createdAt: now, reportCount: 0, pipelineVersion: projectData.pipelineVersion || 'v1' } },
           { upsert: true, ...(ctx.session ? { session: ctx.session } : {}) },
         );
       }
@@ -532,7 +571,8 @@ export const reportRequest = async (data: z.infer<typeof ReportRequestSchema>): 
 
     await updateDoc(requestRef, { 
         status: 'reported',
-        reportedAt: serverTimestamp()
+        reportedAt: serverTimestamp(),
+        archivedAt: serverTimestamp(),
     });
 
     // Increment report count in cache if fileSha1 exists
@@ -545,7 +585,7 @@ export const reportRequest = async (data: z.infer<typeof ReportRequestSchema>): 
     }
     
     await logUserAction(userId, 'PROJECT_REPORT', { projectId: requestId });
-    return { success: true, message: 'Жалоба отправлена. Администратор рассмотрит ваш запрос.' };
+    return { success: true, message: 'Жалоба отправлена. Проект перемещен в архив.' };
   } catch (error) {
     console.error("Error reporting request:", error);
     return { success: false, message: 'Ошибка при отправке жалобы.' };
@@ -892,6 +932,7 @@ const CreateProcessingRequestSchema = z.object({
     fileUri: z.string().optional(),
     s3ObjectKey: z.string().optional(),
     serverJobId: z.string().optional(),
+    pipelineVersion: z.enum(['v1', 'v2']).optional(),
     objectId: z.string().nullable().optional(),
     objectName: z.string().nullable().optional(),
 });
@@ -902,7 +943,12 @@ export const createProcessingRequest = async (data: z.infer<typeof CreateProcess
         return { success: false, message: 'Неверные данные для создания черновика.', project: null };
     }
 
-    const { userId, ...payload } = validation.data;
+    let { userId, ...payload } = validation.data;
+    try {
+        userId = await resolveActingUserId(userId);
+    } catch (error: any) {
+        return { success: false, message: error.message || 'Недостаточно прав.', project: null };
+    }
     const projectRef = doc(collection(db, 'requests'));
 
     try {
@@ -929,6 +975,10 @@ export const createProcessingRequest = async (data: z.infer<typeof CreateProcess
             actionHistory: [],
             serverJobId: payload.serverJobId || null,
             s3ObjectKey: payload.s3ObjectKey || null,
+            pipelineVersion: payload.pipelineVersion || 'v1',
+            processingStage: 'created',
+            processingStageMessage: 'Проект создан и поставлен в очередь',
+            processingStageUpdatedAt: serverTimestamp(),
         };
 
         await setDoc(projectRef, {
@@ -1002,6 +1052,7 @@ const FinalizeProcessingRequestSchema = z.object({
     importantExtractionNotes: z.array(z.string()).nullable().optional(),
     aiCallCount: z.number().optional(),
     s3ObjectKey: z.string().nullable().optional(),
+    pipelineVersion: z.enum(['v1', 'v2']).optional(),
     initialAiResponse: z.any().optional(),
 });
 
@@ -1010,11 +1061,16 @@ export const finalizeProcessingRequest = async (data: z.infer<typeof FinalizePro
     if (!validation.success) {
         return { success: false, message: 'Неверные данные для завершения проекта.' };
     }
-    const {
+    let {
         userId, projectId, creditCost, outputSpecifications, quoteConfig,
         aiComment, analysisDetails, importantExtractionNotes, aiCallCount,
         initialAiResponse, ...rest
     } = validation.data;
+    try {
+        userId = await resolveActingUserId(userId);
+    } catch (error: any) {
+        return { success: false, message: error.message || 'Недостаточно прав.' };
+    }
 
     const userRef = doc(db, 'users', userId);
     const projectRef = doc(db, 'requests', projectId);
@@ -1055,6 +1111,7 @@ export const finalizeProcessingRequest = async (data: z.infer<typeof FinalizePro
                         analysisDetails: analysisDetails ?? null,
                         importantExtractionNotes: importantExtractionNotes ?? [],
                         aiCallCount: aiCallCount ?? 0,
+                        pipelineVersion: rest.pipelineVersion || projectDoc.pipelineVersion || 'v1',
                         updatedAt: now,
                     },
                 },
@@ -1064,7 +1121,7 @@ export const finalizeProcessingRequest = async (data: z.infer<typeof FinalizePro
             if (rest.fileSha1 && initialAiResponse) {
                 await ctx.db.collection('file_analysis_cache').updateOne(
                     { _id: rest.fileSha1 },
-                    { $set: { originalAiResponse: initialAiResponse, createdAt: now, reportCount: 0 } },
+                    { $set: { originalAiResponse: initialAiResponse, createdAt: now, reportCount: 0, pipelineVersion: rest.pipelineVersion || 'v1' } },
                     { upsert: true, ...(ctx.session ? { session: ctx.session } : {}) },
                 );
             }
@@ -1134,7 +1191,12 @@ export const failProcessingRequest = async (data: z.infer<typeof FailProcessingR
     if (!validation.success) {
         return { success: false, message: 'Неверные данные для обновления статуса.' };
     }
-    const { userId, projectId, status, error } = validation.data;
+    let { userId, projectId, status, error } = validation.data;
+    try {
+        userId = await resolveActingUserId(userId);
+    } catch (e: any) {
+        return { success: false, message: e.message || 'Недостаточно прав.' };
+    }
     const projectRef = doc(db, 'requests', projectId);
 
     try {
@@ -1187,8 +1249,13 @@ export const failProcessingRequest = async (data: z.infer<typeof FailProcessingR
 };
 
 export const linkRequestToServerJob = async (data: { userId: string; projectId: string; serverJobId: string }): Promise<{ success: boolean; message: string; }> => {
-    const { userId, projectId, serverJobId } = data;
+    let { userId, projectId, serverJobId } = data;
     if (!userId || !projectId || !serverJobId) return { success: false, message: 'Неверные данные.' };
+    try {
+        userId = await resolveActingUserId(userId);
+    } catch (e: any) {
+        return { success: false, message: e.message || 'Недостаточно прав.' };
+    }
     try {
         const projectRef = doc(db, 'requests', projectId);
         const projectSnap = await getDoc(projectRef);
@@ -1261,6 +1328,9 @@ export const restartProcessingRequest = async (data: z.infer<typeof RestartProce
             fileUri: fileUri || project.fileUri || null,
             s3ObjectKey: s3ObjectKey || project.s3ObjectKey || null,
             serverJobId: null,
+            processingStage: 'created',
+            processingStageMessage: 'Проект отправлен на повторную обработку',
+            processingStageUpdatedAt: serverTimestamp(),
             updatedAt: serverTimestamp(),
         } as any);
 

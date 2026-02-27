@@ -12,6 +12,9 @@ export const AiSpecificationItemSchema = z.object({
   q: z.number().describe("Quantity"),
   r: z.number().optional().nullable().describe("Reserve"),
   u: z.string().describe("Unit"),
+  mp: z.number().optional().nullable().describe("Suggested material price per unit"),
+  ip: z.number().optional().nullable().describe("Suggested installation price per unit"),
+  c: z.string().optional().nullable().describe("AI comment for the position"),
   isInf: z.boolean().optional().nullable().describe("Is Informational/Header"),
   isRec: z.boolean().optional().nullable().describe("Is Recommended by AI"),
 });
@@ -36,8 +39,15 @@ export const AnalysisDetailsSchema = z.object({
 export const ExtractProjectSpecificationsOutputSchema = z.object({
   items: z.array(AiSpecificationItemSchema).optional().nullable(),
   analysisDetails: AnalysisDetailsSchema.optional().nullable(),
+  aiComment: z.string().optional().nullable(),
   aiGeneralComment: z.string().optional().nullable(),
   importantExtractionNotes: z.array(z.string()).nullable().optional(),
+  consistencyIssues: z.array(z.object({
+    type: z.string(),
+    severity: z.enum(['low', 'medium', 'high']).optional().nullable(),
+    message: z.string(),
+    recommendation: z.string().optional().nullable(),
+  })).optional().nullable(),
 });
 
 export type ExtractProjectSpecificationsOutput = z.infer<typeof ExtractProjectSpecificationsOutputSchema>;

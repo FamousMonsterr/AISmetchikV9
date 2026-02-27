@@ -376,7 +376,7 @@ export default function TrainingPage() {
             <div>
               <CardTitle className="flex items-center gap-2"><BookOpen /> База знаний и обучение</CardTitle>
               <CardDescription>
-                Изучите материалы, чтобы максимально эффективно использовать все возможности EstimateAI и повысить свой партнерский статус.
+                Изучите материалы, чтобы максимально эффективно использовать все возможности AI Smetchik и повысить свой партнерский статус.
               </CardDescription>
             </div>
              {isEditor && (

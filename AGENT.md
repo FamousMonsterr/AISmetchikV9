@@ -1,9 +1,82 @@
 # ВАЖНО: Всегда писать на русском языке
 
+## Post-release TODO (после полноценного релиза MVP)
+- [ ] `src/actions/creditPurchaseActions.ts`: привязать `createSbpCreditOrder/createLegalCreditOrder` к реальной user-сессии (не доверять `userId` из payload).
+- [ ] `src/actions/creditPurchaseActions.ts`: привязать админ-действия (`getCreditPurchaseOrders`, `approveCreditPurchaseOrder`, `rejectCreditPurchaseOrder`) к admin-сессии (не доверять `adminUserId` из payload).
+- [ ] `src/actions/creditPurchaseActions.ts`: при ошибке `expireCreditLot` не завершать отклонение заказа как `rejected` без успешного отката кредитов.
+- [ ] `src/actions/templateActions.ts`: запретить мутации шаблонов “от имени другого пользователя”, сверять `userId` с текущей сессией.
+- [ ] `src/actions/documentTemplateActions.ts`: админские мутации шаблонов выполнять только при подтвержденной admin-сессии.
+
+## Релизный протокол (GitHub + VDS)
+- Основная ветка релиза: `main`.
+- Перед отправкой в `main` обязательно локально выполнить:
+  - `npm run lint`
+  - `npm run typecheck`
+  - `npm run test`
+  - `npm run build`
+- После пуша в `main`:
+  - проверить статус workflow `CI` в GitHub Actions;
+  - проверить статус workflow `Deploy VDS`;
+  - убедиться, что `GET /api/health` возвращает `ok: true`.
+- Деплой-пайплайн: `.github/workflows/deploy-vds.yml`.
+- Продакшен compose: `deploy/docker-compose.vds.yml`.
+- Переменные деплоя на сервере: `deploy/.env.vds` + корневой `.env`.
+
 # Логи локальной среды
 - Файл `.localhost.log` может быть неотслеживаемым.
 - В конце каждой сессии просматривать `.localhost.log` и кратко предлагать решения по найденным ошибкам/узким местам/оптимизациям.
 - Перед новой сессией или после правок переносить текущий `.localhost.log` в `old.localhost.log` (или очищать), чтобы актуальный лог не захламлялся.
+
+## Лог метрик `/api/db` (для прицельной оптимизации)
+- Файл метрик: `.logs/api-db-metrics.jsonl`.
+- Назначение: собирать telemetry по всем операциям `/api/db` (op, collection, status, duration, cache-state, shape запроса, slow-флаг).
+- До отдельной команды на анализ: только накопление данных, без агрессивной очистки.
+- Дата первой проверки лога: **14 февраля 2026**.
+- Резервная дата проверки (если 14 февраля нет активности): **16 февраля 2026**.
+- Если и 16 февраля нет достаточного объема, проверять в ближайший следующий день реального использования сервиса.
+
+# Пайплайн анализа V1/V2 (обязательно учитывать)
+- Переключатель версии пайплайна: `analysisPipelineVersion` в `AppSettings` (`src/actions/adminActions.ts`, `src/components/admin/GeneralSettings.tsx`).
+- Допустимые значения:
+  - `v1`: текущий классический процесс (файл -> основной анализ -> ручная проверка категорий -> отдельный шаг распределения СМР).
+  - `v2`: новый серверный процесс (OCR markdown cache -> единый анализ спецификации/параметров/нестыковок/предложенных цен).
+- Кэш анализа должен быть разделен по версии:
+  - `file_analysis_cache` хранит `pipelineVersion` и не должен переиспользоваться между `v1` и `v2`.
+- OCR markdown для `v2` хранится отдельно:
+  - `file_markdown_cache` (ключ = `fileSha1`), при hit OCR-этап пропускается.
+- Для файлов **не PDF** в `v1` и `v2` OCR-плагин не использовать:
+  - выполнять локальный парсинг текста и изображений;
+  - изображения передавать в модель как `data:image/...;base64,...`;
+  - в модель отправлять извлеченный текст + список/контекст изображений.
+
+## Серверное выполнение
+- Для `v2` обработка допускается только в серверном режиме (`serverFunctionsEnabled=true` и `serverFunctionsMode='server'`).
+- Основной entrypoint: `POST /api/server-analysis`.
+- Исполнение пайплайна: `src/server-functions/analysis/jobRunner.ts`.
+- В `v1` допустим прежний поток, но серверная задача также должна работать корректно и не ломать существующую логику.
+
+## Провайдер AI и задел под локальную HF-модель
+- Управление провайдером: `aiExecutionProvider` (`openrouter`/`local_hf`) + `localHfEnabled`.
+- В `v1` анализ с файлом всегда через `openrouter`.
+- В `v2` OCR-этап всегда `openrouter` (Mistral OCR), основной шаг анализа может идти через выбранный провайдер.
+- Конфиг для будущего локального запуска HF:
+  - `localHfBaseUrl`
+  - `localHfModelId`
+  - `localHfApiKey`
+- По умолчанию локальная HF-модель должна быть выключена до явного включения тумблера.
+
+## Skills по версиям
+- При задачах по старому процессу использовать skill: `pipeline-v1`.
+- При задачах по новому процессу использовать skill: `pipeline-v2`.
+- Если версия не указана, сначала проверить `analysisPipelineVersion` в админ-настройках и только потом вносить изменения.
+
+## Skills по OpenRouter/PDF OCR
+- Для всех задач по PDF-анализу, OCR-этапу, `file-parser`, `mistral-ocr/pdf-text/native` использовать skill: `openrouter-pdf-mistral`.
+- Триггеры:
+  - ошибки вида `OpenRouter API Error`, `No content in OpenRouter response`, `File is too large`, `429`, `402`;
+  - подозрение на неверную отправку PDF или плагина OCR;
+  - настройка fallback/engine/annotations для экономии и стабильности.
+- Обязательное правило: технические детали оставлять в логах, а пользователю показывать только user-friendly сообщение без сырых провайдерных body.
 
 # Баланс / Billing UI шаблон
 

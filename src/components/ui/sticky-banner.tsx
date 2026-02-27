@@ -67,18 +67,18 @@ export const StickyBanner = ({
           exit={{ opacity: 0, height: 0 }}
           transition={{ duration: 0.3, ease: "easeInOut" }}
           className={cn(
-            "relative z-[60] flex items-center justify-center p-2 text-sm font-medium",
+            "relative z-[60] flex items-center justify-center px-3 py-2 text-sm font-medium",
             "bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white", // Example gradient
             className
           )}
         >
-          <div className="relative flex w-full items-center justify-center text-center">
+          <div className="relative flex w-full flex-col flex-wrap items-center justify-center gap-2 text-center sm:flex-row sm:text-left pr-10">
             {children}
             <Button
               variant="ghost"
               size="icon"
               onClick={handleClose}
-              className="absolute right-2 top-1/2 h-6 w-6 -translate-y-1/2 rounded-full text-current hover:bg-black/20"
+              className="absolute right-2 top-2 h-6 w-6 rounded-full text-current hover:bg-black/20"
             >
               <X className="h-4 w-4" />
               <span className="sr-only">Close banner</span>

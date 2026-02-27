@@ -16,6 +16,7 @@ import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Textarea } from '@/components/ui/textarea';
 
 function WipeDataDialog({ onConfirm, isPending }: { onConfirm: () => void, isPending: boolean }) {
     const [confirmationText, setConfirmationText] = useState("");
@@ -72,6 +73,14 @@ export function GeneralSettings() {
     serverFunctionsMode: 'client',
     serverFunctionsPaidOnly: true,
     serverFunctionsAllowedPlans: ['PRO', 'Business', 'Enterprise'],
+    analysisPipelineVersion: 'v1',
+    aiExecutionProvider: 'openrouter',
+    localHfEnabled: false,
+    backendBaseUrl: '',
+    frontendBaseUrl: '',
+    allowedFrontendOrigins: [],
+    jwtIssuer: '',
+    jwtAudience: '',
   });
   const [isLoading, setIsLoading] = useState(true);
   const [isPending, startTransition] = useTransition();
@@ -202,7 +211,53 @@ export function GeneralSettings() {
                 <SelectItem value="client">Локальный (как сейчас)</SelectItem>
                 <SelectItem value="server">Серверный (VDS очередь)</SelectItem>
               </SelectContent>
+              </Select>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-[220px_1fr] sm:items-center">
+            <Label>Версия пайплайна</Label>
+            <Select
+              value={settings.analysisPipelineVersion}
+              onValueChange={(value) => setSettings({ ...settings, analysisPipelineVersion: value as AppSettings['analysisPipelineVersion'] })}
+              disabled={isPending}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Выберите версию" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="v1">V1 (текущий)</SelectItem>
+                <SelectItem value="v2">V2 (OCR markdown + единый проход)</SelectItem>
+              </SelectContent>
             </Select>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-[220px_1fr] sm:items-center">
+            <Label>AI провайдер</Label>
+            <Select
+              value={settings.aiExecutionProvider}
+              onValueChange={(value) => setSettings({ ...settings, aiExecutionProvider: value as AppSettings['aiExecutionProvider'] })}
+              disabled={isPending}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Выберите AI-провайдер" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="openrouter">OpenRouter (основной)</SelectItem>
+                <SelectItem value="local_hf">Local HF (будущее)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <Label>Локальная HF модель</Label>
+              <p className="text-sm text-muted-foreground">Подготовка к self-hosted модели с Hugging Face. По умолчанию выключено.</p>
+            </div>
+            <Switch
+              checked={settings.localHfEnabled}
+              onCheckedChange={(checked) => setSettings({ ...settings, localHfEnabled: checked })}
+              disabled={isPending}
+            />
           </div>
 
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -238,6 +293,74 @@ export function GeneralSettings() {
                   </label>
                 );
               })}
+            </div>
+          </div>
+
+          <Separator />
+
+          <div className="space-y-4">
+            <div>
+              <Label className="font-semibold">Интеграция Frontend/Backend</Label>
+              <p className="text-sm text-muted-foreground">
+                Эти параметры используются для подготовки к раздельному деплою frontend и backend.
+              </p>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-[220px_1fr] sm:items-center">
+              <Label htmlFor="backendBaseUrl">Backend Base URL</Label>
+              <Input
+                id="backendBaseUrl"
+                value={settings.backendBaseUrl || ''}
+                onChange={(e) => setSettings({ ...settings, backendBaseUrl: e.target.value })}
+                placeholder="https://api.example.com"
+                disabled={isPending}
+              />
+            </div>
+            <div className="grid gap-3 sm:grid-cols-[220px_1fr] sm:items-center">
+              <Label htmlFor="frontendBaseUrl">Frontend Base URL</Label>
+              <Input
+                id="frontendBaseUrl"
+                value={settings.frontendBaseUrl || ''}
+                onChange={(e) => setSettings({ ...settings, frontendBaseUrl: e.target.value })}
+                placeholder="https://app.example.com"
+                disabled={isPending}
+              />
+            </div>
+            <div className="grid gap-3 sm:grid-cols-[220px_1fr] sm:items-start">
+              <Label htmlFor="allowedFrontendOrigins">Allowed Frontend Origins</Label>
+              <Textarea
+                id="allowedFrontendOrigins"
+                value={(settings.allowedFrontendOrigins || []).join('\n')}
+                onChange={(e) => {
+                  const nextOrigins = e.target.value
+                    .split('\n')
+                    .map((line) => line.trim())
+                    .filter(Boolean);
+                  setSettings({ ...settings, allowedFrontendOrigins: nextOrigins });
+                }}
+                placeholder={'https://app.example.com\nhttps://staging-app.example.com'}
+                disabled={isPending}
+                rows={4}
+              />
+            </div>
+            <div className="grid gap-3 sm:grid-cols-[220px_1fr] sm:items-center">
+              <Label htmlFor="jwtIssuer">JWT Issuer</Label>
+              <Input
+                id="jwtIssuer"
+                value={settings.jwtIssuer || ''}
+                onChange={(e) => setSettings({ ...settings, jwtIssuer: e.target.value })}
+                placeholder="ai-smetchik-backend"
+                disabled={isPending}
+              />
+            </div>
+            <div className="grid gap-3 sm:grid-cols-[220px_1fr] sm:items-center">
+              <Label htmlFor="jwtAudience">JWT Audience</Label>
+              <Input
+                id="jwtAudience"
+                value={settings.jwtAudience || ''}
+                onChange={(e) => setSettings({ ...settings, jwtAudience: e.target.value })}
+                placeholder="ai-smetchik-frontend"
+                disabled={isPending}
+              />
             </div>
           </div>
         </div>

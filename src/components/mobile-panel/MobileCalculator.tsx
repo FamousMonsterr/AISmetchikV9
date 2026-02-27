@@ -135,9 +135,9 @@ export function MobileCalculator({ project, onSmrCostChange }: MobileCalculatorP
     return (
         <div className="space-y-4 text-sm">
             <div className="flex items-center justify-between">
-                <p className="font-semibold">Расчет стоимости СМР</p>
+                <p className="font-semibold">Рассчитать СМР</p>
                 <div className="flex items-center space-x-2">
-                    <Label htmlFor="calc-mode-switch">Продвинутый</Label>
+                    <Label htmlFor="calc-mode-switch" className="text-xs">PRO</Label>
                     <Switch id="calc-mode-switch" checked={inputValues.mode === 'advanced'} onCheckedChange={handleModeSwitch} />
                     {!isPro && <Star className="h-4 w-4 text-amber-500"/>}
                 </div>
@@ -170,18 +170,21 @@ export function MobileCalculator({ project, onSmrCostChange }: MobileCalculatorP
 
             {inputValues.mode === 'advanced' && (
                 <div className="space-y-4 pt-4 border-t">
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="space-y-2"><Label>Приборов/смена</Label><Input type="number" value={inputValues.normDevicesPerShift} onChange={e => handleInputChange('normDevicesPerShift', e.target.value)} /></div>
                         <div className="space-y-2"><Label>Кабеля/смена, м</Label><Input type="number" value={inputValues.normCablePerShift} onChange={e => handleInputChange('normCablePerShift', e.target.value)} /></div>
-                        <div className="space-y-2 col-span-2"><Label>Кабеленесущих конструкций/смена, м</Label><Input type="number" value={inputValues.normCableSupportPerShift} onChange={e => handleInputChange('normCableSupportPerShift', e.target.value)} /></div>
+                        <div className="space-y-2 sm:col-span-2"><Label>КК/смена, м</Label><Input type="number" value={inputValues.normCableSupportPerShift} onChange={e => handleInputChange('normCableSupportPerShift', e.target.value)} /></div>
                     </div>
-                     <RadioGroup value={inputValues.costCalculationMethod} onValueChange={(v) => handleInputChange('costCalculationMethod', v)} className="flex pt-2"><div className="flex items-center space-x-2"><RadioGroupItem value="perShift"/><Label>Ставка</Label></div><div className="flex items-center space-x-2 ml-4"><RadioGroupItem value="perMonth"/><Label>Оклад</Label></div></RadioGroup>
+                     <RadioGroup value={inputValues.costCalculationMethod} onValueChange={(v) => handleInputChange('costCalculationMethod', v)} className="flex flex-wrap gap-3 pt-2">
+                        <div className="flex items-center space-x-2"><RadioGroupItem value="perShift"/><Label>Ставка</Label></div>
+                        <div className="flex items-center space-x-2"><RadioGroupItem value="perMonth"/><Label>Оклад</Label></div>
+                     </RadioGroup>
                     {inputValues.costCalculationMethod === 'perShift' ? (
-                        <div className="space-y-2"><Label>Ставка за смену, ₽</Label><Input type="number" value={inputValues.shiftCost} onChange={e => handleInputChange('shiftCost', e.target.value)} /></div>
+                        <div className="space-y-2"><Label>Ставка/смену, ₽</Label><Input type="number" value={inputValues.shiftCost} onChange={e => handleInputChange('shiftCost', e.target.value)} /></div>
                     ) : (
-                        <div className="space-y-2"><Label>Оклад в месяц (брутто), ₽</Label><Input type="number" value={inputValues.monthlySalary} onChange={e => handleInputChange('monthlySalary', e.target.value)} /></div>
+                        <div className="space-y-2"><Label>Оклад/мес, ₽</Label><Input type="number" value={inputValues.monthlySalary} onChange={e => handleInputChange('monthlySalary', e.target.value)} /></div>
                     )}
-                    <div className="space-y-2"><Label>Инфраструктура/смена, ₽</Label><Input type="number" value={inputValues.infraCost} onChange={e => handleInputChange('infraCost', e.target.value)} /></div>
+                    <div className="space-y-2"><Label>Инфра/смена, ₽</Label><Input type="number" value={inputValues.infraCost} onChange={e => handleInputChange('infraCost', e.target.value)} /></div>
                     <div className="space-y-2"><Label>Маржа, %</Label><Input type="number" value={inputValues.marginPercent} onChange={e => handleInputChange('marginPercent', e.target.value)} /></div>
                 </div>
             )}

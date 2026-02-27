@@ -2,6 +2,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { generateJson } from '@/services/ai';
+import { isPdfLikeFile, parseNonPdfFileForModel } from '@/server-functions/analysis/nonPdfParser';
+import { requireAuthenticatedUser, validateRequestedUserId } from '@/lib/api-auth';
+import { enforceRateLimit } from '@/lib/rate-limit';
+import { validateFileUriAgainstAllowlist } from '@/lib/file-uri-security';
+import { queueApiMetricLog } from '@/lib/api-metrics';
 
 const MainAnalysisRequestSchema = z.object({
   file: z.object({
@@ -19,7 +24,20 @@ const MainAnalysisRequestSchema = z.object({
 
 
 export async function POST(request: NextRequest) {
+  const startedAt = Date.now();
   try {
+    const auth = await requireAuthenticatedUser();
+    if (!auth.ok) return auth.response;
+
+    const rateLimitResponse = enforceRateLimit({
+      request,
+      scope: 'api:main-analysis',
+      userId: auth.user.id,
+      max: 8,
+      windowMs: 60_000,
+    });
+    if (rateLimitResponse) return rateLimitResponse;
+
     const body = await request.json();
     const validation = MainAnalysisRequestSchema.safeParse(body);
     
@@ -28,9 +46,49 @@ export async function POST(request: NextRequest) {
     }
     
     const analysisInput = validation.data;
+    const userValidation = validateRequestedUserId(analysisInput.userId, auth.user.id);
+    if (!userValidation.ok) return userValidation.response;
+
+    if (analysisInput.file?.fileUri) {
+      const fileUriValidation = await validateFileUriAgainstAllowlist(analysisInput.file.fileUri);
+      if (!fileUriValidation.ok) {
+        return NextResponse.json({
+          error: fileUriValidation.reason || 'Недопустимый fileUri.',
+          host: fileUriValidation.host,
+        }, { status: 400 });
+      }
+    }
+
+    let effectiveInput: any = analysisInput;
+
+    if (analysisInput.file && !isPdfLikeFile(analysisInput.file.mimeType, analysisInput.file.fileName || 'document')) {
+      const parsed = await parseNonPdfFileForModel({
+        fileUri: analysisInput.file.fileUri,
+        fileName: analysisInput.file.fileName || 'document',
+        mimeType: analysisInput.file.mimeType,
+      });
+      const promptWithParsedContext = `${analysisInput.prompt}
+
+## ДОПОЛНИТЕЛЬНЫЕ ДАННЫЕ ДЛЯ НЕ-PDF ФАЙЛА
+Ниже уже извлеченный текст и контекст из исходного файла.
+Используй эти данные как основной источник для построения JSON-ответа.
+
+${parsed.markdown}`;
+
+      effectiveInput = {
+        ...analysisInput,
+        userId: auth.user.id,
+        prompt: promptWithParsedContext,
+        file: undefined,
+        images: parsed.images,
+      };
+    }
     
     // Use the central router function, which handles all providers
-    const { text, rawResponse } = await generateJson(analysisInput);
+    const { text, rawResponse } = await generateJson({
+      ...effectiveInput,
+      userId: auth.user.id,
+    });
 
     // The 'text' from our service should already be the JSON content string.
     // However, some models might wrap it. Let's be robust.
@@ -66,11 +124,26 @@ export async function POST(request: NextRequest) {
         }
     }
     
+    queueApiMetricLog({
+      ts: new Date().toISOString(),
+      endpoint: '/api/main-analysis',
+      userId: auth.user.id,
+      status: 200,
+      durationMs: Date.now() - startedAt,
+      model: analysisInput.model,
+    });
     return NextResponse.json(finalJsonResponse, { status: 200 });
 
   } catch (error: any) {
     console.error('[Main Analysis API Route Error]', error);
     const errorMessage = error.message || 'An unknown server error occurred.';
+    queueApiMetricLog({
+      ts: new Date().toISOString(),
+      endpoint: '/api/main-analysis',
+      status: 500,
+      durationMs: Date.now() - startedAt,
+      error: errorMessage,
+    });
     return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }

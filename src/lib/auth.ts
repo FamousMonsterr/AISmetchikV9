@@ -5,6 +5,13 @@ import bcrypt from 'bcryptjs';
 import { getDb } from '@/lib/mongodb';
 import modelsConfig from '@/lib/ai-config.json';
 
+function normalizeId(id: any): string {
+  if (typeof id === 'string') return id;
+  if (id == null) return '';
+  if (typeof id.toString === 'function') return id.toString();
+  return String(id);
+}
+
 export const authOptions: NextAuthOptions = {
   session: {
     strategy: 'jwt',
@@ -83,8 +90,13 @@ export const authOptions: NextAuthOptions = {
           await db.collection('users').updateOne({ _id: user._id }, { $set: updates });
         }
 
+        const userId = normalizeId(user._id);
+        if (!userId) {
+          return null;
+        }
+
         return {
-          id: user._id,
+          id: userId,
           email: user.email,
           name: user.displayName,
           systemRole: user.systemRole,
@@ -96,15 +108,24 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.id = user.id;
+        token.id = normalizeId(user.id);
         token.systemRole = (user as any).systemRole;
         token.plan = (user as any).plan;
+      }
+      if (!token.id && token.sub) {
+        token.id = normalizeId(token.sub);
+      } else if (token.id) {
+        token.id = normalizeId(token.id);
       }
       return token;
     },
     async session({ session, token }) {
       if (session.user) {
-        session.user.id = token.id as string;
+        const normalizedId = normalizeId((token as any).id || token.sub);
+        if (!normalizedId) {
+          throw new Error('Invalid session token: missing user id');
+        }
+        session.user.id = normalizedId;
         (session.user as any).systemRole = token.systemRole;
         (session.user as any).plan = token.plan;
       }

@@ -3,16 +3,11 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 const getDocMock = vi.fn();
 const getCreditSummaryMock = vi.fn();
 const createJobMock = vi.fn();
-const runJobMock = vi.fn();
+const getAppSettingsMock = vi.fn();
 
 vi.mock('@/lib/firebase', () => ({ db: {} }));
 vi.mock('@/actions/adminActions', () => ({
-  getAppSettings: vi.fn().mockResolvedValue({
-    serverFunctionsEnabled: true,
-    serverFunctionsMode: 'server',
-    serverFunctionsPaidOnly: false,
-    serverFunctionsAllowedPlans: ['Free', 'PRO', 'Business', 'Enterprise'],
-  }),
+  getAppSettings: (...args: any[]) => getAppSettingsMock(...args),
 }));
 vi.mock('@/lib/mongoFirestoreServer', () => ({
   doc: vi.fn((_db: any, _collection: string, id: string) => ({ id })),
@@ -21,14 +16,24 @@ vi.mock('@/lib/mongoFirestoreServer', () => ({
 vi.mock('@/server-functions/analysis/jobService', () => ({
   createServerAnalysisJob: (...args: any[]) => createJobMock(...args),
 }));
-vi.mock('@/server-functions/analysis/jobRunner', () => ({
-  runServerAnalysisJob: (...args: any[]) => runJobMock(...args),
-}));
 vi.mock('@/services/credits', () => ({
   getCreditSummary: (...args: any[]) => getCreditSummaryMock(...args),
 }));
 vi.mock('@/lib/logger', () => ({
   logProjectEvent: vi.fn().mockResolvedValue(undefined),
+}));
+vi.mock('@/lib/api-auth', () => ({
+  requireAuthenticatedUser: vi.fn().mockResolvedValue({
+    ok: true,
+    user: { id: 'user-1', role: 'User', plan: 'PRO' },
+  }),
+  validateRequestedUserId: vi.fn(() => ({ ok: true })),
+}));
+vi.mock('@/lib/rate-limit', () => ({
+  enforceRateLimit: vi.fn(() => null),
+}));
+vi.mock('@/lib/file-uri-security', () => ({
+  validateFileUriAgainstAllowlist: vi.fn().mockResolvedValue({ ok: true }),
 }));
 
 import { POST } from '@/app/api/server-analysis/route';
@@ -48,7 +53,15 @@ describe('POST /api/server-analysis', () => {
     getDocMock.mockReset();
     getCreditSummaryMock.mockReset();
     createJobMock.mockReset();
-    runJobMock.mockReset();
+    getAppSettingsMock.mockReset();
+    getAppSettingsMock.mockResolvedValue({
+      serverFunctionsEnabled: true,
+      serverFunctionsMode: 'server',
+      serverFunctionsPaidOnly: false,
+      serverFunctionsAllowedPlans: ['Free', 'PRO', 'Business', 'Enterprise'],
+      analysisPipelineVersion: 'v1',
+      aiExecutionProvider: 'openrouter',
+    });
   });
 
   it('returns insufficient credits when balance is low', async () => {
@@ -69,7 +82,6 @@ describe('POST /api/server-analysis', () => {
     getDocMock.mockResolvedValue({ exists: () => true, data: () => ({ plan: 'PRO' }) });
     getCreditSummaryMock.mockResolvedValue({ total: 10 });
     createJobMock.mockResolvedValue({ id: 'job-1', status: 'queued' });
-    runJobMock.mockResolvedValue(undefined);
 
     const response = await POST(new Request('http://localhost/api/server-analysis', {
       method: 'POST',
@@ -80,5 +92,36 @@ describe('POST /api/server-analysis', () => {
     expect(response.status).toBe(200);
     expect(json.success).toBe(true);
     expect(json.jobId).toBe('job-1');
+    expect(createJobMock).toHaveBeenCalledWith(expect.objectContaining({
+      pipelineVersion: 'v1',
+      executionProvider: 'openrouter',
+    }));
+  });
+
+  it('uses local_hf provider only for v2 jobs', async () => {
+    getAppSettingsMock.mockResolvedValue({
+      serverFunctionsEnabled: true,
+      serverFunctionsMode: 'server',
+      serverFunctionsPaidOnly: false,
+      serverFunctionsAllowedPlans: ['Free', 'PRO', 'Business', 'Enterprise'],
+      analysisPipelineVersion: 'v2',
+      aiExecutionProvider: 'local_hf',
+    });
+    getDocMock.mockResolvedValue({ exists: () => true, data: () => ({ plan: 'PRO' }) });
+    getCreditSummaryMock.mockResolvedValue({ total: 10 });
+    createJobMock.mockResolvedValue({ id: 'job-v2', status: 'queued' });
+
+    const response = await POST(new Request('http://localhost/api/server-analysis', {
+      method: 'POST',
+      body: JSON.stringify(basePayload),
+    }) as any);
+    const json = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(json.jobId).toBe('job-v2');
+    expect(createJobMock).toHaveBeenCalledWith(expect.objectContaining({
+      pipelineVersion: 'v2',
+      executionProvider: 'local_hf',
+    }));
   });
 });

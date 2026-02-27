@@ -2,7 +2,7 @@
 // src/server-functions/analysis/jobRunner.ts
 'use server';
 
-import { collection, doc, getDoc, setDoc, serverTimestamp, updateDoc } from '@/lib/mongoFirestoreServer';
+import { doc, getDoc, setDoc, serverTimestamp, updateDoc } from '@/lib/mongoFirestoreServer';
 import { db } from '@/lib/firebase';
 import constructorConfig from '@/lib/ai-constructor-config.json';
 import { generateJson } from '@/services/ai';
@@ -16,22 +16,113 @@ import { SERVER_STAGE_LABELS, type ServerStageKey } from '@/lib/server-analysis-
 import { reportUserBug } from '@/actions/adminActions';
 import { logProjectEvent } from '@/lib/logger';
 import { dispatchNotification } from '@/server-functions/notifications/dispatch';
+import { isPdfLikeFile, parseNonPdfFileForModel, type ParsedModelImage } from './nonPdfParser';
+import type { PdfEngine } from '@/services/openrouter';
+import { toUserFacingAnalysisError } from '@/lib/analysis-errors';
 
-function pickMainAnalysisPrompt(): string {
-  const prompt = constructorConfig.prompts.find((p) => p.id === 'mainAnalysis');
+type PipelineVersion = 'v1' | 'v2';
+type ExecutionProvider = 'openrouter' | 'local_hf';
+
+const ANALYSIS_CACHE_COLLECTION = 'file_analysis_cache';
+const OCR_MARKDOWN_CACHE_COLLECTION = 'file_markdown_cache';
+
+function pickPromptById(promptId: string): string {
+  const prompt = constructorConfig.prompts.find((p) => p.id === promptId);
   if (!prompt) {
-    throw new Error('Не найден основной промпт mainAnalysis в ai-constructor-config.json');
+    throw new Error(`Не найден промпт ${promptId} в ai-constructor-config.json`);
   }
   return prompt.promptText;
 }
 
-async function loadCachedAnalysis(fileSha1: string): Promise<ExtractProjectSpecificationsOutput | null> {
-  const cacheRef = doc(db, 'file_analysis_cache', fileSha1);
+function normalizePipelineVersion(version?: string | null): PipelineVersion {
+  return version === 'v2' ? 'v2' : 'v1';
+}
+
+function resolveMainExecutionProvider(job: ServerAnalysisJob, pipelineVersion: PipelineVersion): ExecutionProvider {
+  if (pipelineVersion === 'v1') {
+    return 'openrouter';
+  }
+  return job.executionProvider === 'local_hf' ? 'local_hf' : 'openrouter';
+}
+
+function parseJsonFromAiText(text: unknown): any {
+  if (typeof text === 'object' && text !== null) {
+    return text;
+  }
+  if (typeof text !== 'string') {
+    throw new Error('AI вернул неожиданный тип ответа');
+  }
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    const match = text.match(/```json\n([\s\S]*?)\n```|({[\s\S]*})/);
+    if (match && (match[1] || match[2])) {
+      return JSON.parse(match[1] || match[2]);
+    }
+    throw new Error('AI вернул не-JSON ответ');
+  }
+}
+
+function validateAnalysisOutput(payload: any): ExtractProjectSpecificationsOutput {
+  const validation = ExtractProjectSpecificationsOutputSchema.safeParse(payload);
+  if (!validation.success) {
+    throw new Error('Ответ AI не прошел валидацию структуры.');
+  }
+  return validation.data;
+}
+
+function normalizeMarkdownText(markdown: string): string {
+  const trimmed = markdown.trim();
+  const fenceMatch = trimmed.match(/^```(?:markdown|md)?\n([\s\S]*?)\n```$/i);
+  return (fenceMatch?.[1] || trimmed).trim();
+}
+
+function isCompatibleCacheVersion(cacheVersion: unknown, targetVersion: PipelineVersion): boolean {
+  const normalizedCacheVersion = cacheVersion === 'v2' ? 'v2' : 'v1';
+  return normalizedCacheVersion === targetVersion;
+}
+
+async function loadCachedAnalysis(fileSha1: string, pipelineVersion: PipelineVersion): Promise<ExtractProjectSpecificationsOutput | null> {
+  const cacheRef = doc(db, ANALYSIS_CACHE_COLLECTION, fileSha1);
   const cacheSnap = await getDoc(cacheRef);
   if (!cacheSnap.exists()) return null;
   const data = cacheSnap.data();
   if ((data.reportCount || 0) >= 3) return null;
-  return data.originalAiResponse as ExtractProjectSpecificationsOutput;
+  if (!isCompatibleCacheVersion(data.pipelineVersion, pipelineVersion)) return null;
+  if (!data.originalAiResponse) return null;
+
+  const validation = ExtractProjectSpecificationsOutputSchema.safeParse(data.originalAiResponse);
+  if (!validation.success) return null;
+  return validation.data;
+}
+
+async function loadCachedOcrMarkdown(fileSha1: string): Promise<string | null> {
+  const cacheRef = doc(db, OCR_MARKDOWN_CACHE_COLLECTION, fileSha1);
+  const cacheSnap = await getDoc(cacheRef);
+  if (!cacheSnap.exists()) return null;
+  const data = cacheSnap.data();
+  const markdown = typeof data.markdown === 'string'
+    ? data.markdown
+    : typeof data.ocrMarkdown === 'string'
+      ? data.ocrMarkdown
+      : null;
+  if (!markdown?.trim()) return null;
+  return normalizeMarkdownText(markdown);
+}
+
+async function saveCachedOcrMarkdown(job: ServerAnalysisJob, markdown: string) {
+  const cacheRef = doc(db, OCR_MARKDOWN_CACHE_COLLECTION, job.fileSha1);
+  await setDoc(cacheRef, {
+    fileSha1: job.fileSha1,
+    fileName: job.fileName,
+    mimeType: job.mimeType,
+    sourceFileUri: job.fileUri,
+    markdown,
+    pipelineVersion: 'v2',
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  }, { merge: true });
 }
 
 async function ensureS3CacheRecord(fileSha1: string, objectKey?: string, fileName?: string, accessUrl?: string) {
@@ -57,7 +148,11 @@ async function updateProjectStage(projectId: string | null | undefined, stage: S
   } as any);
 }
 
-async function runAiAnalysis(job: ServerAnalysisJob, prompt: string): Promise<ExtractProjectSpecificationsOutput> {
+async function runAnalysisWithFile(
+  job: ServerAnalysisJob,
+  prompt: string,
+  providerOverride: ExecutionProvider
+): Promise<ExtractProjectSpecificationsOutput> {
   const aiResult = await generateJson({
     prompt,
     model: job.model,
@@ -65,41 +160,171 @@ async function runAiAnalysis(job: ServerAnalysisJob, prompt: string): Promise<Ex
     temperature: job.temperature,
     includeThoughts: job.includeThoughts,
     userId: job.userId,
+    providerOverride,
   });
 
   if (!aiResult.text) {
     throw new Error('AI вернул пустой ответ');
   }
 
-  let parsed: any;
-  if (typeof aiResult.text === 'string') {
-    try {
-      parsed = JSON.parse(aiResult.text);
-    } catch {
-      const match = aiResult.text.match(/```json\n([\s\S]*?)\n```|({[\s\S]*})/);
-      if (match && (match[1] || match[2])) {
-        parsed = JSON.parse(match[1] || match[2]);
-      } else {
-        throw new Error('AI вернул не-JSON ответ');
-      }
-    }
-  } else {
-    parsed = aiResult.text;
-  }
-
-  const validation = ExtractProjectSpecificationsOutputSchema.safeParse(parsed);
-  if (!validation.success) {
-    throw new Error('Ответ AI не прошел валидацию структуры.');
-  }
-  return validation.data;
+  const parsed = parseJsonFromAiText(aiResult.text);
+  return validateAnalysisOutput(parsed);
 }
 
-export async function runServerAnalysisJob(jobId: string): Promise<void> {
+type OcrMarkdownRunResult = {
+  markdown: string;
+  engine: PdfEngine;
+  attemptErrors: string[];
+};
+
+const PDF_TEXT_ENGINE_MAX_BYTES = 5 * 1024 * 1024;
+
+async function resolveRemoteFileSize(fileUri: string): Promise<number | null> {
+  try {
+    const response = await fetch(fileUri, { method: 'HEAD' });
+    if (!response.ok) return null;
+    const contentLength = response.headers.get('content-length');
+    if (!contentLength) return null;
+    const parsed = Number(contentLength);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function extractMarkdownFromOcrResult(text: unknown): string {
+  if (!text || typeof text !== 'string') {
+    throw new Error('OCR этап вернул пустой markdown');
+  }
+  const rawText = text.trim();
+  try {
+    const maybeJson = JSON.parse(rawText);
+    const markdownFromJson = maybeJson?.ocrMarkdown || maybeJson?.markdown || maybeJson?.text;
+    if (typeof markdownFromJson === 'string' && markdownFromJson.trim()) {
+      return normalizeMarkdownText(markdownFromJson);
+    }
+  } catch {
+    // Not JSON, continue with text.
+  }
+  return normalizeMarkdownText(rawText);
+}
+
+async function runOcrMarkdown(job: ServerAnalysisJob, prompt: string): Promise<OcrMarkdownRunResult> {
+  const enginesToTry: PdfEngine[] = ['mistral-ocr', 'pdf-text', 'native'];
+  const attemptErrors: string[] = [];
+  const fileSizeBytes = await resolveRemoteFileSize(job.fileUri);
+
+  for (const engine of enginesToTry) {
+    if (engine === 'pdf-text' && fileSizeBytes && fileSizeBytes > PDF_TEXT_ENGINE_MAX_BYTES) {
+      attemptErrors.push(`[pdf-text] skipped: file size ${fileSizeBytes} bytes exceeds ${PDF_TEXT_ENGINE_MAX_BYTES} bytes limit`);
+      continue;
+    }
+    try {
+      const aiResult = await generateJson({
+        prompt,
+        model: job.model,
+        file: { fileUri: job.fileUri, mimeType: job.mimeType, fileName: job.fileName },
+        temperature: 0,
+        includeThoughts: false,
+        userId: job.userId,
+        providerOverride: 'openrouter',
+        responseMimeType: 'text/plain',
+        pdfEngine: engine,
+      });
+      const markdown = extractMarkdownFromOcrResult(aiResult.text);
+      if (!markdown.trim()) {
+        throw new Error('OCR этап вернул пустой markdown');
+      }
+      return {
+        markdown,
+        engine,
+        attemptErrors,
+      };
+    } catch (error: any) {
+      const message = error?.message || `OCR engine ${engine} failed`;
+      attemptErrors.push(`[${engine}] ${message}`);
+    }
+  }
+
+  const rawMessage = `OCR этап не выполнен ни одним движком. ${attemptErrors.join(' | ')}`;
+  const error: any = new Error('OCR stage failed');
+  error.rawMessage = rawMessage;
+  error.userMessage = toUserFacingAnalysisError(rawMessage);
+  error.attemptErrors = attemptErrors;
+  throw error;
+}
+
+function buildV1PromptWithParsedContent(prompt: string, parsedMarkdown: string): string {
+  return `${prompt}
+
+## ДОПОЛНИТЕЛЬНЫЕ ДАННЫЕ ДЛЯ НЕ-PDF ФАЙЛА
+Ниже уже извлеченный текст и контекст из исходного файла.
+Используй эти данные как основной источник для построения JSON-ответа.
+
+${parsedMarkdown}`;
+}
+
+async function runAnalysisFromMarkdown(
+  job: ServerAnalysisJob,
+  prompt: string,
+  ocrMarkdown: string,
+  providerOverride: ExecutionProvider,
+  images?: ParsedModelImage[]
+): Promise<ExtractProjectSpecificationsOutput> {
+  const aiResult = await generateJson({
+    prompt,
+    model: job.model,
+    temperature: job.temperature,
+    includeThoughts: job.includeThoughts,
+    userId: job.userId,
+    ocrMarkdown,
+    providerOverride,
+    images,
+  });
+
+  if (!aiResult.text) {
+    throw new Error('AI вернул пустой ответ');
+  }
+
+  const parsed = parseJsonFromAiText(aiResult.text);
+  return validateAnalysisOutput(parsed);
+}
+
+async function runAnalysisFromParsedContent(
+  job: ServerAnalysisJob,
+  prompt: string,
+  parsedMarkdown: string,
+  providerOverride: ExecutionProvider,
+  images?: ParsedModelImage[]
+): Promise<ExtractProjectSpecificationsOutput> {
+  const aiResult = await generateJson({
+    prompt: buildV1PromptWithParsedContent(prompt, parsedMarkdown),
+    model: job.model,
+    temperature: job.temperature,
+    includeThoughts: job.includeThoughts,
+    userId: job.userId,
+    providerOverride,
+    images,
+  });
+
+  if (!aiResult.text) {
+    throw new Error('AI вернул пустой ответ');
+  }
+
+  const parsed = parseJsonFromAiText(aiResult.text);
+  return validateAnalysisOutput(parsed);
+}
+
+export async function runServerAnalysisJob(jobId: string, options: { alreadyClaimed?: boolean } = {}): Promise<void> {
   const job = await getServerAnalysisJob(jobId);
   if (!job) {
     throw new Error(`Задача ${jobId} не найдена`);
   }
 
+  const pipelineVersion = normalizePipelineVersion(job.pipelineVersion);
+  const mainExecutionProvider = resolveMainExecutionProvider(job, pipelineVersion);
+
+  let aiCallCount = 0;
   let lastStage: ServerStageKey | null = null;
   const setStage = async (stage: ServerStageKey, message?: string) => {
     lastStage = stage;
@@ -108,6 +333,11 @@ export async function runServerAnalysisJob(jobId: string): Promise<void> {
 
   if (job.status === 'cancelled') {
     await appendJobLog(jobId, 'Задача уже отменена, выполнение пропущено', 'cancelled');
+    return;
+  }
+
+  if (job.status !== 'queued' && job.status !== 'running') {
+    await appendJobLog(jobId, `Задача в статусе ${job.status}, выполнение пропущено`, 'running');
     return;
   }
 
@@ -135,13 +365,25 @@ export async function runServerAnalysisJob(jobId: string): Promise<void> {
       sha1: job.fileSha1,
       objectKey: job.objectKey || null,
     },
-    metadata: { status: job.status },
+    metadata: {
+      status: job.status,
+      pipelineVersion,
+      executionProvider: mainExecutionProvider,
+    },
     message: 'Получена серверная задача для обработки',
   });
 
-  await updateJobStatus(jobId, 'running');
-  await appendJobLog(jobId, 'Задача перешла в статус running', 'running');
+  if (!options.alreadyClaimed && job.status === 'queued') {
+    await updateJobStatus(jobId, 'running');
+    await appendJobLog(jobId, 'Задача перешла в статус running', 'running');
+  } else {
+    await appendJobLog(jobId, 'Задача уже зарезервирована воркером, продолжаем выполнение', 'running');
+  }
   await setStage('running', 'Задача взята в работу');
+  if (pipelineVersion === 'v1' && job.executionProvider === 'local_hf') {
+    await appendJobLog(jobId, 'Для V1 принудительно выбран OpenRouter (local_hf поддерживается только для V2)', 'running');
+  }
+
   await logProjectEvent({
     projectId: job.projectId,
     userId: job.userId,
@@ -151,6 +393,10 @@ export async function runServerAnalysisJob(jobId: string): Promise<void> {
     status: 'info',
     source: 'worker',
     model: job.model,
+    metadata: {
+      pipelineVersion,
+      executionProvider: mainExecutionProvider,
+    },
     message: 'Задача переведена в статус running',
   });
 
@@ -159,7 +405,7 @@ export async function runServerAnalysisJob(jobId: string): Promise<void> {
 
     await ensureNotCancelled();
     await setStage('analysis_cache', 'Проверка кеша анализа');
-    const cached = job.status !== 'cancelled' ? await loadCachedAnalysis(job.fileSha1) : null;
+    const cached = job.status !== 'cancelled' ? await loadCachedAnalysis(job.fileSha1, pipelineVersion) : null;
     if (cached) {
       await appendJobLog(jobId, 'Используем кеш анализа', 'cache');
       await logProjectEvent({
@@ -172,10 +418,13 @@ export async function runServerAnalysisJob(jobId: string): Promise<void> {
         source: 'worker',
         model: job.model,
         message: 'Используем кеш анализа по fileSha1',
-        metadata: { fileSha1: job.fileSha1 },
+        metadata: {
+          fileSha1: job.fileSha1,
+          pipelineVersion,
+        },
       });
       await setStage('saving', 'Сохранение результата из кеша');
-      const projectId = await persistAnalysisResult(job, cached);
+      const projectId = await persistAnalysisResult(job, cached, 0);
       await setStage('complete', 'Проект готов');
       await updateJobStatus(jobId, 'succeeded', { resultRequestId: projectId });
       await appendJobLog(jobId, 'Задача успешно завершена из кеша', 'complete');
@@ -188,7 +437,12 @@ export async function runServerAnalysisJob(jobId: string): Promise<void> {
         status: 'success',
         source: 'worker',
         model: job.model,
-        metadata: { resultRequestId: projectId, cacheUsed: true },
+        metadata: {
+          resultRequestId: projectId,
+          cacheUsed: true,
+          pipelineVersion,
+          executionProvider: mainExecutionProvider,
+        },
         message: 'Результат проекта взят из кеша анализа',
       });
       await notifyUser(job, 'success', projectId);
@@ -209,11 +463,118 @@ export async function runServerAnalysisJob(jobId: string): Promise<void> {
       metadata: {
         temperature: job.temperature ?? null,
         includeThoughts: job.includeThoughts ?? false,
+        pipelineVersion,
+        executionProvider: mainExecutionProvider,
       },
       message: 'Запуск запроса к AI',
     });
-    const promptText = pickMainAnalysisPrompt();
-    const aiOutput = await runAiAnalysis(job, promptText);
+
+    let aiOutput: ExtractProjectSpecificationsOutput;
+    const isPdfInput = isPdfLikeFile(job.mimeType, job.fileName);
+
+    if (pipelineVersion === 'v2') {
+      let ocrMarkdown = '';
+      let parsedImages: ParsedModelImage[] = [];
+
+      if (isPdfInput) {
+        await setStage('markdown_cache', 'Проверка markdown кеша OCR');
+        ocrMarkdown = await loadCachedOcrMarkdown(job.fileSha1) || '';
+
+        if (ocrMarkdown) {
+          await appendJobLog(jobId, 'Используем кеш markdown OCR', 'markdown_cache');
+          await logProjectEvent({
+            projectId: job.projectId,
+            userId: job.userId,
+            jobId,
+            action: 'PROJECT_CACHE',
+            stage: 'ocr_markdown_cache_hit',
+            status: 'info',
+            source: 'worker',
+            model: job.model,
+            metadata: {
+              fileSha1: job.fileSha1,
+              markdownLength: ocrMarkdown.length,
+              pipelineVersion,
+            },
+            message: 'Используем markdown кеш по fileSha1',
+          });
+        } else {
+          await ensureNotCancelled();
+          await setStage('ocr_markdown', 'OCR документа в markdown');
+          await appendJobLog(jobId, 'Запуск OCR этапа (Mistral OCR)', 'ocr_markdown');
+          const ocrPrompt = pickPromptById('ocrMarkdownPrompt');
+          const ocrResult = await runOcrMarkdown(job, ocrPrompt);
+          ocrMarkdown = ocrResult.markdown;
+          aiCallCount += 1;
+          if (ocrResult.engine !== 'mistral-ocr') {
+            await appendJobLog(
+              jobId,
+              `Mistral OCR недоступен, использован fallback engine: ${ocrResult.engine}`,
+              'ocr_markdown'
+            );
+          }
+          if (ocrResult.attemptErrors.length > 0) {
+            await appendJobLog(
+              jobId,
+              `Ошибки OCR попыток: ${ocrResult.attemptErrors.join(' | ')}`,
+              'ocr_markdown'
+            );
+          }
+          await saveCachedOcrMarkdown(job, ocrMarkdown);
+        }
+      } else {
+        await ensureNotCancelled();
+        await setStage('ocr_markdown', 'Парсинг не-PDF файла (текст + base64 изображений)');
+        await appendJobLog(jobId, 'Для non-PDF отключаем OCR-плагин и парсим текст/изображения локально', 'ocr_markdown');
+        const parsed = await parseNonPdfFileForModel({
+          fileUri: job.fileUri,
+          fileName: job.fileName,
+          mimeType: job.mimeType,
+        });
+        ocrMarkdown = parsed.markdown;
+        parsedImages = parsed.images;
+        await appendJobLog(
+          jobId,
+          `Non-PDF парсинг завершен: mode=${parsed.parsingMode}, textLength=${parsed.rawTextLength}, images=${parsed.images.length}`,
+          'ocr_markdown'
+        );
+      }
+
+      await ensureNotCancelled();
+      await setStage('analysis', 'Анализ markdown и формирование спецификации');
+      const promptV2 = pickPromptById('mainAnalysisV2');
+      aiOutput = await runAnalysisFromMarkdown(job, promptV2, ocrMarkdown, mainExecutionProvider, parsedImages);
+      aiCallCount += 1;
+    } else {
+      const promptText = pickPromptById('mainAnalysis');
+      if (isPdfInput) {
+        aiOutput = await runAnalysisWithFile(job, promptText, mainExecutionProvider);
+      } else {
+        await ensureNotCancelled();
+        await setStage('ocr_markdown', 'Парсинг не-PDF файла (текст + base64 изображений)');
+        await appendJobLog(jobId, 'V1 non-PDF: OCR-плагин не используется, запускаем локальный парсинг', 'ocr_markdown');
+        const parsed = await parseNonPdfFileForModel({
+          fileUri: job.fileUri,
+          fileName: job.fileName,
+          mimeType: job.mimeType,
+        });
+        await appendJobLog(
+          jobId,
+          `V1 non-PDF парсинг завершен: mode=${parsed.parsingMode}, textLength=${parsed.rawTextLength}, images=${parsed.images.length}`,
+          'ocr_markdown'
+        );
+        await setStage('analysis', 'Анализ parsed-контекста и формирование спецификации');
+        aiOutput = await runAnalysisFromParsedContent(
+          job,
+          promptText,
+          parsed.markdown,
+          mainExecutionProvider,
+          parsed.images
+        );
+      }
+      aiCallCount += 1;
+    }
+
     await ensureNotCancelled();
 
     await appendJobLog(jobId, 'AI ответ получен, сохраняем проект', 'saving');
@@ -230,11 +591,15 @@ export async function runServerAnalysisJob(jobId: string): Promise<void> {
       response: aiOutput,
       metadata: {
         itemsCount: aiOutput?.items?.length ?? 0,
-        hasAiComment: !!aiOutput?.aiComment,
+        hasAiComment: !!(aiOutput?.aiComment || aiOutput?.aiGeneralComment),
+        pipelineVersion,
+        executionProvider: mainExecutionProvider,
+        aiCallCount,
       },
       message: 'AI вернул валидный ответ',
     });
-    const projectId = await persistAnalysisResult(job, aiOutput);
+
+    const projectId = await persistAnalysisResult(job, aiOutput, aiCallCount);
     await setStage('complete', 'Проект готов');
     await updateJobStatus(jobId, 'succeeded', { resultRequestId: projectId });
     await appendJobLog(jobId, 'Задача успешно завершена', 'complete');
@@ -247,17 +612,34 @@ export async function runServerAnalysisJob(jobId: string): Promise<void> {
       status: 'success',
       source: 'worker',
       model: job.model,
-      metadata: { resultRequestId: projectId, creditCost: job.creditCost },
+      metadata: {
+        resultRequestId: projectId,
+        creditCost: job.creditCost,
+        pipelineVersion,
+        executionProvider: mainExecutionProvider,
+        aiCallCount,
+      },
       message: 'Серверная задача завершена и проект сохранен',
     });
     await notifyUser(job, 'success', projectId);
   } catch (error: any) {
-    const message = error?.message || 'Неизвестная ошибка при серверном анализе';
+    const rawMessage = error?.rawMessage || error?.message || 'Неизвестная ошибка при серверном анализе';
+    const userMessage = error?.userMessage || toUserFacingAnalysisError(rawMessage);
     const status = error?.isCancelled ? 'cancelled' : 'failed';
-    await updateJobStatus(jobId, status as any, { error: message });
-    await appendJobLog(jobId, message, status === 'cancelled' ? 'cancelled' : 'failed');
+    await updateJobStatus(jobId, status as any, { error: rawMessage });
+    await appendJobLog(jobId, `SYSTEM_ERROR: ${rawMessage}`, status === 'cancelled' ? 'cancelled' : 'failed');
+    if (Array.isArray(error?.attemptErrors) && error.attemptErrors.length > 0) {
+      await appendJobLog(jobId, `OCR_ATTEMPTS: ${error.attemptErrors.join(' | ')}`, 'ocr_markdown');
+    }
+    if (userMessage !== rawMessage) {
+      await appendJobLog(jobId, `USER_ERROR: ${userMessage}`, status === 'cancelled' ? 'cancelled' : 'failed');
+    }
     const fallbackStage = status === 'cancelled' ? 'cancelled' : 'failed';
-    await updateProjectStage(job.projectId, lastStage || fallbackStage, status === 'cancelled' ? 'Процесс остановлен пользователем' : message);
+    await updateProjectStage(
+      job.projectId,
+      lastStage || fallbackStage,
+      status === 'cancelled' ? 'Процесс остановлен пользователем' : userMessage
+    );
     await logProjectEvent({
       projectId: job.projectId,
       userId: job.userId,
@@ -267,12 +649,22 @@ export async function runServerAnalysisJob(jobId: string): Promise<void> {
       status: status === 'cancelled' ? 'warning' : 'error',
       source: 'worker',
       model: job.model,
-      metadata: { serverJobStatus: status },
-      message,
+      metadata: {
+        serverJobStatus: status,
+        pipelineVersion,
+        executionProvider: mainExecutionProvider,
+        userMessage,
+      },
+      message: rawMessage,
       error,
     });
     if (job.projectId) {
-      await failProcessingRequest({ userId: job.userId, projectId: job.projectId, status: status === 'cancelled' ? 'cancelled' : 'failed', error: message });
+      await failProcessingRequest({
+        userId: job.userId,
+        projectId: job.projectId,
+        status: status === 'cancelled' ? 'cancelled' : 'failed',
+        error: status === 'cancelled' ? 'Процесс остановлен пользователем' : userMessage,
+      });
     }
     if (status === 'failed') {
       const stageLabel = lastStage ? (SERVER_STAGE_LABELS[lastStage] || lastStage) : 'unknown';
@@ -280,7 +672,7 @@ export async function runServerAnalysisJob(jobId: string): Promise<void> {
       await reportUserBug({
         userId: job.userId,
         errorMessage: `Ошибка анализа (этап: ${stageLabel})`,
-        errorDetails: message,
+        errorDetails: rawMessage,
         fileUri,
       });
     }
@@ -289,10 +681,16 @@ export async function runServerAnalysisJob(jobId: string): Promise<void> {
   }
 }
 
-async function persistAnalysisResult(job: ServerAnalysisJob, result: ExtractProjectSpecificationsOutput): Promise<string> {
+async function persistAnalysisResult(job: ServerAnalysisJob, result: ExtractProjectSpecificationsOutput, aiCallCount = 0): Promise<string> {
   if (!job.projectId) {
     throw new Error('В задаче отсутствует projectId для сохранения результата.');
   }
+
+  const consistencyNotes = (result.consistencyIssues || []).map((issue: any) => {
+    const severity = issue?.severity ? `[${issue.severity}] ` : '';
+    const recommendation = issue?.recommendation ? ` (${issue.recommendation})` : '';
+    return `Проверка: ${severity}${issue?.message || 'Обнаружена нестыковка'}${recommendation}`;
+  });
   const hydratedItems = hydrateSpecificationsForDB(result.items || []);
 
   const finalizeResult = await finalizeProcessingRequest({
@@ -305,12 +703,13 @@ async function persistAnalysisResult(job: ServerAnalysisJob, result: ExtractProj
     fileSha1: job.fileSha1,
     modelUsed: job.model,
     outputSpecifications: hydratedItems,
-    aiComment: result.aiComment,
+    aiComment: result.aiComment || result.aiGeneralComment,
     analysisDetails: result.analysisDetails,
-    importantExtractionNotes: result.importantExtractionNotes,
+    importantExtractionNotes: [...(result.importantExtractionNotes || []), ...consistencyNotes],
     quoteConfig: DEFAULT_SERVER_QUOTE_CONFIG,
-    aiCallCount: 0,
+    aiCallCount,
     s3ObjectKey: job.objectKey || null,
+    pipelineVersion: normalizePipelineVersion(job.pipelineVersion),
     initialAiResponse: result,
   });
   if (!finalizeResult.success || !finalizeResult.project) {

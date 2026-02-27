@@ -9,10 +9,12 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Loader2, AlertCircle, KeyRound } from 'lucide-react';
+import { useAppContext } from '@/contexts/AppContext';
 
 export default function SetPasswordPage() {
   const router = useRouter();
   const { toast } = useToast();
+  const { setNavigating } = useAppContext();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
@@ -47,6 +49,7 @@ export default function SetPasswordPage() {
         return;
       }
       toast({ title: 'Пароль установлен', description: 'Теперь вы можете войти в аккаунт.' });
+      setNavigating(true);
       router.push('/auth/login');
     });
   };
