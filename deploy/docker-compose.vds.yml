@@ -2,7 +2,6 @@ x-app: &app_base
   restart: unless-stopped
   env_file:
     - ../.env
-    - ./.env.vds
   environment:
     NODE_ENV: production
     PORT: 3000

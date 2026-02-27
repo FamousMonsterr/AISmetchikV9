@@ -77,6 +77,35 @@ jobs:
             git fetch origin main
             git checkout main
             git pull --ff-only origin main
+
+            if [ ! -f .env ]; then
+              cp .env.example .env
+            fi
+
+            upsert_env() {
+              key="$1"
+              value="$2"
+              [ -z "$value" ] && return 0
+              tmp_file="$(mktemp)"
+              awk -v k="$key" -v v="$value" '
+                BEGIN { replaced=0 }
+                $0 ~ ("^" k "=") { print k "=" v; replaced=1; next }
+                { print }
+                END { if (!replaced) print k "=" v }
+              ' .env > "$tmp_file"
+              mv "$tmp_file" .env
+            }
+
+            if [ -f deploy/.env.vds ]; then
+              NEXTAUTH_URL_OVERRIDE="$(grep '^NEXTAUTH_URL=' deploy/.env.vds | tail -n1 | cut -d '=' -f2- || true)"
+              NEXT_PUBLIC_SITE_URL_OVERRIDE="$(grep '^NEXT_PUBLIC_SITE_URL=' deploy/.env.vds | tail -n1 | cut -d '=' -f2- || true)"
+              AUTH_TRUST_HOST_OVERRIDE="$(grep '^AUTH_TRUST_HOST=' deploy/.env.vds | tail -n1 | cut -d '=' -f2- || true)"
+
+              upsert_env "NEXTAUTH_URL" "$NEXTAUTH_URL_OVERRIDE"
+              upsert_env "NEXT_PUBLIC_SITE_URL" "$NEXT_PUBLIC_SITE_URL_OVERRIDE"
+              upsert_env "AUTH_TRUST_HOST" "$AUTH_TRUST_HOST_OVERRIDE"
+            fi
+
             df -h
             docker system df || true
             docker container prune -f || true
