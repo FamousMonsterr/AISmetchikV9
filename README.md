@@ -121,7 +121,6 @@ cp deploy/.env.vds.example deploy/.env.vds
    - `NEXTAUTH_URL=https://ваш-домен`
    - `NEXT_PUBLIC_SITE_URL=https://ваш-домен`
    - `AUTH_TRUST_HOST=true`
-   Эти значения автоматически синхронизируются в корневой `.env` во время GitHub Deploy workflow.
 
 ### 4. Запуск контейнеров
 
