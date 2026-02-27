@@ -72,6 +72,11 @@ jobs:
             set -ex
             TLS_DOMAIN="${{ secrets.VDS_DOMAIN }}"
             TLS_EMAIL="${{ secrets.LETSENCRYPT_EMAIL }}"
+            TLS_ENABLED=0
+            case "${TLS_DOMAIN}:${TLS_EMAIL}" in
+              :|*:|:*) TLS_ENABLED=0 ;;
+              *) TLS_ENABLED=1 ;;
+            esac
             compose_cmd() {
               docker compose --env-file deploy/.env.vds -f deploy/docker-compose.vds.yml "$@"
             }
@@ -86,30 +91,31 @@ jobs:
             docker builder prune -af || true
 
             mkdir -p deploy/nginx/certbot/www deploy/nginx/certbot/conf
-            if [ -n "$TLS_DOMAIN" ] && [ -n "$TLS_EMAIL" ]; then
-              sed "s/__DOMAIN__/$TLS_DOMAIN/g" deploy/nginx/default.http.conf > deploy/nginx/default.conf
-            else
-              sed "s/__DOMAIN__/_/g" deploy/nginx/default.http.conf > deploy/nginx/default.conf
-            fi
+            case "$TLS_ENABLED" in
+              1) sed "s/__DOMAIN__/$TLS_DOMAIN/g" deploy/nginx/default.http.conf > deploy/nginx/default.conf ;;
+              *) sed "s/__DOMAIN__/_/g" deploy/nginx/default.http.conf > deploy/nginx/default.conf ;;
+            esac
 
             compose_cmd up -d --build --remove-orphans
 
-            if [ -n "$TLS_DOMAIN" ] && [ -n "$TLS_EMAIL" ]; then
-              docker run --rm \
-                -v "$(pwd)/deploy/nginx/certbot/www:/var/www/certbot" \
-                -v "$(pwd)/deploy/nginx/certbot/conf:/etc/letsencrypt" \
-                certbot/certbot certonly \
-                --webroot -w /var/www/certbot \
-                -d "$TLS_DOMAIN" \
-                --email "$TLS_EMAIL" \
-                --agree-tos \
-                --no-eff-email \
-                --keep-until-expiring
+            case "$TLS_ENABLED" in
+              1)
+                docker run --rm \
+                  -v "$(pwd)/deploy/nginx/certbot/www:/var/www/certbot" \
+                  -v "$(pwd)/deploy/nginx/certbot/conf:/etc/letsencrypt" \
+                  certbot/certbot certonly \
+                  --webroot -w /var/www/certbot \
+                  -d "$TLS_DOMAIN" \
+                  --email "$TLS_EMAIL" \
+                  --agree-tos \
+                  --no-eff-email \
+                  --keep-until-expiring
 
-              sed "s/__DOMAIN__/$TLS_DOMAIN/g" deploy/nginx/default.https.conf > deploy/nginx/default.conf
-              compose_cmd up -d --build --remove-orphans
-              compose_cmd restart nginx
-            fi
+                sed "s/__DOMAIN__/$TLS_DOMAIN/g" deploy/nginx/default.https.conf > deploy/nginx/default.conf
+                compose_cmd up -d --build --remove-orphans
+                compose_cmd restart nginx
+              ;;
+            esac
 
             for i in $(seq 1 30); do
               if compose_cmd exec -T web wget -q -O /dev/null http://127.0.0.1:3000/api/health; then
@@ -122,8 +128,8 @@ jobs:
               sleep 2
             done
 
-            if [ -n "$TLS_DOMAIN" ] && [ -n "$TLS_EMAIL" ]; then
-              curl -kfsS --resolve "${TLS_DOMAIN}:443:127.0.0.1" "https://${TLS_DOMAIN}/api/health" > /dev/null
-            fi
+            case "$TLS_ENABLED" in
+              1) curl -kfsS --resolve "${TLS_DOMAIN}:443:127.0.0.1" "https://${TLS_DOMAIN}/api/health" > /dev/null ;;
+            esac
 
             docker image prune -f
