@@ -1665,6 +1665,19 @@ export const getFeedbackStats = async () => {
 // --- S3 Management ---
 
 type BucketType = 'default' | 'analysis' | 'personal' | 'avatars' | 'user_docs' | 'project_docs';
+type CorsTarget = {
+    presetId?: string;
+    bucketType?: BucketType;
+    bucketName?: string;
+};
+
+const normalizeCorsTarget = (target?: string | CorsTarget): CorsTarget => {
+    if (!target) return {};
+    if (typeof target === 'string') {
+        return { presetId: target };
+    }
+    return target;
+};
 
 export async function getS3Client(
     preferredPresetId?: string,
@@ -1822,10 +1835,15 @@ export const createBucket = async ({ bucketName, presetId }: { bucketName: strin
     }
 };
 
-export const getBucketCors = async (presetId?: string): Promise<{ success: boolean; message: string; config?: string }> => {
+export const getBucketCors = async (target?: string | CorsTarget): Promise<{ success: boolean; message: string; config?: string }> => {
     try {
-        const { s3Client, config } = await getS3Client(presetId);
-        const { CORSRules } = await s3Client.send(new GetBucketCorsCommand({ Bucket: config.bucketName! }));
+        const normalizedTarget = normalizeCorsTarget(target);
+        const { s3Client, config } = await getS3Client(normalizedTarget.presetId, { bucketType: normalizedTarget.bucketType });
+        const targetBucket = normalizedTarget.bucketName || config.bucketName;
+        if (!targetBucket) {
+            return { success: false, message: 'Не задан бакет для получения CORS.' };
+        }
+        const { CORSRules } = await s3Client.send(new GetBucketCorsCommand({ Bucket: targetBucket }));
         
         const parser = new XMLBuilder({ format: true, ignoreAttributes: false });
         const xml = parser.build({ CORSConfiguration: { CORSRule: CORSRules } });
@@ -1885,10 +1903,73 @@ export const putBucketCors = async ({ corsXml }: { corsXml: string }): Promise<{
     }
 };
 
-export const deleteBucketCors = async (): Promise<{ success: boolean; message: string; }> => {
+export const putBucketCorsForTarget = async ({
+    corsXml,
+    target,
+}: {
+    corsXml: string;
+    target?: string | CorsTarget;
+}): Promise<{ success: boolean; message: string; }> => {
     try {
-        const { s3Client, config } = await getS3Client();
-        await s3Client.send(new DeleteBucketCorsCommand({ Bucket: config.bucketName! }));
+        if (!corsXml || !corsXml.trim()) {
+            return { success: false, message: "CORS XML пустой." };
+        }
+        const normalizedTarget = normalizeCorsTarget(target);
+        const { s3Client, config } = await getS3Client(normalizedTarget.presetId, { bucketType: normalizedTarget.bucketType });
+        const targetBucket = normalizedTarget.bucketName || config.bucketName;
+        if (!targetBucket) {
+            return { success: false, message: "Не задан бакет для установки CORS." };
+        }
+
+        let jsonObj: any;
+        try {
+            const parser = new XMLParser({ ignoreAttributes: false });
+            jsonObj = parser.parse(corsXml);
+        } catch (parseError: any) {
+            return { success: false, message: `Ошибка парсинга XML: ${parseError?.message || 'Некорректный XML.'}` };
+        }
+        const corsRule = jsonObj?.CORSConfiguration?.CORSRule;
+        const corsRulesArray = Array.isArray(corsRule) ? corsRule : corsRule ? [corsRule] : [];
+        if (!corsRulesArray.length) {
+            return { success: false, message: "В CORS XML не найден CORSRule." };
+        }
+
+        const toArray = (value: unknown) => Array.isArray(value) ? value : value == null ? [] : [value];
+        const normalizedRules = corsRulesArray.map((rule) => ({
+            ...rule,
+            AllowedOrigin: toArray(rule.AllowedOrigin),
+            AllowedMethod: toArray(rule.AllowedMethod),
+            AllowedHeader: toArray(rule.AllowedHeader),
+            ExposeHeader: toArray(rule.ExposeHeader),
+        }));
+
+        await s3Client.send(new PutBucketCorsCommand({
+            Bucket: targetBucket,
+            CORSConfiguration: {
+                CORSRules: normalizedRules
+            }
+        }));
+        return { success: true, message: `CORS-правила обновлены для бакета "${targetBucket}".` };
+    } catch (e: any) {
+        const details = [
+            e?.name ? `name: ${e.name}` : null,
+            e?.Code ? `code: ${e.Code}` : null,
+            e?.$metadata?.httpStatusCode ? `status: ${e.$metadata.httpStatusCode}` : null,
+        ].filter(Boolean).join(', ');
+        const suffix = details ? ` (${details})` : '';
+        return { success: false, message: `Ошибка установки CORS: ${e?.message || 'Неизвестная ошибка.'}${suffix}` };
+    }
+};
+
+export const deleteBucketCors = async (target?: string | CorsTarget): Promise<{ success: boolean; message: string; }> => {
+    try {
+        const normalizedTarget = normalizeCorsTarget(target);
+        const { s3Client, config } = await getS3Client(normalizedTarget.presetId, { bucketType: normalizedTarget.bucketType });
+        const targetBucket = normalizedTarget.bucketName || config.bucketName;
+        if (!targetBucket) {
+            return { success: false, message: "Не задан бакет для удаления CORS." };
+        }
+        await s3Client.send(new DeleteBucketCorsCommand({ Bucket: targetBucket }));
         return { success: true, message: "CORS-правила успешно удалены." };
     } catch (e: any) {
         return { success: false, message: `Ошибка удаления CORS: ${e.message}` };

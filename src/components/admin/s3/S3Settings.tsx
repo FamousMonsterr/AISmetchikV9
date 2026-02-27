@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Info, Settings2, Trash2, Eye, EyeOff, Shield, Sparkles, FolderPlus, RefreshCcw } from "lucide-react";
-import { getBucketCors, putBucketCors, deleteBucketCors, listBuckets, createBucket } from '@/actions/adminActions';
+import { getBucketCors, putBucketCors, putBucketCorsForTarget, deleteBucketCors, listBuckets, createBucket, testS3Connection } from '@/actions/adminActions';
 import type { EnvSettings } from '@/actions/adminActions';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
@@ -15,6 +15,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Textarea } from '@/components/ui/textarea';
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { nanoid } from 'nanoid';
 
 const PasswordInput = ({ value, onChange, placeholder, disabled, id }: { value: string, onChange: (e: React.ChangeEvent<HTMLInputElement>) => void, placeholder: string, disabled: boolean, id: string }) => {
@@ -48,6 +49,14 @@ const providerDefaults: Record<string, Partial<EnvSettings>> = {
   yandex: { s3Endpoint: 'https://storage.yandexcloud.net', s3Region: 'ru-central1' },
 };
 
+type ProviderTab = 'cloudru' | 'beget' | 'yandex';
+const PROVIDER_TABS: ProviderTab[] = ['cloudru', 'beget', 'yandex'];
+const PROVIDER_LABELS: Record<ProviderTab, string> = {
+  cloudru: 'Cloud.ru',
+  beget: 'Beget',
+  yandex: 'Yandex Cloud',
+};
+
 export function S3Settings({ settings, setSettings, isPending }: { settings: EnvSettings | null, setSettings: (settings: EnvSettings) => void, isPending: boolean }) {
   const { toast } = useToast();
   const [corsConfig, setCorsConfig] = useState('');
@@ -60,6 +69,12 @@ export function S3Settings({ settings, setSettings, isPending }: { settings: Env
   const [isBucketsLoading, setIsBucketsLoading] = useState(false);
   const [newBucketName, setNewBucketName] = useState('');
   const [newBucketPurpose, setNewBucketPurpose] = useState<'analysis' | 'avatars' | 'user_docs' | 'project_docs'>('avatars');
+  const [providerTab, setProviderTab] = useState<ProviderTab>('cloudru');
+  const [providerPresetSelection, setProviderPresetSelection] = useState<Record<ProviderTab, string>>({
+    cloudru: '',
+    beget: '',
+    yandex: '',
+  });
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -85,10 +100,34 @@ export function S3Settings({ settings, setSettings, isPending }: { settings: Env
   const presets = settings?.s3Presets || [];
   const resolvePresetId = (value: string) => (value === '__active__' || !value ? undefined : value);
 
-  const loadBuckets = async () => {
+  const getProviderFromPreset = (preset: { provider?: string; config: { s3Endpoint?: string } }): ProviderTab | null => {
+    const direct = preset.provider;
+    if (direct === 'cloudru' || direct === 'beget' || direct === 'yandex') return direct;
+    const endpoint = preset.config?.s3Endpoint || '';
+    if (endpoint.includes('cloud.ru')) return 'cloudru';
+    if (endpoint.includes('beget')) return 'beget';
+    if (endpoint.includes('yandexcloud')) return 'yandex';
+    return null;
+  };
+
+  useEffect(() => {
+    const nextSelection: Record<ProviderTab, string> = { cloudru: '', beget: '', yandex: '' };
+    for (const provider of PROVIDER_TABS) {
+      const fromState = providerPresetSelection[provider];
+      if (fromState && presets.some((preset) => preset.id === fromState)) {
+        nextSelection[provider] = fromState;
+        continue;
+      }
+      const preset = presets.find((item) => getProviderFromPreset(item as any) === provider);
+      if (preset?.id) nextSelection[provider] = preset.id;
+    }
+    setProviderPresetSelection(nextSelection);
+  }, [settings?.s3Presets]);
+
+  const loadBuckets = async (explicitPresetId?: string) => {
     if (!settings) return;
     setIsBucketsLoading(true);
-    const presetId = resolvePresetId(bucketPresetId);
+    const presetId = explicitPresetId ?? resolvePresetId(bucketPresetId);
     const result = await listBuckets(presetId);
     if (result.success && result.buckets) {
       setBucketList(result.buckets.filter(Boolean));
@@ -150,6 +189,99 @@ export function S3Settings({ settings, setSettings, isPending }: { settings: Env
     return 'custom';
   };
 
+  const selectedProviderPresetId = providerPresetSelection[providerTab] || '';
+  const providerPresets = presets.filter((preset) => {
+    const provider = preset.provider
+      ? (['cloudru', 'beget', 'yandex', 'custom'] as const).includes(preset.provider as any)
+        ? (preset.provider as typeof s3Preset)
+        : inferProviderFromEndpoint(preset.config?.s3Endpoint)
+      : inferProviderFromEndpoint(preset.config?.s3Endpoint);
+    return provider === providerTab;
+  });
+  const selectedProviderPreset = presets.find((preset) => preset.id === selectedProviderPresetId);
+
+  const updateProviderPresetConfig = (patch: Record<string, any>) => {
+    if (!settings || !selectedProviderPresetId) return;
+    const nextSettings: EnvSettings = {
+      ...settings,
+      s3Presets: presets.map((preset) => (
+        preset.id === selectedProviderPresetId
+          ? {
+              ...preset,
+              provider: providerTab,
+              config: {
+                ...preset.config,
+                ...patch,
+              },
+            }
+          : preset
+      )),
+    };
+
+    if (settings.s3ActivePresetId === selectedProviderPresetId) {
+      nextSettings.s3AccessKeyId = patch.s3AccessKeyId ?? settings.s3AccessKeyId;
+      nextSettings.s3SecretAccessKey = patch.s3SecretAccessKey ?? settings.s3SecretAccessKey;
+      nextSettings.s3Endpoint = patch.s3Endpoint ?? settings.s3Endpoint;
+      nextSettings.s3Region = patch.s3Region ?? settings.s3Region;
+      nextSettings.s3TenantId = patch.s3TenantId ?? settings.s3TenantId;
+      nextSettings.s3BucketName = patch.s3BucketName ?? settings.s3BucketName;
+      nextSettings.s3BucketIsPublic = patch.s3BucketIsPublic ?? settings.s3BucketIsPublic;
+      nextSettings.s3PresignedUrlExpiration = patch.s3PresignedUrlExpiration ?? settings.s3PresignedUrlExpiration;
+    }
+    setSettings(nextSettings);
+  };
+
+  const createProviderPreset = () => {
+    if (!settings) return;
+    const presetId = `s3-${nanoid(6)}`;
+    const defaults = providerDefaults[providerTab] || {};
+    const preset = {
+      id: presetId,
+      name: `${PROVIDER_LABELS[providerTab]} ${new Date().toLocaleDateString('ru-RU')}`,
+      provider: providerTab,
+      config: {
+        s3AccessKeyId: '',
+        s3SecretAccessKey: '',
+        s3Endpoint: defaults.s3Endpoint || '',
+        s3Region: defaults.s3Region || '',
+        s3BucketName: '',
+        s3TenantId: providerTab === 'cloudru' ? '' : undefined,
+        s3BucketIsPublic: false,
+        s3PresignedUrlExpiration: settings.s3PresignedUrlExpiration || 900,
+      },
+    };
+
+    setSettings({
+      ...settings,
+      s3Presets: [...presets, preset],
+    });
+    setProviderPresetSelection((prev) => ({ ...prev, [providerTab]: presetId }));
+    toast({ title: 'Профиль создан', description: `Создан профиль ${PROVIDER_LABELS[providerTab]}.` });
+  };
+
+  const applyProviderToRoute = (route: 'analysis' | 'avatars' | 'user_docs' | 'project_docs') => {
+    if (!settings || !selectedProviderPresetId) return;
+    const nextSettings: EnvSettings = { ...settings };
+    if (route === 'analysis') {
+      nextSettings.s3ActivePresetId = selectedProviderPresetId;
+      nextSettings.s3Endpoint = selectedProviderPreset?.config?.s3Endpoint || settings.s3Endpoint;
+      nextSettings.s3Region = selectedProviderPreset?.config?.s3Region || settings.s3Region;
+      nextSettings.s3AccessKeyId = selectedProviderPreset?.config?.s3AccessKeyId || settings.s3AccessKeyId;
+      nextSettings.s3SecretAccessKey = selectedProviderPreset?.config?.s3SecretAccessKey || settings.s3SecretAccessKey;
+      nextSettings.s3TenantId = selectedProviderPreset?.config?.s3TenantId || '';
+      nextSettings.s3BucketName = selectedProviderPreset?.config?.s3BucketName || settings.s3BucketName;
+      nextSettings.s3BucketIsPublic = selectedProviderPreset?.config?.s3BucketIsPublic ?? settings.s3BucketIsPublic;
+      nextSettings.s3PresignedUrlExpiration = selectedProviderPreset?.config?.s3PresignedUrlExpiration ?? settings.s3PresignedUrlExpiration;
+    } else if (route === 'avatars') {
+      nextSettings.s3AvatarPresetId = selectedProviderPresetId;
+    } else if (route === 'user_docs') {
+      nextSettings.s3UserDocsPresetId = selectedProviderPresetId;
+    } else {
+      nextSettings.s3ProjectDocsPresetId = selectedProviderPresetId;
+    }
+    setSettings(nextSettings);
+  };
+
   const buildPresetConfig = (provider: typeof s3Preset) => {
     if (!settings) return {};
     return {
@@ -190,6 +322,9 @@ export function S3Settings({ settings, setSettings, isPending }: { settings: Env
       )),
     });
     setS3Preset(nextProvider);
+    if (nextProvider === 'cloudru' || nextProvider === 'beget' || nextProvider === 'yandex') {
+      setProviderPresetSelection((prev) => ({ ...prev, [nextProvider]: id }));
+    }
     toast({ title: "Шаблон применен", description: `Загружены параметры ${preset.name}` });
   };
 
@@ -270,6 +405,70 @@ export function S3Settings({ settings, setSettings, isPending }: { settings: Env
       }
   };
 
+  const getMappedBucketsForPreset = (presetId: string): Array<{ bucketName: string; bucketType: 'analysis' | 'avatars' | 'user_docs' | 'project_docs' }> => {
+    if (!settings) return [];
+    const targets: Array<{ bucketName: string; bucketType: 'analysis' | 'avatars' | 'user_docs' | 'project_docs' }> = [];
+
+    if (settings.s3ActivePresetId === presetId && settings.s3BucketName) {
+      targets.push({ bucketName: settings.s3BucketName, bucketType: 'analysis' });
+    }
+    if ((settings.s3AvatarPresetId || settings.s3ActivePresetId) === presetId && settings.s3AvatarBucketName) {
+      targets.push({ bucketName: settings.s3AvatarBucketName, bucketType: 'avatars' });
+    }
+    if ((settings.s3UserDocsPresetId || settings.s3ActivePresetId) === presetId && settings.s3UserDocsBucketName) {
+      targets.push({ bucketName: settings.s3UserDocsBucketName, bucketType: 'user_docs' });
+    }
+    if ((settings.s3ProjectDocsPresetId || settings.s3ActivePresetId) === presetId && settings.s3ProjectDocsBucketName) {
+      targets.push({ bucketName: settings.s3ProjectDocsBucketName, bucketType: 'project_docs' });
+    }
+
+    const uniq = new Map<string, { bucketName: string; bucketType: 'analysis' | 'avatars' | 'user_docs' | 'project_docs' }>();
+    for (const target of targets) {
+      if (!uniq.has(target.bucketName)) {
+        uniq.set(target.bucketName, target);
+      }
+    }
+    return Array.from(uniq.values());
+  };
+
+  const handleApplyCorsForProvider = async () => {
+    if (!selectedProviderPresetId || !corsConfig.trim()) {
+      toast({ title: 'Ошибка', description: 'Выберите профиль провайдера и заполните CORS XML.', variant: 'destructive' });
+      return;
+    }
+    const targets = getMappedBucketsForPreset(selectedProviderPresetId);
+    if (!targets.length) {
+      toast({ title: 'Нет целей', description: 'Для выбранного провайдера не привязаны бакеты к внутренним маршрутам.', variant: 'destructive' });
+      return;
+    }
+
+    setIsActionLoading(true);
+    try {
+      const failures: string[] = [];
+      for (const target of targets) {
+        const result = await putBucketCorsForTarget({
+          corsXml: corsConfig,
+          target: {
+            presetId: selectedProviderPresetId,
+            bucketType: target.bucketType,
+            bucketName: target.bucketName,
+          },
+        });
+        if (!result.success) {
+          failures.push(`${target.bucketName}: ${result.message}`);
+        }
+      }
+
+      if (failures.length) {
+        toast({ title: 'CORS применён частично', description: failures.join(' | '), variant: 'destructive' });
+      } else {
+        toast({ title: 'Готово', description: 'CORS обновлён для всех бакетов выбранного провайдера.' });
+      }
+    } finally {
+      setIsActionLoading(false);
+    }
+  };
+
   const buildCorsXml = (origin: string, allowAllOrigins: boolean) => {
     const safeOrigin = origin.trim() || '*';
     if (allowAllOrigins) {
@@ -326,6 +525,239 @@ export function S3Settings({ settings, setSettings, isPending }: { settings: Env
 
   return (
     <div className="space-y-6">
+        <Card>
+            <CardHeader>
+                <CardTitle>Провайдеры S3</CardTitle>
+                <CardDescription>
+                  Отдельные вкладки для Cloud.ru, Beget и Yandex Cloud. Для каждого провайдера настраиваются соединение, бакеты, привязка маршрутов и CORS.
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Tabs value={providerTab} onValueChange={(value) => setProviderTab(value as ProviderTab)}>
+                <TabsList className="grid w-full grid-cols-3">
+                  {PROVIDER_TABS.map((provider) => (
+                    <TabsTrigger key={provider} value={provider}>
+                      {PROVIDER_LABELS[provider]}
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+
+                {PROVIDER_TABS.map((provider) => {
+                  const tabPresets = presets.filter((preset) => {
+                    const detectedProvider = preset.provider
+                      ? (['cloudru', 'beget', 'yandex', 'custom'] as const).includes(preset.provider as any)
+                        ? (preset.provider as typeof s3Preset)
+                        : inferProviderFromEndpoint(preset.config?.s3Endpoint)
+                      : inferProviderFromEndpoint(preset.config?.s3Endpoint);
+                    return detectedProvider === provider;
+                  });
+                  const selectedPresetId = providerPresetSelection[provider] || '';
+                  const preset = presets.find((item) => item.id === selectedPresetId);
+                  const isCloudRu = provider === 'cloudru';
+
+                  return (
+                    <TabsContent key={provider} value={provider} className="space-y-4 pt-4">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <div className="space-y-2 md:col-span-2">
+                          <Label>Профиль провайдера</Label>
+                          <Select
+                            value={selectedPresetId || '__none__'}
+                            onValueChange={(value) => {
+                              if (value === '__none__') return;
+                              setProviderPresetSelection((prev) => ({ ...prev, [provider]: value }));
+                              setBucketPresetId(value);
+                            }}
+                            disabled={isPending}
+                          >
+                            <SelectTrigger><SelectValue placeholder="Выберите профиль" /></SelectTrigger>
+                            <SelectContent>
+                              {tabPresets.length === 0 && <SelectItem value="__none__">Профилей нет</SelectItem>}
+                              {tabPresets.map((p) => (
+                                <SelectItem key={`provider-preset-${provider}-${p.id}`} value={p.id}>{p.name}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="flex items-end">
+                          <Button variant="outline" onClick={createProviderPreset} disabled={isPending || providerTab !== provider}>
+                            Создать профиль
+                          </Button>
+                        </div>
+                      </div>
+
+                      {preset ? (
+                        <>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {isCloudRu && (
+                              <div className="space-y-2">
+                                <Label>Tenant ID (только Cloud.ru)</Label>
+                                <Input
+                                  value={preset.config.s3TenantId || ''}
+                                  onChange={(e) => updateProviderPresetConfig({ s3TenantId: e.target.value })}
+                                  placeholder="2e868997-..."
+                                  disabled={isPending || providerTab !== provider}
+                                />
+                              </div>
+                            )}
+                            <div className="space-y-2">
+                              <Label>Endpoint</Label>
+                              <Input
+                                value={preset.config.s3Endpoint || ''}
+                                onChange={(e) => updateProviderPresetConfig({ s3Endpoint: e.target.value })}
+                                placeholder={providerDefaults[provider]?.s3Endpoint || 'https://s3.example.com'}
+                                disabled={isPending || providerTab !== provider}
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label>Access Key ID</Label>
+                              <Input
+                                value={preset.config.s3AccessKeyId || ''}
+                                onChange={(e) => updateProviderPresetConfig({ s3AccessKeyId: e.target.value })}
+                                placeholder="Access Key"
+                                disabled={isPending || providerTab !== provider}
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label>Secret Access Key</Label>
+                              <PasswordInput
+                                id={`provider-secret-${provider}`}
+                                value={preset.config.s3SecretAccessKey || ''}
+                                onChange={(e) => updateProviderPresetConfig({ s3SecretAccessKey: e.target.value })}
+                                placeholder="Secret Key"
+                                disabled={isPending || providerTab !== provider}
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label>Регион</Label>
+                              <Input
+                                value={preset.config.s3Region || ''}
+                                onChange={(e) => updateProviderPresetConfig({ s3Region: e.target.value })}
+                                placeholder={providerDefaults[provider]?.s3Region || 'ru-central-1'}
+                                disabled={isPending || providerTab !== provider}
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label>Бакет по умолчанию (analysis)</Label>
+                              <Input
+                                list="s3-bucket-list"
+                                value={preset.config.s3BucketName || ''}
+                                onChange={(e) => updateProviderPresetConfig({ s3BucketName: e.target.value })}
+                                placeholder="analysis-bucket"
+                                disabled={isPending || providerTab !== provider}
+                              />
+                            </div>
+                          </div>
+
+                          <div className="flex flex-wrap gap-2">
+                            <Button
+                              variant="outline"
+                              onClick={async () => {
+                                setIsActionLoading(true);
+                                const result = await testS3Connection(selectedPresetId);
+                                setIsActionLoading(false);
+                                toast({
+                                  title: result.success ? 'OK' : 'Ошибка',
+                                  description: result.message,
+                                  variant: result.success ? 'default' : 'destructive',
+                                });
+                              }}
+                              disabled={isActionLoading || isPending}
+                            >
+                              Проверить коннект
+                            </Button>
+                            <Button
+                              variant="outline"
+                              onClick={async () => {
+                                await loadBuckets(selectedPresetId);
+                              }}
+                              disabled={isBucketsLoading || isPending}
+                            >
+                              {isBucketsLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                              Получить бакеты
+                            </Button>
+                            <Button
+                              variant="outline"
+                              onClick={() => applyProviderToRoute('analysis')}
+                              disabled={isPending}
+                            >
+                              Сделать основным
+                            </Button>
+                            <Button
+                              variant="outline"
+                              onClick={() => setSettings({ ...settings, s3SecondaryEnabled: true, s3SecondaryPresetId: selectedPresetId })}
+                              disabled={isPending || !settings}
+                            >
+                              Сделать резервным
+                            </Button>
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 rounded-md border p-3">
+                            <div className="space-y-2">
+                              <Label>Аватары</Label>
+                              <div className="flex gap-2">
+                                <Input
+                                  list="s3-bucket-list"
+                                  value={settings?.s3AvatarBucketName || ''}
+                                  onChange={(e) => setSettings({ ...(settings as EnvSettings), s3AvatarBucketName: e.target.value })}
+                                  placeholder="avatars-bucket"
+                                  disabled={isPending}
+                                />
+                                <Button variant="outline" onClick={() => applyProviderToRoute('avatars')} disabled={isPending}>Привязать</Button>
+                              </div>
+                            </div>
+                            <div className="space-y-2">
+                              <Label>Документы пользователя</Label>
+                              <div className="flex gap-2">
+                                <Input
+                                  list="s3-bucket-list"
+                                  value={settings?.s3UserDocsBucketName || ''}
+                                  onChange={(e) => setSettings({ ...(settings as EnvSettings), s3UserDocsBucketName: e.target.value })}
+                                  placeholder="user-docs-bucket"
+                                  disabled={isPending}
+                                />
+                                <Button variant="outline" onClick={() => applyProviderToRoute('user_docs')} disabled={isPending}>Привязать</Button>
+                              </div>
+                            </div>
+                            <div className="space-y-2">
+                              <Label>Документы проектов</Label>
+                              <div className="flex gap-2">
+                                <Input
+                                  list="s3-bucket-list"
+                                  value={settings?.s3ProjectDocsBucketName || ''}
+                                  onChange={(e) => setSettings({ ...(settings as EnvSettings), s3ProjectDocsBucketName: e.target.value })}
+                                  placeholder="project-docs-bucket"
+                                  disabled={isPending}
+                                />
+                                <Button variant="outline" onClick={() => applyProviderToRoute('project_docs')} disabled={isPending}>Привязать</Button>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="rounded-md border p-3 space-y-2">
+                            <Label>CORS для выбранного провайдера</Label>
+                            <p className="text-xs text-muted-foreground">
+                              Применяет текущий XML CORS ко всем бакетам, привязанным к внутренним маршрутам у этого провайдера.
+                            </p>
+                            <Button onClick={handleApplyCorsForProvider} disabled={isPending || isActionLoading || !corsConfig.trim()}>
+                              Обновить CORS для всех привязанных бакетов
+                            </Button>
+                          </div>
+                        </>
+                      ) : (
+                        <Alert>
+                          <Info className="h-4 w-4" />
+                          <AlertTitle>Профиль не выбран</AlertTitle>
+                          <AlertDescription>
+                            Создайте профиль провайдера, затем настройте коннект, получите бакеты и привяжите маршруты.
+                          </AlertDescription>
+                        </Alert>
+                      )}
+                    </TabsContent>
+                  );
+                })}
+              </Tabs>
+            </CardContent>
+        </Card>
         <Card>
             <CardHeader>
                 <div className="flex items-center justify-between">
@@ -431,7 +863,7 @@ export function S3Settings({ settings, setSettings, isPending }: { settings: Env
                       <h4 className="font-semibold">Назначение бакетов</h4>
                       <p className="text-xs text-muted-foreground">Выберите или создайте бакеты для разных типов файлов.</p>
                     </div>
-                    <Button variant="outline" size="sm" onClick={loadBuckets} disabled={isPending || isBucketsLoading}>
+                    <Button variant="outline" size="sm" onClick={() => loadBuckets()} disabled={isPending || isBucketsLoading}>
                       {isBucketsLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCcw className="mr-2 h-4 w-4" />}
                       Обновить список
                     </Button>
