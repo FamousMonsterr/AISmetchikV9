@@ -73,9 +73,16 @@ jobs:
             TLS_DOMAIN="${{ secrets.VDS_DOMAIN }}"
             TLS_EMAIL="${{ secrets.LETSENCRYPT_EMAIL }}"
             TLS_ENABLED=0
-            case "${TLS_DOMAIN}:${TLS_EMAIL}" in
-              :|*:|:*) TLS_ENABLED=0 ;;
-              *) TLS_ENABLED=1 ;;
+            case "$TLS_DOMAIN" in
+              "")
+                TLS_ENABLED=0
+              ;;
+              *)
+                case "$TLS_EMAIL" in
+                  "") TLS_ENABLED=0 ;;
+                  *) TLS_ENABLED=1 ;;
+                esac
+              ;;
             esac
             compose_cmd() {
               docker compose --env-file deploy/.env.vds -f deploy/docker-compose.vds.yml "$@"
@@ -115,6 +122,7 @@ jobs:
                 compose_cmd up -d --build --remove-orphans
                 compose_cmd restart nginx
               ;;
+              *) : ;;
             esac
 
             for i in $(seq 1 30); do
@@ -130,6 +138,7 @@ jobs:
 
             case "$TLS_ENABLED" in
               1) curl -kfsS --resolve "${TLS_DOMAIN}:443:127.0.0.1" "https://${TLS_DOMAIN}/api/health" > /dev/null ;;
+              *) : ;;
             esac
 
             docker image prune -f
