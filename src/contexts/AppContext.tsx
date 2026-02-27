@@ -551,6 +551,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return getPlanModelOptions(effectivePlan);
   }, [user, effectivePlan]);
 
+  const shouldForceSignOutOnRealtimeError = useCallback((error: any): boolean => {
+    const code = typeof error?.code === 'string' ? error.code : '';
+    const message = String(error?.message || '').toLowerCase();
+
+    // Realtime transport can legitimately fall back from SSE to polling.
+    // This should never force user logout.
+    if (code === 'realtime/connection-failed') {
+      return false;
+    }
+
+    // Force logout only when backend clearly reports auth/session problems.
+    if (message.includes('401') || message.includes('unauthorized') || message.includes('forbidden')) {
+      return true;
+    }
+
+    return false;
+  }, []);
+
   const checkUserPlan = useCallback(async (userToCheck: AppUser) => {
     let changed = false;
     const now = new Date();
@@ -698,13 +716,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             setIsLoading(false);
         }
     }, (err) => {
-        console.error("Error fetching user data from Firestore:", err);
-        signOut().then(() => setUser(null));
+        if (shouldForceSignOutOnRealtimeError(err)) {
+            console.error("Auth error while fetching user data. Forcing logout:", err);
+            signOut().then(() => setUser(null));
+            setIsLoading(false);
+            return;
+        }
+        console.warn("Non-auth realtime error while fetching user data:", err);
         setIsLoading(false);
     });
 
     return () => unsubscribe();
-  }, [firebaseUser, firebaseUserId, authLoading, authError, checkUserPlan, telegram, isSameUserSnapshot]);
+  }, [firebaseUser, firebaseUserId, authLoading, authError, checkUserPlan, telegram, isSameUserSnapshot, shouldForceSignOutOnRealtimeError]);
   
    useEffect(() => {
     if (telegram) {
