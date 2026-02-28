@@ -125,12 +125,27 @@ jobs:
               *) : ;;
             esac
 
-            for i in $(seq 1 30); do
-              if compose_cmd exec -T web node -e "fetch('http://127.0.0.1:3000/api/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"; then
+            web_id="$(compose_cmd ps -q web)"
+            if [ -z "$web_id" ]; then
+              echo "web container id not found"
+              compose_cmd ps || true
+              compose_cmd logs --tail=200 web || true
+              exit 1
+            fi
+
+            for i in $(seq 1 90); do
+              health="$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' "$web_id" 2>/dev/null || echo missing)"
+              if [ "$health" = "healthy" ]; then
                 break
               fi
-              if [ "$i" -eq 30 ]; then
-                echo "Health check failed after retries"
+              if [ "$health" = "unhealthy" ]; then
+                echo "Health check failed: container is unhealthy"
+                compose_cmd ps || true
+                compose_cmd logs --tail=200 web || true
+                exit 1
+              fi
+              if [ "$i" -eq 90 ]; then
+                echo "Health check timeout: status=${health}"
                 compose_cmd ps || true
                 compose_cmd logs --tail=200 web || true
                 exit 1
