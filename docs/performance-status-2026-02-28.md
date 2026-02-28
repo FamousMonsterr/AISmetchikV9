@@ -36,6 +36,7 @@ Artifacts:
   - reduced JS for `/dashboard/billing` and `/dashboard/price-base`
   - lazy-loaded `xlsx` and heavy dialogs/history modules
   - reduced static admin settings imports via dynamic tabs
+  - reduced `/partnership` first-load JS from `~391kB` to `~168kB` via section-level lazy loading
 - In progress:
   - high mobile TBT remains for `/dashboard/price-base`
 - Not done:
@@ -82,16 +83,16 @@ Artifacts:
 
 ## Current Top First-Load JS Hotspots (Build)
 
-- `/partnership` `392kB`
-- `/dashboard/admin` `274kB`
-- `/dashboard/admin/settings` `273kB`
-- `/dashboard/companies` `270kB`
-- `/dashboard/bonus` `261kB`
-- `/dashboard/admin/s3` `233kB`
+- `/dashboard/admin` `273kB`
+- `/dashboard/companies` `269kB`
+- `/dashboard/bonus` `262kB`
+- `/dashboard/admin/s3` `209kB`
+- `/dashboard/admin/users` `202kB`
+- `/dashboard/admin/notifications` `200kB`
 
 ## Next Performance Iteration (Priority)
 
 1. `/dashboard/price-base` mobile TBT (largest bottleneck)
-2. `/partnership` first-load JS split and media laziness
-3. `/dashboard/admin` + `/dashboard/admin/settings` chunk isolation
+2. `/dashboard/admin` + `/dashboard/companies` chunk isolation
+3. `/dashboard/bonus` heavy module split
 4. add CI lighthouse budget checks for target routes
