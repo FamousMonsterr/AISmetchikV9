@@ -121,6 +121,7 @@ cp deploy/.env.vds.example deploy/.env.vds
    - `NEXTAUTH_URL=https://ваш-домен`
    - `NEXT_PUBLIC_SITE_URL=https://ваш-домен`
    - `AUTH_TRUST_HOST=true`
+   - `NEXTAUTH_COOKIE_DOMAIN=.ваш-домен` (для SSO между поддоменами)
 
 ### 4. Запуск контейнеров
 
@@ -132,7 +133,7 @@ docker compose --env-file deploy/.env.vds -f deploy/docker-compose.vds.yml up -d
 
 ```bash
 docker compose --env-file deploy/.env.vds -f deploy/docker-compose.vds.yml ps
-docker compose --env-file deploy/.env.vds -f deploy/docker-compose.vds.yml exec -T web wget -q -O /dev/null http://127.0.0.1:3000/api/health
+docker compose --env-file deploy/.env.vds -f deploy/docker-compose.vds.yml exec -T web wget -q -O /dev/null http://127.0.0.1:3000/api/healthz
 ```
 
 Если Mongo локально на сервере нужна в том же compose:
@@ -160,11 +161,12 @@ COMPOSE_PROFILES=with-mongo docker compose --env-file deploy/.env.vds -f deploy/
 - `VDS_SSH_KEY` — приватный ключ (PEM/OpenSSH)
 - `VDS_DEPLOY_PATH` — путь к репозиторию на сервере, например `/opt/ai-smetchik`
 - `VDS_DOMAIN` — домен для TLS (например, `example.com`) — опционально, но рекомендуется
+- `VDS_SUBDOMAINS` — список поддоменов через запятую (например, `admin,lk,crm,partner,m`)
 - `LETSENCRYPT_EMAIL` — email для Let's Encrypt — опционально, но рекомендуется
 
 Если заданы `VDS_DOMAIN` и `LETSENCRYPT_EMAIL`, workflow автоматически:
 - поднимет HTTP-конфиг для ACME challenge;
-- выпустит/обновит сертификат через `certbot`;
+- выпустит/обновит SAN-сертификат через `certbot` для домена и поддоменов;
 - переключит Nginx на HTTPS-конфиг.
 
 ### Поток релиза
@@ -174,7 +176,15 @@ COMPOSE_PROFILES=with-mongo docker compose --env-file deploy/.env.vds -f deploy/
 3. Запускается `Deploy VDS`, на сервере выполняется:
    - `git fetch && git checkout main && git pull --ff-only origin main`
    - `docker compose ... up -d --build`
-4. Проверка `/api/health` внутри `web` контейнера (и HTTPS endpoint при включенном TLS)
+4. Проверка `/api/healthz` внутри `web` контейнера (и HTTPS endpoint при включенном TLS)
+
+### Поддомены (host-based routing)
+
+- `admin.ваш-домен` -> `/dashboard/admin`
+- `lk.ваш-домен` -> `/dashboard`
+- `crm.ваш-домен` -> `/crm`
+- `partner.ваш-домен` -> `/partner`
+- `m.ваш-домен` -> `/dashboard/mobile-panel`
 
 ---
 

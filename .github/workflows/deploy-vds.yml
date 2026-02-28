@@ -24,6 +24,7 @@ jobs:
           VDS_SSH_KEY: ${{ secrets.VDS_SSH_KEY }}
           VDS_DEPLOY_PATH: ${{ secrets.VDS_DEPLOY_PATH }}
           VDS_DOMAIN: ${{ secrets.VDS_DOMAIN }}
+          VDS_SUBDOMAINS: ${{ secrets.VDS_SUBDOMAINS }}
           LETSENCRYPT_EMAIL: ${{ secrets.LETSENCRYPT_EMAIL }}
         run: |
           missing=0
@@ -47,6 +48,9 @@ jobs:
           fi
           if [ -z "$VDS_DOMAIN" ] && [ -n "$LETSENCRYPT_EMAIL" ]; then
             echo "::warning::LETSENCRYPT_EMAIL is set but VDS_DOMAIN is missing. TLS auto-setup will be skipped."
+          fi
+          if [ -n "$VDS_DOMAIN" ] && [ -z "$VDS_SUBDOMAINS" ]; then
+            echo "::notice::VDS_SUBDOMAINS is not set. Default subdomains (admin,lk,crm,partner,m) will be used."
           fi
 
   deploy:
@@ -72,6 +76,11 @@ jobs:
             set -ex
             TLS_DOMAIN="${{ secrets.VDS_DOMAIN }}"
             TLS_EMAIL="${{ secrets.LETSENCRYPT_EMAIL }}"
+            TLS_SUBDOMAINS="${{ secrets.VDS_SUBDOMAINS }}"
+            case "$TLS_SUBDOMAINS" in
+              "") TLS_SUBDOMAINS="admin,lk,crm,partner,m" ;;
+              *) : ;;
+            esac
             TLS_ENABLED=0
             case "$TLS_DOMAIN" in
               "")
@@ -83,6 +92,26 @@ jobs:
                   *) TLS_ENABLED=1 ;;
                 esac
               ;;
+            esac
+            SERVER_NAMES="_"
+            PRIMARY_DOMAIN="$TLS_DOMAIN"
+            CERTBOT_DOMAINS=()
+            case "$TLS_ENABLED" in
+              1)
+                SERVER_NAMES="$TLS_DOMAIN"
+                CERTBOT_DOMAINS=("$TLS_DOMAIN")
+                IFS=',' read -r -a SUBDOMAIN_ARR <<< "$TLS_SUBDOMAINS"
+                for raw_sub in "${SUBDOMAIN_ARR[@]}"; do
+                  sub="$(echo "$raw_sub" | xargs)"
+                  if [ -z "$sub" ]; then
+                    continue
+                  fi
+                  fqdn="${sub}.${TLS_DOMAIN}"
+                  SERVER_NAMES="${SERVER_NAMES} ${fqdn}"
+                  CERTBOT_DOMAINS+=("$fqdn")
+                done
+              ;;
+              *) : ;;
             esac
             compose_cmd() {
               docker compose --env-file deploy/.env.vds -f deploy/docker-compose.vds.yml "$@"
@@ -99,26 +128,33 @@ jobs:
 
             mkdir -p deploy/nginx/certbot/www deploy/nginx/certbot/conf
             case "$TLS_ENABLED" in
-              1) sed "s/__DOMAIN__/$TLS_DOMAIN/g" deploy/nginx/default.http.conf > deploy/nginx/default.conf ;;
-              *) sed "s/__DOMAIN__/_/g" deploy/nginx/default.http.conf > deploy/nginx/default.conf ;;
+              1) sed "s/__SERVER_NAMES__/$SERVER_NAMES/g" deploy/nginx/default.http.conf > deploy/nginx/default.conf ;;
+              *) sed "s/__SERVER_NAMES__/_/g" deploy/nginx/default.http.conf > deploy/nginx/default.conf ;;
             esac
 
             compose_cmd up -d --build --remove-orphans
 
             case "$TLS_ENABLED" in
               1)
+                certbot_args=()
+                for domain in "${CERTBOT_DOMAINS[@]}"; do
+                  certbot_args+=("-d" "$domain")
+                done
                 docker run --rm \
                   -v "$(pwd)/deploy/nginx/certbot/www:/var/www/certbot" \
                   -v "$(pwd)/deploy/nginx/certbot/conf:/etc/letsencrypt" \
                   certbot/certbot certonly \
                   --webroot -w /var/www/certbot \
-                  -d "$TLS_DOMAIN" \
+                  "${certbot_args[@]}" \
                   --email "$TLS_EMAIL" \
                   --agree-tos \
                   --no-eff-email \
                   --keep-until-expiring
 
-                sed "s/__DOMAIN__/$TLS_DOMAIN/g" deploy/nginx/default.https.conf > deploy/nginx/default.conf
+                sed \
+                  -e "s/__SERVER_NAMES__/$SERVER_NAMES/g" \
+                  -e "s/__PRIMARY_DOMAIN__/$PRIMARY_DOMAIN/g" \
+                  deploy/nginx/default.https.conf > deploy/nginx/default.conf
                 compose_cmd up -d --build --remove-orphans
                 compose_cmd restart nginx
               ;;

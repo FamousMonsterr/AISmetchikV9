@@ -1,15 +1,34 @@
 // src/app/dashboard/admin/settings/page.tsx
 "use client";
 
-import { useState, useTransition, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { GeneralSettings } from "@/components/admin/GeneralSettings";
-import { LegalEntitySettings } from "@/components/admin/LegalEntitySettings";
 import { useAppContext } from "@/contexts/AppContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ShieldAlert } from "lucide-react";
-import { EnvSettings as EnvSettingsComponent } from '@/components/admin/EnvSettings';
-import S3AdminPage from '../s3/page';
+import { Loader2, ShieldAlert } from "lucide-react";
+
+const TabLoader = () => (
+  <div className="flex items-center justify-center h-40">
+    <Loader2 className="h-6 w-6 animate-spin text-primary" />
+  </div>
+);
+
+const GeneralSettings = dynamic(
+  () => import('@/components/admin/GeneralSettings').then((m) => m.GeneralSettings),
+  { ssr: false, loading: () => <TabLoader /> }
+);
+const LegalEntitySettings = dynamic(
+  () => import('@/components/admin/LegalEntitySettings').then((m) => m.LegalEntitySettings),
+  { ssr: false, loading: () => <TabLoader /> }
+);
+const EnvSettingsComponent = dynamic(
+  () => import('@/components/admin/EnvSettings').then((m) => m.EnvSettings),
+  { ssr: false, loading: () => <TabLoader /> }
+);
+const S3AdminPage = dynamic(
+  () => import('../s3/page'),
+  { ssr: false, loading: () => <TabLoader /> }
+);
 
 export default function AdminSettingsPage() {
   const { user } = useAppContext();

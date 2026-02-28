@@ -5,13 +5,13 @@ import { handleTelegramWebhookUpdate, verifyTelegramWebhookSecret } from '@/serv
 export async function POST(request: NextRequest) {
   try {
     const secretHeader = request.headers.get('x-telegram-bot-api-secret-token');
-    const isValid = await verifyTelegramWebhookSecret(secretHeader);
+    const isValid = await verifyTelegramWebhookSecret(secretHeader, 'default');
     if (!isValid) {
       return NextResponse.json({ ok: false, error: 'Invalid secret token' }, { status: 401 });
     }
 
     const update = await request.json();
-    await handleTelegramWebhookUpdate(update);
+    await handleTelegramWebhookUpdate(update, 'default');
     return NextResponse.json({ ok: true });
   } catch (error: any) {
     console.error('[telegram/webhook] error', error);

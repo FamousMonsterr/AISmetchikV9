@@ -24,7 +24,8 @@
     "bot:local": "node scripts/run-ts-script.js telegram-bot.ts",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "perf:lighthouse:auth": "node scripts/lighthouse-auth.js"
   },
   "dependencies": {
     "@a2a-js/sdk": "^0.3.7",

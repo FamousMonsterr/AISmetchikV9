@@ -6,7 +6,6 @@ import { getEnvSettings, updateEnvSettings, type EnvSettings } from '@/actions/a
 import { useAppContext } from '@/contexts/AppContext';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Save } from 'lucide-react';
-import { isEqual } from 'lodash';
 
 import { S3Info } from "@/components/admin/s3/S3Info";
 import { S3Settings } from "@/components/admin/s3/S3Settings";
@@ -23,7 +22,7 @@ export default function S3AdminPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [isPending, startTransition] = useTransition();
 
-    const hasUnsavedChanges = !isEqual(initialSettings, settings);
+    const hasUnsavedChanges = JSON.stringify(initialSettings) !== JSON.stringify(settings);
 
     useEffect(() => {
         const fetchSettings = async () => {

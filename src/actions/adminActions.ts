@@ -19,7 +19,7 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { logUserAction, logAiApiCall, type ActionType } from '@/lib/logger';
 import { grantCredits, refundCredits } from '@/services/credits';
 import { startManagedBot, stopManagedBot, getBotRuntimeStatus, forceUnlockBot } from '@/server-functions/telegram/controller';
-import { registerTelegramWebhook, clearTelegramWebhook } from '@/server-functions/webhooks/telegram';
+import { registerTelegramWebhook, clearTelegramWebhook, TELEGRAM_AUDIENCES, type TelegramAudience } from '@/server-functions/webhooks/telegram';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 
@@ -1395,6 +1395,28 @@ export const registerTelegramWebhookService = async (adminUserId: string): Promi
     }
 };
 
+const TelegramAudienceSchema = z.enum(TELEGRAM_AUDIENCES as unknown as [TelegramAudience, ...TelegramAudience[]]);
+
+export const registerTelegramWebhookByAudienceService = async (
+    adminUserId: string,
+    audience: TelegramAudience
+): Promise<{ success: boolean; message: string }> => {
+    const adminDoc = await getDoc(doc(db, 'users', adminUserId));
+    if (!isAdminRole(adminDoc.data()?.systemRole)) {
+        return { success: false, message: 'Недостаточно прав.' };
+    }
+    const parsed = TelegramAudienceSchema.safeParse(audience);
+    if (!parsed.success) {
+        return { success: false, message: 'Неизвестная аудитория webhook.' };
+    }
+    try {
+        const result = await registerTelegramWebhook({ audience: parsed.data });
+        return { success: true, message: `Webhook (${parsed.data}) зарегистрирован: ${result.webhookUrl}` };
+    } catch (e: any) {
+        return { success: false, message: e?.message || 'Не удалось зарегистрировать webhook.' };
+    }
+};
+
 export const clearTelegramWebhookService = async (adminUserId: string): Promise<{ success: boolean; message: string }> => {
     const adminDoc = await getDoc(doc(db, 'users', adminUserId));
     if (!isAdminRole(adminDoc.data()?.systemRole)) {
@@ -1403,6 +1425,26 @@ export const clearTelegramWebhookService = async (adminUserId: string): Promise<
     try {
         await clearTelegramWebhook();
         return { success: true, message: 'Webhook удален.' };
+    } catch (e: any) {
+        return { success: false, message: e?.message || 'Не удалось удалить webhook.' };
+    }
+};
+
+export const clearTelegramWebhookByAudienceService = async (
+    adminUserId: string,
+    audience: TelegramAudience
+): Promise<{ success: boolean; message: string }> => {
+    const adminDoc = await getDoc(doc(db, 'users', adminUserId));
+    if (!isAdminRole(adminDoc.data()?.systemRole)) {
+        return { success: false, message: 'Недостаточно прав.' };
+    }
+    const parsed = TelegramAudienceSchema.safeParse(audience);
+    if (!parsed.success) {
+        return { success: false, message: 'Неизвестная аудитория webhook.' };
+    }
+    try {
+        await clearTelegramWebhook(parsed.data);
+        return { success: true, message: `Webhook (${parsed.data}) удалён.` };
     } catch (e: any) {
         return { success: false, message: e?.message || 'Не удалось удалить webhook.' };
     }

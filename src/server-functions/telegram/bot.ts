@@ -45,8 +45,7 @@ const findUserByChatId = async (chatId: number) => {
   return { id: docSnap.id, ...(docSnap.data() as any) };
 };
 
-let webhookBot: TelegramBot | null = null;
-let webhookBotToken: string | null = null;
+const webhookBots = new Map<string, TelegramBot>();
 
 const ensureBotToken = async () => {
   const envSettings = await readEnvSettings();
@@ -229,19 +228,19 @@ export async function startTelegramBot(polling = true) {
   return bot;
 }
 
-const getWebhookBot = async () => {
-  const token = await ensureBotToken();
-  if (webhookBot && webhookBotToken === token) {
-    return webhookBot;
+const getWebhookBot = async (token?: string) => {
+  const resolvedToken = token || (await ensureBotToken());
+  const cached = webhookBots.get(resolvedToken);
+  if (cached) {
+    return cached;
   }
-  const bot = new TelegramBot(token, { polling: false });
+  const bot = new TelegramBot(resolvedToken, { polling: false });
   registerHandlers(bot);
-  webhookBot = bot;
-  webhookBotToken = token;
+  webhookBots.set(resolvedToken, bot);
   return bot;
 };
 
-export async function processTelegramWebhookUpdate(update: any) {
-  const bot = await getWebhookBot();
+export async function processTelegramWebhookUpdate(update: any, options?: { token?: string }) {
+  const bot = await getWebhookBot(options?.token);
   bot.processUpdate(update);
 }
