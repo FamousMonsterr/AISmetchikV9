@@ -104,7 +104,6 @@
     "@types/node-telegram-bot-api": "^0.64.7",
     "@types/react": "^18",
     "@types/react-dom": "^18",
-    "@types/react-pdf": "^7.0.0",
     "@types/uuid": "^10.0.0",
     "@typescript-eslint/eslint-plugin": "^7.2.0",
     "eslint": "^8",

@@ -13,10 +13,11 @@ x-app: &app_base
 services:
   web:
     <<: *app_base
-    image: ai-smetchik-app:latest
+    image: ai-smetchik-web:latest
     build:
       context: ..
       dockerfile: Dockerfile
+      target: runner
     ports:
       - "3000:3000"
     healthcheck:
@@ -28,8 +29,11 @@ services:
 
   worker:
     <<: *app_base
-    image: ai-smetchik-app:latest
-    command: npm run worker:server-analysis
+    image: ai-smetchik-worker:latest
+    build:
+      context: ..
+      dockerfile: Dockerfile
+      target: worker
 
   nginx:
     image: nginx:1.27-alpine

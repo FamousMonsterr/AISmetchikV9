@@ -4,7 +4,10 @@
 import {
   FileUp,
   Sparkles,
+  Bot,
+  AppWindow,
 } from "lucide-react";
+import dynamic from "next/dynamic";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -16,26 +19,43 @@ import {
 } from "@/components/ui/card";
 import { useAppContext } from "@/contexts/AppContext";
 import { useToast } from "@/hooks/use-toast";
-import { useState, useCallback, useEffect, useMemo, useRef } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import { useDropzone } from "react-dropzone";
-import { ProcessingDialog } from "@/components/ProcessingDialog";
-import { PdfEditorDialog } from '@/components/PdfEditorDialog';
-import { HistorySection } from '@/components/dashboard/HistorySection';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
-import { Bot, AppWindow } from 'lucide-react';
-import { InsufficientCreditsDialog } from '@/components/InsufficientCreditsDialog';
 import { getPendingFile, deletePendingFile } from '@/lib/pwa-helpers';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Label } from "@/components/ui/label";
 import { GlassButton } from "@/components/ui/glass-button";
 import { PlanBadge } from "@/components/PlanBadge";
 import { getModelLabel, resolvePlanModelId } from "@/lib/plan-models";
-import { UpgradeAccountDialog } from "@/components/UpgradeAccountDialog";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { MobilePanelScreen } from "@/components/mobile-panel/MobilePanelScreen";
-
+const ProcessingDialog = dynamic(
+  () => import("@/components/ProcessingDialog").then((mod) => mod.ProcessingDialog),
+  { ssr: false }
+);
+const PdfEditorDialog = dynamic(
+  () => import("@/components/PdfEditorDialog").then((mod) => mod.PdfEditorDialog),
+  { ssr: false }
+);
+const HistorySection = dynamic(
+  () => import("@/components/dashboard/HistorySection").then((mod) => mod.HistorySection),
+  {
+    ssr: false,
+    loading: () => <div className="h-40 rounded-xl border border-border/60 bg-card/40" />,
+  }
+);
+const UpgradeAccountDialog = dynamic(
+  () => import("@/components/UpgradeAccountDialog").then((mod) => mod.UpgradeAccountDialog),
+  { ssr: false }
+);
+const InsufficientCreditsDialog = dynamic(
+  () => import("@/components/InsufficientCreditsDialog").then((mod) => mod.InsufficientCreditsDialog),
+  { ssr: false }
+);
+const MobilePanelScreen = dynamic(
+  () => import("@/components/mobile-panel/MobilePanelScreen").then((mod) => mod.MobilePanelScreen),
+  { ssr: false, loading: () => <div className="h-[50vh]" /> }
+);
 
 const LARGE_FILE_THRESHOLD_MB = 50; // 5 MB threshold for PDF editor
 
@@ -210,11 +230,11 @@ export default function DashboardPage() {
               </DialogDescription>
           </DialogHeader>
           <div className="py-4 prose prose-sm max-w-none">
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>
-              {`1.  **Загрузите документ:** Перетащите PDF-файл, скан или фото со спецификацией в поле "Анализ файла".
-2.  **Дождитесь анализа:** Наш AI проанализирует документ и создаст таблицу с позициями.
-3.  **Отредактируйте и оцените:** Вы будете перенаправлены на страницу спецификации, где сможете внести правки, указать цены и сформировать коммерческое предложение.`}
-            </ReactMarkdown>
+            <ol className="list-decimal pl-4 space-y-2">
+              <li><strong>Загрузите документ:</strong> Перетащите PDF-файл, скан или фото со спецификацией в поле «Анализ файла».</li>
+              <li><strong>Дождитесь анализа:</strong> AI проанализирует документ и создаст таблицу с позициями.</li>
+              <li><strong>Отредактируйте и оцените:</strong> Вы перейдете на страницу спецификации, где можно внести правки, указать цены и сформировать коммерческое предложение.</li>
+            </ol>
           </div>
           <DialogFooter>
               <Button onClick={() => setShowWelcomeModal(false)}>Начать работу</Button>

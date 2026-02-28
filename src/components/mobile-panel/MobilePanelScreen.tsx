@@ -3,18 +3,32 @@
 "use client";
 
 import { useState, useCallback, useEffect, useMemo } from 'react';
+import dynamic from 'next/dynamic';
 import { useDropzone } from 'react-dropzone';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Loader2, FileUp, Check, X, Search } from 'lucide-react';
 import { useAppContext, type HistoryRequest } from '@/contexts/AppContext';
 import { useToast } from '@/hooks/use-toast';
-import { ProcessingDialog } from "@/components/ProcessingDialog";
-import { InsufficientCreditsDialog } from '@/components/InsufficientCreditsDialog';
-import { HistorySection } from '@/components/dashboard/HistorySection';
 import { Button } from '@/components/ui/button';
-import { ProjectView } from '@/components/mobile-panel/ProjectView';
 import { resolvePlanModelId } from '@/lib/plan-models';
 import { getPendingFile, deletePendingFile } from '@/lib/pwa-helpers';
+
+const ProcessingDialog = dynamic(
+  () => import('@/components/ProcessingDialog').then((mod) => mod.ProcessingDialog),
+  { ssr: false }
+);
+const InsufficientCreditsDialog = dynamic(
+  () => import('@/components/InsufficientCreditsDialog').then((mod) => mod.InsufficientCreditsDialog),
+  { ssr: false }
+);
+const HistorySection = dynamic(
+  () => import('@/components/dashboard/HistorySection').then((mod) => mod.HistorySection),
+  { ssr: false, loading: () => <div className="h-40 rounded-xl border border-border/60 bg-card/40" /> }
+);
+const ProjectView = dynamic(
+  () => import('@/components/mobile-panel/ProjectView').then((mod) => mod.ProjectView),
+  { ssr: false }
+);
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50 MB
 

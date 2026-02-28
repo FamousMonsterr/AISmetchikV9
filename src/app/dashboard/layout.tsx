@@ -3,7 +3,7 @@
 "use client";
 
 import { useState, useEffect, useTransition, useRef } from "react";
-import Script from 'next/script';
+import dynamic from "next/dynamic";
 import { useRouter, usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 import {
@@ -27,11 +27,6 @@ import {
 } from "lucide-react";
 import { useAppContext } from "@/contexts/AppContext";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import Link from "next/link";
-import { UpgradeAccountDialog } from "@/components/UpgradeAccountDialog";
-import { NotificationCenter } from '@/components/NotificationCenter';
-import { FloatingSupportChat } from '@/components/support/FloatingSupportChat';
-import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Logo, LogoIcon } from "@/components/Logo";
@@ -42,10 +37,18 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { StickyBanner } from "@/components/ui/sticky-banner";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useEngagementTracking } from "@/hooks/use-engagement-tracking";
 import { SupportChatProvider } from "@/contexts/SupportChatContext";
+
+const NotificationCenter = dynamic(
+  () => import("@/components/NotificationCenter").then((mod) => mod.NotificationCenter),
+  { ssr: false }
+);
+const FloatingSupportChat = dynamic(
+  () => import("@/components/support/FloatingSupportChat").then((mod) => mod.FloatingSupportChat),
+  { ssr: false }
+);
 
 
 function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
@@ -53,9 +56,6 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
     const [isNavigating, startNavigation] = useTransition();
     const router = useRouter();
     const pathname = usePathname();
-    const { toast } = useToast();
-    const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
-    const [upgradeTargetRole, setUpgradeTargetRole] = useState<'PRO' | 'Business' | 'Enterprise'>('PRO');
     const [open, setOpen] = useState(false);
     const { theme, setTheme } = useTheme();
     useEngagementTracking(user?.uid);
@@ -222,12 +222,6 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                 </main>
             </div>
             <FloatingSupportChat />
-             <Script src="https://telegram.org/js/telegram-web-app.js" strategy="afterInteractive" />
-            <UpgradeAccountDialog 
-                isOpen={isUpgradeModalOpen} 
-                onClose={() => setIsUpgradeModalOpen(false)}
-                targetRole={upgradeTargetRole}
-            />
         </div>
     );
 }
