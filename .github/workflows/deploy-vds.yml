@@ -146,6 +146,9 @@ jobs:
                   certbot/certbot certonly \
                   --webroot -w /var/www/certbot \
                   "${certbot_args[@]}" \
+                  --cert-name "$TLS_DOMAIN" \
+                  --non-interactive \
+                  --expand \
                   --email "$TLS_EMAIL" \
                   --agree-tos \
                   --no-eff-email \
