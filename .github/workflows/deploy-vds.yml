@@ -126,18 +126,20 @@ jobs:
             esac
 
             for i in $(seq 1 30); do
-              if compose_cmd exec -T web node -e "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"; then
+              if compose_cmd exec -T web node -e "fetch('http://127.0.0.1:3000/api/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"; then
                 break
               fi
               if [ "$i" -eq 30 ]; then
                 echo "Health check failed after retries"
+                compose_cmd ps || true
+                compose_cmd logs --tail=200 web || true
                 exit 1
               fi
               sleep 2
             done
 
             case "$TLS_ENABLED" in
-              1) curl -kfsS --resolve "${TLS_DOMAIN}:443:127.0.0.1" "https://${TLS_DOMAIN}/api/health" > /dev/null ;;
+              1) curl -kfsS --resolve "${TLS_DOMAIN}:443:127.0.0.1" "https://${TLS_DOMAIN}/api/healthz" > /dev/null ;;
               *) : ;;
             esac
 

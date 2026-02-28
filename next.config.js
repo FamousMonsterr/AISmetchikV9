@@ -57,6 +57,15 @@ const nextConfig = {
           },
         ],
       },
+      {
+        source: "/api/healthz",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "no-store",
+          },
+        ],
+      },
     ];
   },
   poweredByHeader: false,
