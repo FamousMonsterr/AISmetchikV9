@@ -30,7 +30,7 @@ FROM node:20-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3000
-RUN apk add --no-cache libc6-compat
+RUN apk add --no-cache libc6-compat wget
 
 RUN addgroup -S nextjs && adduser -S nextjs -G nextjs
 
