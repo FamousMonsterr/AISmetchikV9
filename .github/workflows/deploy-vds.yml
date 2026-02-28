@@ -126,7 +126,7 @@ jobs:
             docker image prune -af || true
             docker builder prune -af || true
 
-            mkdir -p deploy/nginx/certbot/www/.well-known/acme-challenge deploy/nginx/certbot/conf
+            mkdir -p deploy/nginx/certbot/www deploy/nginx/certbot/conf
             case "$TLS_ENABLED" in
               1) sed "s/__SERVER_NAMES__/$SERVER_NAMES/g" deploy/nginx/default.http.conf > deploy/nginx/default.conf ;;
               *) sed "s/__SERVER_NAMES__/_/g" deploy/nginx/default.http.conf > deploy/nginx/default.conf ;;
@@ -137,18 +137,6 @@ jobs:
 
             case "$TLS_ENABLED" in
               1)
-                acme_probe="_acme_probe_$(date +%s)"
-                printf '%s\n' "$acme_probe" > "deploy/nginx/certbot/www/.well-known/acme-challenge/$acme_probe"
-                for domain in "${CERTBOT_DOMAINS[@]}"; do
-                  curl -fsS --resolve "${domain}:80:127.0.0.1" "http://${domain}/.well-known/acme-challenge/${acme_probe}" > /dev/null || {
-                    echo "ACME probe failed for ${domain}"
-                    compose_cmd logs --tail=200 nginx || true
-                    rm -f "deploy/nginx/certbot/www/.well-known/acme-challenge/$acme_probe"
-                    exit 1
-                  }
-                done
-                rm -f "deploy/nginx/certbot/www/.well-known/acme-challenge/$acme_probe"
-
                 certbot_args=()
                 for domain in "${CERTBOT_DOMAINS[@]}"; do
                   certbot_args+=("-d" "$domain")
