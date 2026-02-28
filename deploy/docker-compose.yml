@@ -5,6 +5,7 @@ x-app: &app_base
   environment:
     NODE_ENV: production
     PORT: 3000
+    HOSTNAME: 0.0.0.0
   logging:
     options:
       max-size: "10m"
