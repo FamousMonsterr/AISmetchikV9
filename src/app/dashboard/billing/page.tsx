@@ -2,6 +2,7 @@
 "use client";
 
 import { useState } from 'react';
+import dynamic from 'next/dynamic';
 import { useAppContext } from "@/contexts/AppContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
@@ -9,15 +10,28 @@ import { Check, Mail, Star, Zap, TrendingUp, KeySquare, HardDrive, Crown } from 
 import { Badge } from '@/components/ui/badge';
 import plansConfig from '@/lib/plans-config.json';
 import { cn } from '@/lib/utils';
-import { PurchaseCreditsDialog, type CreditPackage } from '@/components/PurchaseCreditsDialog';
-import { InvoiceHistory } from '@/components/InvoiceHistory';
-import { CreditHistory } from '@/components/CreditHistory';
-import { UpgradeAccountDialog } from '@/components/UpgradeAccountDialog';
+import type { CreditPackage } from '@/components/PurchaseCreditsDialog';
 import { getNextPlan, getPlanLabel } from '@/lib/plan-utils';
 import { useServiceRequest } from '@/hooks/use-service-request';
 import { RequestFeatureCard } from '@/components/requests/RequestFeatureCard';
 
 const { creditPackages, enterprisePackage } = plansConfig;
+const PurchaseCreditsDialog = dynamic(
+  () => import('@/components/PurchaseCreditsDialog').then((m) => m.PurchaseCreditsDialog),
+  { ssr: false }
+);
+const InvoiceHistory = dynamic(
+  () => import('@/components/InvoiceHistory').then((m) => m.InvoiceHistory),
+  { ssr: false }
+);
+const CreditHistory = dynamic(
+  () => import('@/components/CreditHistory').then((m) => m.CreditHistory),
+  { ssr: false }
+);
+const UpgradeAccountDialog = dynamic(
+  () => import('@/components/UpgradeAccountDialog').then((m) => m.UpgradeAccountDialog),
+  { ssr: false }
+);
 
 export default function BillingPage() {
   const { user, effectivePlan } = useAppContext();
@@ -217,11 +231,13 @@ export default function BillingPage() {
         />
     )}
 
-    <UpgradeAccountDialog
-      isOpen={isUpgradeOpen}
-      onClose={() => setIsUpgradeOpen(false)}
-      targetRole={upgradeTargetRole}
-    />
+    {isUpgradeOpen && (
+      <UpgradeAccountDialog
+        isOpen={isUpgradeOpen}
+        onClose={() => setIsUpgradeOpen(false)}
+        targetRole={upgradeTargetRole}
+      />
+    )}
     </>
   );
 }

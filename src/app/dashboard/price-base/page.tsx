@@ -9,21 +9,19 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Download, Wand2, FileQuestion, FolderKanban, FileUp, Pencil, Save, AlertTriangle } from "lucide-react";
+import { Loader2, Download, Wand2, FileQuestion, FolderKanban, FileUp, Pencil } from "lucide-react";
 import { useAppContext, type PriceBaseItem } from '@/contexts/AppContext';
 import { updatePriceBaseItem, savePriceBaseItems } from '@/actions/userActions';
-import * as XLSX from 'xlsx';
 import { ExcelImportDialog } from '@/components/ExcelImportDialog';
-import { nanoid } from 'nanoid';
 import { Checkbox } from '@/components/ui/checkbox';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { useDropzone } from 'react-dropzone';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { isEqual } from 'lodash';
 import { onSnapshot, query, collection, where, orderBy, FirebaseError } from '@/lib/mongoFirestore';
 import { db } from '@/lib/firebase';
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+
+const loadXlsx = () => import('xlsx');
 
 
 export default function PriceBasePage() {
@@ -92,7 +90,7 @@ export default function PriceBasePage() {
         const originalItem = baseItems.find(item => item.id === rowId);
         const processedValue = typeof originalItem?.[column] === 'number' ? Number(editingValue) : editingValue;
 
-        if (originalItem && !isEqual(originalItem[column], processedValue)) {
+        if (originalItem && !Object.is(originalItem[column], processedValue)) {
              startSavingTransition(async () => {
                 const result = await updatePriceBaseItem(user.uid, rowId, { [column]: processedValue });
                 if (!result.success) {
@@ -106,24 +104,34 @@ export default function PriceBasePage() {
     };
     
     // --- UI Handlers & Actions ---
-    const handleExport = () => {
-        const dataToExport = baseItems.map(item => ({
-            "Наименование": item.name, "Модель/Артикул": item.model || '', "Бренд": item.brand || '', "Ед. изм.": item.unit,
-            "Цена материала (средняя)": item.avgMaterialPrice, "Цена монтажа (средняя)": item.avgInstallationPrice, "Раздел": item.section || ''
-        }));
-        const worksheet = XLSX.utils.json_to_sheet(dataToExport);
-        const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, "База цен");
-        XLSX.writeFile(workbook, "AI Smetchik_PriceBase.xlsx");
-        toast({title: "Экспорт завершен", description: "Ваша база цен сохранена в Excel."});
+    const handleExport = async () => {
+        try {
+            const XLSX = await loadXlsx();
+            const dataToExport = baseItems.map(item => ({
+                "Наименование": item.name, "Модель/Артикул": item.model || '', "Бренд": item.brand || '', "Ед. изм.": item.unit,
+                "Цена материала (средняя)": item.avgMaterialPrice, "Цена монтажа (средняя)": item.avgInstallationPrice, "Раздел": item.section || ''
+            }));
+            const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "База цен");
+            XLSX.writeFile(workbook, "AI Smetchik_PriceBase.xlsx");
+            toast({ title: "Экспорт завершен", description: "Ваша база цен сохранена в Excel." });
+        } catch (error: any) {
+            toast({
+                title: "Ошибка экспорта",
+                description: error?.message || "Не удалось сформировать Excel-файл.",
+                variant: "destructive",
+            });
+        }
     };
     
     const onDrop = useCallback((acceptedFiles: File[]) => {
         const file = acceptedFiles[0];
         if (!file) return;
         const reader = new FileReader();
-        reader.onload = (e) => {
+        reader.onload = async (e) => {
             try {
+                const XLSX = await loadXlsx();
                 const data = new Uint8Array(e.target?.result as ArrayBuffer);
                 const workbook = XLSX.read(data, { type: 'array' });
                 const sheetName = workbook.SheetNames[0];
