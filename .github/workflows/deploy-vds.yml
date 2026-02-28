@@ -93,6 +93,7 @@ jobs:
                 esac
               ;;
             esac
+            TLS_RUNTIME_ENABLED=0
             SERVER_NAMES="_"
             PRIMARY_DOMAIN="$TLS_DOMAIN"
             CERTBOT_DOMAINS=()
@@ -156,20 +157,18 @@ jobs:
                   --no-eff-email \
                   --keep-until-expiring || certbot_ok=0
 
-                if [ -d "deploy/nginx/certbot/conf/live/$TLS_DOMAIN" ]; then
+                if [ "$certbot_ok" -eq 1 ] && [ -f "deploy/nginx/certbot/conf/live/$TLS_DOMAIN/fullchain.pem" ] && [ -f "deploy/nginx/certbot/conf/live/$TLS_DOMAIN/privkey.pem" ]; then
                   sed \
                     -e "s/__SERVER_NAMES__/$SERVER_NAMES/g" \
                     -e "s/__PRIMARY_DOMAIN__/$PRIMARY_DOMAIN/g" \
                     deploy/nginx/default.https.conf > deploy/nginx/default.conf
                   compose_cmd up -d --build --remove-orphans
                   compose_cmd restart nginx
-                elif [ "$certbot_ok" -eq 0 ]; then
-                  echo "TLS certificate is missing and certbot failed"
-                  exit 1
+                  TLS_RUNTIME_ENABLED=1
                 fi
 
                 if [ "$certbot_ok" -eq 0 ]; then
-                  echo "WARNING: certbot renewal failed, existing certificate (if any) was kept"
+                  echo "WARNING: certbot renewal failed; keeping HTTP config for this deploy"
                   compose_cmd logs --tail=200 nginx || true
                 fi
               ;;
@@ -204,9 +203,9 @@ jobs:
               sleep 2
             done
 
-            case "$TLS_ENABLED" in
+            case "$TLS_RUNTIME_ENABLED" in
               1) curl -kfsS --resolve "${TLS_DOMAIN}:443:127.0.0.1" "https://${TLS_DOMAIN}/api/healthz" > /dev/null ;;
-              *) : ;;
+              *) curl -fsS --resolve "${TLS_DOMAIN}:80:127.0.0.1" "http://${TLS_DOMAIN}/api/healthz" > /dev/null || true ;;
             esac
 
             docker image prune -f
