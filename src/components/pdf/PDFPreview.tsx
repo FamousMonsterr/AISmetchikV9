@@ -6,7 +6,7 @@ import { PDFViewer } from '@react-pdf/renderer';
 import { Loader2 } from 'lucide-react';
 
 interface PDFPreviewProps {
-    document: React.ReactElement;
+    document: React.ReactElement<any>;
 }
 
 const PDFPreview: React.FC<PDFPreviewProps> = ({ document }) => {
@@ -18,7 +18,7 @@ const PDFPreview: React.FC<PDFPreviewProps> = ({ document }) => {
 
     return (
         <PDFViewer style={{ width: '100%', height: '100%', border: 'none' }}>
-            {document}
+            {document as any}
         </PDFViewer>
     );
 };

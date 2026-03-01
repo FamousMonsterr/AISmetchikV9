@@ -15,7 +15,6 @@ const nextConfig = {
     ],
   },
   experimental: {
-    instrumentationHook: true,
     optimizePackageImports: ["lucide-react", "@tabler/icons-react", "lodash", "date-fns"],
     serverActions: {
       bodySizeLimit: '50mb',

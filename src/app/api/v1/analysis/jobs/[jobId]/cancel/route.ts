@@ -4,14 +4,15 @@ import { appendJobLog, getServerAnalysisJob, updateJobStatus } from '@/server-fu
 import { failProcessingRequest } from '@/actions/userActions';
 
 type Params = {
-  params: { jobId: string };
+  params: Promise<{ jobId: string }>;
 };
 
 export async function POST(request: NextRequest, { params }: Params) {
   const auth = await requireV1BearerUser(request);
   if (!auth.ok) return auth.response;
 
-  const job = await getServerAnalysisJob(params.jobId);
+  const { jobId } = await params;
+  const job = await getServerAnalysisJob(jobId);
   if (!job) {
     return NextResponse.json({ error: 'Job not found.' }, { status: 404 });
   }
@@ -19,8 +20,8 @@ export async function POST(request: NextRequest, { params }: Params) {
     return NextResponse.json({ error: 'Forbidden.' }, { status: 403 });
   }
 
-  await updateJobStatus(params.jobId, 'cancelled');
-  await appendJobLog(params.jobId, 'Отменено пользователем (v1 API)', 'cancelled');
+  await updateJobStatus(jobId, 'cancelled');
+  await appendJobLog(jobId, 'Отменено пользователем (v1 API)', 'cancelled');
   if (job.projectId) {
     await failProcessingRequest({
       userId: auth.user.id,
