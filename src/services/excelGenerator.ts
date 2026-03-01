@@ -1,231 +1,217 @@
-// src/services/excelGenerator.ts
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 import type { Company, SpecificationItem, AnalysisDetails, QuoteConfig, HistoryRequest } from '@/contexts/AppContext';
 import { format } from 'date-fns';
-import { calculateItemSum, calculateProjectTotals } from '@/lib/calculation';
+import { calculateProjectTotals } from '@/lib/calculation';
 
 interface GenerateExcelParams {
-    company: Partial<Company>;
-    specifications: SpecificationItem[];
-    analysisDetails: AnalysisDetails | null;
-    quoteConfig: QuoteConfig;
-    totals: {
-        subtotalBeforeTax: number;
-        taxAmount: number;
-        finalTotal: number;
-        taxLabel: string;
-        specItemsTotalSum: number;
-        servicesSubtotal: number;
-    };
+  company: Partial<Company>;
+  specifications: SpecificationItem[];
+  analysisDetails: AnalysisDetails | null;
+  quoteConfig: QuoteConfig;
+  totals: {
+    subtotalBeforeTax: number;
+    taxAmount: number;
+    finalTotal: number;
+    taxLabel: string;
+    specItemsTotalSum: number;
+    servicesSubtotal: number;
+  };
 }
 
+function sanitizeSheetName(name: string): string {
+  return name.replace(/[\\/*?:\[\]]/g, '').trim().slice(0, 31) || 'Лист';
+}
 
-function createWorksheetFromData(company: Partial<Company>, specifications: SpecificationItem[], analysisDetails: AnalysisDetails | null, quoteConfig: QuoteConfig, totals: GenerateExcelParams['totals']): XLSX.WorkSheet {
-    let ws_data: any[][] = [];
+function colToLetter(col: number): string {
+  let result = '';
+  let n = col;
+  while (n > 0) {
+    const remainder = (n - 1) % 26;
+    result = String.fromCharCode(65 + remainder) + result;
+    n = Math.floor((n - 1) / 26);
+  }
+  return result;
+}
 
-    // --- Header ---
-    ws_data.push([`Коммерческое предложение от ${format(new Date(), 'dd.MM.yyyy')}`]);
-    ws_data.push([]);
-    ws_data.push(["Поставщик:", company.fullName || company.name]);
-    if (company.inn) {
-       ws_data.push(["", `ИНН ${company.inn}${company.kpp ? '/КПП ' + company.kpp : ''}`]);
+function moneyCell(cell: ExcelJS.Cell, value: number) {
+  cell.value = value;
+  cell.numFmt = '#,##0.00 "₽"';
+}
+
+function buildWorksheet(
+  worksheet: ExcelJS.Worksheet,
+  company: Partial<Company>,
+  specifications: SpecificationItem[],
+  analysisDetails: AnalysisDetails | null,
+  quoteConfig: QuoteConfig,
+  totals: GenerateExcelParams['totals']
+) {
+  const colHeaders = ['№', 'Наименование работ и материалов', 'Ед. изм.'];
+  if (quoteConfig.showMaterialColumns) {
+    colHeaders.push('Кол-во (мат.)', 'Цена мат.', 'Сумма мат.');
+  }
+  colHeaders.push('Кол-во (монт.)', 'Цена монт.', 'Сумма монт.', 'Сумма');
+
+  worksheet.columns = colHeaders.map((header) => ({
+    header,
+    width: header === 'Наименование работ и материалов' ? 50 : 15,
+  }));
+
+  worksheet.addRow([`Коммерческое предложение от ${format(new Date(), 'dd.MM.yyyy')}`]);
+  worksheet.mergeCells(1, 1, 1, colHeaders.length);
+  worksheet.getCell(1, 1).font = { bold: true, size: 14 };
+
+  worksheet.addRow([]);
+  worksheet.addRow(['Поставщик:', company.fullName || company.name || '']);
+  if (company.inn) {
+    worksheet.addRow(['', `ИНН ${company.inn}${company.kpp ? `/КПП ${company.kpp}` : ''}`]);
+  }
+  if (analysisDetails?.objectName) worksheet.addRow(['Объект:', analysisDetails.objectName]);
+  if (analysisDetails?.systemType) worksheet.addRow(['Система:', analysisDetails.systemType]);
+  worksheet.addRow([]);
+
+  const headerRow = worksheet.addRow(colHeaders);
+  headerRow.font = { bold: true };
+
+  for (const [index, item] of specifications.entries()) {
+    const fullName = [item.name, item.brand, item.model].filter(Boolean).join(' ');
+
+    if (item.isInformational) {
+      const infoRow = worksheet.addRow(new Array(colHeaders.length).fill(''));
+      infoRow.getCell(2).value = fullName;
+      infoRow.getCell(2).font = { bold: true };
+      infoRow.getCell(2).fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FFEFEFEF' },
+      };
+      worksheet.mergeCells(infoRow.number, 2, infoRow.number, colHeaders.length);
+      continue;
     }
-    if (analysisDetails?.objectName) ws_data.push(["Объект:", analysisDetails.objectName]);
-    if (analysisDetails?.systemType) ws_data.push(["Система:", analysisDetails.systemType]);
-    ws_data.push([]);
 
-    // --- Table Headers ---
-    const colHeaders = ["№", "Наименование работ и материалов", "Ед. изм."];
+    const qtyInstall = item.quantityToInstall || 0;
+    const priceInstall = item.installationPrice || 0;
+    const qtyMaterial = qtyInstall + (item.quantityReserve || 0);
+    const priceMaterial = item.materialPrice || 0;
+
+    const row = worksheet.addRow([]);
+    row.getCell(1).value = index + 1;
+    row.getCell(2).value = fullName;
+    row.getCell(3).value = item.unit || '';
+
     if (quoteConfig.showMaterialColumns) {
-        colHeaders.push("Кол-во (мат.)", "Цена мат.", "Сумма мат.");
+      row.getCell(4).value = qtyMaterial;
+      row.getCell(5).value = priceMaterial;
+      row.getCell(6).value = { formula: `${colToLetter(4)}${row.number}*${colToLetter(5)}${row.number}` };
+      row.getCell(6).numFmt = '#,##0.00';
+
+      row.getCell(7).value = qtyInstall;
+      row.getCell(8).value = priceInstall;
+      row.getCell(9).value = { formula: `${colToLetter(7)}${row.number}*${colToLetter(8)}${row.number}` };
+      row.getCell(9).numFmt = '#,##0.00';
+
+      row.getCell(10).value = { formula: `${colToLetter(6)}${row.number}+${colToLetter(9)}${row.number}` };
+      row.getCell(10).numFmt = '#,##0.00';
+    } else {
+      row.getCell(4).value = qtyInstall;
+      row.getCell(5).value = priceInstall;
+      row.getCell(6).value = { formula: `${colToLetter(4)}${row.number}*${colToLetter(5)}${row.number}` };
+      row.getCell(6).numFmt = '#,##0.00';
+      row.getCell(7).value = { formula: `${colToLetter(6)}${row.number}` };
+      row.getCell(7).numFmt = '#,##0.00';
     }
-    colHeaders.push("Кол-во (монт.)", "Цена монт.", "Сумма монт.", "Сумма");
-    ws_data.push(colHeaders);
-    const tableStartRow = ws_data.length; // This is the first data row (0-indexed)
+  }
 
-    // --- Table Body ---
-    specifications.forEach((item, index) => {
-        const fullName = [item.name, item.brand, item.model].filter(Boolean).join(' ');
+  const totalColIndex = colHeaders.length;
+  const labelColIndex = totalColIndex > 2 ? totalColIndex - 2 : 2;
 
-        if(item.isInformational) {
-            // This is a section header
-            const headerRow = Array(colHeaders.length).fill('');
-            headerRow[1] = fullName;
-            ws_data.push(headerRow);
-            // We'll merge and style this later
-        } else {
-            // This is a regular item row
-            const row: any[] = [index + 1, fullName, item.unit];
-            
-            const qtyInstall = item.quantityToInstall || 0;
-            const priceInstall = item.installationPrice || 0;
-            const qtyMaterial = qtyInstall + (item.quantityReserve || 0);
-            const priceMaterial = item.materialPrice || 0;
+  worksheet.addRow([]);
 
-            if (quoteConfig.showMaterialColumns) {
-                row.push(qtyMaterial, priceMaterial, { f: `${XLSX.utils.encode_col(3)}${ws_data.length + 1}*${XLSX.utils.encode_col(4)}${ws_data.length + 1}` });
-            }
-            row.push(qtyInstall, priceInstall, { f: `${XLSX.utils.encode_col(quoteConfig.showMaterialColumns ? 6 : 3)}${ws_data.length + 1}*${XLSX.utils.encode_col(quoteConfig.showMaterialColumns ? 7 : 4)}${ws_data.length + 1}` });
-            
-            const materialSumRef = quoteConfig.showMaterialColumns ? `${XLSX.utils.encode_col(5)}${ws_data.length + 1}` : '0';
-            const installSumRef = `${XLSX.utils.encode_col(quoteConfig.showMaterialColumns ? 8 : 5)}${ws_data.length + 1}`;
-            row.push({ f: `${materialSumRef}+${installSumRef}` });
-            
-            ws_data.push(row);
-        }
-    });
-    
-    let currentRow = ws_data.length;
-    
-    // --- Totals Section ---
-    const totalColIndex = colHeaders.length - 1;
-    const labelColIndex = totalColIndex > 2 ? totalColIndex - 2 : 1;
-    
-    const itemsTotalRow = Array(colHeaders.length).fill('');
-    itemsTotalRow[labelColIndex] = "Итого по спецификации:";
-    itemsTotalRow[totalColIndex] = totals.specItemsTotalSum;
-    ws_data.push([]);
-    ws_data.push(itemsTotalRow);
-    currentRow += 2;
+  const addTotalRow = (label: string, value: number, bold = true) => {
+    const row = worksheet.addRow(new Array(colHeaders.length).fill(''));
+    row.getCell(labelColIndex).value = label;
+    row.getCell(labelColIndex).font = { bold };
+    row.getCell(labelColIndex).alignment = { horizontal: 'right' };
+    const valueCell = row.getCell(totalColIndex);
+    moneyCell(valueCell, value);
+    valueCell.font = { bold };
+    return row;
+  };
 
-    if (totals.servicesSubtotal > 0) {
-        const servicesRow = Array(colHeaders.length).fill('');
-        servicesRow[labelColIndex] = "Дополнительные работы и услуги:";
-        servicesRow[totalColIndex] = totals.servicesSubtotal;
-        ws_data.push(servicesRow);
-        currentRow++;
-    }
-
-    const subtotalRow = Array(colHeaders.length).fill('');
-    subtotalRow[labelColIndex] = "Подытог:";
-    subtotalRow[totalColIndex] = totals.subtotalBeforeTax;
-    ws_data.push(subtotalRow);
-    currentRow++;
-
-    if (totals.taxLabel) {
-        const taxRow = Array(colHeaders.length).fill('');
-        taxRow[labelColIndex] = totals.taxLabel;
-        taxRow[totalColIndex] = totals.taxAmount;
-        ws_data.push(taxRow);
-        currentRow++;
-    }
-
-    const finalTotalRow = Array(colHeaders.length).fill('');
-    finalTotalRow[labelColIndex] = "ИТОГО:";
-    finalTotalRow[totalColIndex] = totals.finalTotal;
-    ws_data.push(finalTotalRow);
-
-    const ws = XLSX.utils.aoa_to_sheet(ws_data);
-    
-    // --- Formatting ---
-    ws['!cols'] = colHeaders.map(h => ({ wch: h === 'Наименование работ и материалов' ? 50 : 15 }));
-    ws['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: totalColIndex } }]; // Merge title row
-
-    // Apply styles and formulas row by row
-    ws_data.forEach((row, r) => {
-        // Style section headers
-        if (specifications[r-tableStartRow]?.isInformational) {
-             ws['!merges'] = ws['!merges'] || [];
-             ws['!merges'].push({ s: { r: r, c: 1 }, e: { r: r, c: totalColIndex } });
-             const cell = ws[XLSX.utils.encode_cell({r, c:1})];
-             if(cell) cell.s = { font: { bold: true }, fill: { fgColor: { rgb: "EFEFEF" } } };
-        } else if (r >= tableStartRow) { // Format number cells in data rows
-            for (let c = 3; c <= totalColIndex; c++) {
-                 const cell = ws[XLSX.utils.encode_cell({r, c})];
-                 if(cell && (typeof cell.v === 'number' || cell.f)) {
-                     cell.t = 'n';
-                     cell.z = '#,##0.00';
-                 }
-            }
-        }
-
-        // Style total rows
-        if (r >= tableStartRow + specifications.length + 1) {
-            const labelCell = ws[XLSX.utils.encode_cell({r, c:labelColIndex})];
-            if(labelCell) labelCell.s = { font: { bold: true }, alignment: { horizontal: 'right' } };
-
-            const valueCell = ws[XLSX.utils.encode_cell({r, c:totalColIndex})];
-            if(valueCell && typeof valueCell.v === 'number') {
-                valueCell.t = 'n';
-                valueCell.z = '#,##0.00 "₽"';
-                valueCell.s = { font: { bold: true } };
-            }
-        }
-    });
-
-    return ws;
+  addTotalRow('Итого по спецификации:', totals.specItemsTotalSum);
+  if (totals.servicesSubtotal > 0) {
+    addTotalRow('Дополнительные работы и услуги:', totals.servicesSubtotal);
+  }
+  addTotalRow('Подытог:', totals.subtotalBeforeTax);
+  if (totals.taxLabel) {
+    addTotalRow(totals.taxLabel, totals.taxAmount);
+  }
+  addTotalRow('ИТОГО:', totals.finalTotal, true);
 }
-
 
 export const generateExcel = async (params: GenerateExcelParams): Promise<Blob> => {
-    const wb = XLSX.utils.book_new();
-    const ws = createWorksheetFromData(params.company, params.specifications, params.analysisDetails, params.quoteConfig, params.totals);
-    XLSX.utils.book_append_sheet(wb, ws, "Коммерческое предложение");
-    const wbout = await XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-    return new Blob([wbout], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+  const workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet('Коммерческое предложение');
+  buildWorksheet(
+    worksheet,
+    params.company,
+    params.specifications,
+    params.analysisDetails,
+    params.quoteConfig,
+    params.totals
+  );
+
+  const buffer = await workbook.xlsx.writeBuffer();
+  return new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
 };
 
-
 export const generateObjectSummaryExcel = async (projects: HistoryRequest[], company: Partial<Company>): Promise<Blob> => {
-    const wb = XLSX.utils.book_new();
+  const workbook = new ExcelJS.Workbook();
 
-    // --- 1. Summary Sheet ---
-    const summary_data: any[][] = [
-        [`Сводный отчет по Объекту: ${projects[0]?.objectName || 'Без названия'}`],
-        [],
-        ["Проект", "Итоговая стоимость"]
-    ];
-    let totalObjectSum = 0;
-    
-    const projectTotals = projects.map(project => {
-        const totals = calculateProjectTotals(project.outputSpecifications, project.quoteConfig || {} as QuoteConfig);
-        totalObjectSum += totals.finalTotal;
-        return {
-            name: project.fileName,
-            total: totals.finalTotal
-        };
-    });
+  const summarySheet = workbook.addWorksheet('Сводная по Объекту');
+  summarySheet.columns = [
+    { header: 'Проект', width: 40 },
+    { header: 'Итоговая стоимость', width: 24 },
+  ];
 
-    projectTotals.forEach(pt => {
-        summary_data.push([pt.name, pt.total]);
-    });
+  const objectName = projects[0]?.objectName || 'Без названия';
+  summarySheet.addRow([`Сводный отчет по Объекту: ${objectName}`]);
+  summarySheet.mergeCells(1, 1, 1, 2);
+  summarySheet.getCell(1, 1).font = { bold: true, size: 14 };
+  summarySheet.addRow([]);
+  summarySheet.addRow(['Проект', 'Итоговая стоимость']).font = { bold: true };
 
-    summary_data.push([]);
-    const totalRow = ["ИТОГО ПО ОБЪЕКТУ:", totalObjectSum];
-    summary_data.push(totalRow);
+  let totalObjectSum = 0;
+  for (const project of projects) {
+    const totals = calculateProjectTotals(project.outputSpecifications, project.quoteConfig || ({} as QuoteConfig));
+    totalObjectSum += totals.finalTotal;
+    const row = summarySheet.addRow([project.fileName, totals.finalTotal]);
+    row.getCell(2).numFmt = '#,##0.00 "₽"';
+  }
 
-    const summary_ws = XLSX.utils.aoa_to_sheet(summary_data);
-    summary_ws['!cols'] = [{wch: 40}, {wch: 20}];
-    summary_ws[XLSX.utils.encode_cell({r: 0, c: 0})].s = { font: { bold: true, sz: 14 } };
-    const totalRowNum = summary_data.length - 1;
-    summary_ws[XLSX.utils.encode_cell({r: totalRowNum, c: 0})].s = { font: { bold: true } };
-    const totalCell = summary_ws[XLSX.utils.encode_cell({r: totalRowNum, c: 1})];
-    if(totalCell) {
-        totalCell.t = 'n';
-        totalCell.s = { font: { bold: true }, numFmt: "#,##0.00 ₽" };
-    }
-    
-    XLSX.utils.book_append_sheet(wb, summary_ws, "Сводная по Объекту");
+  summarySheet.addRow([]);
+  const totalRow = summarySheet.addRow(['ИТОГО ПО ОБЪЕКТУ:', totalObjectSum]);
+  totalRow.getCell(1).font = { bold: true };
+  totalRow.getCell(2).font = { bold: true };
+  totalRow.getCell(2).numFmt = '#,##0.00 "₽"';
 
-    // --- 2. Individual Project Sheets ---
-    for (const project of projects) {
-        if(project.outputSpecifications && project.quoteConfig) {
-             const projectTotalsFull = calculateProjectTotals(project.outputSpecifications, project.quoteConfig);
-             // Ensure all required fields for GenerateExcelParams are present
-             const paramsForSheet: GenerateExcelParams = {
-                 company: company, // Note: a single company is used for the whole group report
-                 specifications: project.outputSpecifications,
-                 analysisDetails: project.analysisDetails || null,
-                 quoteConfig: project.quoteConfig,
-                 totals: projectTotalsFull
-             };
-             const ws = createWorksheetFromData(paramsForSheet.company, paramsForSheet.specifications, paramsForSheet.analysisDetails, paramsForSheet.quoteConfig, paramsForSheet.totals);
-             // Sanitize sheet name
-             let sheetName = project.fileName.replace(/[\\/*?:]/g, '').substring(0, 31);
-             XLSX.utils.book_append_sheet(wb, ws, sheetName);
-        }
-    }
+  for (const project of projects) {
+    if (!project.outputSpecifications || !project.quoteConfig) continue;
 
-    const wbout = await XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-    return new Blob([wbout], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+    const totals = calculateProjectTotals(project.outputSpecifications, project.quoteConfig);
+    const sheetName = sanitizeSheetName(project.fileName || 'Проект');
+    const worksheet = workbook.addWorksheet(sheetName);
+
+    buildWorksheet(
+      worksheet,
+      company,
+      project.outputSpecifications,
+      project.analysisDetails || null,
+      project.quoteConfig,
+      totals
+    );
+  }
+
+  const buffer = await workbook.xlsx.writeBuffer();
+  return new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
 };

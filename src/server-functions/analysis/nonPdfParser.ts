@@ -1,5 +1,5 @@
 import JSZip from 'jszip';
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 
 export interface ParsedModelImage {
   dataUri: string;
@@ -206,15 +206,33 @@ async function parseDocxBuffer(fileBuffer: Buffer): Promise<{ text: string; imag
 }
 
 async function parseXlsxBuffer(fileBuffer: Buffer): Promise<{ text: string; images: ParsedModelImage[] }> {
-  const workbook = XLSX.read(fileBuffer, { type: 'buffer', raw: false });
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.load(fileBuffer as any);
   const sheetBlocks: string[] = [];
 
-  for (const sheetName of workbook.SheetNames) {
-    const sheet = workbook.Sheets[sheetName];
-    if (!sheet) continue;
-    const csv = XLSX.utils.sheet_to_csv(sheet, { blankrows: false });
-    if (!csv.trim()) continue;
-    sheetBlocks.push(`### Лист: ${sheetName}\n${csv.trim()}`);
+  for (const sheet of workbook.worksheets) {
+    const csvRows: string[] = [];
+    for (let rowNumber = 1; rowNumber <= sheet.rowCount; rowNumber += 1) {
+      const row = sheet.getRow(rowNumber);
+      const rowValues = Array.isArray(row.values) ? row.values.slice(1) : [];
+      const values = rowValues.map((value: any) => {
+        if (value == null) return '';
+        if (typeof value === 'object') {
+          if (value.text) return String(value.text);
+          if (value.result != null) return String(value.result);
+          if (value.formula) return `=${value.formula}`;
+        }
+        return String(value);
+      });
+      const line = values.join(',').trim();
+      if (line) {
+        csvRows.push(line);
+      }
+    }
+
+    const csv = csvRows.join('\n').trim();
+    if (!csv) continue;
+    sheetBlocks.push(`### Лист: ${sheet.name}\n${csv}`);
   }
 
   const zip = await JSZip.loadAsync(fileBuffer);

@@ -20,8 +20,7 @@ import { useDropzone } from 'react-dropzone';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { onSnapshot, query, collection, where, orderBy, FirebaseError } from '@/lib/mongoFirestore';
 import { db } from '@/lib/firebase';
-
-const loadXlsx = () => import('xlsx');
+import { exportPriceBaseToExcel, parseExcelRowsFromArrayBuffer } from '@/services/excel/browserExcel';
 
 
 export default function PriceBasePage() {
@@ -106,15 +105,11 @@ export default function PriceBasePage() {
     // --- UI Handlers & Actions ---
     const handleExport = async () => {
         try {
-            const XLSX = await loadXlsx();
             const dataToExport = baseItems.map(item => ({
                 "Наименование": item.name, "Модель/Артикул": item.model || '', "Бренд": item.brand || '', "Ед. изм.": item.unit,
                 "Цена материала (средняя)": item.avgMaterialPrice, "Цена монтажа (средняя)": item.avgInstallationPrice, "Раздел": item.section || ''
             }));
-            const worksheet = XLSX.utils.json_to_sheet(dataToExport);
-            const workbook = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(workbook, worksheet, "База цен");
-            XLSX.writeFile(workbook, "AI Smetchik_PriceBase.xlsx");
+            await exportPriceBaseToExcel(dataToExport, "AI Smetchik_PriceBase.xlsx");
             toast({ title: "Экспорт завершен", description: "Ваша база цен сохранена в Excel." });
         } catch (error: any) {
             toast({
@@ -131,17 +126,8 @@ export default function PriceBasePage() {
         const reader = new FileReader();
         reader.onload = async (e) => {
             try {
-                const XLSX = await loadXlsx();
-                const data = new Uint8Array(e.target?.result as ArrayBuffer);
-                const workbook = XLSX.read(data, { type: 'array' });
-                const sheetName = workbook.SheetNames[0];
-                const worksheet = workbook.Sheets[sheetName];
-                const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as any[][];
-                if (jsonData.length < 1) throw new Error("Файл пуст.");
-                const headers = jsonData[0] || [];
-                const dataRows = jsonData.slice(0).map(row => 
-                    headers.reduce((obj: any, header: any, index: number) => ({...obj, [header]: row[index]}), {})
-                );
+                const arrayBuffer = e.target?.result as ArrayBuffer;
+                const { headers, data: dataRows } = await parseExcelRowsFromArrayBuffer(arrayBuffer);
                 setImportData({ headers: headers, data: dataRows });
                 setIsImporting(true);
             } catch (error: any) {

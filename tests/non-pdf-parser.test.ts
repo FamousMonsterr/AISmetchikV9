@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import JSZip from 'jszip';
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 import { isPdfLikeFile, parseNonPdfBufferForModel } from '@/server-functions/analysis/nonPdfParser';
 
 const TINY_PNG_BASE64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO2pQ6sAAAAASUVORK5CYII=';
@@ -21,13 +21,11 @@ async function buildDocxBuffer(): Promise<Buffer> {
 }
 
 async function buildXlsxBuffer(): Promise<Buffer> {
-  const workbook = XLSX.utils.book_new();
-  const sheet = XLSX.utils.aoa_to_sheet([
-    ['Позиция', 'Количество'],
-    ['IP-камера', 8],
-  ]);
-  XLSX.utils.book_append_sheet(workbook, sheet, 'Спецификация');
-  const workbookBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'buffer' }) as Buffer;
+  const workbook = new ExcelJS.Workbook();
+  const sheet = workbook.addWorksheet('Спецификация');
+  sheet.addRow(['Позиция', 'Количество']);
+  sheet.addRow(['IP-камера', 8]);
+  const workbookBuffer = Buffer.from(await workbook.xlsx.writeBuffer());
   const zip = await JSZip.loadAsync(workbookBuffer);
   zip.file('xl/media/image1.png', TINY_PNG_BUFFER);
   return zip.generateAsync({ type: 'nodebuffer' });
