@@ -1,9 +1,9 @@
 
 // instrumentation.ts (корень проекта, рядом с package.json)
-import { attachLocalLogFile } from './scripts/local-log';
 
 export async function register() {
   if (process.env.NEXT_RUNTIME === 'nodejs') {
+    const { attachLocalLogFile } = await import('./scripts/local-log');
     attachLocalLogFile();
     console.log('\n═══════════════════════════════════════');
     console.log('🛡️ REGISTERING GLOBAL ERROR HANDLERS');
