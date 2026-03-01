@@ -22,6 +22,14 @@ import { onSnapshot, query, collection, where, FirebaseError } from '@/lib/mongo
 import { db } from '@/lib/firebase';
 import { exportPriceBaseToExcel, parseExcelRowsFromArrayBuffer } from '@/services/excel/browserExcel';
 
+const sortPriceBaseItems = (items: PriceBaseItem[]) =>
+  [...items].sort((a, b) => {
+    const sectionA = (a.section || '').toString();
+    const sectionB = (b.section || '').toString();
+    const bySection = sectionA.localeCompare(sectionB, 'ru');
+    if (bySection !== 0) return bySection;
+    return (a.name || '').toString().localeCompare((b.name || '').toString(), 'ru');
+  });
 
 export default function PriceBasePage() {
     const { user } = useAppContext();
@@ -59,15 +67,9 @@ export default function PriceBasePage() {
         );
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
-            const items = snapshot.docs
-              .map(doc => ({ id: doc.id, ...doc.data() } as PriceBaseItem))
-              .sort((a, b) => {
-                const sectionA = (a.section || '').toString();
-                const sectionB = (b.section || '').toString();
-                const bySection = sectionA.localeCompare(sectionB, 'ru');
-                if (bySection !== 0) return bySection;
-                return (a.name || '').toString().localeCompare((b.name || '').toString(), 'ru');
-              });
+            const items = sortPriceBaseItems(
+              snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as PriceBaseItem))
+            );
             setBaseItems(items);
             setIsLoading(false);
         }, (error: FirebaseError) => {
@@ -151,6 +153,30 @@ export default function PriceBasePage() {
             const result = await savePriceBaseItems(user.uid, newItems);
             if (result.success) {
                 const newIds = result.newIds || [];
+                const optimisticItems = newItems.map((item, index) => {
+                    const name = item.name || 'Без названия';
+                    const model = item.model || '';
+                    const brand = item.brand || '';
+                    const unit = item.unit || 'шт';
+                    return {
+                        id: newIds[index] || `tmp-${Date.now()}-${index}`,
+                        name,
+                        model,
+                        brand,
+                        unit,
+                        avgMaterialPrice: Number((item as any).avgMaterialPrice ?? (item as any).materialPrice ?? 0) || 0,
+                        avgInstallationPrice: Number((item as any).avgInstallationPrice ?? (item as any).installationPrice ?? 0) || 0,
+                        section: item.section || '',
+                        userId: user.uid,
+                        key: `${name}|${model}|${brand}|${unit}`.toLowerCase(),
+                        createdAt: new Date(),
+                    } as PriceBaseItem;
+                });
+                setBaseItems(prev => {
+                    const existingIds = new Set(prev.map(item => item.id));
+                    const appended = optimisticItems.filter(item => !existingIds.has(item.id));
+                    return sortPriceBaseItems([...prev, ...appended]);
+                });
                 toast({ title: "Импорт завершен", description: `Добавлено ${newItems.length} новых позиций.` });
                 setSelection(new Set(newIds)); // Auto-select new items
                 if (newIds.length > 0) {
