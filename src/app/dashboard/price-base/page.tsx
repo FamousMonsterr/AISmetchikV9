@@ -56,12 +56,19 @@ export default function PriceBasePage() {
         const q = query(
             collection(db, "priceBaseItems"), 
             where("userId", "==", user.uid),
-            orderBy("section", "asc"),
             orderBy("name", "asc")
         );
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
-            const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as PriceBaseItem));
+            const items = snapshot.docs
+              .map(doc => ({ id: doc.id, ...doc.data() } as PriceBaseItem))
+              .sort((a, b) => {
+                const sectionA = (a.section || '').toString();
+                const sectionB = (b.section || '').toString();
+                const bySection = sectionA.localeCompare(sectionB, 'ru');
+                if (bySection !== 0) return bySection;
+                return (a.name || '').toString().localeCompare((b.name || '').toString(), 'ru');
+              });
             setBaseItems(items);
             setIsLoading(false);
         }, (error: FirebaseError) => {
