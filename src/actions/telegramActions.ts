@@ -3,17 +3,14 @@
 'use server';
 
 import { z } from 'zod';
-import TelegramBot from 'node-telegram-bot-api';
+import TelegramBot from '@/lib/telegram/telegraf-compat';
 import { logUserAction } from '@/lib/logger';
 import { doc, updateDoc, getDoc, collection, query, where, orderBy, limit, getDocs } from '@/lib/mongoFirestoreServer';
 import { db } from '@/lib/firebase';
-import { validate } from '@telegram-apps/init-data-node';
+import { parse, validate } from '@tma.js/init-data-node';
 import { getEnvSettings } from '@/actions/adminActions';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-
-// This fix is necessary for node-telegram-bot-api to work correctly with Buffers in some environments.
-process.env.NTBA_FIX_350 = '1';
 
 const LinkAccountSchema = z.object({
   initData: z.string(),
@@ -40,7 +37,8 @@ export async function linkTelegramAccount(data: z.infer<typeof LinkAccountSchema
   }
 
   try {
-    const validatedData = await validate(initData, botToken, { expiresIn: 3600 }); // 1 hour expiration
+    validate(initData, botToken, { expiresIn: 3600 }); // 1 hour expiration
+    const validatedData = parse(initData);
     
     if (!validatedData.user) {
         throw new Error("Не удалось получить данные пользователя из Telegram.");

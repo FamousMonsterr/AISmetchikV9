@@ -1,7 +1,7 @@
 // src/server-functions/monitoring/health.ts
 'use server';
 
-import TelegramBot from 'node-telegram-bot-api';
+import TelegramBot from '@/lib/telegram/telegraf-compat';
 import { db } from '@/lib/firebase';
 import { collection, getDocs, limit, orderBy, query, where, doc, getDoc } from '@/lib/mongoFirestoreServer';
 import { getBotRuntimeStatus } from '@/server-functions/telegram/controller';

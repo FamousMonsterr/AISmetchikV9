@@ -3,7 +3,7 @@
 'use server';
 
 import { z } from 'zod';
-import TelegramBot from 'node-telegram-bot-api';
+import TelegramBot from '@/lib/telegram/telegraf-compat';
 import { nanoid } from 'nanoid';
 import { getDb } from '@/lib/mongodb';
 import { getEnvSettings } from '@/actions/adminActions';

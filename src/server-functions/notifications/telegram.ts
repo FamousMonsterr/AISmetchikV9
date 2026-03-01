@@ -1,7 +1,7 @@
 // src/server-functions/notifications/telegram.ts
 'use server';
 
-import TelegramBot from 'node-telegram-bot-api';
+import TelegramBot from '@/lib/telegram/telegraf-compat';
 import { db } from '@/lib/firebase';
 import { doc, getDoc, serverTimestamp, setDoc } from '@/lib/mongoFirestoreServer';
 import { getEnvSettings } from '@/actions/adminActions';
