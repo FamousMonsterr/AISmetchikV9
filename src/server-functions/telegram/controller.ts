@@ -1,7 +1,7 @@
 // src/server-functions/telegram/controller.ts
 // Manages lifecycle of Telegram bot instance for admin controls.
 
-import type TelegramBot from 'node-telegram-bot-api';
+import type TelegramBot from '@/lib/telegram/telegraf-compat';
 import { startTelegramBot } from './bot';
 import { doc, getDoc, setDoc, deleteDoc, serverTimestamp } from '@/lib/mongoFirestoreServer';
 import { db } from '@/lib/firebase';

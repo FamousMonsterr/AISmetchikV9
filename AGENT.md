@@ -229,3 +229,41 @@
 ## Маркетинговые бонусы
 - При согласии на рассылку Free/PRO получают +10 бонусных кредитов в месяц.
 - Cron: `npm run marketing:monthly-credits`.
+
+## Dependency migration status (1 марта 2026)
+- Рабочая ветка миграции: `chore/deps-node24-telegraf-exceljs`.
+- Runtime обновлен до Node `24+`:
+  - `.nvmrc = 24`
+  - `package.json -> engines.node: >=24`
+  - `Dockerfile` стадии на `node:24-alpine`
+  - `.github/workflows/ci.yml` использует `node-version: 24`
+- Core stack обновлен:
+  - Next.js `16.1.6`
+  - React/ReactDOM `19.2.x`
+  - ESLint `9` (flat config `eslint.config.mjs`)
+  - TypeScript `5.9.x`
+- Telegram стек мигрирован:
+  - удалены `node-telegram-bot-api`, `@types/node-telegram-bot-api`, `@telegram-apps/init-data-node`
+  - добавлены `telegraf`, `@tma.js/init-data-node`, `@tma.js/types`, `@tma.js/transformers`
+  - создан адаптер `src/lib/telegram/telegraf-compat.ts`
+- Excel стек мигрирован:
+  - удален `xlsx`
+  - добавлен `exceljs`
+  - обновлены генерация/импорт/парсинг XLSX в:
+    - `src/services/excelGenerator.ts`
+    - `src/services/excel/browserExcel.ts`
+    - `src/server-functions/analysis/nonPdfParser.ts`
+    - `src/app/dashboard/price-base/page.tsx`
+- Baseline и итоговый отчет:
+  - `docs/tech/deps-baseline-2026-03-01.md`
+  - `docs/tech/deps-migration-report-2026-03-01.md`
+- Результат security-check:
+  - `npm audit --omit=dev`: `critical=0`, `high=0`.
+- Локальная валидация успешна:
+  - `npm run lint`
+  - `npm run typecheck`
+  - `npm run test`
+  - `npm run build`
+- Известный технический долг после миграции:
+  - Next 16 предупреждает про `middleware` (рекомендует `proxy`).
+  - Предупреждения Edge-runtime из `scripts/local-log.js` (не блокируют build, но нужно вынести Node-only логгер из Edge-контекста).

@@ -7,10 +7,10 @@ function isAudience(value: string): value is TelegramAudience {
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { audience: string } }
+  context: { params: Promise<{ audience: string }> }
 ) {
   try {
-    const audience = params.audience;
+    const { audience } = await context.params;
     if (!isAudience(audience)) {
       return NextResponse.json({ ok: false, error: 'Unknown audience' }, { status: 404 });
     }

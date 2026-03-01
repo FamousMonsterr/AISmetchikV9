@@ -4,14 +4,15 @@ import { getServerAnalysisJob } from '@/server-functions/analysis/jobService';
 import { sanitizeAnalysisErrorForUi } from '@/lib/analysis-errors';
 
 type Params = {
-  params: { jobId: string };
+  params: Promise<{ jobId: string }>;
 };
 
 export async function GET(request: NextRequest, { params }: Params) {
   const auth = await requireV1BearerUser(request);
   if (!auth.ok) return auth.response;
 
-  const job = await getServerAnalysisJob(params.jobId);
+  const { jobId } = await params;
+  const job = await getServerAnalysisJob(jobId);
   if (!job) {
     return NextResponse.json({ error: 'Job not found.' }, { status: 404 });
   }

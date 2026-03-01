@@ -1,7 +1,7 @@
 // src/app/dashboard/admin/page.tsx
 "use client";
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, type ReactElement } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, FileText, BadgeDollarSign, AlertTriangle, Loader2, Star, Server, MoveLeft, MoveRight, X, Sparkles, Clock } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -289,7 +289,7 @@ export default function AdminDashboardPage() {
         );
     }
 
-const widgetContent: Record<WidgetId, { title: string; description: string; render: () => JSX.Element; }> = {
+const widgetContent: Record<WidgetId, { title: string; description: string; render: () => ReactElement; }> = {
         pulse: {
             title: "Пульс продукта",
             description: "Ключевые цифры за период",

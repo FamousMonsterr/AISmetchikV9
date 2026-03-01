@@ -1,7 +1,7 @@
 // src/server-functions/telegram/bot.ts
 // Polling/webhook bot handler for Telegram commands, callbacks, and chat binding.
 
-import TelegramBot, { type Message } from 'node-telegram-bot-api';
+import TelegramBot, { type Message, type TelegramCallbackQuery } from '@/lib/telegram/telegraf-compat';
 import { doc, getDoc, setDoc, updateDoc, serverTimestamp, collection, query, where, limit, getDocs } from '@/lib/mongoFirestoreServer';
 import { db } from '@/lib/firebase';
 
@@ -198,7 +198,7 @@ const registerHandlers = (bot: TelegramBot) => {
     await sendPing(msg.chat.id);
   });
 
-  bot.on('callback_query', async (q) => {
+  bot.on('callback_query', async (q: TelegramCallbackQuery) => {
     if (!q.data) return;
     try {
       if (q.data === 'help') {

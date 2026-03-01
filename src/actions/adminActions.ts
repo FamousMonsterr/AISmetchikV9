@@ -11,7 +11,7 @@ import path from 'path';
 import { MongoClient } from 'mongodb';
 import { getDb } from '@/lib/mongodb';
 import { LegalEntitySchema, type LegalEntity } from '@/ai/genkit-schemas';
-import TelegramBot from 'node-telegram-bot-api';
+import TelegramBot from '@/lib/telegram/telegraf-compat';
 import { nanoid } from 'nanoid';
 import { XMLParser, XMLBuilder } from 'fast-xml-parser';
 import { S3Client, PutObjectCommand, GetObjectCommand, GetBucketCorsCommand, PutBucketCorsCommand, DeleteBucketCorsCommand, ListBucketsCommand, CreateBucketCommand } from "@aws-sdk/client-s3";
@@ -22,10 +22,6 @@ import { startManagedBot, stopManagedBot, getBotRuntimeStatus, forceUnlockBot } 
 import { registerTelegramWebhook, clearTelegramWebhook, TELEGRAM_AUDIENCES, type TelegramAudience } from '@/server-functions/webhooks/telegram';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-
-
-// This fix is necessary for node-telegram-bot-api to work correctly with Buffers in some environments.
-process.env.NTBA_FIX_350 = '1';
 
 function isAdminRole(role?: string | null) {
     return role === 'Admin' || role === 'Super Admin';

@@ -1,6 +1,6 @@
 // src/server-functions/webhooks/telegram.ts
 
-import TelegramBot from 'node-telegram-bot-api';
+import TelegramBot from '@/lib/telegram/telegraf-compat';
 import { db } from '@/lib/firebase';
 import { doc, getDoc } from '@/lib/mongoFirestoreServer';
 import { processTelegramWebhookUpdate } from '@/server-functions/telegram/bot';

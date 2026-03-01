@@ -31,3 +31,42 @@
 - `curl -I http://admin.aismetchik.ru/api/healthz` должен показать тот же сервер, что и root.
 - `curl -I https://aismetchik.ru/api/healthz` должен вернуть `200`.
 - `curl -I https://admin.aismetchik.ru/api/healthz` должен вернуть `200`.
+
+## Что сделано в сессии (1 марта 2026) — deps/runtime migration
+- Создана отдельная ветка миграции: `chore/deps-node24-telegraf-exceljs`.
+- Зафиксирован baseline зависимостей и проверок:
+  - `docs/tech/deps-baseline-2026-03-01.md`
+- Runtime/CI/Docker:
+  - Node `24+` в `package.json` (`engines`), `.nvmrc`, CI и Dockerfile.
+- Core stack:
+  - Next `16.1.6`, React `19.2.x`, TypeScript `5.9.x`, ESLint `9`.
+  - Добавлен `eslint.config.mjs` (flat config), lint снова проходит.
+- Telegram миграция:
+  - `node-telegram-bot-api` и `@telegram-apps/*` удалены.
+  - Добавлены `telegraf` и `@tma.js/*`.
+  - Добавлен совместимый слой `src/lib/telegram/telegraf-compat.ts`.
+  - Все Telegram server/actions переведены на новый адаптер.
+- XLSX миграция:
+  - `xlsx` полностью удален.
+  - Добавлен `exceljs` и переписаны:
+    - `src/services/excelGenerator.ts`
+    - `src/services/excel/browserExcel.ts`
+    - `src/server-functions/analysis/nonPdfParser.ts`
+    - `src/app/dashboard/price-base/page.tsx`
+    - `tests/non-pdf-parser.test.ts`
+- Совместимость с Next 16:
+  - Исправлены сигнатуры динамических route handlers (`params: Promise<...>`).
+  - Убрана устаревшая опция `experimental.instrumentationHook` из `next.config.js`.
+- Итоговые проверки:
+  - `npm run lint` ✅
+  - `npm run typecheck` ✅
+  - `npm run test` ✅
+  - `npm run build` ✅
+- Security:
+  - `npm audit --omit=dev` => `critical=0`, `high=0`.
+- Отчет по миграции:
+  - `docs/tech/deps-migration-report-2026-03-01.md`.
+
+## Оставшиеся замечания
+- `next build` показывает предупреждения Edge-runtime из `scripts/local-log.js` и предупреждение о `middleware` -> `proxy` (не блокирует build).
+- Локальный `docker build` в этой сессии не запускался из-за недоступного Docker daemon в окружении агента.
