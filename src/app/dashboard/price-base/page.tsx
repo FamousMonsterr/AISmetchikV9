@@ -18,7 +18,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { useDropzone } from 'react-dropzone';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { onSnapshot, query, collection, where, orderBy, FirebaseError } from '@/lib/mongoFirestore';
+import { onSnapshot, query, collection, where, FirebaseError } from '@/lib/mongoFirestore';
 import { db } from '@/lib/firebase';
 import { exportPriceBaseToExcel, parseExcelRowsFromArrayBuffer } from '@/services/excel/browserExcel';
 
@@ -55,8 +55,7 @@ export default function PriceBasePage() {
         setIsLoading(true);
         const q = query(
             collection(db, "priceBaseItems"), 
-            where("userId", "==", user.uid),
-            orderBy("name", "asc")
+            where("userId", "==", user.uid)
         );
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
