@@ -117,6 +117,20 @@ jobs:
             compose_cmd() {
               docker compose --env-file deploy/.env.vds -f deploy/docker-compose.vds.yml "$@"
             }
+            cert_has_files() {
+              domain="$1"
+              docker run --rm \
+                -v "$(pwd)/deploy/nginx/certbot/conf:/etc/letsencrypt:ro" \
+                alpine:3.20 \
+                sh -c "[ -f \"/etc/letsencrypt/live/${domain}/fullchain.pem\" ] && [ -f \"/etc/letsencrypt/live/${domain}/privkey.pem\" ]"
+            }
+            cert_find_matching_domain() {
+              prefix="$1"
+              docker run --rm \
+                -v "$(pwd)/deploy/nginx/certbot/conf:/etc/letsencrypt:ro" \
+                alpine:3.20 \
+                sh -c "for d in /etc/letsencrypt/live/${prefix}*; do [ -d \"\$d\" ] || continue; [ -f \"\$d/fullchain.pem\" ] && [ -f \"\$d/privkey.pem\" ] && basename \"\$d\" && exit 0; done; exit 1" 2>/dev/null || true
+            }
             cd "${{ secrets.VDS_DEPLOY_PATH || '/opt/ai-smetchik' }}"
             git fetch origin main
             git checkout main
@@ -160,17 +174,17 @@ jobs:
                 CERT_PRIMARY_DOMAIN="$TLS_DOMAIN"
                 case "$certbot_ok" in
                   1)
-                    if [ ! -f "deploy/nginx/certbot/conf/live/$CERT_PRIMARY_DOMAIN/fullchain.pem" ] || [ ! -f "deploy/nginx/certbot/conf/live/$CERT_PRIMARY_DOMAIN/privkey.pem" ]; then
-                      alt_live_dir="$(find deploy/nginx/certbot/conf/live -mindepth 1 -maxdepth 1 -type d -name "${TLS_DOMAIN}*" | head -n1 || true)"
-                      if [ -n "$alt_live_dir" ] && [ -f "$alt_live_dir/fullchain.pem" ] && [ -f "$alt_live_dir/privkey.pem" ]; then
-                        CERT_PRIMARY_DOMAIN="$(basename "$alt_live_dir")"
+                    if ! cert_has_files "$CERT_PRIMARY_DOMAIN"; then
+                      alt_live_domain="$(cert_find_matching_domain "$TLS_DOMAIN")"
+                      if [ -n "$alt_live_domain" ]; then
+                        CERT_PRIMARY_DOMAIN="$alt_live_domain"
                       fi
                     fi
                   ;;
                   *) : ;;
                 esac
 
-                if [ "$certbot_ok" -eq 1 ] && [ -f "deploy/nginx/certbot/conf/live/$CERT_PRIMARY_DOMAIN/fullchain.pem" ] && [ -f "deploy/nginx/certbot/conf/live/$CERT_PRIMARY_DOMAIN/privkey.pem" ]; then
+                if [ "$certbot_ok" -eq 1 ] && cert_has_files "$CERT_PRIMARY_DOMAIN"; then
                   PRIMARY_DOMAIN="$CERT_PRIMARY_DOMAIN"
                   sed \
                     -e "s/__SERVER_NAMES__/$SERVER_NAMES/g" \
@@ -187,7 +201,10 @@ jobs:
                 fi
                 if [ "$certbot_ok" -eq 1 ] && [ "$TLS_RUNTIME_ENABLED" -ne 1 ]; then
                   echo "WARNING: certbot returned success but certificate files were not found for TLS_DOMAIN=${TLS_DOMAIN}"
-                  ls -la deploy/nginx/certbot/conf/live || true
+                  docker run --rm \
+                    -v "$(pwd)/deploy/nginx/certbot/conf:/etc/letsencrypt:ro" \
+                    alpine:3.20 \
+                    sh -c "ls -la /etc/letsencrypt/live || true"
                 fi
               ;;
               *) : ;;
