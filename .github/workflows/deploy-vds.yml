@@ -74,9 +74,9 @@ jobs:
           script_stop: false
           script: |
             set -ex
-            TLS_DOMAIN="${{ secrets.VDS_DOMAIN }}"
-            TLS_EMAIL="${{ secrets.LETSENCRYPT_EMAIL }}"
-            TLS_SUBDOMAINS="${{ secrets.VDS_SUBDOMAINS }}"
+            TLS_DOMAIN="$(printf '%s' "${{ secrets.VDS_DOMAIN }}" | xargs)"
+            TLS_EMAIL="$(printf '%s' "${{ secrets.LETSENCRYPT_EMAIL }}" | xargs)"
+            TLS_SUBDOMAINS="$(printf '%s' "${{ secrets.VDS_SUBDOMAINS }}" | tr -d '\r')"
             case "$TLS_SUBDOMAINS" in
               "") TLS_SUBDOMAINS="admin,lk,crm,partner,m" ;;
               *) : ;;
@@ -157,7 +157,21 @@ jobs:
                   --no-eff-email \
                   --keep-until-expiring || certbot_ok=0
 
-                if [ "$certbot_ok" -eq 1 ] && [ -f "deploy/nginx/certbot/conf/live/$TLS_DOMAIN/fullchain.pem" ] && [ -f "deploy/nginx/certbot/conf/live/$TLS_DOMAIN/privkey.pem" ]; then
+                CERT_PRIMARY_DOMAIN="$TLS_DOMAIN"
+                case "$certbot_ok" in
+                  1)
+                    if [ ! -f "deploy/nginx/certbot/conf/live/$CERT_PRIMARY_DOMAIN/fullchain.pem" ] || [ ! -f "deploy/nginx/certbot/conf/live/$CERT_PRIMARY_DOMAIN/privkey.pem" ]; then
+                      alt_live_dir="$(find deploy/nginx/certbot/conf/live -mindepth 1 -maxdepth 1 -type d -name "${TLS_DOMAIN}*" | head -n1 || true)"
+                      if [ -n "$alt_live_dir" ] && [ -f "$alt_live_dir/fullchain.pem" ] && [ -f "$alt_live_dir/privkey.pem" ]; then
+                        CERT_PRIMARY_DOMAIN="$(basename "$alt_live_dir")"
+                      fi
+                    fi
+                  ;;
+                  *) : ;;
+                esac
+
+                if [ "$certbot_ok" -eq 1 ] && [ -f "deploy/nginx/certbot/conf/live/$CERT_PRIMARY_DOMAIN/fullchain.pem" ] && [ -f "deploy/nginx/certbot/conf/live/$CERT_PRIMARY_DOMAIN/privkey.pem" ]; then
+                  PRIMARY_DOMAIN="$CERT_PRIMARY_DOMAIN"
                   sed \
                     -e "s/__SERVER_NAMES__/$SERVER_NAMES/g" \
                     -e "s/__PRIMARY_DOMAIN__/$PRIMARY_DOMAIN/g" \
@@ -170,6 +184,10 @@ jobs:
                 if [ "$certbot_ok" -eq 0 ]; then
                   echo "WARNING: certbot renewal failed; keeping HTTP config for this deploy"
                   compose_cmd logs --tail=200 nginx || true
+                fi
+                if [ "$certbot_ok" -eq 1 ] && [ "$TLS_RUNTIME_ENABLED" -ne 1 ]; then
+                  echo "WARNING: certbot returned success but certificate files were not found for TLS_DOMAIN=${TLS_DOMAIN}"
+                  ls -la deploy/nginx/certbot/conf/live || true
                 fi
               ;;
               *) : ;;
