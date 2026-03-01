@@ -66,10 +66,26 @@
   - 80/443, proxy на `web:3000`
 
 ## 9) Файлы деплоя в репозитории
-- `deploy/docker-compose.yml`
-- `deploy/nginx/default.conf`
+- `deploy/docker-compose.vds.yml`
+- `deploy/nginx/default.http.conf`
+- `deploy/nginx/default.https.conf`
+- `.github/workflows/deploy-vds.yml`
 - `Dockerfile` в корне
 
 ## 10) После релиза
 - Прогонить smoke‑тесты
 - Проверить выдачу счетов, Telegram, S3
+
+## 11) Troubleshooting (TLS и поддомены)
+- Если `Deploy VDS` зелёный, но `https://aismetchik.ru` не открывается: проверить, что certbot выпустил сертификат, а не сработал HTTP fallback.
+- Если certbot пишет `Invalid response ... 500` для `admin/lk/crm/partner/m`:
+  - проверить DNS `A`/`CNAME` для каждого поддомена;
+  - убедиться, что поддомены указывают на тот же VDS, где работает `nginx` из `docker-compose.vds.yml`;
+  - убедиться, что запрос `http://<subdomain>/.well-known/acme-challenge/test` приходит в ваш nginx, а не в сторонний хостинг.
+- Быстрая проверка с локальной машины:
+  - `curl -I http://aismetchik.ru/api/healthz` (должен быть `200`, сервер `nginx/1.27.x`)
+  - `curl -I http://admin.aismetchik.ru/api/healthz` (если отвечает другой `Server`, DNS указывает не туда)
+- После исправления DNS перезапустить `Deploy VDS` вручную и проверить:
+  - `https://aismetchik.ru/api/healthz`
+  - `https://admin.aismetchik.ru/api/healthz`
+  - `https://lk.aismetchik.ru/api/healthz`

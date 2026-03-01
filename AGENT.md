@@ -7,6 +7,19 @@
 - [ ] `src/actions/templateActions.ts`: запретить мутации шаблонов “от имени другого пользователя”, сверять `userId` с текущей сессией.
 - [ ] `src/actions/documentTemplateActions.ts`: админские мутации шаблонов выполнять только при подтвержденной admin-сессии.
 
+## Статус релиза (обновлено: 1 марта 2026)
+- Последний стабильный SHA в `main`: `5c54ac6`.
+- GitHub Actions:
+  - `CI`: success — https://github.com/FamousMonsterr/AISmetchikV9/actions/runs/22520778527
+  - `Deploy VDS`: success — https://github.com/FamousMonsterr/AISmetchikV9/actions/runs/22520820135
+- Инфраструктурный факт по логам:
+  - приложение на основном домене живо по HTTP (`http://aismetchik.ru/api/healthz` = `200`, `Server: nginx/1.27.5`);
+  - HTTPS на основном домене сейчас недоступен извне (таймаут), т.к. certbot не смог пройти challenge для поддоменов;
+  - поддомены (`admin/lk/crm/partner/m`) отвечают с другого nginx (`nginx-reuseport/1.21.1`), значит DNS указывает не на текущий VDS.
+- Что обязательно сделать для полного TLS:
+  - выровнять DNS всех поддоменов на текущий VDS;
+  - заново запустить `Deploy VDS` и проверить `https://.../api/healthz` для root + subdomains.
+
 ## Релизный протокол (GitHub + VDS)
 - Основная ветка релиза: `main`.
 - Перед отправкой в `main` обязательно локально выполнить:
