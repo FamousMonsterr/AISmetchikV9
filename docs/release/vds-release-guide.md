@@ -6,6 +6,10 @@
 - `mongo`: MongoDB
 - `nginx`: TLS + reverse proxy
 
+## 0) Версии runtime
+- Node.js: `24.x+` (локально, CI, Docker)
+- Docker image: `node:24-alpine`
+
 ## 2) Переменные окружения (обязательные)
 - `MONGODB_URI`
 - `MONGODB_DB`
@@ -21,6 +25,11 @@
   - опциональные пресеты по назначению: `S3_AVATAR_PRESET_ID`, `S3_USER_DOCS_PRESET_ID`, `S3_PROJECT_DOCS_PRESET_ID`
 
 ## 3) Операции перед запуском
+0. Проверить в локальной ветке:
+   - `npm run lint`
+   - `npm run typecheck`
+   - `npm run test`
+   - `npm run build`
 1. Создать MongoDB индексы:
    - `npm run mongo:indexes`
 3. Проверить настройки `enterpriseEmail` в админке.

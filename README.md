@@ -35,7 +35,7 @@
 
 ### 1. Предварительные требования
 
-- [Node.js](https://nodejs.org/) (версия 18.x или выше)
+- [Node.js](https://nodejs.org/) (версия 24.x или выше)
 - [pnpm](https://pnpm.io/) (рекомендуется) или `npm`/`yarn`
 - Доступ к MongoDB серверу
 
