@@ -134,6 +134,7 @@ jobs:
             cd "${{ secrets.VDS_DEPLOY_PATH || '/opt/ai-smetchik' }}"
             git fetch origin main
             git checkout main
+            git restore deploy/nginx/default.conf || true
             git pull --ff-only origin main
             df -h
             docker system df || true
