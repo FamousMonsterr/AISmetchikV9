@@ -6,7 +6,26 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Loader2, Send, ArrowUpDown, Search, CheckCircle, AlertTriangle } from "lucide-react";
 import { useToast } from '@/hooks/use-toast';
-import { getTelegramUsers, sendTelegramMessageToUser, getEnvSettings, startTelegramBotService, stopTelegramBotService, getTelegramBotStatus, forceUnlockTelegramBotService, testTelegramMongoConnection, testTelegramApiConnection, testTelegramWebhookInfo, pingTelegramBot, registerTelegramWebhookService, clearTelegramWebhookService, pingTelegramWebhookEndpoint } from '@/actions/adminActions';
+import {
+  getTelegramUsers,
+  sendTelegramMessageToUser,
+  getEnvSettings,
+  startTelegramBotService,
+  stopTelegramBotService,
+  getTelegramBotStatus,
+  forceUnlockTelegramBotService,
+  testTelegramMongoConnection,
+  testTelegramApiConnection,
+  testTelegramWebhookInfo,
+  registerTelegramWebhookService,
+  clearTelegramWebhookService,
+  registerTelegramWebhookByAudienceService,
+  clearTelegramWebhookByAudienceService,
+  getTelegramAudienceStatus,
+  pingTelegramWebhookByAudienceService,
+  pingTelegramBotByAudienceService,
+  sendTelegramTestMessageByAudienceService,
+} from '@/actions/adminActions';
 import type { AppUser } from '@/contexts/AppContext';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
@@ -18,8 +37,11 @@ import { Label } from '@/components/ui/label';
 import { useAppContext } from '@/contexts/AppContext';
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 type SortKey = keyof AppUser | 'credits';
+type TelegramAudience = 'default' | 'user' | 'partner' | 'manager' | 'admin';
+const TELEGRAM_AUDIENCES: TelegramAudience[] = ['default', 'user', 'partner', 'manager', 'admin'];
 
 export default function TelegramUsersPage() {
   const { toast } = useToast();
@@ -39,6 +61,8 @@ export default function TelegramUsersPage() {
     webhook_ping: 'idle',
   });
   const [botStatus, setBotStatus] = useState<any>(null);
+  const [audienceStatus, setAudienceStatus] = useState<Record<string, any>>({});
+  const [selectedAudience, setSelectedAudience] = useState<TelegramAudience>('default');
   const [isBotActionPending, setIsBotActionPending] = useState(false);
   const [envSettings, setEnvSettings] = useState<any>(null);
 
@@ -83,6 +107,14 @@ export default function TelegramUsersPage() {
       } else {
         toast({ title: "Статус бота", description: statusResp.message || "Не удалось получить статус.", variant: "destructive" });
       }
+      const audienceStatuses = await Promise.all(
+        TELEGRAM_AUDIENCES.map(async (aud) => {
+          const res = await getTelegramAudienceStatus(adminUser.uid, aud);
+          return [aud, res.success ? res.status : null] as const;
+        })
+      );
+      const statusMap = audienceStatuses.reduce((acc, [aud, value]) => ({ ...acc, [aud]: value }), {} as Record<string, any>);
+      setAudienceStatus(statusMap);
       setEnvSettings(envResp);
     } catch (e: any) {
       toast({ title: "Статус бота", description: e.message || 'Ошибка', variant: 'destructive' });
@@ -239,16 +271,21 @@ export default function TelegramUsersPage() {
     }
   };
 
-  const handleWebhookAction = async (action: 'register' | 'clear') => {
+  const handleWebhookAction = async (action: 'register' | 'clear', audience: TelegramAudience = selectedAudience) => {
     if (!adminUser || adminUser.systemRole !== 'Super Admin') {
       toast({ title: "Недостаточно прав", description: "Требуется Super Admin.", variant: "destructive" });
       return;
     }
     setIsBotActionPending(true);
     try {
+      const isDefault = audience === 'default';
       const res = action === 'register'
-        ? await registerTelegramWebhookService(adminUser.uid)
-        : await clearTelegramWebhookService(adminUser.uid);
+        ? (isDefault
+          ? await registerTelegramWebhookService(adminUser.uid)
+          : await registerTelegramWebhookByAudienceService(adminUser.uid, audience))
+        : (isDefault
+          ? await clearTelegramWebhookService(adminUser.uid)
+          : await clearTelegramWebhookByAudienceService(adminUser.uid, audience));
       toast({ title: res.success ? "Webhook" : "Ошибка", description: res.message, variant: res.success ? "default" : "destructive" });
       await refreshBotStatus();
     } catch (e: any) {
@@ -275,6 +312,16 @@ export default function TelegramUsersPage() {
           <CardDescription>Запуск/остановка (polling), статус и логи. Для webhook укажите URL/secret в настройках и настройте BotFather.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
+          <Tabs value={selectedAudience} onValueChange={(v) => setSelectedAudience(v as TelegramAudience)}>
+            <TabsList className="grid w-full grid-cols-5">
+              {TELEGRAM_AUDIENCES.map((aud) => (
+                <TabsTrigger key={aud} value={aud}>{aud}</TabsTrigger>
+              ))}
+            </TabsList>
+            {TELEGRAM_AUDIENCES.map((aud) => (
+              <TabsContent key={aud} value={aud} />
+            ))}
+          </Tabs>
           <div className="flex flex-wrap gap-2">
             <Button size="sm" disabled={isBotActionPending} onClick={() => handleBotAction('start')}>
               {isBotActionPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
@@ -284,10 +331,10 @@ export default function TelegramUsersPage() {
               Остановить
             </Button>
             <Button variant="outline" size="sm" disabled={isBotActionPending} onClick={() => handleWebhookAction('register')}>
-              Зарегистрировать webhook
+              Register webhook ({selectedAudience})
             </Button>
             <Button variant="outline" size="sm" disabled={isBotActionPending} onClick={() => handleWebhookAction('clear')}>
-              Снять webhook
+              Clear webhook ({selectedAudience})
             </Button>
             <Button variant="outline" size="sm" disabled={isBotActionPending} onClick={handleForceUnlock}>
               Сброс lock
@@ -320,6 +367,17 @@ export default function TelegramUsersPage() {
             <div>Webhook secret: {envSettings?.telegramBotSecretToken ? 'задан' : 'не задан'}</div>
             <div>Bot token: {envSettings?.telegramBotToken ? 'задан' : 'не задан'}</div>
             <div>Bot URL: {envSettings?.nextPublicTelegramBotUrl || 'не задан'}</div>
+          </div>
+          <div className="rounded-md border p-3 text-xs text-muted-foreground space-y-1">
+            <div className="font-semibold text-sm text-foreground">Аудитория: {selectedAudience}</div>
+            <div>Enabled: {audienceStatus[selectedAudience]?.enabled ? 'yes' : 'no'}</div>
+            <div>Token: {audienceStatus[selectedAudience]?.tokenSet ? 'задан' : 'не задан'}</div>
+            <div>Secret: {audienceStatus[selectedAudience]?.secretSet ? 'задан' : 'не задан'}</div>
+            <div>Webhook (config): {audienceStatus[selectedAudience]?.webhookUrl || 'не задан'}</div>
+            <div>Webhook (api): {audienceStatus[selectedAudience]?.webhookInfoUrl || 'не задан'}</div>
+            {audienceStatus[selectedAudience]?.webhookLastErrorMessage && (
+              <div className="text-destructive">Webhook error: {audienceStatus[selectedAudience].webhookLastErrorMessage}</div>
+            )}
           </div>
           {botStatus?.logs?.length ? (
             <div className="max-h-48 overflow-auto rounded-md border text-xs">
@@ -358,13 +416,14 @@ export default function TelegramUsersPage() {
       <Card className="mb-6">
         <CardHeader>
           <CardTitle>Тест Telegram</CardTitle>
-          <CardDescription>Проверка токена, наличия chat_id у админа и тестового сообщения.</CardDescription>
+          <CardDescription>Проверка токена, chat_id и webhook для выбранной аудитории: <span className="font-semibold">{selectedAudience}</span>.</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-wrap gap-2">
           <Button variant="outline" size="sm" disabled={isTesting} onClick={() => runTest('token', async () => {
             if (!adminUser) throw new Error('Админ не найден.');
-            const env = await getEnvSettings({ requesterId: adminUser.uid, requireAdmin: true });
-            if (!env.telegramBotToken) throw new Error('Токен не задан в настройках');
+            const result = await getTelegramAudienceStatus(adminUser.uid, selectedAudience);
+            if (!result.success) throw new Error(result.message);
+            if (!result.status?.tokenSet) throw new Error(`Токен не задан для аудитории ${selectedAudience}`);
           })}>
             Токен {renderStatusIcon(testStatus.token)}
           </Button>
@@ -377,11 +436,7 @@ export default function TelegramUsersPage() {
           <Button variant="outline" size="sm" disabled={isTesting} onClick={() => runTest('send', async () => {
             if (!adminUser) throw new Error('Админ не найден.');
             if (!adminUser.telegramChatId) throw new Error('Нет chat_id для отправки.');
-            const result = await sendTelegramMessageToUser({
-              adminUserId: adminUser.uid,
-              targetUserId: adminUser.uid,
-              message: 'Тестовое сообщение от администратора.',
-            });
+            const result = await sendTelegramTestMessageByAudienceService(adminUser.uid, selectedAudience, adminUser.uid);
             if (!result.success) throw new Error(result.message);
           })}>
             Тест-сообщение {renderStatusIcon(testStatus.send)}
@@ -395,28 +450,28 @@ export default function TelegramUsersPage() {
           </Button>
           <Button variant="outline" size="sm" disabled={isTesting} onClick={() => runTest('api', async () => {
             if (!adminUser) throw new Error('Админ не найден.');
-            const result = await testTelegramApiConnection(adminUser.uid);
+            const result = await testTelegramApiConnection(adminUser.uid, selectedAudience);
             if (!result.success) throw new Error(result.message);
           })}>
             Telegram API {renderStatusIcon(testStatus.api)}
           </Button>
           <Button variant="outline" size="sm" disabled={isTesting} onClick={() => runTest('webhook', async () => {
             if (!adminUser) throw new Error('Админ не найден.');
-            const result = await testTelegramWebhookInfo(adminUser.uid);
+            const result = await testTelegramWebhookInfo(adminUser.uid, selectedAudience);
             if (!result.success) throw new Error(result.message);
           })}>
             Webhook {renderStatusIcon(testStatus.webhook)}
           </Button>
           <Button variant="outline" size="sm" disabled={isTesting} onClick={() => runTest('ping', async () => {
             if (!adminUser) throw new Error('Админ не найден.');
-            const result = await pingTelegramBot(adminUser.uid);
+            const result = await pingTelegramBotByAudienceService(adminUser.uid, selectedAudience);
             if (!result.success) throw new Error(result.message);
           })}>
             Ping bot {renderStatusIcon(testStatus.ping)}
           </Button>
           <Button variant="outline" size="sm" disabled={isTesting} onClick={() => runTest('webhook_ping', async () => {
             if (!adminUser) throw new Error('Админ не найден.');
-            const result = await pingTelegramWebhookEndpoint(adminUser.uid);
+            const result = await pingTelegramWebhookByAudienceService(adminUser.uid, selectedAudience);
             if (!result.success) throw new Error(result.message);
           })}>
             Ping webhook {renderStatusIcon(testStatus.webhook_ping)}

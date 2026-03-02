@@ -11,20 +11,73 @@ x-app: &app_base
       max-size: "10m"
       max-file: "3"
 
+x-web: &web_base
+  <<: *app_base
+  build:
+    context: ..
+    dockerfile: Dockerfile
+    target: runner
+  healthcheck:
+    test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:3000/api/healthz || exit 1"]
+    interval: 30s
+    timeout: 10s
+    retries: 5
+    start_period: 30s
+
 services:
-  web:
-    <<: *app_base
+  web_landing:
+    <<: *web_base
     image: ai-smetchik-web:latest
-    build:
-      context: ..
-      dockerfile: Dockerfile
-      target: runner
-    healthcheck:
-      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:3000/api/healthz || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 30s
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      HOSTNAME: 0.0.0.0
+      APP_SURFACE: landing
+
+  web_admin:
+    <<: *web_base
+    image: ai-smetchik-web:latest
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      HOSTNAME: 0.0.0.0
+      APP_SURFACE: admin
+
+  web_lk:
+    <<: *web_base
+    image: ai-smetchik-web:latest
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      HOSTNAME: 0.0.0.0
+      APP_SURFACE: lk
+
+  web_crm:
+    <<: *web_base
+    image: ai-smetchik-web:latest
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      HOSTNAME: 0.0.0.0
+      APP_SURFACE: crm
+
+  web_partner:
+    <<: *web_base
+    image: ai-smetchik-web:latest
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      HOSTNAME: 0.0.0.0
+      APP_SURFACE: partner
+
+  web_mobile:
+    <<: *web_base
+    image: ai-smetchik-web:latest
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      HOSTNAME: 0.0.0.0
+      APP_SURFACE: mobile
 
   worker:
     <<: *app_base
@@ -38,7 +91,17 @@ services:
     image: nginx:1.27-alpine
     restart: unless-stopped
     depends_on:
-      web:
+      web_landing:
+        condition: service_started
+      web_admin:
+        condition: service_started
+      web_lk:
+        condition: service_started
+      web_crm:
+        condition: service_started
+      web_partner:
+        condition: service_started
+      web_mobile:
         condition: service_started
     ports:
       - "80:80"

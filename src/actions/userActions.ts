@@ -57,6 +57,48 @@ const UpdateProfileSchema = z.object({
   avatarUrlExpirationTimestamp: z.number().optional().nullable(),
 });
 
+export const deleteOwnAccount = async (): Promise<{ success: boolean; message: string }> => {
+  let userId: string;
+  try {
+    userId = await resolveActingUserId();
+  } catch (error: any) {
+    return { success: false, message: error.message || 'Требуется авторизация.' };
+  }
+
+  try {
+    const dbClient = await getDb();
+    const userDoc = await dbClient.collection('users').findOne({ _id: userId as any });
+    if (!userDoc) {
+      return { success: false, message: 'Пользователь не найден.' };
+    }
+    if (userDoc.qaProtected) {
+      return { success: false, message: 'Этот QA-аккаунт защищен от удаления.' };
+    }
+
+    const now = new Date();
+    const anonymizedEmail = `deleted_${userId}_${now.getTime()}@deleted.local`;
+    const userRef = doc(db, 'users', userId);
+    await updateDoc(userRef, {
+      email: anonymizedEmail,
+      displayName: 'Deleted User',
+      phone: '',
+      phoneVerified: false,
+      telegramUsername: '',
+      telegramChatId: null,
+      status: 'blocked',
+      archivedAt: serverTimestamp(),
+      deletedAt: serverTimestamp(),
+      deletedBySelf: true,
+      updatedAt: serverTimestamp(),
+    });
+    await logUserAction(userId, 'USER_DELETE_ACCOUNT', { deletedAt: now.toISOString() });
+    return { success: true, message: 'Аккаунт удален.' };
+  } catch (error: any) {
+    console.error('deleteOwnAccount failed:', error);
+    return { success: false, message: error.message || 'Не удалось удалить аккаунт.' };
+  }
+};
+
 export const updateUserProfile = async (data: z.infer<typeof UpdateProfileSchema>): Promise<{ success: boolean; message: string }> => {
   const validation = UpdateProfileSchema.safeParse(data);
   if (!validation.success) {

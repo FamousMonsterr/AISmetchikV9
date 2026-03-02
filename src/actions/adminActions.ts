@@ -854,6 +854,26 @@ export interface EnvSettings {
     telegramBotMode?: 'polling' | 'webhook';
     telegramBotWebhookUrl?: string;
     telegramBotSecretToken?: string;
+    telegramBotTokenUser?: string;
+    telegramBotSecretTokenUser?: string;
+    telegramBotWebhookUrlUser?: string;
+    telegramBotEnabledUser?: boolean;
+    telegramBotTokenPartner?: string;
+    telegramBotSecretTokenPartner?: string;
+    telegramBotWebhookUrlPartner?: string;
+    telegramBotEnabledPartner?: boolean;
+    telegramBotTokenManager?: string;
+    telegramBotSecretTokenManager?: string;
+    telegramBotWebhookUrlManager?: string;
+    telegramBotEnabledManager?: boolean;
+    telegramBotTokenAdmin?: string;
+    telegramBotSecretTokenAdmin?: string;
+    telegramBotWebhookUrlAdmin?: string;
+    telegramBotEnabledAdmin?: boolean;
+    qaTestUserEmail?: string;
+    qaTestUserPassword?: string;
+    qaTestUserPhone?: string;
+    qaProtectUser?: boolean;
     dadataApiKey?: string;
     dadataApiSecret?: string;
     ozonBankApiBaseUrl?: string;
@@ -927,6 +947,26 @@ const EnvSettingsSchema = z.object({
     telegramBotMode: z.enum(['polling', 'webhook']).optional(),
     telegramBotWebhookUrl: z.string().url('Неверный URL вебхука.').optional().or(z.literal('')),
     telegramBotSecretToken: z.string().optional().or(z.literal('')),
+    telegramBotTokenUser: z.string().optional().or(z.literal('')),
+    telegramBotSecretTokenUser: z.string().optional().or(z.literal('')),
+    telegramBotWebhookUrlUser: z.string().url('Неверный URL вебхука (user).').optional().or(z.literal('')),
+    telegramBotEnabledUser: z.boolean().optional(),
+    telegramBotTokenPartner: z.string().optional().or(z.literal('')),
+    telegramBotSecretTokenPartner: z.string().optional().or(z.literal('')),
+    telegramBotWebhookUrlPartner: z.string().url('Неверный URL вебхука (partner).').optional().or(z.literal('')),
+    telegramBotEnabledPartner: z.boolean().optional(),
+    telegramBotTokenManager: z.string().optional().or(z.literal('')),
+    telegramBotSecretTokenManager: z.string().optional().or(z.literal('')),
+    telegramBotWebhookUrlManager: z.string().url('Неверный URL вебхука (manager).').optional().or(z.literal('')),
+    telegramBotEnabledManager: z.boolean().optional(),
+    telegramBotTokenAdmin: z.string().optional().or(z.literal('')),
+    telegramBotSecretTokenAdmin: z.string().optional().or(z.literal('')),
+    telegramBotWebhookUrlAdmin: z.string().url('Неверный URL вебхука (admin).').optional().or(z.literal('')),
+    telegramBotEnabledAdmin: z.boolean().optional(),
+    qaTestUserEmail: z.string().email('Неверный email QA пользователя.').optional().or(z.literal('')),
+    qaTestUserPassword: z.string().optional().or(z.literal('')),
+    qaTestUserPhone: z.string().optional().or(z.literal('')),
+    qaProtectUser: z.boolean().optional(),
     dadataApiKey: z.string().optional().or(z.literal('')),
     dadataApiSecret: z.string().optional().or(z.literal('')),
     ozonBankApiBaseUrl: z.string().optional().or(z.literal('')),
@@ -987,6 +1027,15 @@ type GetEnvOptions = {
 const SECRET_FIELDS: Array<keyof EnvSettings> = [
     'telegramBotToken',
     'telegramBotSecretToken',
+    'telegramBotTokenUser',
+    'telegramBotSecretTokenUser',
+    'telegramBotTokenPartner',
+    'telegramBotSecretTokenPartner',
+    'telegramBotTokenManager',
+    'telegramBotSecretTokenManager',
+    'telegramBotTokenAdmin',
+    'telegramBotSecretTokenAdmin',
+    'qaTestUserPassword',
     'dadataApiKey',
     'dadataApiSecret',
     'ozonBankApiToken',
@@ -1029,6 +1078,24 @@ const ENV_FILE_MAP: Record<string, (settings: EnvSettings) => string | undefined
     MONGODB_DB: (s) => s.mongoDbName,
     SUPER_ADMIN_EMAIL: (s) => s.superAdminEmail,
     TELEGRAM_BOT_TOKEN: (s) => s.telegramBotToken,
+    TELEGRAM_BOT_SECRET_TOKEN: (s) => s.telegramBotSecretToken,
+    TELEGRAM_BOT_WEBHOOK_URL: (s) => s.telegramBotWebhookUrl,
+    TELEGRAM_BOT_TOKEN_USER: (s) => s.telegramBotTokenUser,
+    TELEGRAM_BOT_SECRET_TOKEN_USER: (s) => s.telegramBotSecretTokenUser,
+    TELEGRAM_BOT_WEBHOOK_URL_USER: (s) => s.telegramBotWebhookUrlUser,
+    TELEGRAM_BOT_TOKEN_PARTNER: (s) => s.telegramBotTokenPartner,
+    TELEGRAM_BOT_SECRET_TOKEN_PARTNER: (s) => s.telegramBotSecretTokenPartner,
+    TELEGRAM_BOT_WEBHOOK_URL_PARTNER: (s) => s.telegramBotWebhookUrlPartner,
+    TELEGRAM_BOT_TOKEN_MANAGER: (s) => s.telegramBotTokenManager,
+    TELEGRAM_BOT_SECRET_TOKEN_MANAGER: (s) => s.telegramBotSecretTokenManager,
+    TELEGRAM_BOT_WEBHOOK_URL_MANAGER: (s) => s.telegramBotWebhookUrlManager,
+    TELEGRAM_BOT_TOKEN_ADMIN: (s) => s.telegramBotTokenAdmin,
+    TELEGRAM_BOT_SECRET_TOKEN_ADMIN: (s) => s.telegramBotSecretTokenAdmin,
+    TELEGRAM_BOT_WEBHOOK_URL_ADMIN: (s) => s.telegramBotWebhookUrlAdmin,
+    QA_TEST_USER_EMAIL: (s) => s.qaTestUserEmail,
+    QA_TEST_USER_PASSWORD: (s) => s.qaTestUserPassword,
+    QA_TEST_USER_PHONE: (s) => s.qaTestUserPhone,
+    QA_PROTECT_USER: (s) => s.qaProtectUser !== undefined ? String(!!s.qaProtectUser) : undefined,
     NEXT_PUBLIC_TELEGRAM_BOT_URL: (s) => s.nextPublicTelegramBotUrl,
     DADATA_API_KEY: (s) => s.dadataApiKey,
     DADATA_API_SECRET: (s) => s.dadataApiSecret,
@@ -1161,7 +1228,32 @@ export async function testConnectivity(options: { requesterId?: string; requireA
     const status: ConnectivityStatus = {
         mongo: { ok: false, message: '', uriSource: mongoUri ? (process.env.MONGODB_URI ? 'env' : 'panel') : 'none' },
         s3: { ok: false, message: 'Не проверено' },
-        telegram: { ok: !!(env.telegramBotToken || process.env.TELEGRAM_BOT_TOKEN), message: (env.telegramBotToken || process.env.TELEGRAM_BOT_TOKEN) ? 'Токен найден' : 'Токен отсутствует' },
+        telegram: {
+            ok: !!(
+                env.telegramBotToken ||
+                env.telegramBotTokenUser ||
+                env.telegramBotTokenPartner ||
+                env.telegramBotTokenManager ||
+                env.telegramBotTokenAdmin ||
+                process.env.TELEGRAM_BOT_TOKEN ||
+                process.env.TELEGRAM_BOT_TOKEN_USER ||
+                process.env.TELEGRAM_BOT_TOKEN_PARTNER ||
+                process.env.TELEGRAM_BOT_TOKEN_MANAGER ||
+                process.env.TELEGRAM_BOT_TOKEN_ADMIN
+            ),
+            message: (
+                env.telegramBotToken ||
+                env.telegramBotTokenUser ||
+                env.telegramBotTokenPartner ||
+                env.telegramBotTokenManager ||
+                env.telegramBotTokenAdmin ||
+                process.env.TELEGRAM_BOT_TOKEN ||
+                process.env.TELEGRAM_BOT_TOKEN_USER ||
+                process.env.TELEGRAM_BOT_TOKEN_PARTNER ||
+                process.env.TELEGRAM_BOT_TOKEN_MANAGER ||
+                process.env.TELEGRAM_BOT_TOKEN_ADMIN
+            ) ? 'Токен найден (default или audience).' : 'Токен отсутствует',
+        },
         openrouter: { ok: !!(env.openRouterApiKey || process.env.OPENROUTER_API_KEY), message: (env.openRouterApiKey || process.env.OPENROUTER_API_KEY) ? 'Ключ найден' : 'Ключ отсутствует' },
     };
 
@@ -1340,39 +1432,47 @@ export const testTelegramMongoConnection = async (adminUserId: string): Promise<
     }
 };
 
-export const testTelegramApiConnection = async (adminUserId: string): Promise<{ success: boolean; message: string }> => {
+export const testTelegramApiConnection = async (
+    adminUserId: string,
+    audience: TelegramAudience = 'default'
+): Promise<{ success: boolean; message: string }> => {
     const adminDoc = await getDoc(doc(db, 'users', adminUserId));
     if (!isAdminRole(adminDoc.data()?.systemRole)) {
         return { success: false, message: 'Недостаточно прав.' };
     }
     const envSettings = await getEnvSettings({ requesterId: adminUserId, requireAdmin: true });
-    const botToken = envSettings.telegramBotToken || process.env.TELEGRAM_BOT_TOKEN;
+    const config = resolveTelegramAudienceConfig(envSettings, audience);
+    const botToken = config.token;
     if (!botToken) {
-        return { success: false, message: 'Токен не задан.' };
+        return { success: false, message: `Токен не задан для аудитории ${audience}.` };
     }
     try {
         const bot = new TelegramBot(botToken, { polling: false });
         const me = await bot.getMe();
-        return { success: true, message: `Telegram OK: @${me.username || me.id}` };
+        return { success: true, message: `Telegram OK (${audience}): @${me.username || me.id}` };
     } catch (e: any) {
         return { success: false, message: e?.response?.body?.description || e?.message || 'Ошибка Telegram API.' };
     }
 };
 
-export const testTelegramWebhookInfo = async (adminUserId: string): Promise<{ success: boolean; message: string }> => {
+export const testTelegramWebhookInfo = async (
+    adminUserId: string,
+    audience: TelegramAudience = 'default'
+): Promise<{ success: boolean; message: string }> => {
     const adminDoc = await getDoc(doc(db, 'users', adminUserId));
     if (!isAdminRole(adminDoc.data()?.systemRole)) {
         return { success: false, message: 'Недостаточно прав.' };
     }
     const envSettings = await getEnvSettings({ requesterId: adminUserId, requireAdmin: true });
-    const botToken = envSettings.telegramBotToken || process.env.TELEGRAM_BOT_TOKEN;
+    const config = resolveTelegramAudienceConfig(envSettings, audience);
+    const botToken = config.token;
     if (!botToken) {
-        return { success: false, message: 'Токен не задан.' };
+        return { success: false, message: `Токен не задан для аудитории ${audience}.` };
     }
     try {
         const bot = new TelegramBot(botToken, { polling: false });
         const info = await bot.getWebhookInfo();
-        return { success: true, message: info?.url ? `Webhook: ${info.url}` : 'Webhook не настроен.' };
+        return { success: true, message: info?.url ? `Webhook (${audience}): ${info.url}` : `Webhook (${audience}) не настроен.` };
     } catch (e: any) {
         return { success: false, message: e?.response?.body?.description || e?.message || 'Ошибка webhook info.' };
     }
@@ -1393,20 +1493,101 @@ export const registerTelegramWebhookService = async (adminUserId: string): Promi
 
 const TelegramAudienceSchema = z.enum(TELEGRAM_AUDIENCES as unknown as [TelegramAudience, ...TelegramAudience[]]);
 
+const TELEGRAM_AUDIENCE_SUFFIX: Record<TelegramAudience, string> = {
+    default: '',
+    user: 'User',
+    partner: 'Partner',
+    manager: 'Manager',
+    admin: 'Admin',
+};
+
+const resolveTelegramAudienceConfig = (envSettings: EnvSettings, audience: TelegramAudience) => {
+    const suffix = TELEGRAM_AUDIENCE_SUFFIX[audience];
+    const envSuffix = audience.toUpperCase();
+
+    const token = (envSettings as any)[`telegramBotToken${suffix}`]
+        || process.env[`TELEGRAM_BOT_TOKEN_${envSuffix}`]
+        || envSettings.telegramBotToken
+        || process.env.TELEGRAM_BOT_TOKEN;
+
+    const secretToken = (envSettings as any)[`telegramBotSecretToken${suffix}`]
+        || process.env[`TELEGRAM_BOT_SECRET_TOKEN_${envSuffix}`]
+        || envSettings.telegramBotSecretToken
+        || process.env.TELEGRAM_BOT_SECRET_TOKEN
+        || '';
+
+    const webhookUrl = (envSettings as any)[`telegramBotWebhookUrl${suffix}`]
+        || process.env[`TELEGRAM_BOT_WEBHOOK_URL_${envSuffix}`]
+        || envSettings.telegramBotWebhookUrl
+        || process.env.TELEGRAM_BOT_WEBHOOK_URL
+        || '';
+
+    const enabledScoped = (envSettings as any)[`telegramBotEnabled${suffix}`];
+    const enabled = enabledScoped == null
+        ? envSettings.telegramBotEnabled !== false
+        : enabledScoped !== false;
+
+    return {
+        audience,
+        token,
+        secretToken,
+        webhookUrl,
+        enabled,
+    };
+};
+
+export const getTelegramAudienceStatus = async (
+    adminUserId: string,
+    audience: TelegramAudience
+): Promise<{ success: boolean; message: string; status?: any }> => {
+    const actorId = await ensureAdminActor(adminUserId);
+    const parsed = TelegramAudienceSchema.safeParse(audience);
+    if (!parsed.success) {
+        return { success: false, message: 'Неизвестная аудитория webhook.' };
+    }
+    const envSettings = await getEnvSettings({ requesterId: actorId, requireAdmin: true });
+    const config = resolveTelegramAudienceConfig(envSettings, parsed.data);
+
+    let webhookInfo: any = null;
+    if (config.token) {
+        try {
+            const bot = new TelegramBot(config.token, { polling: false });
+            webhookInfo = await bot.getWebhookInfo();
+        } catch {
+            webhookInfo = null;
+        }
+    }
+
+    return {
+        success: true,
+        message: `Статус аудитории ${parsed.data} получен.`,
+        status: {
+            audience: parsed.data,
+            enabled: config.enabled,
+            tokenSet: !!config.token,
+            secretSet: !!config.secretToken,
+            webhookUrl: config.webhookUrl || null,
+            webhookInfoUrl: webhookInfo?.url || null,
+            webhookPendingUpdateCount: webhookInfo?.pending_update_count ?? null,
+            webhookLastErrorDate: webhookInfo?.last_error_date ?? null,
+            webhookLastErrorMessage: webhookInfo?.last_error_message ?? null,
+            updatedAt: new Date().toISOString(),
+        },
+    };
+};
+
 export const registerTelegramWebhookByAudienceService = async (
     adminUserId: string,
     audience: TelegramAudience
 ): Promise<{ success: boolean; message: string }> => {
-    const adminDoc = await getDoc(doc(db, 'users', adminUserId));
-    if (!isAdminRole(adminDoc.data()?.systemRole)) {
-        return { success: false, message: 'Недостаточно прав.' };
-    }
+    const actorId = await ensureAdminActor(adminUserId);
     const parsed = TelegramAudienceSchema.safeParse(audience);
     if (!parsed.success) {
         return { success: false, message: 'Неизвестная аудитория webhook.' };
     }
     try {
         const result = await registerTelegramWebhook({ audience: parsed.data });
+        await logUserAction(actorId, 'ADMIN_UPDATE_ENV_SETTINGS', { action: 'register_telegram_webhook', audience: parsed.data });
         return { success: true, message: `Webhook (${parsed.data}) зарегистрирован: ${result.webhookUrl}` };
     } catch (e: any) {
         return { success: false, message: e?.message || 'Не удалось зарегистрировать webhook.' };
@@ -1430,64 +1611,99 @@ export const clearTelegramWebhookByAudienceService = async (
     adminUserId: string,
     audience: TelegramAudience
 ): Promise<{ success: boolean; message: string }> => {
-    const adminDoc = await getDoc(doc(db, 'users', adminUserId));
-    if (!isAdminRole(adminDoc.data()?.systemRole)) {
-        return { success: false, message: 'Недостаточно прав.' };
-    }
+    const actorId = await ensureAdminActor(adminUserId);
     const parsed = TelegramAudienceSchema.safeParse(audience);
     if (!parsed.success) {
         return { success: false, message: 'Неизвестная аудитория webhook.' };
     }
     try {
         await clearTelegramWebhook(parsed.data);
+        await logUserAction(actorId, 'ADMIN_UPDATE_ENV_SETTINGS', { action: 'clear_telegram_webhook', audience: parsed.data });
         return { success: true, message: `Webhook (${parsed.data}) удалён.` };
     } catch (e: any) {
         return { success: false, message: e?.message || 'Не удалось удалить webhook.' };
     }
 };
 
-export const pingTelegramBot = async (adminUserId: string): Promise<{ success: boolean; message: string }> => {
-    const adminDoc = await getDoc(doc(db, 'users', adminUserId));
-    if (!isAdminRole(adminDoc.data()?.systemRole)) {
-        return { success: false, message: 'Недостаточно прав.' };
+export const sendTelegramTestMessageByAudienceService = async (
+    adminUserId: string,
+    audience: TelegramAudience,
+    targetUserId?: string
+): Promise<{ success: boolean; message: string }> => {
+    const actorId = await ensureAdminActor(adminUserId);
+    const parsed = TelegramAudienceSchema.safeParse(audience);
+    if (!parsed.success) {
+        return { success: false, message: 'Неизвестная аудитория webhook.' };
     }
-    const adminData = adminDoc.data() as any;
-    if (!adminData?.telegramChatId) {
-        return { success: false, message: 'У админа нет chat_id. Привяжите Telegram.' };
+    const envSettings = await getEnvSettings({ requesterId: actorId, requireAdmin: true });
+    const config = resolveTelegramAudienceConfig(envSettings, parsed.data);
+    if (!config.token) {
+        return { success: false, message: `Токен не задан для аудитории ${parsed.data}.` };
     }
-    const envSettings = await getEnvSettings({ requesterId: adminUserId, requireAdmin: true });
-    const botToken = envSettings.telegramBotToken || process.env.TELEGRAM_BOT_TOKEN;
-    if (!botToken) {
-        return { success: false, message: 'Токен не задан.' };
+
+    const recipientId = targetUserId || actorId;
+    const recipientDoc = await getDoc(doc(db, 'users', recipientId));
+    const recipient = recipientDoc.data() as any;
+    if (!recipient?.telegramChatId) {
+        return { success: false, message: 'У получателя не привязан Telegram chat_id.' };
     }
     try {
-        const bot = new TelegramBot(botToken, { polling: false });
-        await bot.sendMessage(adminData.telegramChatId, `pong ✅ ${new Date().toLocaleString()}`);
-        return { success: true, message: 'Ping отправлен в Telegram.' };
+        const bot = new TelegramBot(config.token, { polling: false });
+        await bot.sendMessage(recipient.telegramChatId, `Тест ${parsed.data} ✅ ${new Date().toLocaleString()}`);
+        await logUserAction(actorId, 'ADMIN_SEND_TELEGRAM_MESSAGE', { audience: parsed.data, targetUserId: recipientId });
+        return { success: true, message: `Тестовое сообщение (${parsed.data}) отправлено.` };
     } catch (e: any) {
         return { success: false, message: e?.response?.body?.description || e?.message || 'Ошибка отправки.' };
     }
 };
 
-export const pingTelegramWebhookEndpoint = async (adminUserId: string): Promise<{ success: boolean; message: string }> => {
-    const adminDoc = await getDoc(doc(db, 'users', adminUserId));
-    if (!isAdminRole(adminDoc.data()?.systemRole)) {
-        return { success: false, message: 'Недостаточно прав.' };
-    }
+export const pingTelegramBotByAudienceService = async (
+    adminUserId: string,
+    audience: TelegramAudience = 'default'
+): Promise<{ success: boolean; message: string }> => {
+    const actorId = await ensureAdminActor(adminUserId);
+    const adminDoc = await getDoc(doc(db, 'users', actorId));
     const adminData = adminDoc.data() as any;
-    const envSettings = await getEnvSettings({ requesterId: adminUserId, requireAdmin: true });
-    const webhookUrl = envSettings.telegramBotWebhookUrl || process.env.TELEGRAM_BOT_WEBHOOK_URL;
-    if (!webhookUrl) {
-        return { success: false, message: 'Webhook URL не задан.' };
+    if (!adminData?.telegramChatId) {
+        return { success: false, message: 'У админа нет chat_id. Привяжите Telegram.' };
     }
-    const secretToken = envSettings.telegramBotSecretToken || process.env.TELEGRAM_BOT_SECRET_TOKEN || '';
+    const envSettings = await getEnvSettings({ requesterId: actorId, requireAdmin: true });
+    const config = resolveTelegramAudienceConfig(envSettings, audience);
+    const botToken = config.token;
+    if (!botToken) {
+        return { success: false, message: `Токен не задан для аудитории ${audience}.` };
+    }
+    try {
+        const bot = new TelegramBot(botToken, { polling: false });
+        await bot.sendMessage(adminData.telegramChatId, `pong ${audience} ✅ ${new Date().toLocaleString()}`);
+        await logUserAction(actorId, 'ADMIN_SEND_TELEGRAM_MESSAGE', { action: 'ping_telegram_bot', audience });
+        return { success: true, message: `Ping (${audience}) отправлен в Telegram.` };
+    } catch (e: any) {
+        return { success: false, message: e?.response?.body?.description || e?.message || 'Ошибка отправки.' };
+    }
+};
+
+export const pingTelegramWebhookByAudienceService = async (
+    adminUserId: string,
+    audience: TelegramAudience = 'default'
+): Promise<{ success: boolean; message: string }> => {
+    const actorId = await ensureAdminActor(adminUserId);
+    const adminDoc = await getDoc(doc(db, 'users', actorId));
+    const adminData = adminDoc.data() as any;
+    const envSettings = await getEnvSettings({ requesterId: actorId, requireAdmin: true });
+    const config = resolveTelegramAudienceConfig(envSettings, audience);
+    const webhookUrl = config.webhookUrl;
+    if (!webhookUrl) {
+        return { success: false, message: `Webhook URL не задан для аудитории ${audience}.` };
+    }
+    const secretToken = config.secretToken || '';
     const chatId = adminData?.telegramChatId || 0;
     const update = {
         update_id: Date.now(),
         message: {
             message_id: Date.now() % 100000,
             date: Math.floor(Date.now() / 1000),
-            text: 'health_check',
+            text: `health_check_${audience}`,
             from: {
                 id: adminData?.telegramUserId || 0,
                 is_bot: false,
@@ -1513,11 +1729,18 @@ export const pingTelegramWebhookEndpoint = async (adminUserId: string): Promise<
             const text = await response.text();
             return { success: false, message: `Webhook ответил ${response.status}: ${text || 'ошибка'}` };
         }
-        return { success: true, message: 'Webhook пинг успешен.' };
+        await logUserAction(actorId, 'ADMIN_UPDATE_ENV_SETTINGS', { action: 'ping_telegram_webhook', audience });
+        return { success: true, message: `Webhook пинг (${audience}) успешен.` };
     } catch (e: any) {
         return { success: false, message: e?.message || 'Не удалось выполнить ping.' };
     }
 };
+
+export const pingTelegramBot = async (adminUserId: string): Promise<{ success: boolean; message: string }> =>
+    pingTelegramBotByAudienceService(adminUserId, 'default');
+
+export const pingTelegramWebhookEndpoint = async (adminUserId: string): Promise<{ success: boolean; message: string }> =>
+    pingTelegramWebhookByAudienceService(adminUserId, 'default');
 
 
 // --- DANGER ZONE ---

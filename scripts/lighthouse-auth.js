@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-/* eslint-disable no-console */
 const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
@@ -64,7 +63,7 @@ async function loginOrRegister(page) {
       page.waitForURL('**/dashboard**', { timeout: 60_000 }),
       page.click('button[type="submit"]'),
     ]);
-    return;
+    return { temp: false, email: envEmail, password: envPassword };
   }
 
   const stamp = Date.now();
@@ -84,6 +83,7 @@ async function loginOrRegister(page) {
     page.waitForURL('**/dashboard**', { timeout: 90_000 }),
     page.click('button[type="submit"]'),
   ]);
+  return { temp: true, email, password };
 }
 
 async function main() {
@@ -93,9 +93,10 @@ async function main() {
   const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext();
   const page = await context.newPage();
+  let authInfo = null;
 
   try {
-    await loginOrRegister(page);
+    authInfo = await loginOrRegister(page);
 
     const cookies = await context.cookies(baseUrl);
     if (!cookies.length) {
@@ -146,6 +147,29 @@ async function main() {
     }
     console.log(`\nReports saved to: ${artifactDir}`);
   } finally {
+    if (authInfo?.temp) {
+      try {
+        const loginResp = await context.request.post(`${baseUrl}/api/v1/auth/login`, {
+          data: { email: authInfo.email, password: authInfo.password },
+        });
+        if (loginResp.ok()) {
+          const loginJson = await loginResp.json();
+          const token = loginJson?.accessToken;
+          if (token) {
+            const deleteResp = await context.request.delete(`${baseUrl}/api/v1/auth/account`, {
+              headers: { Authorization: `Bearer ${token}` },
+            });
+            if (deleteResp.ok()) {
+              console.log(`[auth] temp account deleted: ${authInfo.email}`);
+            } else {
+              console.warn(`[auth] temp account delete failed: ${authInfo.email}`);
+            }
+          }
+        }
+      } catch (cleanupError) {
+        console.warn('[auth] cleanup failed:', cleanupError?.message || cleanupError);
+      }
+    }
     await browser.close();
   }
 }

@@ -188,7 +188,6 @@ export function CompanyFormDialog({ isOpen, onClose, onSuccess, company, isClien
             const results = [];
             for (const targetIsClient of targets) {
                 const newCompanyData = { ...values, userId: user.uid, isDefault: false, isClient: targetIsClient };
-                // eslint-disable-next-line no-await-in-loop
                 results.push(await addCompany(newCompanyData));
             }
 
