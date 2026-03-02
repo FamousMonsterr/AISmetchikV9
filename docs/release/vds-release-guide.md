@@ -1,7 +1,12 @@
 # VDS релиз (Docker Compose) — чек‑лист
 
 ## 1) Архитектура (Compose)
-- `web`: Next.js (App Router)
+- `web_landing`: Next.js surface `landing`
+- `web_admin`: Next.js surface `admin`
+- `web_lk`: Next.js surface `lk`
+- `web_crm`: Next.js surface `crm`
+- `web_partner`: Next.js surface `partner`
+- `web_mobile`: Next.js surface `mobile`
 - `worker`: server‑analysis worker (`npm run worker:server-analysis`)
 - `mongo`: MongoDB
 - `nginx`: TLS + reverse proxy
@@ -18,6 +23,13 @@
 - `NEXT_PUBLIC_SITE_URL`
 - `OPENROUTER_API_KEY`
 - `TELEGRAM_BOT_TOKEN`
+- `TELEGRAM_BOT_SECRET_TOKEN`
+- `TELEGRAM_BOT_WEBHOOK_URL`
+- `TELEGRAM_BOT_TOKEN_USER`, `TELEGRAM_BOT_SECRET_TOKEN_USER`, `TELEGRAM_BOT_WEBHOOK_URL_USER`
+- `TELEGRAM_BOT_TOKEN_PARTNER`, `TELEGRAM_BOT_SECRET_TOKEN_PARTNER`, `TELEGRAM_BOT_WEBHOOK_URL_PARTNER`
+- `TELEGRAM_BOT_TOKEN_MANAGER`, `TELEGRAM_BOT_SECRET_TOKEN_MANAGER`, `TELEGRAM_BOT_WEBHOOK_URL_MANAGER`
+- `TELEGRAM_BOT_TOKEN_ADMIN`, `TELEGRAM_BOT_SECRET_TOKEN_ADMIN`, `TELEGRAM_BOT_WEBHOOK_URL_ADMIN`
+- `QA_TEST_USER_EMAIL`, `QA_TEST_USER_PASSWORD` (для постоянного QA-аккаунта)
 - `SMTP_*` (если нужны письма)
 - `S3_*` (если подключаете хранилище), включая:
   - базовый бакет анализа: `S3_BUCKET_NAME`
@@ -64,9 +76,9 @@
 - Заполнить `knowledge_base_articles` (YouTube/видео‑URLs)
 
 ## 8) Пример структуры Compose (описательно)
-- `web`:
-  - порт 3000, env из `.env`
-  - volume для статики (если нужно)
+- `web_landing/web_admin/web_lk/web_crm/web_partner/web_mobile`:
+  - каждый сервис на порту 3000 внутри docker-сети
+  - `APP_SURFACE` ограничивает допустимые маршруты
 - `worker`:
   - тот же образ/код, команда `npm run worker:server-analysis`
 - `mongo`:
@@ -84,6 +96,7 @@
 ## 10) После релиза
 - Прогонить smoke‑тесты
 - Проверить выдачу счетов, Telegram, S3
+- Прогнать `npm run qa:seed-user` (если включен QA-контур)
 
 ## 11) Troubleshooting (TLS и поддомены)
 - Если `Deploy VDS` зелёный, но `https://aismetchik.ru` не открывается: проверить, что certbot выпустил сертификат, а не сработал HTTP fallback.

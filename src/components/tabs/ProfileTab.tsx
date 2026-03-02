@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { PlanBadge } from '@/components/PlanBadge';
 import { Copy, Bot, User as UserIcon, Send, Save, Loader2, Mail, Briefcase, KeySquare, Sun, Moon, Monitor, Crown } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
-import { updateUserProfile, updateMarketingConsent } from '@/actions/userActions';
+import { updateUserProfile, updateMarketingConsent, deleteOwnAccount } from '@/actions/userActions';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { CheckCircle } from 'lucide-react';
@@ -34,6 +34,7 @@ import { TemplateConstructorDialog, type TemplateFormValues } from '@/components
 import { useSupportChat } from '@/contexts/SupportChatContext';
 import { useDocumentTemplates } from '@/hooks/use-document-templates';
 import { filterTemplatesForPlan, resolveDefaultTemplateId } from '@/lib/document-template-utils';
+import { signOut } from 'next-auth/react';
 
 
 export default function ProfileTab() {
@@ -219,6 +220,21 @@ export default function ProfileTab() {
     } finally {
       setIsSyncingChat(false);
     }
+  };
+
+  const handleDeleteAccount = () => {
+    if (!user) return;
+    const confirmed = window.confirm('Удалить аккаунт? Это действие необратимо.');
+    if (!confirmed) return;
+    startTransition(async () => {
+      const result = await deleteOwnAccount();
+      if (!result.success) {
+        toast({ title: 'Ошибка удаления', description: result.message, variant: 'destructive' });
+        return;
+      }
+      toast({ title: 'Аккаунт удален', description: 'Сессия будет завершена.' });
+      await signOut({ callbackUrl: '/auth/login' });
+    });
   };
 
   const openTemplateDialog = (template?: UserTemplate | null) => {
@@ -609,6 +625,22 @@ export default function ProfileTab() {
                     </Label>
                 </div>
             </RadioGroup>
+        </CardContent>
+      </Card>
+
+      <Card className="border-destructive/40">
+        <CardHeader>
+          <CardTitle className="text-destructive">Опасная зона</CardTitle>
+          <CardDescription>Удаление аккаунта для очистки тестовых данных и регистрации.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button variant="destructive" onClick={handleDeleteAccount} disabled={isPending || !!user?.qaProtected}>
+            {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+            Удалить аккаунт
+          </Button>
+          {user?.qaProtected ? (
+            <p className="mt-2 text-xs text-muted-foreground">QA-защита включена, удаление запрещено.</p>
+          ) : null}
         </CardContent>
       </Card>
 

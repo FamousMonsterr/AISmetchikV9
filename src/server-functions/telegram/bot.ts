@@ -4,6 +4,14 @@
 import TelegramBot, { type Message, type TelegramCallbackQuery } from '@/lib/telegram/telegraf-compat';
 import { doc, getDoc, setDoc, updateDoc, serverTimestamp, collection, query, where, limit, getDocs } from '@/lib/mongoFirestoreServer';
 import { db } from '@/lib/firebase';
+import {
+  type TelegramAudience,
+  TELEGRAM_AUDIENCE_COMMANDS,
+  extractCommand,
+  getUnknownCommandMessage,
+  isCommandAllowed,
+  resolveUserBotState,
+} from '@/server-functions/telegram/state';
 
 const readEnvSettings = async () => {
   const snap = await getDoc(doc(db, 'configs', 'envSettings'));
@@ -56,7 +64,7 @@ const ensureBotToken = async () => {
   return token;
 };
 
-const registerHandlers = (bot: TelegramBot) => {
+const registerHandlers = (bot: TelegramBot, audience: TelegramAudience = 'default') => {
   const webAppUrl = resolveWebAppUrl();
 
   const saveChat = async (msg: Message, payload: StartPayload) => {
@@ -103,7 +111,7 @@ const registerHandlers = (bot: TelegramBot) => {
     };
     await bot.sendMessage(
       chatId,
-      'Привет! Я бот AI Сметчик. Жми кнопку, чтобы открыть приложение, или команду /help.',
+      `Привет! Я бот AI Сметчик (${audience}). Жми кнопку, чтобы открыть приложение, или команду /help.`,
       { reply_markup: keyboard }
     );
   };
@@ -117,9 +125,10 @@ const registerHandlers = (bot: TelegramBot) => {
     const credits = user.credits ?? 0;
     const plan = user.plan ?? 'Free';
     const username = user.telegramUsername || user.displayName || 'Пользователь';
+    const state = resolveUserBotState(audience, user);
     await bot.sendMessage(
       chatId,
-      `Профиль: ${username}\nПлан: ${plan}\nКредиты: ${credits}\n\nОткройте приложение, чтобы пополнить или управлять тарифом.`,
+      `Профиль: ${username}\nПлан: ${plan}\nКредиты: ${credits}\nСостояние: ${state}\n\nОткройте приложение, чтобы пополнить или управлять тарифом.`,
       { reply_markup: { inline_keyboard: [[{ text: 'Открыть приложение', web_app: { url: webAppUrl } }]] } }
     );
   };
@@ -146,9 +155,10 @@ const registerHandlers = (bot: TelegramBot) => {
   };
 
   const sendHelp = async (chatId: number) => {
+    const commands = TELEGRAM_AUDIENCE_COMMANDS[audience].join('\n');
     await bot.sendMessage(
       chatId,
-      'Доступные команды:\n/start — запуск бота и привязка\n/profile — профиль и баланс\n/new — начать новый расчёт\n/history — история запросов\n/help — помощь\n/pay — оплата и тарифы\n/ping — проверка связи',
+      `Доступные команды (${audience}):\n${commands}`,
     );
   };
 
@@ -161,41 +171,77 @@ const registerHandlers = (bot: TelegramBot) => {
   };
 
   const sendPing = async (chatId: number) => {
-    await bot.sendMessage(chatId, `pong ✅ ${new Date().toLocaleString()}`);
+    await bot.sendMessage(chatId, `pong (${audience}) ✅ ${new Date().toLocaleString()}`);
   };
 
-  bot.onText(/\/start.*/i, async (msg) => {
-    const payload = parseStartPayload(msg);
-    try {
-      await saveChat(msg, payload);
-    } catch (err: any) {
-      console.error('Failed to save chat_id', err?.message || err);
+  bot.onText(/\/.*/i, async (msg) => {
+    const command = extractCommand(msg.text);
+    if (!command) return;
+    if (!isCommandAllowed(audience, command)) {
+      await bot.sendMessage(msg.chat.id, getUnknownCommandMessage(audience));
+      return;
     }
-    await sendWelcome(msg.chat.id);
-  });
 
-  bot.onText(/\/help/i, async (msg) => {
-    await sendHelp(msg.chat.id);
-  });
+    if (command === '/start') {
+      const payload = parseStartPayload(msg);
+      try {
+        await saveChat(msg, payload);
+      } catch (err: any) {
+        console.error('Failed to save chat_id', err?.message || err);
+      }
+      await sendWelcome(msg.chat.id);
+      return;
+    }
+    if (command === '/help') {
+      await sendHelp(msg.chat.id);
+      return;
+    }
+    if (command === '/profile') {
+      await sendProfile(msg.chat.id);
+      return;
+    }
+    if (command === '/new') {
+      await sendNew(msg.chat.id);
+      return;
+    }
+    if (command === '/history') {
+      await sendHistory(msg.chat.id);
+      return;
+    }
+    if (command === '/pay') {
+      await sendPay(msg.chat.id);
+      return;
+    }
+    if (command === '/support') {
+      await bot.sendMessage(msg.chat.id, 'Поддержка: откройте раздел "Поддержка" в приложении.');
+      return;
+    }
+    if (command === '/link') {
+      await bot.sendMessage(msg.chat.id, 'Привязка аккаунта выполняется через WebApp и init-data.');
+      return;
+    }
+    if (command === '/unlink') {
+      await bot.sendMessage(msg.chat.id, 'Отвязка выполняется в профиле пользователя (скоро в боте).');
+      return;
+    }
+    if (command === '/ref' || command === '/stats' || command === '/clients' || command === '/attestation' || command === '/payout') {
+      await bot.sendMessage(msg.chat.id, `Команда ${command} доступна и обрабатывается в партнерском кабинете.`);
+      return;
+    }
+    if (command === '/queue' || command === '/take' || command === '/done' || command === '/reassign' || command === '/sla' || command === '/client' || command === '/note') {
+      await bot.sendMessage(msg.chat.id, `Команда ${command} доступна в CRM-контуре менеджеров.`);
+      return;
+    }
+    if (command === '/health' || command === '/alerts' || command === '/deploy' || command === '/workers' || command === '/payments' || command === '/tickets' || command === '/webhooks') {
+      await bot.sendMessage(msg.chat.id, `Команда ${command} доступна в админ-контуре.`);
+      return;
+    }
+    if (command === '/ping') {
+      await sendPing(msg.chat.id);
+      return;
+    }
 
-  bot.onText(/\/profile/i, async (msg) => {
-    await sendProfile(msg.chat.id);
-  });
-
-  bot.onText(/\/new/i, async (msg) => {
-    await sendNew(msg.chat.id);
-  });
-
-  bot.onText(/\/history/i, async (msg) => {
-    await sendHistory(msg.chat.id);
-  });
-
-  bot.onText(/\/pay/i, async (msg) => {
-    await sendPay(msg.chat.id);
-  });
-
-  bot.onText(/\/ping/i, async (msg) => {
-    await sendPing(msg.chat.id);
+    await bot.sendMessage(msg.chat.id, getUnknownCommandMessage(audience));
   });
 
   bot.on('callback_query', async (q: TelegramCallbackQuery) => {
@@ -224,23 +270,27 @@ const registerHandlers = (bot: TelegramBot) => {
 export async function startTelegramBot(polling = true) {
   const token = await ensureBotToken();
   const bot = new TelegramBot(token, { polling });
-  registerHandlers(bot);
+  registerHandlers(bot, 'default');
   return bot;
 }
 
-const getWebhookBot = async (token?: string) => {
+const getWebhookBot = async (token?: string, audience: TelegramAudience = 'default') => {
   const resolvedToken = token || (await ensureBotToken());
-  const cached = webhookBots.get(resolvedToken);
+  const key = `${resolvedToken}:${audience}`;
+  const cached = webhookBots.get(key);
   if (cached) {
     return cached;
   }
   const bot = new TelegramBot(resolvedToken, { polling: false });
-  registerHandlers(bot);
-  webhookBots.set(resolvedToken, bot);
+  registerHandlers(bot, audience);
+  webhookBots.set(key, bot);
   return bot;
 };
 
-export async function processTelegramWebhookUpdate(update: any, options?: { token?: string }) {
-  const bot = await getWebhookBot(options?.token);
+export async function processTelegramWebhookUpdate(
+  update: any,
+  options?: { token?: string; audience?: TelegramAudience }
+) {
+  const bot = await getWebhookBot(options?.token, options?.audience || 'default');
   bot.processUpdate(update);
 }

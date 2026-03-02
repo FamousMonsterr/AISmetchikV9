@@ -14,6 +14,7 @@ import { isEqual } from 'lodash';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '../ui/select';
 import { Switch } from '@/components/ui/switch';
 import aiConfig from '@/lib/ai-config.json';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 
 const PasswordInput = ({ value, onChange, placeholder, disabled, id }: { value: string, onChange: (e: React.ChangeEvent<HTMLInputElement>) => void, placeholder: string, disabled: boolean, id: string }) => {
@@ -53,6 +54,13 @@ export function EnvSettings() {
   const [status, setStatus] = useState<ConnectivityStatus | null>(null);
   const [ozonStatus, setOzonStatus] = useState<any | null>(null);
   const [isOzonSyncing, startOzonSync] = useTransition();
+  const telegramAudienceTabs = [
+    { key: 'default', label: 'Default', token: 'telegramBotToken', secret: 'telegramBotSecretToken', webhook: 'telegramBotWebhookUrl', enabled: 'telegramBotEnabled' },
+    { key: 'user', label: 'User', token: 'telegramBotTokenUser', secret: 'telegramBotSecretTokenUser', webhook: 'telegramBotWebhookUrlUser', enabled: 'telegramBotEnabledUser' },
+    { key: 'partner', label: 'Partner', token: 'telegramBotTokenPartner', secret: 'telegramBotSecretTokenPartner', webhook: 'telegramBotWebhookUrlPartner', enabled: 'telegramBotEnabledPartner' },
+    { key: 'manager', label: 'Manager', token: 'telegramBotTokenManager', secret: 'telegramBotSecretTokenManager', webhook: 'telegramBotWebhookUrlManager', enabled: 'telegramBotEnabledManager' },
+    { key: 'admin', label: 'Admin', token: 'telegramBotTokenAdmin', secret: 'telegramBotSecretTokenAdmin', webhook: 'telegramBotWebhookUrlAdmin', enabled: 'telegramBotEnabledAdmin' },
+  ] as const;
   
   const hasUnsavedChanges = !isEqual(initialSettings, settings);
 
@@ -142,17 +150,6 @@ export function EnvSettings() {
         <Card>
             <CardHeader><CardTitle className="flex items-center gap-2 text-base"><Bot /> Telegram</CardTitle></CardHeader>
             <CardContent className="space-y-4">
-                <div className="flex items-center justify-between rounded-md border p-3">
-                    <div>
-                        <Label htmlFor="telegramBotEnabled">Включить бота</Label>
-                        <p className="text-xs text-muted-foreground">Управляет запуском в polling-режиме (или webhook при внешнем сервере).</p>
-                    </div>
-                    <Switch id="telegramBotEnabled" checked={!!settings.telegramBotEnabled} onCheckedChange={(checked) => setSettings({ ...settings, telegramBotEnabled: checked })} disabled={isPending} />
-                </div>
-                <div className="space-y-2">
-                    <Label htmlFor="telegramBotToken">Токен Telegram бота</Label>
-                    <PasswordInput id="telegramBotToken" value={settings.telegramBotToken || ''} onChange={(e) => setSettings({ ...settings, telegramBotToken: e.target.value })} placeholder="••••••••••" disabled={isPending} />
-                </div>
                 <div className="space-y-2">
                     <Label htmlFor="telegramBotUrl">Публичный URL бота (для ссылок)</Label>
                     <Input id="telegramBotUrl" type="url" value={settings.nextPublicTelegramBotUrl || ''} onChange={(e) => setSettings({ ...settings, nextPublicTelegramBotUrl: e.target.value })} placeholder="https://t.me/YourBot" disabled={isPending} />
@@ -166,17 +163,115 @@ export function EnvSettings() {
                             <SelectItem value="webhook">Webhook (нужен публичный HTTPS)</SelectItem>
                         </SelectContent>
                     </Select>
-                    <p className="text-xs text-muted-foreground">Для webhook укажите URL и секрет, настройте тот же URL в BotFather.</p>
+                    <p className="text-xs text-muted-foreground">Для webhook укажите URL и secret для каждой аудитории.</p>
                 </div>
-                <div className="space-y-2">
-                    <Label htmlFor="telegramBotWebhookUrl">Webhook URL</Label>
-                    <Input id="telegramBotWebhookUrl" type="url" value={settings.telegramBotWebhookUrl || ''} onChange={(e) => setSettings({ ...settings, telegramBotWebhookUrl: e.target.value })} placeholder="https://example.com/api/telegram/webhook" disabled={isPending || (settings.telegramBotMode || 'polling') !== 'webhook'} />
-                </div>
-                <div className="space-y-2">
-                    <Label htmlFor="telegramBotSecretToken">Webhook secret (X-Telegram-Bot-Api-Secret-Token)</Label>
-                    <PasswordInput id="telegramBotSecretToken" value={settings.telegramBotSecretToken || ''} onChange={(e) => setSettings({ ...settings, telegramBotSecretToken: e.target.value })} placeholder="••••••••••" disabled={isPending || (settings.telegramBotMode || 'polling') !== 'webhook'} />
-                </div>
+
+                <Tabs defaultValue="default" className="w-full">
+                    <TabsList className="grid w-full grid-cols-5">
+                        {telegramAudienceTabs.map((aud) => (
+                            <TabsTrigger key={aud.key} value={aud.key}>{aud.label}</TabsTrigger>
+                        ))}
+                    </TabsList>
+                    {telegramAudienceTabs.map((aud) => (
+                        <TabsContent key={aud.key} value={aud.key} className="space-y-3">
+                            <div className="flex items-center justify-between rounded-md border p-3">
+                                <div>
+                                    <Label htmlFor={`${aud.key}-enabled`}>Включить {aud.label.toLowerCase()} бота</Label>
+                                    <p className="text-xs text-muted-foreground">Используется в webhook/polling и fallback логике.</p>
+                                </div>
+                                <Switch
+                                    id={`${aud.key}-enabled`}
+                                    checked={!!(settings as any)[aud.enabled]}
+                                    onCheckedChange={(checked) => setSettings({ ...settings, [aud.enabled]: checked } as any)}
+                                    disabled={isPending}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor={`${aud.key}-token`}>Токен Telegram бота ({aud.label})</Label>
+                                <PasswordInput
+                                    id={`${aud.key}-token`}
+                                    value={((settings as any)[aud.token] as string) || ''}
+                                    onChange={(e) => setSettings({ ...settings, [aud.token]: e.target.value } as any)}
+                                    placeholder="••••••••••"
+                                    disabled={isPending}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor={`${aud.key}-webhook`}>Webhook URL ({aud.label})</Label>
+                                <Input
+                                    id={`${aud.key}-webhook`}
+                                    type="url"
+                                    value={((settings as any)[aud.webhook] as string) || ''}
+                                    onChange={(e) => setSettings({ ...settings, [aud.webhook]: e.target.value } as any)}
+                                    placeholder={`https://example.com/api/telegram/webhook${aud.key === 'default' ? '' : `/${aud.key}`}`}
+                                    disabled={isPending || (settings.telegramBotMode || 'polling') !== 'webhook'}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor={`${aud.key}-secret`}>Webhook secret ({aud.label})</Label>
+                                <PasswordInput
+                                    id={`${aud.key}-secret`}
+                                    value={((settings as any)[aud.secret] as string) || ''}
+                                    onChange={(e) => setSettings({ ...settings, [aud.secret]: e.target.value } as any)}
+                                    placeholder="••••••••••"
+                                    disabled={isPending || (settings.telegramBotMode || 'polling') !== 'webhook'}
+                                />
+                            </div>
+                        </TabsContent>
+                    ))}
+                </Tabs>
             </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base"><KeyRound /> QA аккаунт и тесты</CardTitle>
+            <CardDescription>Единый тестовый аккаунт для e2e и smoke-контуров.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="qaTestUserEmail">QA_TEST_USER_EMAIL</Label>
+              <Input
+                id="qaTestUserEmail"
+                type="email"
+                value={settings.qaTestUserEmail || ''}
+                onChange={(e) => setSettings({ ...settings, qaTestUserEmail: e.target.value })}
+                placeholder="qa@example.com"
+                disabled={isPending}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="qaTestUserPassword">QA_TEST_USER_PASSWORD</Label>
+              <PasswordInput
+                id="qaTestUserPassword"
+                value={settings.qaTestUserPassword || ''}
+                onChange={(e) => setSettings({ ...settings, qaTestUserPassword: e.target.value })}
+                placeholder="••••••••••"
+                disabled={isPending}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="qaTestUserPhone">QA_TEST_USER_PHONE</Label>
+              <Input
+                id="qaTestUserPhone"
+                value={settings.qaTestUserPhone || ''}
+                onChange={(e) => setSettings({ ...settings, qaTestUserPhone: e.target.value })}
+                placeholder="+79990000000"
+                disabled={isPending}
+              />
+            </div>
+            <div className="flex items-center justify-between rounded-md border p-3">
+              <div>
+                <Label htmlFor="qaProtectUser">QA_PROTECT_USER</Label>
+                <p className="text-xs text-muted-foreground">Запрещает удаление постоянного QA-аккаунта.</p>
+              </div>
+              <Switch
+                id="qaProtectUser"
+                checked={!!settings.qaProtectUser}
+                onCheckedChange={(checked) => setSettings({ ...settings, qaProtectUser: checked })}
+                disabled={isPending}
+              />
+            </div>
+          </CardContent>
         </Card>
         <Card><CardHeader><CardTitle className="flex items-center gap-2 text-base"><Database /> DaData API</CardTitle></CardHeader><CardContent className="space-y-4"><div className="space-y-2"><Label htmlFor="dadataApiKey">Ключ API DaData</Label><PasswordInput id="dadataApiKey" value={settings.dadataApiKey || ''} onChange={(e) => setSettings({ ...settings, dadataApiKey: e.target.value })} placeholder="••••••••••" disabled={isPending} /></div><div className="space-y-2"><Label htmlFor="dadataApiSecret">Секретный ключ DaData</Label><PasswordInput id="dadataApiSecret" value={settings.dadataApiSecret || ''} onChange={(e) => setSettings({ ...settings, dadataApiSecret: e.target.value })} placeholder="••••••••••" disabled={isPending} /></div></CardContent></Card>
         <Card>

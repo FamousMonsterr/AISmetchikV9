@@ -96,7 +96,7 @@ export async function handleTelegramWebhookUpdate(
   if (!config.token) {
     throw new Error(`TELEGRAM_BOT_TOKEN не задан для аудитории ${config.audience}.`);
   }
-  await processTelegramWebhookUpdate(update, { token: config.token });
+  await processTelegramWebhookUpdate(update, { token: config.token, audience: config.audience });
   return { ok: true, audience: config.audience };
 }
 

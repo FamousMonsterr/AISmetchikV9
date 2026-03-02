@@ -70,3 +70,27 @@
 ## Оставшиеся замечания
 - `next build` показывает предупреждения Edge-runtime из `scripts/local-log.js` и предупреждение о `middleware` -> `proxy` (не блокирует build).
 - Локальный `docker build` в этой сессии не запускался из-за недоступного Docker daemon в окружении агента.
+
+## Обновление 2 марта 2026
+- Реализован крупный пакет `bots + CRM + subdomains + QA` в ветке `feat/bots-crm-subdomains-hardening`.
+- Telegram:
+  - audience-конфиг в `EnvSettings` + персист в `.env`;
+  - админ-операции по аудиториям (status/register/clear/ping/test);
+  - state/command слой (`src/server-functions/telegram/state.ts`);
+  - webhook runtime теперь audience-aware.
+- CRM:
+  - новый backend слой `src/actions/crmActions.ts` на коллекциях:
+    - `crm_deals`, `crm_tasks`, `crm_sla_events`, `crm_activity_log`, `crm_automation_rules`;
+  - страница `/crm` переведена на board/table/tasks/timeline/sla.
+- Subdomains infra:
+  - compose разделен на `web_landing/web_admin/web_lk/web_crm/web_partner/web_mobile`;
+  - nginx проксирует по host-prefix в отдельные upstream;
+  - middleware ограничивает маршруты по `APP_SURFACE`.
+- QA lifecycle:
+  - `npm run qa:seed-user`;
+  - `DELETE /api/v1/auth/account` + защита `qaProtected`;
+  - кнопка self-delete в профиле;
+  - e2e-тест: `autoreg_*` регистрация + удаление.
+- CI:
+  - jobs: `unit`, `integration`, `build`, optional `e2e`, optional `smoke-subdomains`;
+  - добавлены scripts `test:unit`, `test:integration`, `test:smoke-subdomains`.

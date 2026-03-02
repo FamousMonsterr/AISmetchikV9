@@ -20,6 +20,41 @@
   - выровнять DNS всех поддоменов на текущий VDS;
   - заново запустить `Deploy VDS` и проверить `https://.../api/healthz` для root + subdomains.
 
+## Сессия 2 марта 2026 — реализация bots + CRM + subdomains + QA
+- Создана ветка реализации: `feat/bots-crm-subdomains-hardening`.
+- Telegram:
+  - `EnvSettings` расширен полями для `user/partner/manager/admin` (token/secret/webhook/enabled).
+  - Добавлены admin-actions по аудиториям:
+    - `getTelegramAudienceStatus`
+    - `registerTelegramWebhookByAudienceService`
+    - `clearTelegramWebhookByAudienceService`
+    - `pingTelegramWebhookByAudienceService`
+    - `sendTelegramTestMessageByAudienceService`
+    - `pingTelegramBotByAudienceService`
+  - В админке Telegram добавлены вкладки аудиторий и действия register/clear/ping/test по выбранной аудитории.
+  - Вынесен state/commands слой: `src/server-functions/telegram/state.ts`.
+  - Webhook обработчик теперь передает `audience` в runtime (`processTelegramWebhookUpdate`).
+- CRM:
+  - Добавлен backend слой `src/actions/crmActions.ts`:
+    - `crm_deals`, `crm_tasks`, `crm_sla_events`, `crm_activity_log`, `crm_automation_rules`
+    - sync `service_requests -> crm_deals`
+    - update deal/task, SLA sweep, automation rules.
+  - `src/app/crm/page.tsx` переведен на полноценный workspace (Board/Table/Tasks/Timeline/SLA).
+- Поддомены / infra:
+  - `deploy/docker-compose.vds.yml` разделен на сервисы:
+    - `web_landing`, `web_admin`, `web_lk`, `web_crm`, `web_partner`, `web_mobile`, `worker`, `nginx`.
+  - nginx шаблоны обновлены на host->upstream маршрутизацию по поддоменам.
+  - middleware получил `APP_SURFACE` hard-guard и 404 на чужие маршруты (без fallback на лендинг).
+  - `deploy-vds.yml` health-check обновлен для всех web-сервисов.
+- QA и удаление аккаунта:
+  - Добавлен seed-скрипт: `scripts/qa/seed-test-user.ts` + `npm run qa:seed-user`.
+  - Добавлен API self-delete: `DELETE /api/v1/auth/account` (с защитой `qaProtected`).
+  - Добавлен пользовательский self-delete: `deleteOwnAccount` + кнопка “Удалить аккаунт” в профиле.
+  - E2E: регистрация временного аккаунта и удаление через `v1` API.
+- CI:
+  - `.github/workflows/ci.yml` разбит на `unit` + `integration` + `build`, опционально `e2e` и `smoke-subdomains`.
+  - Добавлены npm scripts: `test:unit`, `test:integration`, `test:smoke-subdomains`.
+
 ## Релизный протокол (GitHub + VDS)
 - Основная ветка релиза: `main`.
 - Перед отправкой в `main` обязательно локально выполнить:

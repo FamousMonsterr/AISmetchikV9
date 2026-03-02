@@ -210,32 +210,34 @@ jobs:
               *) : ;;
             esac
 
-            web_id="$(compose_cmd ps -q web)"
-            if [ -z "$web_id" ]; then
-              echo "web container id not found"
-              compose_cmd ps || true
-              compose_cmd logs --tail=200 web || true
-              exit 1
-            fi
-
-            for i in $(seq 1 90); do
-              health="$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' "$web_id" 2>/dev/null || echo missing)"
-              if [ "$health" = "healthy" ]; then
-                break
-              fi
-              if [ "$health" = "unhealthy" ]; then
-                echo "Health check failed: container is unhealthy"
+            web_services=(web_landing web_admin web_lk web_crm web_partner web_mobile)
+            for svc in "${web_services[@]}"; do
+              svc_id="$(compose_cmd ps -q "$svc")"
+              if [ -z "$svc_id" ]; then
+                echo "container id not found for $svc"
                 compose_cmd ps || true
-                compose_cmd logs --tail=200 web || true
+                compose_cmd logs --tail=200 "$svc" || true
                 exit 1
               fi
-              if [ "$i" -eq 90 ]; then
-                echo "Health check timeout: status=${health}"
-                compose_cmd ps || true
-                compose_cmd logs --tail=200 web || true
-                exit 1
-              fi
-              sleep 2
+              for i in $(seq 1 90); do
+                health="$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' "$svc_id" 2>/dev/null || echo missing)"
+                if [ "$health" = "healthy" ]; then
+                  break
+                fi
+                if [ "$health" = "unhealthy" ]; then
+                  echo "Health check failed: $svc is unhealthy"
+                  compose_cmd ps || true
+                  compose_cmd logs --tail=200 "$svc" || true
+                  exit 1
+                fi
+                if [ "$i" -eq 90 ]; then
+                  echo "Health check timeout for $svc: status=${health}"
+                  compose_cmd ps || true
+                  compose_cmd logs --tail=200 "$svc" || true
+                  exit 1
+                fi
+                sleep 2
+              done
             done
 
             case "$TLS_RUNTIME_ENABLED" in

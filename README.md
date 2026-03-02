@@ -133,7 +133,8 @@ docker compose --env-file deploy/.env.vds -f deploy/docker-compose.vds.yml up -d
 
 ```bash
 docker compose --env-file deploy/.env.vds -f deploy/docker-compose.vds.yml ps
-docker compose --env-file deploy/.env.vds -f deploy/docker-compose.vds.yml exec -T web wget -q -O /dev/null http://127.0.0.1:3000/api/healthz
+docker compose --env-file deploy/.env.vds -f deploy/docker-compose.vds.yml exec -T web_landing wget -q -O /dev/null http://127.0.0.1:3000/api/healthz
+docker compose --env-file deploy/.env.vds -f deploy/docker-compose.vds.yml exec -T web_admin wget -q -O /dev/null http://127.0.0.1:3000/api/healthz
 ```
 
 Если Mongo локально на сервере нужна в том же compose:
@@ -148,7 +149,7 @@ COMPOSE_PROFILES=with-mongo docker compose --env-file deploy/.env.vds -f deploy/
 
 В проекте используются workflow:
 
-- `.github/workflows/ci.yml` — lint/typecheck/test/build.
+- `.github/workflows/ci.yml` — `unit` + `integration` + `build`, опционально `e2e` и `smoke-subdomains`.
 - `.github/workflows/deploy-vds.yml` — деплой на VDS по SSH после пуша в `main` или вручную.
 
 ### GitHub Secrets для деплоя
@@ -176,7 +177,7 @@ COMPOSE_PROFILES=with-mongo docker compose --env-file deploy/.env.vds -f deploy/
 3. Запускается `Deploy VDS`, на сервере выполняется:
    - `git fetch && git checkout main && git pull --ff-only origin main`
    - `docker compose ... up -d --build`
-4. Проверка `/api/healthz` внутри `web` контейнера (и HTTPS endpoint при включенном TLS)
+4. Проверка `/api/healthz` внутри `web_landing/web_admin/web_lk/web_crm/web_partner/web_mobile` (и HTTPS endpoint при включенном TLS)
 
 ### Поддомены (host-based routing)
 
@@ -200,6 +201,37 @@ COMPOSE_PROFILES=with-mongo docker compose --env-file deploy/.env.vds -f deploy/
 Создание индексов для текущих запросов:
 
 - `npm run mongo:indexes`
+
+## 🤖 Telegram audience matrix
+
+Используются отдельные переменные по аудиториям:
+
+- `TELEGRAM_BOT_TOKEN_USER`, `TELEGRAM_BOT_SECRET_TOKEN_USER`, `TELEGRAM_BOT_WEBHOOK_URL_USER`
+- `TELEGRAM_BOT_TOKEN_PARTNER`, `TELEGRAM_BOT_SECRET_TOKEN_PARTNER`, `TELEGRAM_BOT_WEBHOOK_URL_PARTNER`
+- `TELEGRAM_BOT_TOKEN_MANAGER`, `TELEGRAM_BOT_SECRET_TOKEN_MANAGER`, `TELEGRAM_BOT_WEBHOOK_URL_MANAGER`
+- `TELEGRAM_BOT_TOKEN_ADMIN`, `TELEGRAM_BOT_SECRET_TOKEN_ADMIN`, `TELEGRAM_BOT_WEBHOOK_URL_ADMIN`
+
+Webhook endpoints:
+
+- `https://lk.<домен>/api/telegram/webhook/user`
+- `https://partner.<домен>/api/telegram/webhook/partner`
+- `https://crm.<домен>/api/telegram/webhook/manager`
+- `https://admin.<домен>/api/telegram/webhook/admin`
+
+## 🧪 QA аккаунт
+
+Для постоянного QA-пользователя:
+
+- `QA_TEST_USER_EMAIL`
+- `QA_TEST_USER_PASSWORD`
+- `QA_TEST_USER_PHONE`
+- `QA_PROTECT_USER=true`
+
+Инициализация/обновление QA-пользователя:
+
+```bash
+npm run qa:seed-user
+```
 
 ## 🔐 Сброс пароля для перенесенных аккаунтов
 

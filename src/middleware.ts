@@ -17,6 +17,8 @@ const HOST_RULES: HostRule[] = [
   { hostPrefix: 'm.', rootPath: '/dashboard/mobile-panel', forceRootOnly: true },
 ];
 
+const APP_SURFACE = (process.env.APP_SURFACE || '').toLowerCase();
+
 function isStaticPath(pathname: string) {
   return STATIC_PREFIXES.some((prefix) => pathname.startsWith(prefix));
 }
@@ -35,8 +37,61 @@ function rewriteTo(request: NextRequest, targetPath: string) {
   return NextResponse.rewrite(nextUrl);
 }
 
+function notFound() {
+  return new NextResponse('Not Found', { status: 404 });
+}
+
+function handleDedicatedSurface(request: NextRequest, pathname: string) {
+  if (!APP_SURFACE) return null;
+  if (isStaticPath(pathname)) return NextResponse.next();
+  if (allowAuthPath(pathname)) return NextResponse.next();
+
+  if (APP_SURFACE === 'landing') {
+    if (pathname.startsWith('/dashboard') || pathname.startsWith('/crm') || pathname.startsWith('/partner')) {
+      return notFound();
+    }
+    return NextResponse.next();
+  }
+
+  if (APP_SURFACE === 'admin') {
+    if (pathname === '/') return rewriteTo(request, '/dashboard/admin');
+    if (pathname.startsWith('/dashboard/admin')) return NextResponse.next();
+    return notFound();
+  }
+
+  if (APP_SURFACE === 'lk') {
+    if (pathname === '/') return rewriteTo(request, '/dashboard');
+    if (pathname.startsWith('/dashboard') && !pathname.startsWith('/dashboard/admin')) return NextResponse.next();
+    return notFound();
+  }
+
+  if (APP_SURFACE === 'crm') {
+    if (pathname === '/') return rewriteTo(request, '/crm');
+    if (pathname.startsWith('/crm')) return NextResponse.next();
+    return notFound();
+  }
+
+  if (APP_SURFACE === 'partner') {
+    if (pathname === '/') return rewriteTo(request, '/partner');
+    if (pathname.startsWith('/partner')) return NextResponse.next();
+    return notFound();
+  }
+
+  if (APP_SURFACE === 'mobile') {
+    if (pathname === '/') return rewriteTo(request, '/dashboard/mobile-panel');
+    if (pathname === '/dashboard/mobile-panel') return NextResponse.next();
+    return notFound();
+  }
+
+  return notFound();
+}
+
 export function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
+  const surfaceResponse = handleDedicatedSurface(request, pathname);
+  if (surfaceResponse) {
+    return surfaceResponse;
+  }
   if (isStaticPath(pathname)) {
     return NextResponse.next();
   }
