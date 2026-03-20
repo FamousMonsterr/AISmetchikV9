@@ -19,6 +19,31 @@ function normalizeEmail(email: unknown): string {
   return typeof email === 'string' ? email.trim().toLowerCase() : '';
 }
 
+function getSharedAuthCookieDomain(): string {
+  const explicitDomain = process.env.NEXTAUTH_COOKIE_DOMAIN?.trim();
+  if (explicitDomain) {
+    return explicitDomain;
+  }
+
+  const siteUrl = process.env.NEXTAUTH_URL?.trim() || process.env.NEXT_PUBLIC_SITE_URL?.trim() || '';
+  if (!siteUrl) {
+    return '';
+  }
+
+  try {
+    const hostname = new URL(siteUrl).hostname.trim().toLowerCase();
+    if (!hostname || hostname === 'localhost' || hostname.endsWith('.localhost')) {
+      return '';
+    }
+    if (/^\d{1,3}(\.\d{1,3}){3}$/.test(hostname)) {
+      return '';
+    }
+    return hostname;
+  } catch {
+    return '';
+  }
+}
+
 function getDefaultModelValue(): string {
   const { apiModels } = modelsConfig as any;
   const defaultModel = apiModels.find((m: any) => m.isDefault) || apiModels[0];
@@ -342,9 +367,11 @@ async function syncTelegramUser(telegramUser: Record<string, any>) {
   return toSessionUser({ ...existingUser, ...updates });
 }
 
+const sharedAuthCookieDomain = getSharedAuthCookieDomain();
+
 export const authOptions = {
   trustHost: true,
-  ...(process.env.NEXTAUTH_COOKIE_DOMAIN
+  ...(sharedAuthCookieDomain
     ? {
         cookies: {
           sessionToken: {
@@ -354,7 +381,7 @@ export const authOptions = {
               sameSite: 'lax' as const,
               path: '/',
               secure: process.env.NODE_ENV === 'production',
-              domain: process.env.NEXTAUTH_COOKIE_DOMAIN,
+              domain: sharedAuthCookieDomain,
             },
           },
         },
