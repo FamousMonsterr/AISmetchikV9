@@ -10,10 +10,10 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Loader2, DatabaseZap, AlertTriangle, Wand2, HardDrive } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAppContext, type PriceBaseItem, type SpecificationItem } from '@/contexts/AppContext';
-import { getStandardSections } from '@/actions/adminActions';
+import { getStandardSectionsLite } from '@/actions/standardSectionActions';
 import { Input } from './ui/input';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
-import { updatePriceBase } from '@/actions/userActions';
+import { updatePriceBaseLite } from '@/actions/priceBaseActions';
 import { PlanBadge } from '@/components/PlanBadge';
 
 interface PrivatePriceDialogProps {
@@ -72,7 +72,7 @@ export function PrivatePriceDialog({
       setIsLoading(true);
       try {
         const projectHashtags = currentProject?.analysisDetails?.projectHashtags;
-        const standardSectionsData = await getStandardSections();
+        const standardSectionsData = await getStandardSectionsLite();
         const existingSections = standardSectionsData.map(s => s.section);
         
         const suggestedSections = new Set<string>();
@@ -117,7 +117,7 @@ export function PrivatePriceDialog({
       return;
     }
     setIsProcessing(true);
-    const result = await updatePriceBase(user.uid, itemsToProcess, finalSection);
+    const result = await updatePriceBaseLite(user.uid, itemsToProcess, finalSection);
 
     if (result.success) {
         toast({ title: "База цен обновлена", description: result.message });
