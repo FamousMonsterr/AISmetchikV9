@@ -290,6 +290,7 @@ export default function ProfileTab() {
     });
   };
 
+  const canEditTemplates = effectivePlan !== 'Free';
   const templatesChanged = canEditTemplates && (
     documentTemplates.proposal !== (user?.documentTemplates?.proposal || '') ||
     documentTemplates.invoice !== (user?.documentTemplates?.invoice || '') ||
@@ -307,7 +308,6 @@ export default function ProfileTab() {
     avatarState.url !== (user?.avatarUrl || '') ||
     avatarState.objectKey !== (user?.avatarObjectKey || '');
 
-  const canEditTemplates = effectivePlan !== 'Free';
   const customProposalTemplates = useMemo(
     () => customTemplates.filter((template) => template.docType === 'proposal'),
     [customTemplates],

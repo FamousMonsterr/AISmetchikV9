@@ -35,8 +35,8 @@
 
 ### 1. Предварительные требования
 
-- [Node.js](https://nodejs.org/) (версия 24.x или выше)
-- [pnpm](https://pnpm.io/) (рекомендуется) или `npm`/`yarn`
+- [Node.js](https://nodejs.org/) `25.2.1`
+- `npm` `11.x`
 - Доступ к MongoDB серверу
 
 ### 2. Клонирование репозитория
@@ -49,7 +49,7 @@ cd ai-smetchik
 ### 3. Установка зависимостей
 
 ```bash
-pnpm install
+npm install
 ```
 
 ### 4. Настройка переменных окружения
@@ -70,6 +70,9 @@ cp .env.example .env
 - `NEXTAUTH_SECRET` и `NEXTAUTH_URL`: Настройки NextAuth (JWT).
 - `OPENROUTER_API_KEY`: Ваш API ключ для OpenRouter.
 - `SUPER_ADMIN_EMAIL`: Email пользователя, который будет иметь полные права администратора в системе.
+- `GOOGLE_CLIENT_ID` и `GOOGLE_CLIENT_SECRET`: для Google OAuth.
+- `PASSKEY_*`: параметры WebAuthn/passkey (`PASSKEY_ORIGIN`, `PASSKEY_RP_ID`, `PASSKEY_RP_NAME`, `PASSKEY_TIMEOUT_MS`, `PASSKEY_CHALLENGE_TTL_MS`, `PASSKEY_USER_VERIFICATION`, `PASSKEY_ATTESTATION`).
+- `TELEGRAM_AUTH_EMAIL_DOMAIN`: домен для synthetic email при входе через Telegram Mini App.
 
 #### b) Конфигурация AI-промптов
 
@@ -86,7 +89,7 @@ cp src/lib/ai-constructor-config.example.json src/lib/ai-constructor-config.json
 После завершения настройки запустите сервер для разработки:
 
 ```bash
-pnpm dev
+npm run dev
 ```
 
 Откройте [http://localhost:3000](http://localhost:3000) в вашем браузере, чтобы увидеть результат.
@@ -149,7 +152,8 @@ COMPOSE_PROFILES=with-mongo docker compose --env-file deploy/.env.vds -f deploy/
 
 В проекте используются workflow:
 
-- `.github/workflows/ci.yml` — `unit` + `integration` + `build`, опционально `e2e` и `smoke-subdomains`.
+- `.github/workflows/ci.yml` — обязательный быстрый CI: `lint` + `typecheck` + `unit` + `integration` + `build`.
+- `.github/workflows/external-checks.yml` — внешние проверки после успешного deploy/manual/schedule: `e2e` + `smoke-subdomains` + browser smoke с артефактами.
 - `.github/workflows/deploy-vds.yml` — деплой на VDS по SSH после пуша в `main` или вручную.
 
 ### GitHub Secrets для деплоя
@@ -169,6 +173,19 @@ COMPOSE_PROFILES=with-mongo docker compose --env-file deploy/.env.vds -f deploy/
 - поднимет HTTP-конфиг для ACME challenge;
 - выпустит/обновит SAN-сертификат через `certbot` для домена и поддоменов;
 - переключит Nginx на HTTPS-конфиг.
+
+### GitHub Secrets и Variables для external checks
+
+`external-checks.yml` не должен быть required-check для merge, если внешние параметры ещё не настроены. Для него нужны:
+
+- `E2E_BASE_URL` — base URL внешнего стенда/прода для Playwright E2E.
+- `E2E_USER_EMAIL`
+- `E2E_USER_PASSWORD`
+- GitHub Variable `SMOKE_BASE_URL` — корневой URL для browser smoke.
+- GitHub Variable `SMOKE_DOMAINS` — список доменов через запятую для `/api/healthz`, например `aismetchik.ru,admin.aismetchik.ru,lk.aismetchik.ru,crm.aismetchik.ru,partner.aismetchik.ru,m.aismetchik.ru`.
+- GitHub Variable `SMOKE_BROWSER_UPLOAD_FLOW=1` — включать только если на стенде готов стабильный upload/analyze сценарий; по умолчанию browser smoke проверяет public/auth/dashboard/surfaces без загрузки файла.
+
+Playwright trace/html report и `.artifacts/smoke` автоматически выгружаются в GitHub Artifacts.
 
 ### Поток релиза
 
@@ -217,6 +234,12 @@ Webhook endpoints:
 - `https://partner.<домен>/api/telegram/webhook/partner`
 - `https://crm.<домен>/api/telegram/webhook/manager`
 - `https://admin.<домен>/api/telegram/webhook/admin`
+
+Telegram Mini App auth:
+
+- вход внутри Telegram WebApp использует `TELEGRAM_BOT_TOKEN_USER` с fallback на `TELEGRAM_BOT_TOKEN`;
+- если у пользователя ещё нет email, создаётся synthetic email на домене `TELEGRAM_AUTH_EMAIL_DOMAIN`;
+- параметры Google OAuth, passkey и Telegram auth можно сохранять из админ-панели: `Dashboard -> Admin -> Settings -> Переменные API`.
 
 ## 🧪 QA аккаунт
 

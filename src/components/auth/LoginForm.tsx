@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState, useTransition, type FormEvent } from 'react';
+import { useEffect, useRef, useState, useTransition, type FormEvent } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { getSession, signIn } from 'next-auth/react';
-import { Chrome, Eye, EyeOff, Loader2, LogIn, ShieldCheck, Sparkles } from 'lucide-react';
+import { Chrome, Eye, EyeOff, Loader2, LogIn, MessageCircle, ShieldCheck, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -15,12 +15,14 @@ import { sendPasswordReset } from '@/actions/userActions';
 import { useAppContext } from '@/contexts/AppContext';
 import { Logo } from '@/components/Logo';
 import { PasskeyPanel } from '@/components/auth/PasskeyPanel';
+import { resolvePostAuthRedirectUrl } from '@/lib/navigation';
 
 type LoginFormProps = {
   googleAuthEnabled: boolean;
+  telegramMiniAppAuthEnabled: boolean;
 };
 
-export function LoginForm({ googleAuthEnabled }: LoginFormProps) {
+export function LoginForm({ googleAuthEnabled, telegramMiniAppAuthEnabled }: LoginFormProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
@@ -31,7 +33,10 @@ export function LoginForm({ googleAuthEnabled }: LoginFormProps) {
   const [isResetPending, startResetTransition] = useTransition();
   const [showPassword, setShowPassword] = useState(false);
   const [isGooglePending, setIsGooglePending] = useState(false);
+  const [isTelegramPending, setIsTelegramPending] = useState(false);
+  const [telegramInitData, setTelegramInitData] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const hasAutoStartedTelegramLogin = useRef(false);
 
   const finalizeSuccessfulLogin = async () => {
     const session = await getSession();
@@ -49,7 +54,7 @@ export function LoginForm({ googleAuthEnabled }: LoginFormProps) {
 
     toast({ title: 'Вход выполнен успешно!' });
     setNavigating(true);
-    router.replace('/dashboard');
+    window.location.replace(resolvePostAuthRedirectUrl(session.user));
   };
 
   const handleCredentialsLogin = (e: FormEvent<HTMLFormElement>) => {
@@ -127,6 +132,36 @@ export function LoginForm({ googleAuthEnabled }: LoginFormProps) {
     }
   };
 
+  const handleTelegramLogin = async () => {
+    if (!telegramMiniAppAuthEnabled || isTelegramPending || !telegramInitData) {
+      return;
+    }
+
+    setError(null);
+    setIsTelegramPending(true);
+
+    try {
+      const result = await signIn('telegram', {
+        initData: telegramInitData,
+        redirect: false,
+      });
+
+      if (!result || result.error) {
+        throw new Error(result?.error || 'Не удалось войти через Telegram Mini App.');
+      }
+
+      await finalizeSuccessfulLogin();
+    } catch (telegramError: any) {
+      setError(telegramError.message);
+      setIsTelegramPending(false);
+      toast({
+        title: 'Telegram вход недоступен',
+        description: telegramError.message,
+        variant: 'destructive',
+      });
+    }
+  };
+
   const handlePasswordReset = () => {
     if (!email) {
       toast({ title: 'Ошибка', description: 'Пожалуйста, введите email для сброса пароля.', variant: 'destructive' });
@@ -141,6 +176,13 @@ export function LoginForm({ googleAuthEnabled }: LoginFormProps) {
       }
     });
   };
+
+  useEffect(() => {
+    const initData = (window as any)?.Telegram?.WebApp?.initData;
+    if (typeof initData === 'string' && initData.trim()) {
+      setTelegramInitData(initData.trim());
+    }
+  }, []);
 
   useEffect(() => {
     if (searchParams.get('google') !== '1') {
@@ -168,6 +210,19 @@ export function LoginForm({ googleAuthEnabled }: LoginFormProps) {
     };
   }, [searchParams, toast]);
 
+  useEffect(() => {
+    if (hasAutoStartedTelegramLogin.current) {
+      return;
+    }
+    if (!telegramMiniAppAuthEnabled || !telegramInitData) {
+      return;
+    }
+    hasAutoStartedTelegramLogin.current = true;
+    void handleTelegramLogin();
+  }, [telegramMiniAppAuthEnabled, telegramInitData]);
+
+  const telegramLoginAvailable = telegramMiniAppAuthEnabled && !!telegramInitData;
+
   return (
     <div className="relative min-h-screen overflow-hidden bg-[#07111b] text-slate-100">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(34,197,94,0.18),_transparent_28%),radial-gradient(circle_at_85%_20%,_rgba(56,189,248,0.18),_transparent_24%),linear-gradient(180deg,#06101a_0%,#09131d_50%,#07111b_100%)]" />
@@ -184,7 +239,7 @@ export function LoginForm({ googleAuthEnabled }: LoginFormProps) {
                   Один вход для смет, кабинета, CRM и автоматизации.
                 </h1>
                 <p className="max-w-xl text-sm leading-6 text-slate-300">
-                  Credentials и Google OAuth теперь проходят через один контур с единым{' '}
+                  Credentials, Google OAuth и Telegram Mini App теперь проходят через один контур с единым{' '}
                   <code className="rounded bg-white/10 px-1.5 py-0.5 font-mono text-[0.82em] text-slate-100">session.user.id</code>.
                   Если у аккаунта уже есть доступ, вход сохранит рабочие права и настройки.
                 </p>
@@ -205,7 +260,7 @@ export function LoginForm({ googleAuthEnabled }: LoginFormProps) {
               <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
                 <LogIn className="h-5 w-5 text-blue-300" />
                 <p className="mt-3 text-sm font-medium text-white">Быстрый вход</p>
-                <p className="mt-2 text-xs leading-5 text-slate-400">Google подключается без отдельного экрана и лишних шагов.</p>
+                <p className="mt-2 text-xs leading-5 text-slate-400">Google, passkey и Mini App работают в одном auth-контуре.</p>
               </div>
             </div>
           </section>
@@ -216,7 +271,7 @@ export function LoginForm({ googleAuthEnabled }: LoginFormProps) {
               <div className="flex items-center justify-between gap-4">
                 <Logo href="/" className="px-0 text-slate-100" />
                 <span className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-emerald-200">
-                  {googleAuthEnabled ? 'Google OAuth ready' : 'Credentials only'}
+                  {telegramLoginAvailable ? 'Telegram Mini App ready' : googleAuthEnabled ? 'Google OAuth ready' : 'Credentials only'}
                 </span>
               </div>
               <div className="space-y-1">
@@ -256,6 +311,18 @@ export function LoginForm({ googleAuthEnabled }: LoginFormProps) {
                 >
                   {isGooglePending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Chrome className="mr-2 h-4 w-4" />}
                   Продолжить с Google
+                </Button>
+              )}
+
+              {telegramLoginAvailable && (
+                <Button
+                  type="button"
+                  onClick={handleTelegramLogin}
+                  disabled={isLoginPending || isGooglePending || isTelegramPending}
+                  className="h-11 w-full border border-cyan-400/20 bg-cyan-400/10 text-cyan-50 hover:bg-cyan-400/20"
+                >
+                  {isTelegramPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <MessageCircle className="mr-2 h-4 w-4" />}
+                  Продолжить через Telegram
                 </Button>
               )}
 

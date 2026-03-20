@@ -296,6 +296,143 @@ export function EnvSettings() {
       <CardContent className="space-y-6">
         <Card><CardHeader><CardTitle className="flex items-center gap-2 text-base"><KeyRound /> Администрирование</CardTitle></CardHeader><CardContent><div className="space-y-2"><Label htmlFor="superAdminEmail">Email Супер-администратора</Label><Input id="superAdminEmail" type="email" value={settings.superAdminEmail || ''} onChange={(e) => setSettings({ ...settings, superAdminEmail: e.target.value })} placeholder="super@admin.com" disabled={isPending} /></div></CardContent></Card>
         <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base"><KeyRound /> Auth providers</CardTitle>
+            <CardDescription>Google OAuth, Telegram Mini App auth и passkey. Для серверных auth-провайдеров после сохранения нужен restart процесса.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="grid gap-4 lg:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="googleClientId">GOOGLE_CLIENT_ID</Label>
+                <Input
+                  id="googleClientId"
+                  value={settings.googleClientId || ''}
+                  onChange={(e) => setSettings({ ...settings, googleClientId: e.target.value })}
+                  placeholder="google-oauth-client-id"
+                  disabled={isPending}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="googleClientSecret">GOOGLE_CLIENT_SECRET</Label>
+                <PasswordInput
+                  id="googleClientSecret"
+                  value={settings.googleClientSecret || ''}
+                  onChange={(e) => setSettings({ ...settings, googleClientSecret: e.target.value })}
+                  placeholder="••••••••••"
+                  disabled={isPending}
+                />
+              </div>
+            </div>
+
+            <div className="grid gap-4 lg:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="telegramAuthEmailDomain">TELEGRAM_AUTH_EMAIL_DOMAIN</Label>
+                <Input
+                  id="telegramAuthEmailDomain"
+                  value={settings.telegramAuthEmailDomain || ''}
+                  onChange={(e) => setSettings({ ...settings, telegramAuthEmailDomain: e.target.value })}
+                  placeholder="telegram.local"
+                  disabled={isPending}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Используется для synthetic email при Telegram Mini App sign-in.
+                </p>
+              </div>
+              <div className="rounded-md border p-3 text-xs text-muted-foreground space-y-1">
+                <div>Telegram Mini App auth использует `TELEGRAM_BOT_TOKEN_USER`, затем fallback на `TELEGRAM_BOT_TOKEN`.</div>
+                <div>UI-кнопка входа появляется только внутри Telegram WebApp при наличии `initData`.</div>
+              </div>
+            </div>
+
+            <div className="grid gap-4 lg:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="passkeyOrigin">PASSKEY_ORIGIN</Label>
+                <Input
+                  id="passkeyOrigin"
+                  type="url"
+                  value={settings.passkeyOrigin || ''}
+                  onChange={(e) => setSettings({ ...settings, passkeyOrigin: e.target.value })}
+                  placeholder="https://aismetchik.ru"
+                  disabled={isPending}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="passkeyRpId">PASSKEY_RP_ID</Label>
+                <Input
+                  id="passkeyRpId"
+                  value={settings.passkeyRpId || ''}
+                  onChange={(e) => setSettings({ ...settings, passkeyRpId: e.target.value })}
+                  placeholder="aismetchik.ru"
+                  disabled={isPending}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="passkeyRpName">PASSKEY_RP_NAME</Label>
+                <Input
+                  id="passkeyRpName"
+                  value={settings.passkeyRpName || ''}
+                  onChange={(e) => setSettings({ ...settings, passkeyRpName: e.target.value })}
+                  placeholder="AI Smetchik"
+                  disabled={isPending}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>PASSKEY_USER_VERIFICATION</Label>
+                <Select
+                  value={settings.passkeyUserVerification || 'preferred'}
+                  onValueChange={(value) => setSettings({ ...settings, passkeyUserVerification: value as EnvSettings['passkeyUserVerification'] })}
+                  disabled={isPending}
+                >
+                  <SelectTrigger><SelectValue placeholder="Выберите режим" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="required">required</SelectItem>
+                    <SelectItem value="preferred">preferred</SelectItem>
+                    <SelectItem value="discouraged">discouraged</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>PASSKEY_ATTESTATION</Label>
+                <Select
+                  value={settings.passkeyAttestation || 'none'}
+                  onValueChange={(value) => setSettings({ ...settings, passkeyAttestation: value as EnvSettings['passkeyAttestation'] })}
+                  disabled={isPending}
+                >
+                  <SelectTrigger><SelectValue placeholder="Выберите attestation" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">none</SelectItem>
+                    <SelectItem value="direct">direct</SelectItem>
+                    <SelectItem value="indirect">indirect</SelectItem>
+                    <SelectItem value="enterprise">enterprise</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="passkeyTimeoutMs">PASSKEY_TIMEOUT_MS</Label>
+                <Input
+                  id="passkeyTimeoutMs"
+                  type="number"
+                  value={settings.passkeyTimeoutMs ?? ''}
+                  onChange={(e) => setSettings({ ...settings, passkeyTimeoutMs: e.target.value ? Number(e.target.value) : undefined })}
+                  placeholder="60000"
+                  disabled={isPending}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="passkeyChallengeTtlMs">PASSKEY_CHALLENGE_TTL_MS</Label>
+                <Input
+                  id="passkeyChallengeTtlMs"
+                  type="number"
+                  value={settings.passkeyChallengeTtlMs ?? ''}
+                  onChange={(e) => setSettings({ ...settings, passkeyChallengeTtlMs: e.target.value ? Number(e.target.value) : undefined })}
+                  placeholder="300000"
+                  disabled={isPending}
+                />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
             <CardHeader><CardTitle className="flex items-center gap-2 text-base"><Bot /> Telegram</CardTitle></CardHeader>
             <CardContent className="space-y-4">
                 <div className="space-y-2">

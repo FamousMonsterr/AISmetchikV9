@@ -55,6 +55,12 @@ async function run() {
     db.collection('file_analysis_cache').createIndex({ pipelineVersion: 1, createdAt: -1 }),
     db.collection('file_markdown_cache').createIndex({ updatedAt: -1 }),
     db.collection('s3_file_cache').createIndex({ createdAt: -1 }),
+    db.collection('passkey_credentials').createIndex({ credentialId: 1 }, { unique: true }),
+    db.collection('passkey_credentials').createIndex({ userId: 1, revokedAt: 1, createdAt: -1 }),
+    db.collection('passkey_challenges').createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 }),
+    db.collection('passkey_challenges').createIndex({ userId: 1, kind: 1, createdAt: -1 }),
+    db.collection('passkey_signin_tickets').createIndex({ token: 1 }, { unique: true }),
+    db.collection('passkey_signin_tickets').createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 }),
   ]);
 
   await client.close();

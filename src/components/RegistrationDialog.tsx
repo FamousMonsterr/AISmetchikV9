@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useTransition, useEffect, Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { getSession, signIn } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -18,6 +18,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import promoConfig from '@/lib/promo-config.json';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { useAppContext } from '@/contexts/AppContext';
+import { resolvePostAuthRedirectUrl } from '@/lib/navigation';
 
 
 // --- ВНИМАНИЕ! СТРОГО ЗАПРЕЩЕНО МЕНЯТЬ, ПЕРЕМЕЩАТЬ ИЛИ УДАЛЯТЬ ЭТОТ ИМПОРТ ---
@@ -32,7 +33,6 @@ interface RegistrationDialogProps {
 }
 
 export function RegistrationDialog({ isOpen, onClose, initialPromoCode }: RegistrationDialogProps) {
-  const router = useRouter();
   const { toast } = useToast();
   const { setNavigating } = useAppContext();
 
@@ -102,8 +102,7 @@ export function RegistrationDialog({ isOpen, onClose, initialPromoCode }: Regist
 
         toast({ title: "Регистрация прошла успешно!" });
         setNavigating(true);
-        router.push('/dashboard');
-        router.refresh();
+        window.location.replace(resolvePostAuthRedirectUrl(session.user));
         onClose();
       } catch (error: any) {
         setError(error.message);

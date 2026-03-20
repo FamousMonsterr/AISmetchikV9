@@ -24,6 +24,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { nanoid } from 'nanoid';
 import { saveAs } from 'file-saver';
 import { onSnapshot, collection, where, orderBy, FirebaseError, query, getDoc, doc, getDocs } from '@/lib/mongoFirestore';
@@ -38,6 +39,8 @@ import aiConfig from '@/lib/ai-config.json';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { getProjectDisplayName } from '@/lib/project-labels';
 
+type HistorySortMode = 'manual' | 'created-desc' | 'created-asc' | 'alpha-asc' | 'price-desc' | 'price-asc';
+const HISTORY_SORT_MODES: HistorySortMode[] = ['manual', 'created-desc', 'created-asc', 'alpha-asc', 'price-desc', 'price-asc'];
 
 export function HistorySection({ 
     isMobilePanel = false,
@@ -48,7 +51,7 @@ export function HistorySection({
     onProjectSelect?: (project: HistoryRequest) => void,
     searchTerm?: string
 }) {
-    const { user, setCurrentProject, setCurrentGroup, effectivePlan, setNavigating } = useAppContext();
+    const { user, currentProject, setCurrentProject, setCurrentGroup, effectivePlan, setNavigating } = useAppContext();
     const { toast } = useToast();
     const router = useRouter();
     const isMobile = useIsMobile();
@@ -59,6 +62,7 @@ export function HistorySection({
     const [activeTab, setActiveTab] = useState("active");
     const [selection, setSelection] = useState<Set<string>>(new Set());
     const [searchTerm, setSearchTerm] = useState(initialSearchTerm);
+    const [sortMode, setSortMode] = useState<HistorySortMode>('manual');
 
     const [isNavigating, startNavigation] = useTransition();
     const [isActionPending, startActionTransition] = useTransition();
@@ -73,10 +77,32 @@ export function HistorySection({
     
     const [isVersionDialogOpen, setIsVersionDialogOpen] = useState(false);
     const [projectForVersions, setProjectForVersions] = useState<HistoryRequest | null>(null);
+    const sortStorageKey = user ? `history-sort-mode:${user.uid}` : null;
 
     useEffect(() => {
         setSearchTerm(initialSearchTerm);
     }, [initialSearchTerm]);
+
+    useEffect(() => {
+        if (!sortStorageKey || typeof window === 'undefined') return;
+        try {
+            const stored = window.localStorage.getItem(sortStorageKey) as HistorySortMode | null;
+            if (stored && HISTORY_SORT_MODES.includes(stored)) {
+                setSortMode(stored);
+            }
+        } catch {
+            // localStorage is optional.
+        }
+    }, [sortStorageKey]);
+
+    useEffect(() => {
+        if (!sortStorageKey || typeof window === 'undefined') return;
+        try {
+            window.localStorage.setItem(sortStorageKey, sortMode);
+        } catch {
+            // localStorage is optional.
+        }
+    }, [sortMode, sortStorageKey]);
 
     const historyQuery = useMemo(() => {
         if (!user) return null;
@@ -86,6 +112,58 @@ export function HistorySection({
             orderBy('timestamp', 'desc')
         );
     }, [user]);
+
+    const getComparableTimestamp = useCallback((value: any) => {
+        if (!value) return 0;
+        if (typeof value?.toDate === 'function') return value.toDate().getTime();
+        if (value instanceof Date) return value.getTime();
+        const parsed = new Date(value).getTime();
+        return Number.isNaN(parsed) ? 0 : parsed;
+    }, []);
+
+    const getRepresentativeProject = useCallback((entry: HistoryRequest[] | HistoryRequest) => {
+        if (Array.isArray(entry)) {
+            return entry.slice().sort((a, b) => {
+                const aTs = getComparableTimestamp((a.updatedAt || a.timestamp) as any);
+                const bTs = getComparableTimestamp((b.updatedAt || b.timestamp) as any);
+                return bTs - aTs;
+            })[0] || null;
+        }
+        if ((entry as any)?.projects && Array.isArray((entry as any).projects)) {
+            return getRepresentativeProject((entry as any).projects);
+        }
+        return entry;
+    }, [getComparableTimestamp]);
+
+    const compareBySortMode = useCallback((a: HistoryRequest[] | HistoryRequest | { projects?: HistoryRequest[] }, b: HistoryRequest[] | HistoryRequest | { projects?: HistoryRequest[] }) => {
+        if (sortMode === 'manual') return 0;
+
+        const left = getRepresentativeProject(a);
+        const right = getRepresentativeProject(b);
+        if (!left || !right) return 0;
+
+        const leftName = getProjectDisplayName(left).toLowerCase();
+        const rightName = getProjectDisplayName(right).toLowerCase();
+        const leftCreated = getComparableTimestamp((left.timestamp || left.updatedAt) as any);
+        const rightCreated = getComparableTimestamp((right.timestamp || right.updatedAt) as any);
+        const leftPrice = Number(left.cost || 0);
+        const rightPrice = Number(right.cost || 0);
+
+        switch (sortMode) {
+            case 'created-asc':
+                return leftCreated - rightCreated;
+            case 'created-desc':
+                return rightCreated - leftCreated;
+            case 'alpha-asc':
+                return leftName.localeCompare(rightName, 'ru');
+            case 'price-asc':
+                return leftPrice - rightPrice;
+            case 'price-desc':
+                return rightPrice - leftPrice;
+            default:
+                return 0;
+        }
+    }, [getComparableTimestamp, getRepresentativeProject, sortMode]);
 
     const applyHistorySnapshot = useCallback((items: HistoryRequest[]) => {
         const grouped: Record<string, HistoryRequest[]> = {};
@@ -126,6 +204,29 @@ export function HistorySection({
         setHistory(sorted);
         return sorted;
     }, []);
+
+    useEffect(() => {
+        if (!user || !currentProject || currentProject.userId !== user.uid) return;
+        setHistory(prev => {
+            const merged = [...prev.filter(item => item.id !== currentProject.id), currentProject];
+            return applyHistorySnapshot(merged);
+        });
+    }, [
+        user?.uid,
+        currentProject?.id,
+        currentProject?.userId,
+        currentProject?.status,
+        currentProject?.timestamp,
+        currentProject?.updatedAt,
+        currentProject?.cost,
+        currentProject?.error,
+        currentProject?.processingStage,
+        currentProject?.processingStageMessage,
+        currentProject?.archivedAt,
+        currentProject?.objectId,
+        currentProject?.objectName,
+        applyHistorySnapshot,
+    ]);
 
     const refreshHistory = useCallback(async () => {
         if (!historyQuery) return;
@@ -300,10 +401,6 @@ export function HistorySection({
         }
 
         startNavigation(() => {
-            if (item.status === 'failed') {
-                toast({ title: "Ошибка анализа", description: "Этот анализ завершился с ошибкой, результат недоступен.", variant: "destructive" });
-                return;
-            }
             setCurrentGroup(null);
             setCurrentProject(item);
             setNavigating(true);
@@ -368,14 +465,14 @@ export function HistorySection({
     }, [history, searchTerm]);
 
     const groupedHistory = useMemo(() => {
-        const objects: Record<string, { name: string; projects: HistoryRequest[]; isArchived: boolean }> = {};
+        const objects: Record<string, { id: string; name: string; projects: HistoryRequest[]; isArchived: boolean }> = {};
         const ungroupedActive: HistoryRequest[] = [];
         const ungroupedArchived: HistoryRequest[] = [];
 
         for (const project of filteredHistory) {
             if (project.objectId && project.objectName) {
                 if (!objects[project.objectId]) {
-                    objects[project.objectId] = { name: project.objectName, projects: [], isArchived: !!project.archivedAt };
+                    objects[project.objectId] = { id: project.objectId, name: project.objectName, projects: [], isArchived: !!project.archivedAt };
                 }
                 objects[project.objectId].projects.push(project);
                 if (project.archivedAt) objects[project.objectId].isArchived = true;
@@ -385,11 +482,22 @@ export function HistorySection({
             }
         }
 
-        const activeObjects = Object.values(objects).filter(o => !o.isArchived);
-        const archivedObjects = Object.values(objects).filter(o => o.isArchived);
+        const activeObjectsRaw = Object.values(objects).filter((o) => !o.isArchived);
+        const archivedObjectsRaw = Object.values(objects).filter((o) => o.isArchived);
+        const activeObjects = sortMode === 'manual'
+          ? activeObjectsRaw
+          : [...activeObjectsRaw].sort(compareBySortMode);
+        const archivedObjects = sortMode === 'manual'
+          ? archivedObjectsRaw
+          : [...archivedObjectsRaw].sort(compareBySortMode);
 
-        return { activeObjects, ungroupedActive, archivedObjects, ungroupedArchived };
-    }, [filteredHistory]);
+        const sortProjects = (list: HistoryRequest[]) => {
+            if (sortMode === 'manual') return list;
+            return [...list].sort((a, b) => compareBySortMode(a, b));
+        };
+
+        return { activeObjects, ungroupedActive: sortProjects(ungroupedActive), archivedObjects, ungroupedArchived: sortProjects(ungroupedArchived) };
+    }, [filteredHistory, compareBySortMode, sortMode]);
 
     const handleCreateGroup = () => {
         if (!user || selection.size === 0 || !newGroupName.trim()) {
@@ -519,7 +627,7 @@ export function HistorySection({
                  <CardContent className={isMobilePanel ? "p-0" : ""}>
                     {!isMobilePanel && (
                         <div className="sticky top-16 z-20 mb-4 rounded-lg bg-background/95 pb-3 pt-2 backdrop-blur-sm">
-                            <div className="flex items-center gap-2">
+                            <div className="flex flex-col gap-2 lg:flex-row lg:items-center">
                                 <div className="relative flex-1">
                                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                                     <Input 
@@ -528,6 +636,21 @@ export function HistorySection({
                                         onChange={(e) => setSearchTerm(e.target.value)}
                                         className="pl-10"
                                     />
+                                </div>
+                                <div className="w-full lg:w-[220px]">
+                                    <Select value={sortMode} onValueChange={(value) => setSortMode(value as HistorySortMode)}>
+                                        <SelectTrigger className="w-full">
+                                            <SelectValue placeholder="Сортировка" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="manual">Вручную</SelectItem>
+                                            <SelectItem value="created-desc">Сначала новые</SelectItem>
+                                            <SelectItem value="created-asc">Сначала старые</SelectItem>
+                                            <SelectItem value="alpha-asc">По алфавиту</SelectItem>
+                                            <SelectItem value="price-desc">По итоговой цене: дорогие</SelectItem>
+                                            <SelectItem value="price-asc">По итоговой цене: дешевые</SelectItem>
+                                        </SelectContent>
+                                    </Select>
                                 </div>
                                 <Button
                                     variant="outline"
@@ -699,7 +822,7 @@ const HistoryRenderer = (props: HistoryRendererProps) => {
         
         return (
             <div className="space-y-6">
-                {objectsToRender.map((obj: any) => <ProjectGroup key={obj.name} object={obj} density={props.density} isPro={props.isPro} {...props} />)}
+                {objectsToRender.map((obj: any) => <ProjectGroup key={obj.id} object={obj} density={props.density} isPro={props.isPro} {...props} />)}
                 {ungroupedToRender.length > 0 && (
                     <div>
                         <h4 className="text-md font-semibold text-muted-foreground mt-8 mb-2 flex items-center gap-2">Проекты без группы</h4>

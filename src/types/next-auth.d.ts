@@ -11,6 +11,7 @@ declare module 'next-auth' {
       image?: string | null;
       systemRole?: string;
       plan?: string;
+      isPartner?: boolean;
       authProvider?: string;
     };
   }
@@ -19,6 +20,7 @@ declare module 'next-auth' {
     id: string;
     systemRole?: string;
     plan?: string;
+    isPartner?: boolean;
     image?: string | null;
     authProvider?: string;
   }
@@ -29,6 +31,7 @@ declare module 'next-auth/jwt' {
     id?: string;
     systemRole?: string;
     plan?: string;
+    isPartner?: boolean;
     image?: string | null;
     authProvider?: string;
   }

@@ -45,7 +45,7 @@ const RefinedSpecItemSchema = AiSpecificationItemSchema.extend({
   c: z.string().optional().nullable(), // AI's comment
 });
 
-export const RefineItemsOutputSchema = z.object({
+const RefineItemsOutputSchema = z.object({
   refinedSpecifications: z.array(RefinedSpecItemSchema),
   aiRefinementComment: z.string().optional().nullable(),
 });

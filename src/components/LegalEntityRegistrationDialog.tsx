@@ -6,7 +6,6 @@ import { useState, useTransition, useCallback, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useRouter } from 'next/navigation';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -30,6 +29,7 @@ import Link from 'next/link';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { useAppContext } from '@/contexts/AppContext';
 import { RadioGroup, RadioGroupItem } from './ui/radio-group';
+import { resolvePostAuthRedirectUrl } from '@/lib/navigation';
 
 const createFormSchema = (isPartner: boolean) => z.object({
   companyName: z.string().min(2, "Название компании обязательно."),
@@ -50,7 +50,6 @@ const createFormSchema = (isPartner: boolean) => z.object({
 
 
 export function LegalEntityRegistrationDialog({ isOpen, onClose, isRegistration = false, isPartnerRegistration = false }: { isOpen: boolean; onClose: () => void; isRegistration?: boolean, isPartnerRegistration?: boolean }) {
-  const router = useRouter();
   const { toast } = useToast();
   const { user, setNavigating } = useAppContext();
   const [isPending, startTransition] = useTransition();
@@ -144,7 +143,7 @@ export function LegalEntityRegistrationDialog({ isOpen, onClose, isRegistration 
             });
             if (isRegistration) {
               setNavigating(true);
-              router.push('/dashboard');
+              window.location.replace(resolvePostAuthRedirectUrl(undefined, isPartnerRegistration ? 'partner' : undefined));
             }
             onClose();
         } else {

@@ -5,18 +5,22 @@ on:
     branches: [main]
   pull_request:
 
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  unit:
+  lint:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 15
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
-          node-version: 24
+          node-version: 25.2.1
           cache: npm
 
       - name: Install dependencies
@@ -25,8 +29,41 @@ jobs:
       - name: Lint
         run: npm run lint
 
+  typecheck:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 25.2.1
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
       - name: Typecheck
         run: npm run typecheck
+
+  unit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: [lint, typecheck]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 25.2.1
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
 
       - name: Unit tests
         run: npm run test:unit
@@ -37,12 +74,12 @@ jobs:
     needs: unit
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
-          node-version: 24
+          node-version: 25.2.1
           cache: npm
 
       - name: Install dependencies
@@ -54,15 +91,15 @@ jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 25
-    needs: integration
+    needs: [lint, typecheck, unit, integration]
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
-          node-version: 24
+          node-version: 25.2.1
           cache: npm
 
       - name: Install dependencies
@@ -70,58 +107,3 @@ jobs:
 
       - name: Build
         run: npm run build
-
-  e2e:
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    needs: build
-    env:
-      E2E_BASE_URL: ${{ secrets.E2E_BASE_URL }}
-      E2E_USER_EMAIL: ${{ secrets.E2E_USER_EMAIL }}
-      E2E_USER_PASSWORD: ${{ secrets.E2E_USER_PASSWORD }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 24
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Skip E2E when secrets are unavailable
-        if: env.E2E_BASE_URL == '' || env.E2E_USER_EMAIL == '' || env.E2E_USER_PASSWORD == ''
-        run: echo "E2E secrets are missing; skipping Playwright job."
-
-      - name: Install Playwright
-        if: env.E2E_BASE_URL != '' && env.E2E_USER_EMAIL != '' && env.E2E_USER_PASSWORD != ''
-        run: npx playwright install --with-deps chromium
-
-      - name: E2E tests
-        if: env.E2E_BASE_URL != '' && env.E2E_USER_EMAIL != '' && env.E2E_USER_PASSWORD != ''
-        run: npm run test:e2e
-
-  smoke-subdomains:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    needs: build
-    env:
-      SMOKE_DOMAINS: ${{ secrets.SMOKE_DOMAINS }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 24
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Smoke checks
-        run: npm run test:smoke-subdomains

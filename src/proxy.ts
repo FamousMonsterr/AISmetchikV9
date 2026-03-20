@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 const STATIC_PREFIXES = ['/api', '/_next', '/favicon.ico', '/robots.txt', '/sitemap.xml', '/manifest.json', '/icons'];
+const LOCAL_HOSTNAMES = new Set(['localhost', '127.0.0.1', '[::1]']);
 
 type HostRule = {
   hostPrefix: string;
@@ -16,6 +17,13 @@ const HOST_RULES: HostRule[] = [
   { hostPrefix: 'partner.', rootPath: '/partner', routePrefix: '/partner' },
   { hostPrefix: 'm.', rootPath: '/dashboard/mobile-panel', forceRootOnly: true },
 ];
+const ROOT_DOMAIN_REDIRECTS: Array<{ routePrefix: string; hostPrefix: string }> = [
+  { routePrefix: '/dashboard/admin', hostPrefix: 'admin.' },
+  { routePrefix: '/dashboard/mobile-panel', hostPrefix: 'm.' },
+  { routePrefix: '/dashboard', hostPrefix: 'lk.' },
+  { routePrefix: '/crm', hostPrefix: 'crm.' },
+  { routePrefix: '/partner', hostPrefix: 'partner.' },
+];
 
 const APP_SURFACE = (process.env.APP_SURFACE || '').toLowerCase();
 
@@ -27,8 +35,26 @@ function normalizeHost(hostHeader: string | null) {
   return (hostHeader || '').toLowerCase().split(':')[0];
 }
 
+function isLocalHostname(hostname: string) {
+  return LOCAL_HOSTNAMES.has(hostname.toLowerCase());
+}
+
 function allowAuthPath(pathname: string) {
   return pathname.startsWith('/auth');
+}
+
+function stripKnownPrefix(hostname: string) {
+  const lowerHost = hostname.toLowerCase();
+  if (lowerHost.startsWith('www.')) {
+    return lowerHost.slice(4);
+  }
+
+  const knownRule = HOST_RULES.find((entry) => lowerHost.startsWith(entry.hostPrefix));
+  if (knownRule) {
+    return lowerHost.slice(knownRule.hostPrefix.length);
+  }
+
+  return lowerHost;
 }
 
 function rewriteTo(request: NextRequest, targetPath: string) {
@@ -37,8 +63,33 @@ function rewriteTo(request: NextRequest, targetPath: string) {
   return NextResponse.rewrite(nextUrl);
 }
 
+function redirectTo(request: NextRequest, targetPath: string) {
+  const nextUrl = request.nextUrl.clone();
+  nextUrl.pathname = targetPath;
+  return NextResponse.redirect(nextUrl);
+}
+
 function notFound() {
   return new NextResponse('Not Found', { status: 404 });
+}
+
+function handleRootDomainCrossSurfaceRedirect(request: NextRequest, pathname: string, host: string) {
+  if (isLocalHostname(host)) {
+    return null;
+  }
+
+  if (HOST_RULES.some((entry) => host.startsWith(entry.hostPrefix))) {
+    return null;
+  }
+
+  const target = ROOT_DOMAIN_REDIRECTS.find((entry) => pathname === entry.routePrefix || pathname.startsWith(`${entry.routePrefix}/`));
+  if (!target) {
+    return null;
+  }
+
+  const nextUrl = request.nextUrl.clone();
+  nextUrl.hostname = `${target.hostPrefix}${stripKnownPrefix(host)}`;
+  return NextResponse.redirect(nextUrl);
 }
 
 function handleDedicatedSurface(request: NextRequest, pathname: string) {
@@ -54,31 +105,31 @@ function handleDedicatedSurface(request: NextRequest, pathname: string) {
   }
 
   if (APP_SURFACE === 'admin') {
-    if (pathname === '/') return rewriteTo(request, '/dashboard/admin');
+    if (pathname === '/') return redirectTo(request, '/dashboard/admin');
     if (pathname.startsWith('/dashboard/admin')) return NextResponse.next();
     return notFound();
   }
 
   if (APP_SURFACE === 'lk') {
-    if (pathname === '/') return rewriteTo(request, '/dashboard');
+    if (pathname === '/') return redirectTo(request, '/dashboard');
     if (pathname.startsWith('/dashboard') && !pathname.startsWith('/dashboard/admin')) return NextResponse.next();
     return notFound();
   }
 
   if (APP_SURFACE === 'crm') {
-    if (pathname === '/') return rewriteTo(request, '/crm');
+    if (pathname === '/') return redirectTo(request, '/crm');
     if (pathname.startsWith('/crm')) return NextResponse.next();
     return notFound();
   }
 
   if (APP_SURFACE === 'partner') {
-    if (pathname === '/') return rewriteTo(request, '/partner');
+    if (pathname === '/') return redirectTo(request, '/partner');
     if (pathname.startsWith('/partner')) return NextResponse.next();
     return notFound();
   }
 
   if (APP_SURFACE === 'mobile') {
-    if (pathname === '/') return rewriteTo(request, '/dashboard/mobile-panel');
+    if (pathname === '/') return redirectTo(request, '/dashboard/mobile-panel');
     if (pathname === '/dashboard/mobile-panel') return NextResponse.next();
     return notFound();
   }
@@ -86,17 +137,23 @@ function handleDedicatedSurface(request: NextRequest, pathname: string) {
   return notFound();
 }
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
-  const surfaceResponse = handleDedicatedSurface(request, pathname);
-  if (surfaceResponse) {
-    return surfaceResponse;
-  }
   if (isStaticPath(pathname)) {
     return NextResponse.next();
   }
 
   const host = normalizeHost(request.headers.get('host'));
+  const crossSurfaceRedirect = handleRootDomainCrossSurfaceRedirect(request, pathname, host);
+  if (crossSurfaceRedirect) {
+    return crossSurfaceRedirect;
+  }
+
+  const surfaceResponse = handleDedicatedSurface(request, pathname);
+  if (surfaceResponse) {
+    return surfaceResponse;
+  }
+
   const rule = HOST_RULES.find((entry) => host.startsWith(entry.hostPrefix));
   if (!rule) {
     return NextResponse.next();
@@ -108,13 +165,13 @@ export function middleware(request: NextRequest) {
 
   if (rule.forceRootOnly) {
     if (pathname !== rule.rootPath) {
-      return rewriteTo(request, rule.rootPath);
+      return redirectTo(request, rule.rootPath);
     }
     return NextResponse.next();
   }
 
   if (pathname === '/') {
-    return rewriteTo(request, rule.rootPath);
+    return redirectTo(request, rule.rootPath);
   }
 
   if (rule.routePrefix && pathname.startsWith(rule.routePrefix)) {

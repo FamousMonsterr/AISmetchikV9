@@ -23,6 +23,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { resolvePostAuthRedirectUrl } from '@/lib/navigation';
 
 const pipelineColumns = ['new', 'qualified', 'in_progress', 'waiting_client', 'resolved', 'closed_lost'] as const;
 
@@ -68,7 +69,7 @@ export default function CrmPage() {
       return;
     }
     if (!canView) {
-      router.replace('/dashboard');
+      router.replace(resolvePostAuthRedirectUrl(user, 'lk'));
       return;
     }
     loadWorkspace();

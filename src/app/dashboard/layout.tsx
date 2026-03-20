@@ -40,6 +40,7 @@ import {
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useEngagementTracking } from "@/hooks/use-engagement-tracking";
 import { SupportChatProvider } from "@/contexts/SupportChatContext";
+import { resolveLandingUrl } from "@/lib/navigation";
 
 const NotificationCenter = dynamic(
   () => import("@/components/NotificationCenter").then((mod) => mod.NotificationCenter),
@@ -97,8 +98,9 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
     }, [user, isUserLoading, router]);
 
     const handleLogout = async () => {
-        await signOut();
-        router.push('/');
+        await signOut({ redirect: false });
+        setNavigating(true);
+        window.location.replace(resolveLandingUrl());
     };
 
     const handleNavigation = (href: string) => {

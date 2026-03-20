@@ -204,6 +204,8 @@ export function ProcessingDialog({ isOpen, onClose, file, model, temperature, in
                 }
                 draftId = draft.project.id;
                 setProcessingProjectId(draftId);
+                setCurrentProject(draft.project);
+                onProjectProcessed?.(draft.project);
                 return draftId;
             };
 

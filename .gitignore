@@ -27,9 +27,14 @@ firestore-debug.log
 
 # IDE files
 .vscode/
+.idx/
 
 # Local data
 .DS_Store
+publick/
+src/Fonts/
+.artifacts/
+.npm-cache/
 
 # Firebase specific
 .firebase/
@@ -39,6 +44,9 @@ firestore-debug.log
 # Temporary files
 *.tmp
 *.bak
+*.tsbuildinfo
+.localhost.log
+old.localhost.log
 
 # macOS specific
 .DS_Store

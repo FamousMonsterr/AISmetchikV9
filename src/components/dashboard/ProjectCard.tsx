@@ -41,7 +41,6 @@ const safeFormatDate = (timestamp: any): string => {
 
 export function ProjectCard({ item, isGrouped, onSelectionChange, selection, isActionPending, onViewResult, onUngroup, onArchive, onUnarchive, onReport, onDelete, onRenameProject, onViewVersions, activeTab, onRetry, density = 'comfortable' }: any) {
     const isActionDisabled = isActionPending;
-    const canViewResult = ['success', 'reported', 'draft'].includes(item.status);
     const canReportResult = item.status === 'success' && activeTab !== 'archived';
     const [isRenaming, setIsRenaming] = useState(false);
     const [newName, setNewName] = useState(item.fileName);
@@ -59,6 +58,27 @@ export function ProjectCard({ item, isGrouped, onSelectionChange, selection, isA
         }
         setIsRenaming(false);
     }
+
+    const DeleteAction = () => (
+        <AlertDialog>
+            <AlertDialogTrigger asChild>
+                <DropdownMenuItem className="text-destructive" onSelect={(e) => e.preventDefault()}>
+                    <Trash2 className="mr-2 h-4 w-4"/>
+                    Удалить навсегда
+                </DropdownMenuItem>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Вы уверены?</AlertDialogTitle>
+                    <AlertDialogDescription>Это действие нельзя отменить. Проект будет удален навсегда.</AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel>Отмена</AlertDialogCancel>
+                    <AlertDialogAction className="bg-destructive" onClick={() => onDelete(item.id)}>Удалить</AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+    );
     
     return (
         <Card className={cn("transition-colors", selection.has(item.id) && "bg-secondary/70", isCompact ? "p-2" : "p-3")}>
@@ -133,16 +153,10 @@ export function ProjectCard({ item, isGrouped, onSelectionChange, selection, isA
                     )}
                 </div>
                 <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2">
-                    <Button variant="outline" size="sm" onClick={() => onViewResult(item)} disabled={isActionDisabled || !canViewResult}>
+                    <Button variant="default" size="sm" onClick={() => onViewResult(item)} disabled={isActionDisabled}>
                         {isActionDisabled ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Eye className="mr-2 h-4 w-4" />}
-                        <span className="hidden sm:inline">Просмотр</span>
+                        <span className="hidden sm:inline">Открыть</span>
                     </Button>
-                    {canReportResult && (
-                        <Button variant="destructive" size="sm" onClick={() => onReport(item)} disabled={isActionDisabled}>
-                            <MessageSquareWarning className="mr-2 h-4 w-4" />
-                            <span className="hidden sm:inline">Пожаловаться</span>
-                        </Button>
-                    )}
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button variant="ghost" size="sm" className="h-auto px-2 py-1" disabled={isActionDisabled}>
@@ -160,12 +174,21 @@ export function ProjectCard({ item, isGrouped, onSelectionChange, selection, isA
                                     Повторить анализ
                                 </DropdownMenuItem>
                             )}
+                            {canReportResult && (
+                                <DropdownMenuItem onSelect={() => onReport(item)}>
+                                    <MessageSquareWarning className="mr-2 h-4 w-4" />
+                                    Пожаловаться
+                                </DropdownMenuItem>
+                            )}
                             <DropdownMenuSeparator />
                              {isGrouped ? (
-                                <DropdownMenuItem onSelect={() => onUngroup([item.id])}>
-                                    <Unlink className="mr-2 h-4 w-4" />
-                                    Открепить от группы
-                                </DropdownMenuItem>
+                                <>
+                                    <DropdownMenuItem onSelect={() => onUngroup([item.id])}>
+                                        <Unlink className="mr-2 h-4 w-4" />
+                                        Открепить от группы
+                                    </DropdownMenuItem>
+                                    <DeleteAction />
+                                </>
                              ) : (
                                 <>
                                     {activeTab !== "archived" && (
@@ -174,31 +197,14 @@ export function ProjectCard({ item, isGrouped, onSelectionChange, selection, isA
                                             Архивировать
                                         </DropdownMenuItem>
                                      )}
-                                     {activeTab === "archived" && (
+                                    {activeTab === "archived" && (
                                         <DropdownMenuItem onSelect={() => onUnarchive([item.id])}>
                                             <ArchiveRestore className="mr-2 h-4 w-4" />
                                             Восстановить
                                         </DropdownMenuItem>
                                      )}
                                     <DropdownMenuSeparator />
-                                    <AlertDialog>
-                                        <AlertDialogTrigger asChild>
-                                            <DropdownMenuItem className="text-destructive" onSelect={(e) => e.preventDefault()}>
-                                                <Trash2 className="mr-2 h-4 w-4"/>
-                                                Удалить навсегда
-                                            </DropdownMenuItem>
-                                        </AlertDialogTrigger>
-                                        <AlertDialogContent>
-                                            <AlertDialogHeader>
-                                                <AlertDialogTitle>Вы уверены?</AlertDialogTitle>
-                                                <AlertDialogDescription>Это действие нельзя отменить. Проект будет удален навсегда.</AlertDialogDescription>
-                                            </AlertDialogHeader>
-                                            <AlertDialogFooter>
-                                                <AlertDialogCancel>Отмена</AlertDialogCancel>
-                                                <AlertDialogAction className="bg-destructive" onClick={() => onDelete(item.id)}>Удалить</AlertDialogAction>
-                                            </AlertDialogFooter>
-                                        </AlertDialogContent>
-                                    </AlertDialog>
+                                    <DeleteAction />
                                 </>
                              )}
                         </DropdownMenuContent>

@@ -1,19 +1,73 @@
 import type { Metadata, Viewport } from "next";
-import { Bebas_Neue, Montserrat } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 import { RootClientShell } from "@/components/layout/RootClientShell";
 
-const montserrat = Montserrat({
-  subsets: ["latin", "cyrillic"],
+const montserrat = localFont({
+  src: [
+    {
+      path: "../../public/fonts/Montserrat-Regular.woff2",
+      weight: "400",
+      style: "normal",
+    },
+    {
+      path: "../../public/fonts/Montserrat-Italic.woff2",
+      weight: "400",
+      style: "italic",
+    },
+    {
+      path: "../../public/fonts/Montserrat-Medium.woff2",
+      weight: "500",
+      style: "normal",
+    },
+    {
+      path: "../../public/fonts/Montserrat-MediumItalic.woff2",
+      weight: "500",
+      style: "italic",
+    },
+    {
+      path: "../../public/fonts/Montserrat-SemiBold.woff2",
+      weight: "600",
+      style: "normal",
+    },
+    {
+      path: "../../public/fonts/Montserrat-SemiBoldItalic.woff2",
+      weight: "600",
+      style: "italic",
+    },
+    {
+      path: "../../public/fonts/Montserrat-Bold.woff2",
+      weight: "700",
+      style: "normal",
+    },
+    {
+      path: "../../public/fonts/Montserrat-BoldItalic.woff2",
+      weight: "700",
+      style: "italic",
+    },
+    {
+      path: "../../public/fonts/Montserrat-Black.woff2",
+      weight: "900",
+      style: "normal",
+    },
+    {
+      path: "../../public/fonts/Montserrat-BlackItalic.woff2",
+      weight: "900",
+      style: "italic",
+    },
+  ],
   variable: "--font-montserrat",
   display: "swap",
+  fallback: ["Arial", "Helvetica", "sans-serif"],
 });
 
-const bebasNeue = Bebas_Neue({
-  subsets: ["latin"],
+const bebasNeue = localFont({
+  src: "../../public/fonts/Bebas/Bebas Neue.ttf",
   variable: "--font-bebas-neue",
   weight: "400",
+  style: "normal",
   display: "swap",
+  fallback: ["Impact", "Arial Narrow", "sans-serif"],
 });
 
 export const metadata: Metadata = {

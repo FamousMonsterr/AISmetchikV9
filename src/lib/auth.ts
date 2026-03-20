@@ -3,6 +3,7 @@ import CredentialsProvider from 'next-auth/providers/credentials';
 import GoogleProvider from 'next-auth/providers/google';
 import bcrypt from 'bcryptjs';
 import { nanoid } from 'nanoid';
+import { parse as parseTelegramInitData, validate as validateTelegramInitData } from '@tma.js/init-data-node';
 import { getDb } from '@/lib/mongodb';
 import modelsConfig from '@/lib/ai-config.json';
 import { consumePasskeySignInTicket } from '@/lib/passkeys/store';
@@ -126,11 +127,12 @@ function toSessionUser(user: Record<string, any>) {
     image: user.avatarUrl || user.image || null,
     systemRole: user.systemRole,
     plan: user.plan,
+    isPartner: !!user.isPartner,
     authProvider: user.authProvider || 'credentials',
   };
 }
 
-async function syncExistingUserForSession(user: Record<string, any>, provider: 'credentials' | 'google' | 'passkey') {
+async function syncExistingUserForSession(user: Record<string, any>, provider: 'credentials' | 'google' | 'passkey' | 'telegram') {
   const db = await getDb();
   const email = normalizeEmail(user.email);
   const updates = getMissingDefaults(
@@ -153,6 +155,34 @@ async function syncExistingUserForSession(user: Record<string, any>, provider: '
 
 export function isGoogleAuthEnabled(): boolean {
   return Boolean(process.env.GOOGLE_CLIENT_ID?.trim() && process.env.GOOGLE_CLIENT_SECRET?.trim());
+}
+
+function getTelegramAuthToken(): string {
+  return (
+    process.env.TELEGRAM_BOT_TOKEN_USER?.trim() ||
+    process.env.TELEGRAM_BOT_TOKEN?.trim() ||
+    ''
+  );
+}
+
+function getTelegramAuthEmailDomain(): string {
+  return process.env.TELEGRAM_AUTH_EMAIL_DOMAIN?.trim() || 'telegram.local';
+}
+
+function buildTelegramSyntheticEmail(telegramId: number | string): string {
+  return normalizeEmail(`telegram-${telegramId}@${getTelegramAuthEmailDomain()}`);
+}
+
+function buildTelegramDisplayName(telegramUser: Record<string, any>) {
+  const fullName = [telegramUser.first_name, telegramUser.last_name]
+    .filter((value) => typeof value === 'string' && value.trim())
+    .join(' ')
+    .trim();
+  return fullName || telegramUser.username || `Telegram ${telegramUser.id}`;
+}
+
+export function isTelegramMiniAppAuthEnabled(): boolean {
+  return Boolean(getTelegramAuthToken());
 }
 
 async function syncGoogleUser(profile: Record<string, any>, account?: Record<string, any>) {
@@ -230,6 +260,82 @@ async function syncGoogleUser(profile: Record<string, any>, account?: Record<str
   }
   if (!existingUser.systemRole) {
     updates.systemRole = 'User';
+  }
+
+  await usersCollection.updateOne({ _id: existingUser._id }, { $set: updates });
+  return toSessionUser({ ...existingUser, ...updates });
+}
+
+async function syncTelegramUser(telegramUser: Record<string, any>) {
+  const telegramId = Number(telegramUser?.id);
+  if (!Number.isFinite(telegramId) || telegramId <= 0) {
+    throw new Error('Telegram user id is invalid.');
+  }
+
+  const db = await getDb();
+  const usersCollection = db.collection('users');
+  const syntheticEmail = buildTelegramSyntheticEmail(telegramId);
+  const displayName = buildTelegramDisplayName(telegramUser);
+  const avatarUrl = typeof telegramUser?.photo_url === 'string' ? telegramUser.photo_url : null;
+  const now = new Date();
+
+  const existingByTelegram = await usersCollection.findOne({ telegramChatId: telegramId });
+  const existingBySyntheticEmail = existingByTelegram ? null : await usersCollection.findOne({ email: syntheticEmail });
+  const existingUser = existingByTelegram || existingBySyntheticEmail;
+
+  if (existingUser?.status === 'blocked' || existingUser?.archivedAt) {
+    throw new Error('Аккаунт заблокирован. Обратитесь к администратору.');
+  }
+
+  if (!existingUser) {
+    const userId = nanoid();
+    const userData: any = {
+      _id: userId,
+      email: syntheticEmail,
+      ...buildUserDefaults({ email: syntheticEmail, displayName, avatarUrl }),
+      displayName,
+      avatarUrl,
+      telegramChatId: telegramId,
+      telegramUsername: telegramUser.username || '',
+      authProvider: 'telegram',
+      telegramLinkedAt: now,
+      lastLoginAt: now,
+      updatedAt: now,
+    };
+
+    await usersCollection.insertOne(userData);
+    return toSessionUser(userData);
+  }
+
+  const updates: Record<string, any> = {
+    updatedAt: now,
+    lastLoginAt: now,
+    authProvider: 'telegram',
+    telegramChatId: telegramId,
+    telegramUsername: telegramUser.username || existingUser.telegramUsername || '',
+    telegramLinkedAt: existingUser.telegramLinkedAt || now,
+  };
+
+  Object.assign(
+    updates,
+    getMissingDefaults(
+      existingUser,
+      buildUserDefaults({
+        email: existingUser.email || syntheticEmail,
+        displayName,
+        avatarUrl: existingUser.avatarUrl || avatarUrl,
+      }),
+    ),
+  );
+
+  if (!existingUser.email) {
+    updates.email = syntheticEmail;
+  }
+  if (!existingUser.displayName && displayName) {
+    updates.displayName = displayName;
+  }
+  if (!existingUser.avatarUrl && avatarUrl) {
+    updates.avatarUrl = avatarUrl;
   }
 
   await usersCollection.updateOne({ _id: existingUser._id }, { $set: updates });
@@ -326,6 +432,32 @@ export const authOptions = {
         return sessionUser;
       },
     }),
+    CredentialsProvider({
+      id: 'telegram',
+      name: 'Telegram',
+      credentials: {
+        initData: { label: 'Telegram initData', type: 'text' },
+      },
+      async authorize(credentials) {
+        const initData = typeof credentials?.initData === 'string' ? credentials.initData.trim() : '';
+        if (!initData) {
+          return null;
+        }
+
+        const botToken = getTelegramAuthToken();
+        if (!botToken) {
+          throw new Error('Telegram auth is not configured.');
+        }
+
+        validateTelegramInitData(initData, botToken, { expiresIn: 3600 });
+        const parsed = parseTelegramInitData(initData);
+        if (!parsed.user) {
+          throw new Error('Telegram did not return user data.');
+        }
+
+        return syncTelegramUser(parsed.user as Record<string, any>);
+      },
+    }),
     ...(isGoogleAuthEnabled()
       ? [
           GoogleProvider({
@@ -350,12 +482,14 @@ export const authOptions = {
         nextToken.id = linkedUser.id;
         nextToken.systemRole = linkedUser.systemRole;
         nextToken.plan = linkedUser.plan;
+        nextToken.isPartner = linkedUser.isPartner;
         nextToken.image = linkedUser.image || null;
         nextToken.authProvider = 'google';
       } else if (user) {
         nextToken.id = normalizeId(user.id);
         nextToken.systemRole = (user as any).systemRole;
         nextToken.plan = (user as any).plan;
+        nextToken.isPartner = !!(user as any).isPartner;
         nextToken.image = (user as any).image || null;
         nextToken.authProvider = (user as any).authProvider || account?.provider || 'credentials';
       }
@@ -377,6 +511,7 @@ export const authOptions = {
         session.user.id = normalizedId;
         (session.user as any).systemRole = token.systemRole;
         (session.user as any).plan = token.plan;
+        (session.user as any).isPartner = !!(token as any).isPartner;
         (session.user as any).image = (token as any).image || null;
         (session.user as any).authProvider = (token as any).authProvider || 'credentials';
       }

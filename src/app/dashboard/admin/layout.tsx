@@ -15,6 +15,7 @@ import { query, collection, getDocs, limit, where } from "@/lib/mongoFirestore";
 import { db } from "@/lib/firebase";
 import { motion, AnimatePresence } from "framer-motion";
 import { Input } from "@/components/ui/input";
+import { resolveLandingUrl } from "@/lib/navigation";
 
 
 const navGroups = [
@@ -139,7 +140,7 @@ export default function AdminLayout({
   useEffect(() => {
     // If user data is loaded and the user is not a Super Admin, redirect them.
     if (user && user.systemRole !== 'Super Admin') {
-      router.replace('/dashboard');
+      window.location.replace(resolveLandingUrl());
     }
   }, [user, router]);
 

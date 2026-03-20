@@ -1,5 +1,3 @@
-require('dotenv').config();
-
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
@@ -15,7 +13,7 @@ const nextConfig = {
     ],
   },
   experimental: {
-    optimizePackageImports: ["lucide-react", "@tabler/icons-react", "lodash", "date-fns"],
+    optimizePackageImports: ["lucide-react", "lodash", "date-fns"],
     serverActions: {
       bodySizeLimit: '50mb',
     },

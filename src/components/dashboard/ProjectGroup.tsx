@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 
 interface ProjectGroupProps {
     object: {
+        id: string;
         name: string;
         projects: HistoryRequest[];
         isArchived: boolean;
@@ -33,7 +34,7 @@ export function ProjectGroup({ object, onEditGroup, onDownloadReport, onArchive,
     const isCompact = density === 'compact';
 
     return (
-        <div key={object.projects[0].objectId}>
+        <div key={object.id}>
             <Card className={cn("bg-muted/50 rounded-b-none", isCompact ? "p-2" : "p-3")}>
                 <div className={cn("flex items-center justify-between", isCompact && "gap-2")}>
                     <div className="flex items-center gap-3 min-w-0">

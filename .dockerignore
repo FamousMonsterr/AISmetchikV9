@@ -5,3 +5,9 @@ docs
 deploy
 *.log
 *.tsbuildinfo
+.artifacts
+.npm-cache
+.idx
+.vscode
+publick
+src/Fonts

@@ -6,8 +6,8 @@ const domains = (process.env.SMOKE_DOMAINS || '')
   .filter(Boolean);
 
 if (!domains.length) {
-  console.log('SMOKE_DOMAINS is not set, skipping smoke-subdomains.');
-  process.exit(0);
+  console.error('SMOKE_DOMAINS is not set. Refusing to run an empty smoke-subdomains check.');
+  process.exit(1);
 }
 
 async function check(url) {

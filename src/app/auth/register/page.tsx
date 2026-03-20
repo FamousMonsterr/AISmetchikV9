@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useTransition, useEffect, Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { getSession, signIn } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -17,6 +17,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { AnimatePresence, motion } from "framer-motion";
 import promoConfig from '@/lib/promo-config.json';
 import { useAppContext } from '@/contexts/AppContext';
+import { resolvePostAuthRedirectUrl } from '@/lib/navigation';
 
 
 // --- ВНИМАНИЕ! СТРОГО ЗАПРЕЩЕНО МЕНЯТЬ, ПЕРЕМЕЩАТЬ ИЛИ УДАЛЯТЬ ЭТОТ ИМПОРТ ---
@@ -26,7 +27,6 @@ const { apiModels } = modelsConfig;
 
 
 function RegisterForm() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
   const { setNavigating } = useAppContext();
@@ -100,8 +100,7 @@ function RegisterForm() {
 
         toast({ title: "Регистрация прошла успешно!" });
         setNavigating(true);
-        router.push('/dashboard');
-        router.refresh();
+        window.location.replace(resolvePostAuthRedirectUrl(session.user));
       } catch (error: any) {
         setError(error.message);
         toast({

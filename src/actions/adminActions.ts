@@ -856,8 +856,11 @@ export const reportUserBug = async (data: z.infer<typeof BugReportSchema>) => {
 // --- ENV VARS Management ---
 export interface EnvSettings {
     superAdminEmail?: string;
+    googleClientId?: string;
+    googleClientSecret?: string;
     telegramBotToken?: string;
     nextPublicTelegramBotUrl?: string;
+    telegramAuthEmailDomain?: string;
     telegramBotEnabled?: boolean;
     telegramBotMode?: 'polling' | 'webhook';
     telegramBotWebhookUrl?: string;
@@ -892,6 +895,13 @@ export interface EnvSettings {
     localHfModelId?: string;
     localHfApiKey?: string;
     defaultFallbackModel?: string;
+    passkeyOrigin?: string;
+    passkeyRpId?: string;
+    passkeyRpName?: string;
+    passkeyTimeoutMs?: number;
+    passkeyChallengeTtlMs?: number;
+    passkeyUserVerification?: 'required' | 'preferred' | 'discouraged';
+    passkeyAttestation?: 'none' | 'direct' | 'indirect' | 'enterprise';
     mongoUri?: string;
     mongoDbName?: string;
     smtpEnabled?: boolean;
@@ -949,8 +959,11 @@ export interface EnvSettings {
 
 const EnvSettingsSchema = z.object({
     superAdminEmail: z.string().email('Неверный формат email.').optional().or(z.literal('')),
+    googleClientId: z.string().optional().or(z.literal('')),
+    googleClientSecret: z.string().optional().or(z.literal('')),
     telegramBotToken: z.string().optional().or(z.literal('')),
     nextPublicTelegramBotUrl: z.string().url('Неверный URL.').optional().or(z.literal('')),
+    telegramAuthEmailDomain: z.string().optional().or(z.literal('')),
     telegramBotEnabled: z.boolean().optional(),
     telegramBotMode: z.enum(['polling', 'webhook']).optional(),
     telegramBotWebhookUrl: z.string().url('Неверный URL вебхука.').optional().or(z.literal('')),
@@ -985,6 +998,13 @@ const EnvSettingsSchema = z.object({
     localHfModelId: z.string().optional().or(z.literal('')),
     localHfApiKey: z.string().optional().or(z.literal('')),
     defaultFallbackModel: z.string().optional().or(z.literal('')),
+    passkeyOrigin: z.string().url('Неверный PASSKEY_ORIGIN.').optional().or(z.literal('')),
+    passkeyRpId: z.string().optional().or(z.literal('')),
+    passkeyRpName: z.string().optional().or(z.literal('')),
+    passkeyTimeoutMs: z.number().int().min(1000).optional(),
+    passkeyChallengeTtlMs: z.number().int().min(1000).optional(),
+    passkeyUserVerification: z.enum(['required', 'preferred', 'discouraged']).optional(),
+    passkeyAttestation: z.enum(['none', 'direct', 'indirect', 'enterprise']).optional(),
     mongoUri: z.string().url('Неверный URL MongoDB.').optional().or(z.literal('')),
     mongoDbName: z.string().optional().or(z.literal('')),
     smtpEnabled: z.boolean().optional(),
@@ -1033,6 +1053,7 @@ type GetEnvOptions = {
 };
 
 const SECRET_FIELDS: Array<keyof EnvSettings> = [
+    'googleClientSecret',
     'telegramBotToken',
     'telegramBotSecretToken',
     'telegramBotTokenUser',
@@ -1085,7 +1106,10 @@ const ENV_FILE_MAP: Record<string, (settings: EnvSettings) => string | undefined
     MONGODB_URI: (s) => s.mongoUri,
     MONGODB_DB: (s) => s.mongoDbName,
     SUPER_ADMIN_EMAIL: (s) => s.superAdminEmail,
+    GOOGLE_CLIENT_ID: (s) => s.googleClientId,
+    GOOGLE_CLIENT_SECRET: (s) => s.googleClientSecret,
     TELEGRAM_BOT_TOKEN: (s) => s.telegramBotToken,
+    TELEGRAM_AUTH_EMAIL_DOMAIN: (s) => s.telegramAuthEmailDomain,
     TELEGRAM_BOT_SECRET_TOKEN: (s) => s.telegramBotSecretToken,
     TELEGRAM_BOT_WEBHOOK_URL: (s) => s.telegramBotWebhookUrl,
     TELEGRAM_BOT_TOKEN_USER: (s) => s.telegramBotTokenUser,
@@ -1115,6 +1139,13 @@ const ENV_FILE_MAP: Record<string, (settings: EnvSettings) => string | undefined
     LOCAL_HF_MODEL_ID: (s) => s.localHfModelId,
     LOCAL_HF_API_KEY: (s) => s.localHfApiKey,
     DEFAULT_FALLBACK_MODEL: (s) => s.defaultFallbackModel,
+    PASSKEY_ORIGIN: (s) => s.passkeyOrigin,
+    PASSKEY_RP_ID: (s) => s.passkeyRpId,
+    PASSKEY_RP_NAME: (s) => s.passkeyRpName,
+    PASSKEY_TIMEOUT_MS: (s) => s.passkeyTimeoutMs !== undefined ? String(s.passkeyTimeoutMs) : undefined,
+    PASSKEY_CHALLENGE_TTL_MS: (s) => s.passkeyChallengeTtlMs !== undefined ? String(s.passkeyChallengeTtlMs) : undefined,
+    PASSKEY_USER_VERIFICATION: (s) => s.passkeyUserVerification,
+    PASSKEY_ATTESTATION: (s) => s.passkeyAttestation,
     SMTP_ENABLED: (s) => s.smtpEnabled !== undefined ? String(!!s.smtpEnabled) : undefined,
     SMTP_HOST: (s) => s.smtpHost,
     SMTP_PORT: (s) => s.smtpPort !== undefined ? String(s.smtpPort) : undefined,
