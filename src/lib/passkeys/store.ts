@@ -1,5 +1,4 @@
 import { nanoid } from 'nanoid';
-import { collection } from '@/lib/mongoFirestoreServer';
 import { getDb } from '@/lib/mongodb';
 import type {
   PasskeyChallengeRecord,
@@ -11,14 +10,6 @@ import type {
 const CHALLENGES_COLLECTION = 'passkey_challenges';
 const CREDENTIALS_COLLECTION = 'passkey_credentials';
 const SIGNIN_TICKETS_COLLECTION = 'passkey_signin_tickets';
-
-function challengeCollection() {
-  return collection(null, CHALLENGES_COLLECTION);
-}
-
-function credentialCollection() {
-  return collection(null, CREDENTIALS_COLLECTION);
-}
 
 export async function insertPasskeyChallenge(record: Omit<PasskeyChallengeRecord, '_id'>) {
   const db = await getDb();
@@ -130,10 +121,6 @@ export async function findPasskeyUserByIdentifier(identifier: string) {
   }
   const userById = await db.collection<any>('users').findOne({ _id: identifier.trim() });
   return userById ? { ...userById, _id: String(userById._id) } : null;
-}
-
-export async function listPasskeyCredentialsForUserId(userId: string) {
-  return listPasskeyCredentialsForUser(userId);
 }
 
 export async function createPasskeySignInTicket(record: Omit<PasskeySignInTicketRecord, '_id'>) {
