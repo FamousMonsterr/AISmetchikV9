@@ -35,6 +35,7 @@ import { useSupportChat } from '@/contexts/SupportChatContext';
 import { useDocumentTemplates } from '@/hooks/use-document-templates';
 import { filterTemplatesForPlan, resolveDefaultTemplateId } from '@/lib/document-template-utils';
 import { signOut } from 'next-auth/react';
+import { PasskeyPanel } from '@/components/auth/PasskeyPanel';
 
 
 export default function ProfileTab() {
@@ -627,6 +628,12 @@ export default function ProfileTab() {
             </RadioGroup>
         </CardContent>
       </Card>
+
+      <PasskeyPanel
+        mode="both"
+        title="Passkey и безопасность"
+        description="Зарегистрируйте passkey для быстрого входа без пароля и управляйте уже сохранёнными устройствами."
+      />
 
       <Card className="border-destructive/40">
         <CardHeader>

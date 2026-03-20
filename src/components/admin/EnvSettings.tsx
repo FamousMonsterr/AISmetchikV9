@@ -1,13 +1,34 @@
 // src/components/admin/EnvSettings.tsx
 "use client";
 
-import { useState, useEffect, useTransition } from 'react';
+import { useState, useEffect, useTransition, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Save, KeyRound, Bot, Database, Power, Link, Eye, EyeOff, SlidersHorizontal, Mail } from "lucide-react";
-import { getEnvSettings, updateEnvSettings, type EnvSettings, testConnectivity, type ConnectivityStatus, syncOzonBank, getOzonBankSyncStatus } from '@/actions/adminActions';
+import { Loader2, Save, KeyRound, Bot, Database, Power, Link, Eye, EyeOff, SlidersHorizontal, Mail, RefreshCw, Send, Webhook, CheckCircle2, CircleAlert } from "lucide-react";
+import {
+  getEnvSettings,
+  updateEnvSettings,
+  type EnvSettings,
+  testConnectivity,
+  type ConnectivityStatus,
+  syncOzonBank,
+  getOzonBankSyncStatus,
+  getTelegramBotStatus,
+  startTelegramBotService,
+  stopTelegramBotService,
+  forceUnlockTelegramBotService,
+  getTelegramAudienceStatus,
+  registerTelegramWebhookByAudienceService,
+  clearTelegramWebhookByAudienceService,
+  pingTelegramBotByAudienceService,
+  pingTelegramWebhookByAudienceService,
+  sendTelegramTestMessageByAudienceService,
+  testTelegramApiConnection,
+  testTelegramWebhookInfo,
+  testTelegramMongoConnection,
+} from '@/actions/adminActions';
 import { useAppContext } from '@/contexts/AppContext';
 import { Input } from '@/components/ui/input';
 import { isEqual } from 'lodash';
@@ -42,6 +63,23 @@ const PasswordInput = ({ value, onChange, placeholder, disabled, id }: { value: 
     );
 };
 
+type TelegramAudience = 'default' | 'user' | 'partner' | 'manager' | 'admin';
+
+const TELEGRAM_AUDIENCE_TABS: Array<{
+  key: TelegramAudience;
+  label: string;
+  token: keyof EnvSettings;
+  secret: keyof EnvSettings;
+  webhook: keyof EnvSettings;
+  enabled: keyof EnvSettings;
+}> = [
+  { key: 'default', label: 'Default', token: 'telegramBotToken', secret: 'telegramBotSecretToken', webhook: 'telegramBotWebhookUrl', enabled: 'telegramBotEnabled' },
+  { key: 'user', label: 'User', token: 'telegramBotTokenUser', secret: 'telegramBotSecretTokenUser', webhook: 'telegramBotWebhookUrlUser', enabled: 'telegramBotEnabledUser' },
+  { key: 'partner', label: 'Partner', token: 'telegramBotTokenPartner', secret: 'telegramBotSecretTokenPartner', webhook: 'telegramBotWebhookUrlPartner', enabled: 'telegramBotEnabledPartner' },
+  { key: 'manager', label: 'Manager', token: 'telegramBotTokenManager', secret: 'telegramBotSecretTokenManager', webhook: 'telegramBotWebhookUrlManager', enabled: 'telegramBotEnabledManager' },
+  { key: 'admin', label: 'Admin', token: 'telegramBotTokenAdmin', secret: 'telegramBotSecretTokenAdmin', webhook: 'telegramBotWebhookUrlAdmin', enabled: 'telegramBotEnabledAdmin' },
+] as const;
+
 
 export function EnvSettings() {
   const { toast } = useToast();
@@ -54,13 +92,12 @@ export function EnvSettings() {
   const [status, setStatus] = useState<ConnectivityStatus | null>(null);
   const [ozonStatus, setOzonStatus] = useState<any | null>(null);
   const [isOzonSyncing, startOzonSync] = useTransition();
-  const telegramAudienceTabs = [
-    { key: 'default', label: 'Default', token: 'telegramBotToken', secret: 'telegramBotSecretToken', webhook: 'telegramBotWebhookUrl', enabled: 'telegramBotEnabled' },
-    { key: 'user', label: 'User', token: 'telegramBotTokenUser', secret: 'telegramBotSecretTokenUser', webhook: 'telegramBotWebhookUrlUser', enabled: 'telegramBotEnabledUser' },
-    { key: 'partner', label: 'Partner', token: 'telegramBotTokenPartner', secret: 'telegramBotSecretTokenPartner', webhook: 'telegramBotWebhookUrlPartner', enabled: 'telegramBotEnabledPartner' },
-    { key: 'manager', label: 'Manager', token: 'telegramBotTokenManager', secret: 'telegramBotSecretTokenManager', webhook: 'telegramBotWebhookUrlManager', enabled: 'telegramBotEnabledManager' },
-    { key: 'admin', label: 'Admin', token: 'telegramBotTokenAdmin', secret: 'telegramBotSecretTokenAdmin', webhook: 'telegramBotWebhookUrlAdmin', enabled: 'telegramBotEnabledAdmin' },
-  ] as const;
+  const [telegramBotStatus, setTelegramBotStatus] = useState<any | null>(null);
+  const [telegramAudienceStatus, setTelegramAudienceStatus] = useState<Partial<Record<TelegramAudience, any>>>({});
+  const [telegramSelectedAudience, setTelegramSelectedAudience] = useState<TelegramAudience>('default');
+  const [telegramTestRecipientId, setTelegramTestRecipientId] = useState('');
+  const [isTelegramLoading, setIsTelegramLoading] = useState(false);
+  const [isTelegramActionPending, startTelegramAction] = useTransition();
   
   const hasUnsavedChanges = !isEqual(initialSettings, settings);
 
@@ -95,6 +132,44 @@ export function EnvSettings() {
       .catch(() => null);
   }, [user]);
 
+  const refreshTelegramStatus = useCallback(async () => {
+    if (!user) return;
+    setIsTelegramLoading(true);
+    try {
+      const [botResp, audienceResponses] = await Promise.all([
+        getTelegramBotStatus(user.uid),
+        Promise.all(
+          TELEGRAM_AUDIENCE_TABS.map(async (aud) => {
+            const result = await getTelegramAudienceStatus(user.uid, aud.key);
+            return [aud.key, result] as const;
+          })
+        ),
+      ]);
+
+      if (botResp.success) {
+        setTelegramBotStatus(botResp.status);
+      }
+
+      const audienceMap = audienceResponses.reduce((acc, [audience, result]) => {
+        acc[audience] = result.success ? result.status : null;
+        return acc;
+      }, {} as Partial<Record<TelegramAudience, any>>);
+      setTelegramAudienceStatus(audienceMap);
+    } catch (error: any) {
+      toast({
+        title: "Telegram",
+        description: error?.message || "Не удалось обновить статус Telegram.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsTelegramLoading(false);
+    }
+  }, [toast, user]);
+
+  useEffect(() => {
+    void refreshTelegramStatus();
+  }, [refreshTelegramStatus]);
+
   const handleSave = () => {
     if (!user || !settings) return;
     startTransition(async () => {
@@ -102,6 +177,7 @@ export function EnvSettings() {
       if (result.success) {
         toast({ title: "Успешно", description: result.message });
         setInitialSettings(settings);
+        void refreshTelegramStatus();
       } else {
         toast({ title: "Ошибка", description: result.message, variant: "destructive" });
       }
@@ -132,6 +208,78 @@ export function EnvSettings() {
       }
       const statusResult = await getOzonBankSyncStatus(user.uid);
       if (statusResult.success) setOzonStatus(statusResult.data);
+    });
+  };
+
+  const handleTelegramAction = (
+    action: 'refresh' | 'start' | 'stop' | 'unlock' | 'register' | 'clear' | 'ping-bot' | 'ping-webhook' | 'test-message' | 'test-api' | 'test-webhook' | 'test-mongo',
+    audience: TelegramAudience = telegramSelectedAudience
+  ) => {
+    if (!user) return;
+    startTelegramAction(async () => {
+      try {
+        let result:
+          | { success: boolean; message?: string; status?: any }
+          | undefined;
+
+        switch (action) {
+          case 'refresh':
+            await refreshTelegramStatus();
+            return;
+          case 'start':
+            result = await startTelegramBotService(user.uid);
+            break;
+          case 'stop':
+            result = await stopTelegramBotService(user.uid);
+            break;
+          case 'unlock':
+            result = await forceUnlockTelegramBotService(user.uid);
+            break;
+          case 'register':
+            result = audience === 'default'
+              ? await registerTelegramWebhookByAudienceService(user.uid, 'default')
+              : await registerTelegramWebhookByAudienceService(user.uid, audience);
+            break;
+          case 'clear':
+            result = audience === 'default'
+              ? await clearTelegramWebhookByAudienceService(user.uid, 'default')
+              : await clearTelegramWebhookByAudienceService(user.uid, audience);
+            break;
+          case 'ping-bot':
+            result = await pingTelegramBotByAudienceService(user.uid, audience);
+            break;
+          case 'ping-webhook':
+            result = await pingTelegramWebhookByAudienceService(user.uid, audience);
+            break;
+          case 'test-message':
+            result = await sendTelegramTestMessageByAudienceService(user.uid, audience, telegramTestRecipientId || user.uid);
+            break;
+          case 'test-api':
+            result = await testTelegramApiConnection(user.uid, audience);
+            break;
+          case 'test-webhook':
+            result = await testTelegramWebhookInfo(user.uid, audience);
+            break;
+          case 'test-mongo':
+            result = await testTelegramMongoConnection(user.uid);
+            break;
+        }
+
+        if (result) {
+          toast({
+            title: result.success ? "Telegram" : "Ошибка Telegram",
+            description: result.message || (result.success ? "Готово." : "Не удалось выполнить действие."),
+            variant: result.success ? "default" : "destructive",
+          });
+        }
+        await refreshTelegramStatus();
+      } catch (error: any) {
+        toast({
+          title: "Telegram",
+          description: error?.message || "Не удалось выполнить действие.",
+          variant: "destructive",
+        });
+      }
     });
   };
   
@@ -168,11 +316,11 @@ export function EnvSettings() {
 
                 <Tabs defaultValue="default" className="w-full">
                     <TabsList className="grid w-full grid-cols-5">
-                        {telegramAudienceTabs.map((aud) => (
+                        {TELEGRAM_AUDIENCE_TABS.map((aud) => (
                             <TabsTrigger key={aud.key} value={aud.key}>{aud.label}</TabsTrigger>
                         ))}
                     </TabsList>
-                    {telegramAudienceTabs.map((aud) => (
+                    {TELEGRAM_AUDIENCE_TABS.map((aud) => (
                         <TabsContent key={aud.key} value={aud.key} className="space-y-3">
                             <div className="flex items-center justify-between rounded-md border p-3">
                                 <div>
@@ -221,6 +369,170 @@ export function EnvSettings() {
                     ))}
                 </Tabs>
             </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base"><Webhook /> Telegram orchestration</CardTitle>
+            <CardDescription>Статусы по аудиториям, регистрация webhook, ping и тестовые сообщения из панели настроек.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-5">
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" size="sm" onClick={() => handleTelegramAction('refresh')} disabled={isTelegramLoading || isTelegramActionPending}>
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Обновить статусы
+              </Button>
+              <Button size="sm" onClick={() => handleTelegramAction('start')} disabled={isTelegramActionPending}>
+                Старт polling
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => handleTelegramAction('stop')} disabled={isTelegramActionPending}>
+                Остановить
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => handleTelegramAction('unlock')} disabled={isTelegramActionPending}>
+                Сброс lock
+              </Button>
+            </div>
+
+            <div className="grid gap-3 lg:grid-cols-3">
+              <div className="rounded-md border p-4 space-y-2">
+                <div className="flex items-center gap-2 font-semibold">
+                  <Bot className="h-4 w-4" />
+                  Runtime
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  <div>Статус: {telegramBotStatus?.status || 'stopped'}</div>
+                  <div>Последний старт: {telegramBotStatus?.lastStartedAt ? new Date(telegramBotStatus.lastStartedAt).toLocaleString('ru-RU') : '—'}</div>
+                  <div>Последняя остановка: {telegramBotStatus?.lastStoppedAt ? new Date(telegramBotStatus.lastStoppedAt).toLocaleString('ru-RU') : '—'}</div>
+                  <div>Lock: {telegramBotStatus?.lock?.instanceId || '—'}</div>
+                  <div>Heartbeat: {telegramBotStatus?.lock?.lastHeartbeatAt ? new Date(telegramBotStatus.lock.lastHeartbeatAt).toLocaleString('ru-RU') : '—'}</div>
+                  {telegramBotStatus?.lastError ? <div className="text-destructive">Ошибка: {telegramBotStatus.lastError}</div> : null}
+                </div>
+              </div>
+
+              <div className="rounded-md border p-4 space-y-2">
+                <div className="flex items-center gap-2 font-semibold">
+                  <Link className="h-4 w-4" />
+                  Selected audience
+                </div>
+                <Tabs value={telegramSelectedAudience} onValueChange={(v) => setTelegramSelectedAudience(v as TelegramAudience)}>
+                  <TabsList className="grid w-full grid-cols-5">
+                    {TELEGRAM_AUDIENCE_TABS.map((aud) => (
+                      <TabsTrigger key={aud.key} value={aud.key}>{aud.label}</TabsTrigger>
+                    ))}
+                  </TabsList>
+                </Tabs>
+                <div className="text-sm text-muted-foreground space-y-1">
+                  <div>Аудитория: {telegramSelectedAudience}</div>
+                  <div>Enabled: {telegramAudienceStatus[telegramSelectedAudience]?.enabled ? 'yes' : 'no'}</div>
+                  <div>Token: {telegramAudienceStatus[telegramSelectedAudience]?.tokenSet ? 'задан' : 'не задан'}</div>
+                  <div>Secret: {telegramAudienceStatus[telegramSelectedAudience]?.secretSet ? 'задан' : 'не задан'}</div>
+                  <div>Webhook config: {telegramAudienceStatus[telegramSelectedAudience]?.webhookUrl || '—'}</div>
+                  <div>Webhook api: {telegramAudienceStatus[telegramSelectedAudience]?.webhookInfoUrl || '—'}</div>
+                  {telegramAudienceStatus[telegramSelectedAudience]?.webhookLastErrorMessage ? (
+                    <div className="text-destructive">
+                      Ошибка webhook: {telegramAudienceStatus[telegramSelectedAudience].webhookLastErrorMessage}
+                    </div>
+                  ) : null}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="telegram-test-recipient">UID получателя для тестового сообщения</Label>
+                  <Input
+                    id="telegram-test-recipient"
+                    value={telegramTestRecipientId}
+                    onChange={(e) => setTelegramTestRecipientId(e.target.value)}
+                    placeholder={user?.uid || 'uid получателя'}
+                    disabled={isTelegramActionPending}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Если поле пустое, тест уйдёт в ваш Telegram chat_id.
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Button variant="outline" size="sm" onClick={() => handleTelegramAction('test-message')} disabled={isTelegramActionPending}>
+                    <Send className="mr-2 h-4 w-4" />
+                    Test message
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => handleTelegramAction('test-api')} disabled={isTelegramActionPending}>
+                    API
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => handleTelegramAction('test-webhook')} disabled={isTelegramActionPending}>
+                    Webhook info
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => handleTelegramAction('test-mongo')} disabled={isTelegramActionPending}>
+                    Mongo
+                  </Button>
+                </div>
+              </div>
+
+              <div className="rounded-md border p-4 space-y-2">
+                <div className="flex items-center gap-2 font-semibold">
+                  <CheckCircle2 className="h-4 w-4 text-green-600" />
+                  Status summary
+                </div>
+                <div className="text-sm text-muted-foreground space-y-1">
+                  <div>Polling / webhook mode: {settings.telegramBotMode || 'polling'}</div>
+                  <div>Global bot enabled: {settings.telegramBotEnabled ? 'yes' : 'no'}</div>
+                  <div>Public bot URL: {settings.nextPublicTelegramBotUrl || '—'}</div>
+                  <div>Selected webhook URL: {telegramAudienceStatus[telegramSelectedAudience]?.webhookUrl || settings.telegramBotWebhookUrl || '—'}</div>
+                  <div>Selected token: {telegramAudienceStatus[telegramSelectedAudience]?.tokenSet ? 'задан' : 'не задан'}</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid gap-3 xl:grid-cols-5">
+              {TELEGRAM_AUDIENCE_TABS.map((aud) => {
+                const currentStatus = telegramAudienceStatus[aud.key];
+                return (
+                  <div key={aud.key} className="rounded-md border p-4 space-y-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="font-semibold">{aud.label}</div>
+                      {currentStatus?.enabled ? (
+                        <span className="inline-flex items-center gap-1 text-xs text-green-600">
+                          <CheckCircle2 className="h-3.5 w-3.5" />
+                          enabled
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                          <CircleAlert className="h-3.5 w-3.5" />
+                          disabled
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-xs text-muted-foreground space-y-1">
+                      <div>Token: {currentStatus?.tokenSet ? 'задан' : 'не задан'}</div>
+                      <div>Secret: {currentStatus?.secretSet ? 'задан' : 'не задан'}</div>
+                      <div>Webhook config: {currentStatus?.webhookUrl || '—'}</div>
+                      <div>Webhook api: {currentStatus?.webhookInfoUrl || '—'}</div>
+                      <div>Pending updates: {currentStatus?.webhookPendingUpdateCount ?? '—'}</div>
+                    </div>
+                    {currentStatus?.webhookLastErrorMessage ? (
+                      <div className="rounded-md bg-destructive/10 p-2 text-xs text-destructive">
+                        {currentStatus.webhookLastErrorMessage}
+                      </div>
+                    ) : null}
+                    <div className="grid grid-cols-2 gap-2">
+                      <Button variant="outline" size="sm" onClick={() => handleTelegramAction('register', aud.key)} disabled={isTelegramActionPending}>
+                        Register
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => handleTelegramAction('clear', aud.key)} disabled={isTelegramActionPending}>
+                        Clear
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => handleTelegramAction('ping-bot', aud.key)} disabled={isTelegramActionPending}>
+                        Ping bot
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => handleTelegramAction('ping-webhook', aud.key)} disabled={isTelegramActionPending}>
+                        Ping webhook
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="rounded-md border p-3 text-xs text-muted-foreground space-y-1">
+              <div>Статус обновлён: {isTelegramLoading ? 'обновление...' : 'актуален'}</div>
+              <div>Админ-доступ и аудит действий проверяются на сервере через текущую сессию.</div>
+            </div>
+          </CardContent>
         </Card>
         <Card>
           <CardHeader>

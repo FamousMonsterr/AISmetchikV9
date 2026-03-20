@@ -241,9 +241,34 @@ jobs:
               done
             done
 
-            case "$TLS_RUNTIME_ENABLED" in
-              1) curl -kfsS --resolve "${TLS_DOMAIN}:443:127.0.0.1" "https://${TLS_DOMAIN}/api/healthz" > /dev/null ;;
-              *) curl -fsS --resolve "${TLS_DOMAIN}:80:127.0.0.1" "http://${TLS_DOMAIN}/api/healthz" > /dev/null || true ;;
-            esac
+            smoke_hosts=()
+            if [ -n "$TLS_DOMAIN" ]; then
+              smoke_hosts+=("$TLS_DOMAIN")
+              IFS=',' read -r -a SUBDOMAIN_ARR <<< "$TLS_SUBDOMAINS"
+              for raw_sub in "${SUBDOMAIN_ARR[@]}"; do
+                sub="$(echo "$raw_sub" | xargs)"
+                if [ -z "$sub" ]; then
+                  continue
+                fi
+                smoke_hosts+=("${sub}.${TLS_DOMAIN}")
+              done
+            fi
+
+            smoke_scheme="http"
+            smoke_port=80
+            smoke_curl_args=(-fsS --connect-timeout 5 --max-time 15)
+            if [ "$TLS_RUNTIME_ENABLED" -eq 1 ]; then
+              smoke_scheme="https"
+              smoke_port=443
+              smoke_curl_args=(-fsS --connect-timeout 5 --max-time 15)
+            fi
+
+            if [ "${#smoke_hosts[@]}" -gt 0 ]; then
+              for host in "${smoke_hosts[@]}"; do
+                curl "${smoke_curl_args[@]}" --resolve "${host}:${smoke_port}:127.0.0.1" "${smoke_scheme}://${host}/api/healthz" > /dev/null
+              done
+            else
+              curl -fsS --connect-timeout 5 --max-time 15 http://127.0.0.1/api/healthz > /dev/null
+            fi
 
             docker image prune -f

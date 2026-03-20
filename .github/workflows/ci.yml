@@ -92,10 +92,16 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Skip E2E when secrets are unavailable
+        if: env.E2E_BASE_URL == '' || env.E2E_USER_EMAIL == '' || env.E2E_USER_PASSWORD == ''
+        run: echo "E2E secrets are missing; skipping Playwright job."
+
       - name: Install Playwright
+        if: env.E2E_BASE_URL != '' && env.E2E_USER_EMAIL != '' && env.E2E_USER_PASSWORD != ''
         run: npx playwright install --with-deps chromium
 
       - name: E2E tests
+        if: env.E2E_BASE_URL != '' && env.E2E_USER_EMAIL != '' && env.E2E_USER_PASSWORD != ''
         run: npm run test:e2e
 
   smoke-subdomains:

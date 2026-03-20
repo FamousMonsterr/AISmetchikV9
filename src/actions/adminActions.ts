@@ -645,6 +645,10 @@ export const updateLegalEntity = async (currentUserId: string, data: LegalEntity
 
 export const getTelegramUsers = async (): Promise<AppUser[]> => {
     try {
+        const session = await getServerSessionSafe();
+        if (!session?.user?.id || !isAdminRole((session.user as any)?.systemRole)) {
+            throw new Error('Недостаточно прав для просмотра Telegram-пользователей.');
+        }
         const q = query(
             collection(db, 'users'),
             where('telegramChatId', '!=', null),
@@ -677,13 +681,17 @@ export const sendTelegramMessageToUser = async (data: z.infer<typeof SendTelegra
     return { success: false, message: error || 'Неверные данные.' };
   }
 
-  // Verify admin rights and avoid exposing secrets to non-admins
-  const adminDoc = await getDoc(doc(db, 'users', validation.data.adminUserId));
-  if (!isAdminRole(adminDoc.data()?.systemRole)) {
+  const session = await getServerSessionSafe();
+  const sessionUserId = session?.user?.id;
+  if (!sessionUserId || !isAdminRole((session.user as any)?.systemRole)) {
     return { success: false, message: 'Недостаточно прав для отправки сообщений.' };
   }
+  if (validation.data.adminUserId && validation.data.adminUserId !== sessionUserId) {
+    return { success: false, message: 'Идентификатор администратора не совпадает с активной сессией.' };
+  }
+  const actorId = sessionUserId;
 
-  const envSettings = await getEnvSettings({ requesterId: validation.data.adminUserId, requireAdmin: true });
+  const envSettings = await getEnvSettings({ requesterId: actorId, requireAdmin: true });
   const botToken = envSettings.telegramBotToken || process.env.TELEGRAM_BOT_TOKEN;
 
   if (!botToken) {
@@ -704,7 +712,7 @@ export const sendTelegramMessageToUser = async (data: z.infer<typeof SendTelegra
     await bot.sendMessage(targetUserChatId, message);
     
     // Log the action without awaiting
-    logUserAction(validation.data.adminUserId, 'ADMIN_SEND_TELEGRAM_MESSAGE', {
+    logUserAction(actorId, 'ADMIN_SEND_TELEGRAM_MESSAGE', {
         targetUserChatId,
     });
 
@@ -1374,8 +1382,9 @@ export const syncOzonBank = async (adminUserId: string) => {
 
 // --- Telegram Bot lifecycle (admin) ---
 export const startTelegramBotService = async (adminUserId: string): Promise<{ success: boolean; message: string; status?: any }> => {
-    const adminDoc = await getDoc(doc(db, 'users', adminUserId));
-    if (!isAdminRole(adminDoc.data()?.systemRole)) {
+    try {
+        await ensureAdminActor(adminUserId);
+    } catch {
         return { success: false, message: 'Недостаточно прав.' };
     }
     try {
@@ -1392,8 +1401,9 @@ export const startTelegramBotService = async (adminUserId: string): Promise<{ su
 };
 
 export const stopTelegramBotService = async (adminUserId: string): Promise<{ success: boolean; message: string; status?: any }> => {
-    const adminDoc = await getDoc(doc(db, 'users', adminUserId));
-    if (!isAdminRole(adminDoc.data()?.systemRole)) {
+    try {
+        await ensureAdminActor(adminUserId);
+    } catch {
         return { success: false, message: 'Недостаточно прав.' };
     }
     const status = await stopManagedBot();
@@ -1401,8 +1411,9 @@ export const stopTelegramBotService = async (adminUserId: string): Promise<{ suc
 };
 
 export const getTelegramBotStatus = async (adminUserId: string): Promise<{ success: boolean; status?: any; message?: string }> => {
-    const adminDoc = await getDoc(doc(db, 'users', adminUserId));
-    if (!isAdminRole(adminDoc.data()?.systemRole)) {
+    try {
+        await ensureAdminActor(adminUserId);
+    } catch {
         return { success: false, message: 'Недостаточно прав.' };
     }
     const status = await getBotRuntimeStatus();
@@ -1410,8 +1421,9 @@ export const getTelegramBotStatus = async (adminUserId: string): Promise<{ succe
 };
 
 export const forceUnlockTelegramBotService = async (adminUserId: string): Promise<{ success: boolean; message: string; status?: any }> => {
-    const adminDoc = await getDoc(doc(db, 'users', adminUserId));
-    if (!isAdminRole(adminDoc.data()?.systemRole)) {
+    try {
+        await ensureAdminActor(adminUserId);
+    } catch {
         return { success: false, message: 'Недостаточно прав.' };
     }
     const status = await forceUnlockBot();
@@ -1419,8 +1431,9 @@ export const forceUnlockTelegramBotService = async (adminUserId: string): Promis
 };
 
 export const testTelegramMongoConnection = async (adminUserId: string): Promise<{ success: boolean; message: string }> => {
-    const adminDoc = await getDoc(doc(db, 'users', adminUserId));
-    if (!isAdminRole(adminDoc.data()?.systemRole)) {
+    try {
+        await ensureAdminActor(adminUserId);
+    } catch {
         return { success: false, message: 'Недостаточно прав.' };
     }
     try {
@@ -1436,11 +1449,13 @@ export const testTelegramApiConnection = async (
     adminUserId: string,
     audience: TelegramAudience = 'default'
 ): Promise<{ success: boolean; message: string }> => {
-    const adminDoc = await getDoc(doc(db, 'users', adminUserId));
-    if (!isAdminRole(adminDoc.data()?.systemRole)) {
+    let actorId: string;
+    try {
+        actorId = await ensureAdminActor(adminUserId);
+    } catch {
         return { success: false, message: 'Недостаточно прав.' };
     }
-    const envSettings = await getEnvSettings({ requesterId: adminUserId, requireAdmin: true });
+    const envSettings = await getEnvSettings({ requesterId: actorId, requireAdmin: true });
     const config = resolveTelegramAudienceConfig(envSettings, audience);
     const botToken = config.token;
     if (!botToken) {
@@ -1459,11 +1474,13 @@ export const testTelegramWebhookInfo = async (
     adminUserId: string,
     audience: TelegramAudience = 'default'
 ): Promise<{ success: boolean; message: string }> => {
-    const adminDoc = await getDoc(doc(db, 'users', adminUserId));
-    if (!isAdminRole(adminDoc.data()?.systemRole)) {
+    let actorId: string;
+    try {
+        actorId = await ensureAdminActor(adminUserId);
+    } catch {
         return { success: false, message: 'Недостаточно прав.' };
     }
-    const envSettings = await getEnvSettings({ requesterId: adminUserId, requireAdmin: true });
+    const envSettings = await getEnvSettings({ requesterId: actorId, requireAdmin: true });
     const config = resolveTelegramAudienceConfig(envSettings, audience);
     const botToken = config.token;
     if (!botToken) {
@@ -1479,8 +1496,9 @@ export const testTelegramWebhookInfo = async (
 };
 
 export const registerTelegramWebhookService = async (adminUserId: string): Promise<{ success: boolean; message: string }> => {
-    const adminDoc = await getDoc(doc(db, 'users', adminUserId));
-    if (!isAdminRole(adminDoc.data()?.systemRole)) {
+    try {
+        await ensureAdminActor(adminUserId);
+    } catch {
         return { success: false, message: 'Недостаточно прав.' };
     }
     try {
@@ -1595,8 +1613,9 @@ export const registerTelegramWebhookByAudienceService = async (
 };
 
 export const clearTelegramWebhookService = async (adminUserId: string): Promise<{ success: boolean; message: string }> => {
-    const adminDoc = await getDoc(doc(db, 'users', adminUserId));
-    if (!isAdminRole(adminDoc.data()?.systemRole)) {
+    try {
+        await ensureAdminActor(adminUserId);
+    } catch {
         return { success: false, message: 'Недостаточно прав.' };
     }
     try {

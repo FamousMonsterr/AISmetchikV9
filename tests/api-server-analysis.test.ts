@@ -4,10 +4,12 @@ const getDocMock = vi.fn();
 const getCreditSummaryMock = vi.fn();
 const createJobMock = vi.fn();
 const getAppSettingsMock = vi.fn();
+const getAiAgentConfigMock = vi.fn();
 
 vi.mock('@/lib/firebase', () => ({ db: {} }));
 vi.mock('@/actions/adminActions', () => ({
   getAppSettings: (...args: any[]) => getAppSettingsMock(...args),
+  getAiAgentConfig: (...args: any[]) => getAiAgentConfigMock(...args),
 }));
 vi.mock('@/lib/mongoFirestoreServer', () => ({
   doc: vi.fn((_db: any, _collection: string, id: string) => ({ id })),
@@ -54,6 +56,7 @@ describe('POST /api/server-analysis', () => {
     getCreditSummaryMock.mockReset();
     createJobMock.mockReset();
     getAppSettingsMock.mockReset();
+    getAiAgentConfigMock.mockReset();
     getAppSettingsMock.mockResolvedValue({
       serverFunctionsEnabled: true,
       serverFunctionsMode: 'server',
@@ -61,6 +64,18 @@ describe('POST /api/server-analysis', () => {
       serverFunctionsAllowedPlans: ['Free', 'PRO', 'Business', 'Enterprise'],
       analysisPipelineVersion: 'v1',
       aiExecutionProvider: 'openrouter',
+    });
+    getAiAgentConfigMock.mockResolvedValue({
+      apiModels: [
+        { value: 'test-model', isDefault: true },
+        { value: 'service-model', isServiceModel: true },
+      ],
+      planModels: {
+        free: { defaultModel: 'test-model', availableModels: ['test-model'], abTestModels: ['test-model'] },
+        pro: { defaultModel: 'test-model', availableModels: ['test-model'], abTestModels: ['test-model'] },
+        business: { defaultModel: 'test-model', availableModels: ['test-model'] },
+        enterprise: { defaultModel: 'test-model', availableModels: ['test-model'] },
+      },
     });
   });
 

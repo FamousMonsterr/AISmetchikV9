@@ -11,10 +11,23 @@ if (!domains.length) {
 }
 
 async function check(url) {
-  const response = await fetch(url, { redirect: 'manual' });
-  const ok = response.status >= 200 && response.status < 400;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15_000);
+
+  let response;
+  try {
+    response = await fetch(url, {
+      redirect: 'manual',
+      signal: controller.signal,
+    });
+  } finally {
+    clearTimeout(timeout);
+  }
+
+  const ok = response.status >= 200 && response.status < 300;
   if (!ok) {
-    throw new Error(`${url} -> ${response.status}`);
+    const location = response.headers.get('location');
+    throw new Error(`${url} -> ${response.status}${location ? ` location=${location}` : ''}`);
   }
   console.log(`[ok] ${url} -> ${response.status}`);
 }

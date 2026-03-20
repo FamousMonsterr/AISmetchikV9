@@ -95,6 +95,8 @@
 
 ## 10) После релиза
 - Прогонить smoke‑тесты
+- Проверить `https://aismetchik.ru/api/healthz` и все поддомены `admin/lk/crm/partner/m` через `/api/healthz`
+- Если `E2E_BASE_URL` или тестовые креды не заданы, job `e2e` в CI будет пропущен, а не упадет
 - Проверить выдачу счетов, Telegram, S3
 - Прогнать `npm run qa:seed-user` (если включен QA-контур)
 
