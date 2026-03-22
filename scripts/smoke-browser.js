@@ -243,7 +243,12 @@ async function visitSurface(page, entry) {
 async function visitSurfacePages(page) {
   const entries = [
     { name: 'surface-partner', url: surfaceUrls.partner ? `${surfaceUrls.partner}/` : `${surfaceUrls.root}/partner`, text: 'Партнёрский кабинет' },
-    { name: 'surface-mobile', url: surfaceUrls.mobile ? `${surfaceUrls.mobile}/` : `${surfaceUrls.root}/dashboard/mobile-panel`, text: 'Загрузить файл для анализа' },
+    {
+      name: 'surface-mobile',
+      url: surfaceUrls.mobile ? `${surfaceUrls.mobile}/` : `${surfaceUrls.root}/dashboard/mobile-panel`,
+      text: 'Загрузить файл для анализа',
+      acceptUrlPatterns: [/\/auth\/login\b/, /^https:\/\/lk\./],
+    },
     {
       name: 'surface-crm',
       url: surfaceUrls.crm ? `${surfaceUrls.crm}/` : `${surfaceUrls.root}/crm`,
@@ -277,14 +282,35 @@ async function registerTempUser(page) {
   await page.click('#privacy');
   await page.click('#terms');
   await Promise.all([
-    page.waitForURL(/dashboard|lk\./, { timeout: 120_000 }),
+    page.waitForLoadState('networkidle', { timeout: 120_000 }).catch(() => {}),
     page.click('button[type="submit"]'),
   ]);
+
+  if (!/\/dashboard\b/.test(page.url())) {
+    await loginTempUser(page);
+  }
+
   logStep({
     name: 'register-temp-user',
     status: 'ok',
     url: page.url(),
     detail: `temp user registered: ${tempUser.email}`,
+  });
+}
+
+async function loginTempUser(page) {
+  await visitAndAssert(page, `${authBaseUrl}/auth/login`, [{ kind: 'text', value: 'Войти' }]);
+  await page.fill('#login-email', tempUser.email);
+  await page.fill('#login-password', tempUser.password);
+  await Promise.all([
+    page.waitForURL(/\/dashboard\b/, { timeout: 120_000 }),
+    page.click('button[type="submit"]'),
+  ]);
+  logStep({
+    name: 'login-temp-user',
+    status: 'ok',
+    url: page.url(),
+    detail: `temp user authorized: ${tempUser.email}`,
   });
 }
 
