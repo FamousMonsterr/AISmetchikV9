@@ -15,7 +15,7 @@ import { query, collection, getDocs, limit, where } from "@/lib/db-client";
 import { db } from "@/lib/db";
 import { motion, AnimatePresence } from "@/lib/motion";
 import { Input } from "@/components/ui/input";
-import { resolveLandingUrl } from "@/lib/navigation";
+import { canAccessCrmSurface, canAccessPartnerSurface, resolveLandingUrl, resolveSurfaceUrl } from "@/lib/navigation";
 
 
 const navGroups = [
@@ -128,6 +128,10 @@ export default function AdminLayout({
   const [activeGroup, setActiveGroup] = useState<string | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const lkProjectsUrl = resolveSurfaceUrl('lk', '/dashboard');
+  const lkProfileUrl = resolveSurfaceUrl('lk', '/dashboard/profile');
+  const crmUrl = resolveSurfaceUrl('crm', '/crm');
+  const partnerUrl = resolveSurfaceUrl('partner', '/partner');
 
   useEffect(() => {
     // Warm up indexes only once when the admin layout is first mounted.
@@ -218,6 +222,22 @@ export default function AdminLayout({
                         );
                     })}
                     <div className="flex-1" />
+                    <Button variant="outline" size="sm" asChild>
+                        <a href={lkProjectsUrl}>LK</a>
+                    </Button>
+                    <Button variant="outline" size="sm" asChild>
+                        <a href={lkProfileUrl}>Профиль</a>
+                    </Button>
+                    {canAccessCrmSurface(user) ? (
+                        <Button variant="outline" size="sm" asChild>
+                            <a href={crmUrl}>CRM</a>
+                        </Button>
+                    ) : null}
+                    {canAccessPartnerSurface(user) ? (
+                        <Button variant="outline" size="sm" asChild>
+                            <a href={partnerUrl}>Партнёры</a>
+                        </Button>
+                    ) : null}
                     <Button variant="ghost" size="icon" className="rounded-full" onClick={() => setSearchOpen(true)}>
                         <Search className="h-4 w-4" />
                     </Button>

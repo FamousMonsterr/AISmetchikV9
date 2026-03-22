@@ -6,6 +6,7 @@ export type PostAuthUser = {
   systemRole?: string | null;
   plan?: string | null;
   isPartner?: boolean | null;
+  crmRole?: string | null;
 };
 
 const SURFACE_HOST_PREFIXES: Record<DashboardSurface, string> = {
@@ -162,20 +163,44 @@ export function resolveLandingUrl() {
   return rootUrl.toString();
 }
 
+export function resolveSurfaceUrl(surface: DashboardSurface, pathname?: string) {
+  const targetPath = pathname || SURFACE_ROOT_PATHS[surface];
+  const browserLocation = getBrowserLocation();
+  const currentSurface = browserLocation ? resolveSurfaceFromHostname(browserLocation.hostname) : null;
+
+  if (currentSurface === surface && browserLocation) {
+    return buildAbsoluteUrl(browserLocation.origin, targetPath);
+  }
+
+  const targetOrigin = buildSurfaceOrigin(surface, browserLocation);
+  if (!targetOrigin) {
+    return targetPath;
+  }
+
+  return buildAbsoluteUrl(targetOrigin, targetPath);
+}
+
+export function canAccessAdminSurface(user?: PostAuthUser | null) {
+  return isAdminRole(user?.systemRole);
+}
+
+export function canAccessCrmSurface(user?: PostAuthUser | null) {
+  return isAdminRole(user?.systemRole) || Boolean(user?.crmRole);
+}
+
+export function canAccessPartnerSurface(user?: PostAuthUser | null) {
+  return Boolean(user?.isPartner);
+}
+
 export function resolvePostAuthRedirectUrl(user?: PostAuthUser, preferredSurface?: DashboardSurface | null) {
   const browserLocation = getBrowserLocation();
   const currentSurface = browserLocation ? resolveSurfaceFromHostname(browserLocation.hostname) : null;
   const targetSurface = resolvePreferredSurface(user, currentSurface, preferredSurface);
   const targetPath = SURFACE_ROOT_PATHS[targetSurface];
 
-  if (currentSurface && browserLocation) {
+  if (currentSurface === targetSurface && browserLocation) {
     return buildAbsoluteUrl(browserLocation.origin, targetPath);
   }
 
-  const targetOrigin = buildSurfaceOrigin(targetSurface, browserLocation);
-  if (!targetOrigin) {
-    return targetPath;
-  }
-
-  return buildAbsoluteUrl(targetOrigin, targetPath);
+  return resolveSurfaceUrl(targetSurface, targetPath);
 }

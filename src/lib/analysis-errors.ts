@@ -10,6 +10,16 @@ const TECHNICAL_ERROR_PATTERNS: RegExp[] = [
   /"user_id"\s*:/i,
 ];
 
+const OPENROUTER_PRIVACY_RESTRICTION_PATTERNS: RegExp[] = [
+  /no endpoints available matching your guardrail restrictions and data policy/i,
+  /openrouter\.ai\/settings\/privacy/i,
+];
+
+export function isOpenRouterPrivacyRestrictionError(message?: string | null): boolean {
+  if (!message) return false;
+  return OPENROUTER_PRIVACY_RESTRICTION_PATTERNS.some((pattern) => pattern.test(message));
+}
+
 export function isTechnicalAnalysisErrorMessage(message?: string | null): boolean {
   if (!message) return false;
   return TECHNICAL_ERROR_PATTERNS.some((pattern) => pattern.test(message));
@@ -22,6 +32,10 @@ export function toUserFacingAnalysisError(message?: string | null): string {
   }
 
   const lower = raw.toLowerCase();
+
+  if (isOpenRouterPrivacyRestrictionError(raw)) {
+    return 'OpenRouter отклонил OCR из-за privacy/data policy аккаунта. Откройте OpenRouter Settings -> Privacy и разрешите endpoints для файлового OCR.';
+  }
 
   if (lower.includes('process_cancelled') || lower.includes('задача отменена пользователем')) {
     return 'Процесс остановлен пользователем.';

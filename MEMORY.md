@@ -1,4 +1,30 @@
-# MEMORY (обновлено: 1 марта 2026)
+# MEMORY (обновлено: 22 марта 2026)
+
+## Что сделано в сессии 22 марта 2026
+- Исправлен production-контур повтора серверного анализа:
+  - `restartProcessingRequestWithQueue` теперь атомарно создает новую `server_analysis_job` и сразу обновляет проект;
+  - `HistorySection` больше не делает второй клиентский вызов в `/api/server-analysis` после server action;
+  - исходные параметры повтора сохраняются в `analysisSource`.
+- Исправлена обработка terminal state:
+  - `failProcessingRequest` теперь пишет `processingStage`, `processingStageMessage`, `processingStageUpdatedAt`;
+  - worker при падении/отмене выставляет проекту terminal stage `failed/cancelled`.
+- Исправлен сценарий OCR privacy restriction:
+  - ошибка OpenRouter `No endpoints available matching your guardrail restrictions and data policy` распознается отдельно;
+  - пользователю показывается понятное сообщение про `OpenRouter Settings -> Privacy`;
+  - OCR loop не пытается бессмысленно прогонять остальные OpenRouter-backed engines.
+- Усилено удаление проектов:
+  - каскадно удаляются `requests`, `server_analysis_jobs`, `project_event_logs`, `notifications`.
+- Усилена межсервисная навигация:
+  - `src/lib/navigation.ts` теперь содержит `resolveSurfaceUrl`, `canAccessAdminSurface`, `canAccessCrmSurface`, `canAccessPartnerSurface`;
+  - ссылки на `LK / Профиль / Админ / CRM / Партнёры` добавлены в `dashboard`, `admin`, `crm`, `partner`;
+  - исправлен расчет cross-surface redirect URL.
+- Проверки:
+  - `npm run typecheck` через WSL: success
+  - `npm run lint` через WSL: success
+  - `npm run build` через WSL: success
+- Наблюдение по окружению:
+  - в текущей PowerShell-сессии `npm` не в PATH; рабочий обходной путь: запускать проверки через `wsl.exe`.
+  - repo-local skills не найдены; дополнительных установок в этой сессии не потребовалось.
 
 ## Что сделано в этой сессии
 - Оптимизирован `/partnership`:

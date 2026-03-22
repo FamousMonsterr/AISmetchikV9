@@ -238,6 +238,19 @@ export interface HistoryRequest {
   processingStage?: string | null;
   processingStageMessage?: string | null;
   processingStageUpdatedAt?: any;
+  analysisSource?: {
+    fileUri?: string | null;
+    fileSha1?: string | null;
+    fileName?: string;
+    mimeType?: string | null;
+    objectKey?: string | null;
+    model?: string | null;
+    temperature?: number | null;
+    includeThoughts?: boolean | null;
+    pipelineVersion?: 'v1' | 'v2' | null;
+    objectId?: string | null;
+    objectName?: string | null;
+  } | null;
 }
 
 export interface Company {

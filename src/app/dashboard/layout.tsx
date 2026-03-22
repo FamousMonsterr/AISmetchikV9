@@ -40,7 +40,7 @@ import {
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useEngagementTracking } from "@/hooks/use-engagement-tracking";
 import { SupportChatProvider } from "@/contexts/SupportChatContext";
-import { resolveLandingUrl } from "@/lib/navigation";
+import { canAccessAdminSurface, canAccessCrmSurface, canAccessPartnerSurface, resolveLandingUrl, resolveSurfaceUrl } from "@/lib/navigation";
 
 const NotificationCenter = dynamic(
   () => import("@/components/NotificationCenter").then((mod) => mod.NotificationCenter),
@@ -104,6 +104,11 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
     };
 
     const handleNavigation = (href: string) => {
+        if (/^https?:\/\//.test(href)) {
+            setNavigating(true);
+            window.location.assign(href);
+            return;
+        }
         if (pathname !== href) {
             startNavigation(() => {
             setNavigating(true); // Context update for global state
@@ -116,6 +121,10 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
     };
 
   const canAccessTraining = user?.plan === 'Enterprise';
+  const adminSurfaceUrl = resolveSurfaceUrl('admin', '/dashboard/admin');
+  const crmSurfaceUrl = resolveSurfaceUrl('crm', '/crm');
+  const partnerSurfaceUrl = resolveSurfaceUrl('partner', '/partner');
+  const lkProfileUrl = resolveSurfaceUrl('lk', '/dashboard/profile');
   const menuItems = [
       { href: "/dashboard", label: "Проекты", icon: <Home className="h-5 w-5 shrink-0" /> },
       { href: "/dashboard/mobile-panel", label: "Пульт", icon: <Waypoints className="h-5 w-5 shrink-0" />, mobileOnly: true },
@@ -126,8 +135,15 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   ];
     
     const adminMenuItem = { href: "/dashboard/admin", label: "Админ-панель", icon: <Shield className="h-5 w-5 shrink-0" /> };
-  if (user?.systemRole === 'Super Admin') {
+  if (canAccessAdminSurface(user)) {
       menuItems.push(adminMenuItem);
+      menuItems[menuItems.length - 1].href = adminSurfaceUrl;
+  }
+  if (canAccessCrmSurface(user)) {
+      menuItems.push({ href: crmSurfaceUrl, label: "CRM", icon: <Waypoints className="h-5 w-5 shrink-0" /> });
+  }
+  if (canAccessPartnerSurface(user)) {
+      menuItems.push({ href: partnerSurfaceUrl, label: "Партнёры", icon: <Handshake className="h-5 w-5 shrink-0" /> });
   }
 
     if (isUserLoading || !user) { 
@@ -151,7 +167,6 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                         <div className="flex flex-col gap-2">
                             {menuItems.map((link, idx) => {
                                 if (link.mobileOnly && !isMobile) return null;
-                                if (!link.mobileOnly && isMobile) return null;
                                 return (
                                 <SidebarLink 
                                     key={idx} 
@@ -182,7 +197,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                          <SidebarLink
                             link={{
                                 label: user.displayName,
-                                href: "/dashboard/profile",
+                                href: lkProfileUrl,
                                 icon: (
                                 <Avatar className="h-7 w-7 shrink-0">
                                     <AvatarImage src={user.avatarUrl || `https://avatar.vercel.sh/${user.email}.png`} alt={user.displayName} />
@@ -191,7 +206,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                                 ),
                                 active: pathname.startsWith('/dashboard/profile'),
                             }}
-                            onNavigate={() => handleNavigation("/dashboard/profile")}
+                            onNavigate={() => handleNavigation(lkProfileUrl)}
                         />
                         <SidebarLink
                             link={{ href: "#", label: "Выйти", icon: <LogOut className="h-5 w-5 shrink-0" /> }}

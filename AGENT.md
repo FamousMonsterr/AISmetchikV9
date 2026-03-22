@@ -1,5 +1,20 @@
 # ВАЖНО: Всегда писать на русском языке
 
+## Правила этой рабочей среды
+- Саб-агентов использовать только для сбора информации и планирования.
+- Все изменения кода, тексты, правки конфигов, коммиты и деплой выполнять основным агентом.
+- Перед пушем в `main` обязательно прогонять:
+  - `npm run typecheck`
+  - `npm run lint`
+  - `npm run build`
+- При ошибках OCR/OpenRouter:
+  - не показывать пользователю сырой provider body как основное сообщение;
+  - различать сбой провайдера и ограничение privacy/data policy аккаунта OpenRouter;
+  - при privacy/data policy не гонять все OCR engine fallback-ы впустую.
+- При правках навигации между `lk/admin/crm/partner/m` считать источником правды:
+  - `src/lib/navigation.ts`
+  - `src/proxy.ts`
+
 ## Post-release TODO (после полноценного релиза MVP)
 - [ ] `src/actions/creditPurchaseActions.ts`: привязать `createSbpCreditOrder/createLegalCreditOrder` к реальной user-сессии (не доверять `userId` из payload).
 - [ ] `src/actions/creditPurchaseActions.ts`: привязать админ-действия (`getCreditPurchaseOrders`, `approveCreditPurchaseOrder`, `rejectCreditPurchaseOrder`) к admin-сессии (не доверять `adminUserId` из payload).
@@ -19,6 +34,25 @@
 - Что обязательно сделать для полного TLS:
   - выровнять DNS всех поддоменов на текущий VDS;
   - заново запустить `Deploy VDS` и проверить `https://.../api/healthz` для root + subdomains.
+
+## Сессия 22 марта 2026 — OCR retry/delete/navigation hardening
+- Серверный анализ:
+  - добавлен явный user-facing разбор ошибки OpenRouter privacy/data policy;
+  - OCR worker прекращает бесполезные повторы движков при privacy restriction 404;
+  - terminal stage проекта принудительно переводится в `failed/cancelled`, а не остается на промежуточном этапе.
+- История проектов:
+  - retry переведен на atomic server action с немедленной постановкой новой server job в очередь;
+  - повторный анализ берёт параметры из `analysisSource`;
+  - удаление проекта стало каскадным: `requests` + `server_analysis_jobs` + `project_event_logs` + `notifications`.
+- Навигация по поддоменам:
+  - добавлены хелперы доступа/URL в `src/lib/navigation.ts`;
+  - ссылки между `LK / Admin / CRM / Partner` добавлены в dashboard/admin/crm/partner surfaces;
+  - переход в профиль из dashboard ведет на LK surface.
+- Проверки этой сессии:
+  - `npm run typecheck` ✅
+  - `npm run lint` ✅
+  - `npm run build` ✅
+- В репозитории локальные custom skills не обнаружены; устанавливать было нечего.
 
 ## Сессия 2 марта 2026 — реализация bots + CRM + subdomains + QA
 - Создана ветка реализации: `feat/bots-crm-subdomains-hardening`.

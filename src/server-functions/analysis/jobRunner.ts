@@ -18,7 +18,7 @@ import { logProjectEvent } from '@/lib/logger';
 import { dispatchNotification } from '@/server-functions/notifications/dispatch';
 import { isPdfLikeFile, parseNonPdfFileForModel, type ParsedModelImage } from './non-pdf-parser';
 import type { PdfEngine } from '@/services/openrouter';
-import { toUserFacingAnalysisError } from '@/lib/analysis-errors';
+import { isOpenRouterPrivacyRestrictionError, toUserFacingAnalysisError } from '@/lib/analysis-errors';
 
 type PipelineVersion = 'v1' | 'v2';
 type ExecutionProvider = 'openrouter' | 'local_hf';
@@ -243,6 +243,9 @@ async function runOcrMarkdown(job: ServerAnalysisJob, prompt: string): Promise<O
     } catch (error: any) {
       const message = error?.message || `OCR engine ${engine} failed`;
       attemptErrors.push(`[${engine}] ${message}`);
+      if (isOpenRouterPrivacyRestrictionError(message)) {
+        break;
+      }
     }
   }
 
@@ -637,7 +640,7 @@ export async function runServerAnalysisJob(jobId: string, options: { alreadyClai
     const fallbackStage = status === 'cancelled' ? 'cancelled' : 'failed';
     await updateProjectStage(
       job.projectId,
-      lastStage || fallbackStage,
+      fallbackStage,
       status === 'cancelled' ? 'Процесс остановлен пользователем' : userMessage
     );
     await logProjectEvent({

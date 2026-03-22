@@ -23,7 +23,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { resolvePostAuthRedirectUrl } from '@/lib/navigation';
+import { canAccessAdminSurface, canAccessPartnerSurface, resolvePostAuthRedirectUrl, resolveSurfaceUrl } from '@/lib/navigation';
 
 const pipelineColumns = ['new', 'qualified', 'in_progress', 'waiting_client', 'resolved', 'closed_lost'] as const;
 
@@ -45,6 +45,10 @@ export default function CrmPage() {
   const [newTaskDealId, setNewTaskDealId] = useState('');
   const [newTaskAssigneeId, setNewTaskAssigneeId] = useState('');
   const [ruleName, setRuleName] = useState('Auto-sync Service Requests');
+  const lkProjectsUrl = resolveSurfaceUrl('lk', '/dashboard');
+  const lkProfileUrl = resolveSurfaceUrl('lk', '/dashboard/profile');
+  const adminUrl = resolveSurfaceUrl('admin', '/dashboard/admin');
+  const partnerUrl = resolveSurfaceUrl('partner', '/partner');
 
   const canView = !!user && (user.systemRole === 'Admin' || user.systemRole === 'Super Admin' || (user as any).crmRole);
 
@@ -196,6 +200,12 @@ export default function CrmPage() {
 
   return (
     <div className="p-4 sm:p-6 space-y-4">
+      <div className="flex flex-wrap gap-2">
+        <Button variant="outline" asChild><a href={lkProjectsUrl}>LK</a></Button>
+        <Button variant="outline" asChild><a href={lkProfileUrl}>Профиль</a></Button>
+        {canAccessAdminSurface(user) ? <Button variant="outline" asChild><a href={adminUrl}>Админ</a></Button> : null}
+        {canAccessPartnerSurface(user) ? <Button variant="outline" asChild><a href={partnerUrl}>Партнёры</a></Button> : null}
+      </div>
       <Card>
         <CardHeader>
           <CardTitle>CRM Workspace</CardTitle>

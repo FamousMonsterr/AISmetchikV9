@@ -29,13 +29,12 @@ import { nanoid } from 'nanoid';
 import { saveAs } from 'file-saver';
 import { onSnapshot, collection, where, orderBy, DatabaseError, query, getDoc, doc, getDocs } from '@/lib/db-client';
 import { db } from '@/lib/db';
-import { deleteRequest, archiveRequest, unarchiveRequest, updateRequest, reportRequest, returnCreditForFailedRequest, saveProjectVersion, restartProcessingRequest } from '@/actions/userActions';
+import { deleteRequest, archiveRequest, unarchiveRequest, updateRequest, reportRequest, returnCreditForFailedRequest, saveProjectVersion, restartProcessingRequestWithQueue } from '@/actions/userActions';
 import { runBatchPriceUpdate } from '@/actions/batchActions';
 import { generateObjectSummaryExcel } from '@/services/excelGenerator';
 import { ProjectCard } from '@/components/dashboard/ProjectCard';
 import { ProjectGroup } from '@/components/dashboard/ProjectGroup';
 import { LabelInputContainer } from '@/components/ui/aceternity-ui';
-import aiConfig from '@/lib/ai-config.json';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { getProjectDisplayName } from '@/lib/project-labels';
 
@@ -316,34 +315,15 @@ export function HistorySection({
                 if (!accessUrl) throw new Error('Нет доступной ссылки на файл для повторного анализа.');
                 if (!item.fileSha1) throw new Error('Отсутствует хеш файла, повтор невозможен.');
 
-                const restartResult = await restartProcessingRequest({
+                const restartResult = await restartProcessingRequestWithQueue({
                     userId: user.uid,
                     projectId: item.id,
                     fileUri: accessUrl,
                     s3ObjectKey: item.s3ObjectKey || undefined,
                 });
                 if (!restartResult.success) throw new Error(restartResult.message);
-
-                const modelToUse = item.modelUsed || aiConfig.apiModels.find((m: any) => m.isDefault)?.value || aiConfig.apiModels[0]?.value;
-                const response = await fetch('/api/server-analysis', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        userId: user.uid,
-                        projectId: item.id,
-                        fileUri: accessUrl,
-                        fileSha1: item.fileSha1,
-                        fileName: item.fileName,
-                        mimeType: item.mimeType || 'application/pdf',
-                        objectKey: item.s3ObjectKey,
-                        model: modelToUse,
-                    }),
-                });
-                const result = await response.json();
-                if (!response.ok || !result.success) {
-                    throw new Error(result.error || 'Не удалось запустить повторный анализ.');
-                }
                 toast({ title: "Запущено", description: "Повторный анализ отправлен в очередь." });
+                return;
             } catch (err: any) {
                 toast({ title: "Ошибка", description: err.message || "Не удалось запустить повтор.", variant: "destructive" });
             }

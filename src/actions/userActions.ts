@@ -9,14 +9,17 @@ import { randomBytes, createHash } from 'crypto';
 import { getDb } from '@/lib/mongodb';
 import { getMailer, getMailerFrom, isMailerConfigured } from '@/lib/mailer';
 import type { HistoryRequest, AnalysisDetails, QuoteConfig, PriceBaseItem, SpecificationItem, ItemType } from '@/contexts/AppContext';
-import { DEFAULT_SERVER_QUOTE_CONFIG } from '@/server-functions/config';
+import { DEFAULT_SERVER_QUOTE_CONFIG, SERVER_ANALYSIS_CREDIT_COST } from '@/server-functions/config';
 import { logProjectEvent, logUserAction } from '@/lib/logger';
 import { AiSpecificationItemSchema, ExtractProjectSpecificationsOutputSchema } from '@/ai/genkit-schemas';
-import { deductCredits, deductCreditsInTransaction, refundCredits, withMongoTransaction } from '@/services/credits';
+import { deductCredits, deductCreditsInTransaction, getCreditSummary, refundCredits, withMongoTransaction } from '@/services/credits';
 import { getPlanModelIds } from '@/lib/plan-models';
 import { grantMarketingBonusForUser } from '@/actions/marketingActions';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { getAppSettings } from '@/actions/adminActions';
+import { createServerAnalysisJob } from '@/server-functions/analysis/jobService';
+import { validateFileUriAgainstAllowlist } from '@/lib/file-uri-security';
 
 async function resolveActingUserId(userId?: string): Promise<string> {
   const session = await getServerSession(authOptions);
@@ -735,14 +738,61 @@ export const deleteRequest = async (data: z.infer<typeof DeleteRequestSchema>): 
     if (!validation.success) {
         return { success: false, message: 'Неверный ID запроса.' };
     }
-    const { requestIds, userId } = validation.data;
+    let { requestIds, userId } = validation.data;
 
     try {
-        const batch = writeBatch(db);
-        for (const id of requestIds) {
-            batch.delete(doc(db, 'requests', id));
-        }
-        await batch.commit();
+        userId = await resolveActingUserId(userId);
+        await withMongoTransaction(async (ctx) => {
+            const familyIdsToDelete = new Set<string>();
+
+            for (const id of requestIds) {
+                const requestDoc = await ctx.db.collection('requests').findOne(
+                    { _id: id as any },
+                    ctx.session ? { session: ctx.session } : undefined,
+                );
+                if (!requestDoc) continue;
+                if (requestDoc.userId !== userId) {
+                    throw new Error('Нет доступа к проекту.');
+                }
+
+                const rootProjectId = requestDoc.isMainVersion === false && requestDoc.parentProjectId
+                    ? null
+                    : (requestDoc.parentProjectId || String(requestDoc._id));
+
+                if (!rootProjectId) {
+                    familyIdsToDelete.add(String(requestDoc._id));
+                    continue;
+                }
+
+                const familyDocs = await ctx.db.collection('requests').find(
+                    {
+                        $or: [
+                            { _id: rootProjectId as any },
+                            { parentProjectId: rootProjectId },
+                        ],
+                        userId,
+                    },
+                    ctx.session ? { session: ctx.session } : undefined,
+                ).toArray();
+
+                if (!familyDocs.length) {
+                    familyIdsToDelete.add(String(requestDoc._id));
+                    continue;
+                }
+
+                familyDocs.forEach((row: any) => familyIdsToDelete.add(String(row._id)));
+            }
+
+            if (!familyIdsToDelete.size) {
+                return;
+            }
+
+            const ids = Array.from(familyIdsToDelete);
+            await ctx.db.collection('server_analysis_jobs').deleteMany({ projectId: { $in: ids as any } }, ctx.session ? { session: ctx.session } : undefined);
+            await ctx.db.collection('project_event_logs').deleteMany({ projectId: { $in: ids as any } }, ctx.session ? { session: ctx.session } : undefined);
+            await ctx.db.collection('notifications').deleteMany({ projectId: { $in: ids as any }, userId }, ctx.session ? { session: ctx.session } : undefined);
+            await ctx.db.collection('requests').deleteMany({ _id: { $in: ids as any } }, ctx.session ? { session: ctx.session } : undefined);
+        });
         await logUserAction(userId, 'PROJECT_DELETE', { projectIds: requestIds });
         const message = requestIds.length > 1 ? 'Проекты успешно удалены.' : 'Проект успешно удален.';
         return { success: true, message };
@@ -971,6 +1021,8 @@ const CreateProcessingRequestSchema = z.object({
     fileSha1: z.string().optional(),
     mimeType: z.string().optional(),
     modelUsed: z.string().optional(),
+    temperature: z.number().optional(),
+    includeThoughts: z.boolean().optional(),
     fileUri: z.string().optional(),
     s3ObjectKey: z.string().optional(),
     serverJobId: z.string().optional(),
@@ -1021,6 +1073,19 @@ export const createProcessingRequest = async (data: z.infer<typeof CreateProcess
             processingStage: 'created',
             processingStageMessage: 'Проект создан и поставлен в очередь',
             processingStageUpdatedAt: serverTimestamp(),
+            analysisSource: {
+                fileUri: payload.fileUri || null,
+                fileSha1: payload.fileSha1 || null,
+                fileName: payload.fileName,
+                mimeType: payload.mimeType || null,
+                objectKey: payload.s3ObjectKey || null,
+                model: payload.modelUsed || null,
+                temperature: payload.temperature ?? null,
+                includeThoughts: payload.includeThoughts ?? null,
+                pipelineVersion: payload.pipelineVersion || 'v1',
+                objectId: payload.objectId ?? null,
+                objectName: payload.objectName ?? null,
+            },
         };
 
         await setDoc(projectRef, {
@@ -1154,6 +1219,19 @@ export const finalizeProcessingRequest = async (data: z.infer<typeof FinalizePro
                         importantExtractionNotes: importantExtractionNotes ?? [],
                         aiCallCount: aiCallCount ?? 0,
                         pipelineVersion: rest.pipelineVersion || projectDoc.pipelineVersion || 'v1',
+                        analysisSource: projectDoc.analysisSource || {
+                            fileUri: rest.fileUri,
+                            fileSha1: rest.fileSha1,
+                            fileName: rest.fileName,
+                            mimeType: rest.mimeType,
+                            objectKey: rest.s3ObjectKey || null,
+                            model: rest.modelUsed,
+                            temperature: null,
+                            includeThoughts: null,
+                            pipelineVersion: rest.pipelineVersion || projectDoc.pipelineVersion || 'v1',
+                            objectId: projectDoc.objectId || null,
+                            objectName: projectDoc.objectName || null,
+                        },
                         updatedAt: now,
                     },
                 },
@@ -1250,6 +1328,9 @@ export const failProcessingRequest = async (data: z.infer<typeof FailProcessingR
         await updateDoc(projectRef, {
             status,
             error: error || (status === 'cancelled' ? 'Процесс остановлен пользователем' : 'Ошибка анализа'),
+            processingStage: status,
+            processingStageMessage: error || (status === 'cancelled' ? 'Процесс остановлен пользователем' : 'Ошибка анализа'),
+            processingStageUpdatedAt: serverTimestamp(),
             updatedAt: serverTimestamp(),
         } as any);
 
@@ -1411,5 +1492,179 @@ export const restartProcessingRequest = async (data: z.infer<typeof RestartProce
             error: err,
         });
         return { success: false, message: err.message || 'Не удалось перезапустить проект.' };
+    }
+};
+
+export const restartProcessingRequestWithQueue = async (data: z.infer<typeof RestartProcessingRequestSchema>): Promise<{ success: boolean; message: string; jobId?: string | null; }> => {
+    const validation = RestartProcessingRequestSchema.safeParse(data);
+    if (!validation.success) {
+        return { success: false, message: 'Неверные данные для перезапуска.' };
+    }
+
+    let { userId, projectId, fileUri, s3ObjectKey } = validation.data;
+    const projectRef = doc(db, 'requests', projectId);
+
+    try {
+        userId = await resolveActingUserId(userId);
+        const snap = await getDoc(projectRef);
+        if (!snap.exists()) throw new Error('Проект не найден.');
+        const project = snap.data() as HistoryRequest;
+        if (project.userId !== userId) throw new Error('Нет доступа к проекту.');
+
+        const nextSource = {
+            ...(project.analysisSource || {}),
+            fileUri: fileUri || project.analysisSource?.fileUri || project.fileUri || null,
+            fileSha1: project.analysisSource?.fileSha1 || project.fileSha1 || null,
+            fileName: project.analysisSource?.fileName || project.fileName,
+            mimeType: project.analysisSource?.mimeType || project.mimeType || null,
+            objectKey: s3ObjectKey || project.analysisSource?.objectKey || project.s3ObjectKey || null,
+            model: project.analysisSource?.model || project.modelUsed || null,
+            temperature: project.analysisSource?.temperature ?? null,
+            includeThoughts: project.analysisSource?.includeThoughts ?? null,
+            pipelineVersion: project.analysisSource?.pipelineVersion || project.pipelineVersion || 'v1',
+            objectId: project.analysisSource?.objectId ?? project.objectId ?? null,
+            objectName: project.analysisSource?.objectName ?? project.objectName ?? null,
+        };
+
+        if (!nextSource.fileUri) throw new Error('Нет доступной ссылки на файл для повторного анализа.');
+        if (!nextSource.fileSha1) throw new Error('Отсутствует хеш файла, повтор невозможен.');
+        if (!nextSource.fileName) throw new Error('Отсутствует имя файла для перезапуска.');
+        if (!nextSource.mimeType) throw new Error('Отсутствует mimeType файла для перезапуска.');
+        if (!nextSource.model) throw new Error('Отсутствует модель анализа для перезапуска.');
+
+        const fileUriValidation = await validateFileUriAgainstAllowlist(nextSource.fileUri);
+        if (!fileUriValidation.ok) {
+            throw new Error(fileUriValidation.reason || 'Недопустимый fileUri.');
+        }
+
+        const appSettings = await getAppSettings();
+        if (!appSettings.serverFunctionsEnabled || appSettings.serverFunctionsMode !== 'server') {
+            throw new Error('Серверные функции отключены в настройках.');
+        }
+
+        const dbClient = await getDb();
+        const userDoc = await dbClient.collection('users').findOne({ _id: userId as any });
+        if (!userDoc) throw new Error('Пользователь не найден.');
+        const plan = userDoc.plan || 'Free';
+        const allowedPlans = (appSettings.serverFunctionsAllowedPlans?.length ? appSettings.serverFunctionsAllowedPlans : undefined)
+          ?? (appSettings.serverFunctionsPaidOnly ? ['PRO', 'Business', 'Enterprise'] : ['Free', 'PRO', 'Business', 'Enterprise']);
+        if (!allowedPlans.includes(plan)) {
+            throw new Error('Серверная обработка недоступна для текущего тарифа.');
+        }
+
+        const creditSummary = await getCreditSummary(userId, { refresh: true });
+        if (creditSummary.total < SERVER_ANALYSIS_CREDIT_COST) {
+            throw new Error('Недостаточно кредитов для запуска серверного анализа.');
+        }
+
+        const pipelineVersion = nextSource.pipelineVersion || appSettings.analysisPipelineVersion || 'v1';
+        const executionProvider = pipelineVersion === 'v1'
+            ? 'openrouter'
+            : (appSettings.aiExecutionProvider || 'openrouter');
+        const idempotencyKey = createHash('sha256')
+            .update(`${userId}:${projectId}:${nextSource.fileSha1}:${pipelineVersion}`)
+            .digest('hex');
+
+        const job = await createServerAnalysisJob({
+            userId,
+            projectId,
+            fileUri: nextSource.fileUri,
+            fileSha1: nextSource.fileSha1,
+            fileName: nextSource.fileName,
+            mimeType: nextSource.mimeType,
+            objectKey: nextSource.objectKey || undefined,
+            model: nextSource.model,
+            temperature: nextSource.temperature ?? undefined,
+            includeThoughts: nextSource.includeThoughts ?? undefined,
+            pipelineVersion,
+            executionProvider,
+            userPlan: plan,
+            idempotencyKey,
+            creditCost: SERVER_ANALYSIS_CREDIT_COST,
+        });
+
+        await updateDoc(projectRef, {
+            status: 'processing',
+            error: '',
+            cost: 0,
+            fileUri: nextSource.fileUri,
+            s3ObjectKey: nextSource.objectKey || null,
+            serverJobId: job.id,
+            modelUsed: nextSource.model,
+            mimeType: nextSource.mimeType,
+            fileSha1: nextSource.fileSha1,
+            pipelineVersion,
+            processingStage: 'created',
+            processingStageMessage: 'Проект отправлен на повторную обработку',
+            processingStageUpdatedAt: serverTimestamp(),
+            analysisSource: nextSource,
+            updatedAt: serverTimestamp(),
+        } as any);
+
+        await logProjectEvent({
+            projectId,
+            userId,
+            jobId: job.id,
+            action: 'PROJECT_JOB_CREATED',
+            stage: 'queued',
+            status: 'info',
+            source: 'server',
+            model: nextSource.model,
+            file: {
+                name: nextSource.fileName,
+                uri: nextSource.fileUri,
+                sha1: nextSource.fileSha1,
+                objectKey: nextSource.objectKey || null,
+            },
+            metadata: {
+                creditCost: SERVER_ANALYSIS_CREDIT_COST,
+                pipelineVersion,
+                executionProvider,
+                restart: true,
+            },
+            message: 'Создана новая серверная задача для повторного анализа',
+        });
+
+        await logUserAction(userId, 'PROJECT_PROCESSING_RESTART', { projectId });
+        await logProjectEvent({
+            projectId,
+            userId,
+            action: 'PROJECT_PROCESSING_RESTART',
+            stage: 'restart',
+            status: 'info',
+            source: 'server',
+            model: nextSource.model,
+            file: {
+                name: nextSource.fileName,
+                uri: nextSource.fileUri,
+                sha1: nextSource.fileSha1,
+                objectKey: nextSource.objectKey || null,
+            },
+            metadata: {
+                previousStatus: project.status,
+                previousServerJobId: project.serverJobId || null,
+                serverJobId: job.id,
+            },
+            message: 'Проект отправлен на повторную обработку',
+        });
+
+        return {
+            success: true,
+            message: 'Проект отправлен на повторную обработку.',
+            jobId: job.id,
+        };
+    } catch (err: any) {
+        console.error("Error restarting processing request with queue:", err);
+        await logProjectEvent({
+            projectId,
+            userId,
+            action: 'PROJECT_PROCESSING_FAILED',
+            stage: 'restart',
+            status: 'error',
+            source: 'server',
+            message: err?.message || 'Не удалось перезапустить проект.',
+            error: err,
+        });
+        return { success: false, message: err.message || 'Не удалось перезапустить проект.', jobId: null };
     }
 };

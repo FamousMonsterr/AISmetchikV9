@@ -13,6 +13,7 @@ import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { canAccessAdminSurface, canAccessCrmSurface, resolvePostAuthRedirectUrl, resolveSurfaceUrl } from '@/lib/navigation';
 
 function formatDate(value: any) {
   const date = value?.toDate ? value.toDate() : value ? new Date(value) : null;
@@ -31,8 +32,16 @@ export default function PartnerPage() {
 
   const botUrl = process.env.NEXT_PUBLIC_TELEGRAM_BOT_URL || 'https://t.me/AI_Smetchik_Bot';
   const referralLink = useMemo(() => (user?.uid ? `${botUrl}?start=ref_${user.uid}` : ''), [botUrl, user?.uid]);
+  const lkProjectsUrl = resolveSurfaceUrl('lk', '/dashboard');
+  const lkProfileUrl = resolveSurfaceUrl('lk', '/dashboard/profile');
+  const adminUrl = resolveSurfaceUrl('admin', '/dashboard/admin');
+  const crmUrl = resolveSurfaceUrl('crm', '/crm');
 
   useEffect(() => {
+    if (user && !user.isPartner) {
+      router.replace(resolvePostAuthRedirectUrl(user, 'lk'));
+      return;
+    }
     if (!user?.uid || !user.isPartner) return;
     setIsLoadingRefs(true);
     startTransition(async () => {
@@ -98,6 +107,12 @@ export default function PartnerPage() {
 
   return (
     <div className="p-4 sm:p-6 space-y-4">
+      <div className="flex flex-wrap gap-2">
+        <Button variant="outline" asChild><a href={lkProjectsUrl}>LK</a></Button>
+        <Button variant="outline" asChild><a href={lkProfileUrl}>Профиль</a></Button>
+        {canAccessAdminSurface(user) ? <Button variant="outline" asChild><a href={adminUrl}>Админ</a></Button> : null}
+        {canAccessCrmSurface(user) ? <Button variant="outline" asChild><a href={crmUrl}>CRM</a></Button> : null}
+      </div>
       <Card>
         <CardHeader>
           <CardTitle>Партнёрский кабинет</CardTitle>

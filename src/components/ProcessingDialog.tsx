@@ -192,6 +192,8 @@ export function ProcessingDialog({ isOpen, onClose, file, model, temperature, in
                     fileName: file.name,
                     mimeType: file.type,
                     modelUsed: model,
+                    temperature: effectiveTemperature,
+                    includeThoughts,
                     pipelineVersion: selectedPipelineVersion,
                     fileSha1: hash,
                     fileUri: uri,
