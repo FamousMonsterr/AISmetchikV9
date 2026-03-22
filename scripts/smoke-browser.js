@@ -242,7 +242,12 @@ async function visitSurface(page, entry) {
 
 async function visitSurfacePages(page) {
   const entries = [
-    { name: 'surface-partner', url: surfaceUrls.partner ? `${surfaceUrls.partner}/` : `${surfaceUrls.root}/partner`, text: 'Партнёрский кабинет' },
+    {
+      name: 'surface-partner',
+      url: surfaceUrls.partner ? `${surfaceUrls.partner}/` : `${surfaceUrls.root}/partner`,
+      text: 'Партнёрский кабинет',
+      acceptUrlPatterns: [/\/dashboard\b/, /\/auth\/login\b/, /^https:\/\/lk\./],
+    },
     {
       name: 'surface-mobile',
       url: surfaceUrls.mobile ? `${surfaceUrls.mobile}/` : `${surfaceUrls.root}/dashboard/mobile-panel`,
@@ -259,7 +264,7 @@ async function visitSurfacePages(page) {
       name: 'surface-admin',
       url: surfaceUrls.admin ? `${surfaceUrls.admin}/` : `${surfaceUrls.root}/dashboard/admin`,
       text: 'Главное',
-      acceptUrlPatterns: [/\/dashboard\b/, /\/auth\/login\b/, /^https:\/\/lk\./],
+      acceptUrlPatterns: [/\/dashboard\b/, /\/auth\/login\b/, /^https:\/\/lk\./, /^https:\/\/aismetchik\.ru\/?$/],
     },
   ];
 
