@@ -3,8 +3,8 @@
 
 import type TelegramBot from '@/lib/telegram/telegraf-compat';
 import { startTelegramBot } from './bot';
-import { doc, getDoc, setDoc, deleteDoc, serverTimestamp } from '@/lib/mongoFirestoreServer';
-import { db } from '@/lib/firebase';
+import { doc, getDoc, setDoc, deleteDoc, serverTimestamp } from '@/lib/db-server';
+import { db } from '@/lib/db';
 
 const readEnvSettings = async () => {
   const snap = await getDoc(doc(db, 'configs', 'envSettings'));

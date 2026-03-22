@@ -8,8 +8,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button';
 import { Loader2, Download, FileText, Share2, Send, RefreshCcw } from 'lucide-react';
 import { useAppContext } from '@/contexts/AppContext';
-import { collection, query, where, orderBy, limit, onSnapshot, DocumentData, Timestamp, getDocs } from '@/lib/mongoFirestore';
-import { db } from '@/lib/firebase';
+import { collection, query, where, orderBy, limit, onSnapshot, DocumentData, Timestamp, getDocs } from '@/lib/db-client';
+import { db } from '@/lib/db';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { Badge } from './ui/badge';

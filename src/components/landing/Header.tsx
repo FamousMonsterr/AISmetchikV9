@@ -16,7 +16,7 @@ import { RegistrationDialog } from '@/components/RegistrationDialog';
 import { LegalEntityRegistrationDialog } from '@/components/LegalEntityRegistrationDialog';
 import { usePathname, useRouter } from 'next/navigation';
 import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '../ui/alert-dialog';
-import { motion } from "framer-motion";
+import { motion } from "@/lib/motion";
 import { useAppContext } from '@/contexts/AppContext';
 
 
@@ -78,7 +78,7 @@ const ThemeSwitcher = () => {
     return (
          <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="justify-start gap-2 w-full md:w-auto hover:bg-black/5 dark:hover:bg-white/10 text-foreground px-3">
+                <Button variant="ghost" className="justify-start gap-2 w-full px-3 text-foreground hover:bg-secondary md:w-auto">
                    {renderIcon()}
                    <span className="md:hidden">Тема</span>
                 </Button>
@@ -172,7 +172,7 @@ export const Header = () => {
              </div>
               {isOpen && (
                 <div className="md:hidden mt-4">
-                    <div className="glass-effect bg-card/80 backdrop-blur-lg rounded-xl p-4">
+                    <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
                         <nav className="flex flex-col items-center gap-4">
                             {navItems.map(item => {
                                 const isAlertLink = item.href === '/partnership' || item.href === '/';
@@ -201,3 +201,4 @@ export const Header = () => {
         </>
     );
 };
+

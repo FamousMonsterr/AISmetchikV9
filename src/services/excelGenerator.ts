@@ -1,4 +1,4 @@
-import ExcelJS from 'exceljs';
+import XlsxPopulate from 'xlsx-populate/browser/xlsx-populate-no-encryption.min.js';
 import type { Company, SpecificationItem, AnalysisDetails, QuoteConfig, HistoryRequest } from '@/contexts/AppContext';
 import { format } from 'date-fns';
 import { calculateProjectTotals } from '@/lib/calculation';
@@ -18,6 +18,13 @@ interface GenerateExcelParams {
   };
 }
 
+type XlsxWorkbook = any;
+type XlsxSheet = any;
+type XlsxCell = any;
+
+const CURRENCY_FORMAT = '#,##0.00 "₽"';
+const NUMBER_FORMAT = '#,##0.00';
+
 function sanitizeSheetName(name: string): string {
   return name.replace(/[\\/*?:\[\]]/g, '').trim().slice(0, 31) || 'Лист';
 }
@@ -33,13 +40,56 @@ function colToLetter(col: number): string {
   return result;
 }
 
-function moneyCell(cell: ExcelJS.Cell, value: number) {
-  cell.value = value;
-  cell.numFmt = '#,##0.00 "₽"';
+function cellAddress(row: number, col: number): string {
+  return `${colToLetter(col)}${row}`;
+}
+
+function rangeAddress(startRow: number, startCol: number, endRow: number, endCol: number): string {
+  return `${cellAddress(startRow, startCol)}:${cellAddress(endRow, endCol)}`;
+}
+
+function setCellValue(cell: XlsxCell, value: unknown, styles?: Record<string, unknown>) {
+  cell.value(value);
+  if (styles) {
+    cell.style(styles);
+  }
+  return cell;
+}
+
+function setCurrencyCell(cell: XlsxCell, value: number, bold = false) {
+  cell.value(value);
+  cell.style({
+    numberFormat: CURRENCY_FORMAT,
+    horizontalAlignment: 'right',
+    bold,
+  });
+  return cell;
+}
+
+function setNumberCell(cell: XlsxCell, value: number, formatCode = NUMBER_FORMAT) {
+  cell.value(value);
+  cell.style({
+    numberFormat: formatCode,
+    horizontalAlignment: 'right',
+  });
+  return cell;
+}
+
+function setFormulaCell(cell: XlsxCell, formula: string, formatCode = NUMBER_FORMAT) {
+  cell.formula(formula);
+  cell.style({
+    numberFormat: formatCode,
+    horizontalAlignment: 'right',
+  });
+  return cell;
+}
+
+async function createWorkbook(): Promise<XlsxWorkbook> {
+  return XlsxPopulate.fromBlankAsync();
 }
 
 function buildWorksheet(
-  worksheet: ExcelJS.Worksheet,
+  sheet: XlsxSheet,
   company: Partial<Company>,
   specifications: SpecificationItem[],
   analysisDetails: AnalysisDetails | null,
@@ -52,40 +102,64 @@ function buildWorksheet(
   }
   colHeaders.push('Кол-во (монт.)', 'Цена монт.', 'Сумма монт.', 'Сумма');
 
-  worksheet.columns = colHeaders.map((header) => ({
-    header,
-    width: header === 'Наименование работ и материалов' ? 50 : 15,
-  }));
+  colHeaders.forEach((header, index) => {
+    const width = index === 1 ? 50 : 15;
+    sheet.column(index + 1).width(width);
+  });
 
-  worksheet.addRow([`Коммерческое предложение от ${format(new Date(), 'dd.MM.yyyy')}`]);
-  worksheet.mergeCells(1, 1, 1, colHeaders.length);
-  worksheet.getCell(1, 1).font = { bold: true, size: 14 };
+  const totalColIndex = colHeaders.length;
+  const endColumn = colToLetter(totalColIndex);
 
-  worksheet.addRow([]);
-  worksheet.addRow(['Поставщик:', company.fullName || company.name || '']);
+  sheet.cell(1, 1).value(`Коммерческое предложение от ${format(new Date(), 'dd.MM.yyyy')}`);
+  sheet.range(rangeAddress(1, 1, 1, totalColIndex)).merged(true);
+  sheet.cell(1, 1).style({ bold: true, fontSize: 14 });
+
+  let currentRow = 3;
+  setCellValue(sheet.cell(currentRow, 1), 'Поставщик:');
+  setCellValue(sheet.cell(currentRow, 2), company.fullName || company.name || '');
+  currentRow += 1;
+
   if (company.inn) {
-    worksheet.addRow(['', `ИНН ${company.inn}${company.kpp ? `/КПП ${company.kpp}` : ''}`]);
+    setCellValue(sheet.cell(currentRow, 2), `ИНН ${company.inn}${company.kpp ? `/КПП ${company.kpp}` : ''}`);
+    currentRow += 1;
   }
-  if (analysisDetails?.objectName) worksheet.addRow(['Объект:', analysisDetails.objectName]);
-  if (analysisDetails?.systemType) worksheet.addRow(['Система:', analysisDetails.systemType]);
-  worksheet.addRow([]);
+  if (analysisDetails?.objectName) {
+    setCellValue(sheet.cell(currentRow, 1), 'Объект:');
+    setCellValue(sheet.cell(currentRow, 2), analysisDetails.objectName);
+    currentRow += 1;
+  }
+  if (analysisDetails?.systemType) {
+    setCellValue(sheet.cell(currentRow, 1), 'Система:');
+    setCellValue(sheet.cell(currentRow, 2), analysisDetails.systemType);
+    currentRow += 1;
+  }
 
-  const headerRow = worksheet.addRow(colHeaders);
-  headerRow.font = { bold: true };
+  currentRow += 1;
+
+  for (let i = 0; i < colHeaders.length; i += 1) {
+    setCellValue(sheet.cell(currentRow, i + 1), colHeaders[i]);
+  }
+  sheet.range(rangeAddress(currentRow, 1, currentRow, totalColIndex)).style({
+    bold: true,
+    horizontalAlignment: 'center',
+    verticalAlignment: 'center',
+    fill: 'EFEFEF',
+    wrapText: true,
+  });
+
+  currentRow += 1;
 
   for (const [index, item] of specifications.entries()) {
     const fullName = [item.name, item.brand, item.model].filter(Boolean).join(' ');
 
     if (item.isInformational) {
-      const infoRow = worksheet.addRow(new Array(colHeaders.length).fill(''));
-      infoRow.getCell(2).value = fullName;
-      infoRow.getCell(2).font = { bold: true };
-      infoRow.getCell(2).fill = {
-        type: 'pattern',
-        pattern: 'solid',
-        fgColor: { argb: 'FFEFEFEF' },
-      };
-      worksheet.mergeCells(infoRow.number, 2, infoRow.number, colHeaders.length);
+      setCellValue(sheet.cell(currentRow, 2), fullName);
+      sheet.range(rangeAddress(currentRow, 2, currentRow, totalColIndex)).merged(true);
+      sheet.range(rangeAddress(currentRow, 2, currentRow, totalColIndex)).style({
+        bold: true,
+        fill: 'EFEFEF',
+      });
+      currentRow += 1;
       continue;
     }
 
@@ -94,48 +168,40 @@ function buildWorksheet(
     const qtyMaterial = qtyInstall + (item.quantityReserve || 0);
     const priceMaterial = item.materialPrice || 0;
 
-    const row = worksheet.addRow([]);
-    row.getCell(1).value = index + 1;
-    row.getCell(2).value = fullName;
-    row.getCell(3).value = item.unit || '';
+    setCellValue(sheet.cell(currentRow, 1), index + 1);
+    setCellValue(sheet.cell(currentRow, 2), fullName);
+    setCellValue(sheet.cell(currentRow, 3), item.unit || '');
 
     if (quoteConfig.showMaterialColumns) {
-      row.getCell(4).value = qtyMaterial;
-      row.getCell(5).value = priceMaterial;
-      row.getCell(6).value = { formula: `${colToLetter(4)}${row.number}*${colToLetter(5)}${row.number}` };
-      row.getCell(6).numFmt = '#,##0.00';
+      setNumberCell(sheet.cell(currentRow, 4), qtyMaterial);
+      setNumberCell(sheet.cell(currentRow, 5), priceMaterial);
+      setFormulaCell(sheet.cell(currentRow, 6), `${colToLetter(4)}${currentRow}*${colToLetter(5)}${currentRow}`);
 
-      row.getCell(7).value = qtyInstall;
-      row.getCell(8).value = priceInstall;
-      row.getCell(9).value = { formula: `${colToLetter(7)}${row.number}*${colToLetter(8)}${row.number}` };
-      row.getCell(9).numFmt = '#,##0.00';
+      setNumberCell(sheet.cell(currentRow, 7), qtyInstall);
+      setNumberCell(sheet.cell(currentRow, 8), priceInstall);
+      setFormulaCell(sheet.cell(currentRow, 9), `${colToLetter(7)}${currentRow}*${colToLetter(8)}${currentRow}`);
 
-      row.getCell(10).value = { formula: `${colToLetter(6)}${row.number}+${colToLetter(9)}${row.number}` };
-      row.getCell(10).numFmt = '#,##0.00';
+      setFormulaCell(sheet.cell(currentRow, 10), `${colToLetter(6)}${currentRow}+${colToLetter(9)}${currentRow}`);
     } else {
-      row.getCell(4).value = qtyInstall;
-      row.getCell(5).value = priceInstall;
-      row.getCell(6).value = { formula: `${colToLetter(4)}${row.number}*${colToLetter(5)}${row.number}` };
-      row.getCell(6).numFmt = '#,##0.00';
-      row.getCell(7).value = { formula: `${colToLetter(6)}${row.number}` };
-      row.getCell(7).numFmt = '#,##0.00';
+      setNumberCell(sheet.cell(currentRow, 4), qtyInstall);
+      setNumberCell(sheet.cell(currentRow, 5), priceInstall);
+      setFormulaCell(sheet.cell(currentRow, 6), `${colToLetter(4)}${currentRow}*${colToLetter(5)}${currentRow}`);
+      setFormulaCell(sheet.cell(currentRow, 7), `${colToLetter(6)}${currentRow}`);
     }
+
+    currentRow += 1;
   }
 
-  const totalColIndex = colHeaders.length;
+  currentRow += 1;
+
   const labelColIndex = totalColIndex > 2 ? totalColIndex - 2 : 2;
-
-  worksheet.addRow([]);
-
   const addTotalRow = (label: string, value: number, bold = true) => {
-    const row = worksheet.addRow(new Array(colHeaders.length).fill(''));
-    row.getCell(labelColIndex).value = label;
-    row.getCell(labelColIndex).font = { bold };
-    row.getCell(labelColIndex).alignment = { horizontal: 'right' };
-    const valueCell = row.getCell(totalColIndex);
-    moneyCell(valueCell, value);
-    valueCell.font = { bold };
-    return row;
+    setCellValue(sheet.cell(currentRow, labelColIndex), label, {
+      bold,
+      horizontalAlignment: 'right',
+    });
+    setCurrencyCell(sheet.cell(currentRow, totalColIndex), value, bold);
+    currentRow += 1;
   };
 
   addTotalRow('Итого по спецификации:', totals.specItemsTotalSum);
@@ -147,11 +213,13 @@ function buildWorksheet(
     addTotalRow(totals.taxLabel, totals.taxAmount);
   }
   addTotalRow('ИТОГО:', totals.finalTotal, true);
+
+  return sheet;
 }
 
 export const generateExcel = async (params: GenerateExcelParams): Promise<Blob> => {
-  const workbook = new ExcelJS.Workbook();
-  const worksheet = workbook.addWorksheet('Коммерческое предложение');
+  const workbook = await createWorkbook();
+  const worksheet = workbook.sheet(0).name('Коммерческое предложение');
   buildWorksheet(
     worksheet,
     params.company,
@@ -161,46 +229,59 @@ export const generateExcel = async (params: GenerateExcelParams): Promise<Blob> 
     params.totals
   );
 
-  const buffer = await workbook.xlsx.writeBuffer();
-  return new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  return workbook.outputAsync('blob');
 };
 
 export const generateObjectSummaryExcel = async (projects: HistoryRequest[], company: Partial<Company>): Promise<Blob> => {
-  const workbook = new ExcelJS.Workbook();
+  const workbook = await createWorkbook();
+  const summarySheet = workbook.sheet(0).name('Сводная по Объекту');
 
-  const summarySheet = workbook.addWorksheet('Сводная по Объекту');
-  summarySheet.columns = [
-    { header: 'Проект', width: 40 },
-    { header: 'Итоговая стоимость', width: 24 },
-  ];
+  summarySheet.column(1).width(40);
+  summarySheet.column(2).width(24);
 
   const objectName = projects[0]?.objectName || 'Без названия';
-  summarySheet.addRow([`Сводный отчет по Объекту: ${objectName}`]);
-  summarySheet.mergeCells(1, 1, 1, 2);
-  summarySheet.getCell(1, 1).font = { bold: true, size: 14 };
-  summarySheet.addRow([]);
-  summarySheet.addRow(['Проект', 'Итоговая стоимость']).font = { bold: true };
+  summarySheet.cell(1, 1).value(`Сводный отчет по Объекту: ${objectName}`);
+  summarySheet.range('A1:B1').merged(true);
+  summarySheet.cell(1, 1).style({ bold: true, fontSize: 14 });
+  summarySheet.cell(3, 1).value('Проект');
+  summarySheet.cell(3, 2).value('Итоговая стоимость');
+  summarySheet.range('A3:B3').style({
+    bold: true,
+    horizontalAlignment: 'center',
+    verticalAlignment: 'center',
+    fill: 'EFEFEF',
+  });
 
   let totalObjectSum = 0;
+  let currentRow = 4;
   for (const project of projects) {
     const totals = calculateProjectTotals(project.outputSpecifications, project.quoteConfig || ({} as QuoteConfig));
     totalObjectSum += totals.finalTotal;
-    const row = summarySheet.addRow([project.fileName, totals.finalTotal]);
-    row.getCell(2).numFmt = '#,##0.00 "₽"';
+    summarySheet.cell(currentRow, 1).value(project.fileName);
+    summarySheet.cell(currentRow, 2).value(totals.finalTotal);
+    summarySheet.cell(currentRow, 2).style({
+      numberFormat: CURRENCY_FORMAT,
+      horizontalAlignment: 'right',
+    });
+    currentRow += 1;
   }
 
-  summarySheet.addRow([]);
-  const totalRow = summarySheet.addRow(['ИТОГО ПО ОБЪЕКТУ:', totalObjectSum]);
-  totalRow.getCell(1).font = { bold: true };
-  totalRow.getCell(2).font = { bold: true };
-  totalRow.getCell(2).numFmt = '#,##0.00 "₽"';
+  currentRow += 1;
+  summarySheet.cell(currentRow, 1).value('ИТОГО ПО ОБЪЕКТУ:');
+  summarySheet.cell(currentRow, 1).style({ bold: true });
+  summarySheet.cell(currentRow, 2).value(totalObjectSum);
+  summarySheet.cell(currentRow, 2).style({
+    bold: true,
+    numberFormat: CURRENCY_FORMAT,
+    horizontalAlignment: 'right',
+  });
 
   for (const project of projects) {
     if (!project.outputSpecifications || !project.quoteConfig) continue;
 
     const totals = calculateProjectTotals(project.outputSpecifications, project.quoteConfig);
     const sheetName = sanitizeSheetName(project.fileName || 'Проект');
-    const worksheet = workbook.addWorksheet(sheetName);
+    const worksheet = workbook.addSheet(sheetName);
 
     buildWorksheet(
       worksheet,
@@ -212,6 +293,5 @@ export const generateObjectSummaryExcel = async (projects: HistoryRequest[], com
     );
   }
 
-  const buffer = await workbook.xlsx.writeBuffer();
-  return new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  return workbook.outputAsync('blob');
 };

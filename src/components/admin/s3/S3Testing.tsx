@@ -10,8 +10,8 @@ import { Loader2, Zap, ChevronRight, Hash, Database, Link as LinkIcon, FileUp, C
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { useDropzone } from 'react-dropzone';
 import { getFileSha1 } from '@/lib/utils';
-import { doc, getDoc, setDoc, serverTimestamp, Timestamp } from '@/lib/mongoFirestore';
-import { db } from '@/lib/firebase';
+import { doc, getDoc, setDoc, serverTimestamp, Timestamp } from '@/lib/db-client';
+import { db } from '@/lib/db';
 import axios from 'axios';
 import { cn } from '@/lib/utils';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
@@ -327,7 +327,7 @@ export function S3Testing({ settings }: { settings: EnvSettings | null }) {
                     {renderStep(1, 'hash', "Рассчитать SHA-1 хеш", !testState.file, () => handleStep(1), 
                        testState.fileHash && <Alert variant="default" className="mt-2"><Hash className="h-4 w-4"/><AlertDescription className="break-all">{testState.fileHash}</AlertDescription></Alert>
                     )}
-                    {renderStep(2, 'cache', "Проверить кеш в Firestore", !testState.fileHash, () => handleStep(2),
+                    {renderStep(2, 'cache', "Проверить кеш в базе", !testState.fileHash, () => handleStep(2),
                        <>
                          {testState.cachedData && <Alert variant="default" className="mt-2"><Database className="h-4 w-4"/><AlertDescription className="break-all">Кеш найден. Ключ объекта: {testState.cachedData.objectKey}</AlertDescription></Alert>}
                          {testState.cachedData === null && testState.fileHash && <Alert variant="outline" className="mt-2"><AlertDescription>Кеш не найден. Перейдите к шагу 5.</AlertDescription></Alert>}

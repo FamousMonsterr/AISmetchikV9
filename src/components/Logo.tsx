@@ -9,8 +9,8 @@ const logoVariants = cva(
     variants: {
       variant: {
         default: "border-primary text-primary",
-        partnership: "border-amber-500 text-amber-500",
-        partnerDashboard: "border-yellow-500 text-yellow-500",
+        partnership: "border-foreground text-foreground",
+        partnerDashboard: "border-foreground text-foreground",
       },
     },
     defaultVariants: {

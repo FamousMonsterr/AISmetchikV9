@@ -3,8 +3,8 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { onSnapshot, query, collection, where, orderBy, FirebaseError } from '@/lib/mongoFirestore';
-import { db } from '@/lib/firebase';
+import { onSnapshot, query, collection, where, orderBy, DatabaseError } from '@/lib/db-client';
+import { db } from '@/lib/db';
 import { useAppContext, type HistoryRequest } from '@/contexts/AppContext';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -36,7 +36,7 @@ export default function UserTicketsPage() {
             const userTickets = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }) as HistoryRequest);
             setTickets(userTickets);
             setIsLoading(false);
-        }, (error: FirebaseError) => {
+        }, (error: DatabaseError) => {
             console.error("Error fetching user tickets:", error);
             if (error.code === 'failed-precondition' && error.message.includes('index')) {
                  toast({

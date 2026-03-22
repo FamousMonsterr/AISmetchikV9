@@ -2,8 +2,8 @@
 // Polling/webhook bot handler for Telegram commands, callbacks, and chat binding.
 
 import TelegramBot, { type Message, type TelegramCallbackQuery } from '@/lib/telegram/telegraf-compat';
-import { doc, getDoc, setDoc, updateDoc, serverTimestamp, collection, query, where, limit, getDocs } from '@/lib/mongoFirestoreServer';
-import { db } from '@/lib/firebase';
+import { doc, getDoc, setDoc, updateDoc, serverTimestamp, collection, query, where, limit, getDocs } from '@/lib/db-server';
+import { db } from '@/lib/db';
 import {
   type TelegramAudience,
   TELEGRAM_AUDIENCE_COMMANDS,

@@ -11,9 +11,9 @@ import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Users, Ticket, Settings, Terminal, FileClock, Send, Library, LayoutDashboard, Bell, Bot, Handshake, Server, Palette, MessageSquareQuote, BarChart2, Palette as TemplateIcon, ServerCog, Activity, Search, ChevronDown, BadgeDollarSign } from "lucide-react";
-import { query, collection, getDocs, limit, where } from "@/lib/mongoFirestore";
-import { db } from "@/lib/firebase";
-import { motion, AnimatePresence } from "framer-motion";
+import { query, collection, getDocs, limit, where } from "@/lib/db-client";
+import { db } from "@/lib/db";
+import { motion, AnimatePresence } from "@/lib/motion";
 import { Input } from "@/components/ui/input";
 import { resolveLandingUrl } from "@/lib/navigation";
 
@@ -87,9 +87,9 @@ const navGroups = [
     },
 ];
 
-// This function will run on first admin layout mount to "warm up" Firestore indexes.
+// This function runs on first admin layout mount to warm up database indexes.
 const warmUpIndexes = async () => {
-    console.log("Warming up Firestore indexes for admin panel...");
+    console.log("Warming up database indexes for admin panel...");
     try {
         // These queries match the complex queries in the admin pages.
         // We only fetch 1 document to minimize data transfer, the goal is just to trigger index creation.
@@ -107,9 +107,9 @@ const warmUpIndexes = async () => {
         // We run them, but we don't care about the result.
         // The simple act of querying triggers the index creation on the backend if it doesn't exist.
         await Promise.all(queries.map(q => getDocs(q)));
-        console.log("Firestore index warm-up queries sent.");
+        console.log("Database index warm-up queries sent.");
     } catch (error) {
-        // We catch errors silently. If an index doesn't exist, Firestore will start creating it.
+        // We catch errors silently. If an index doesn't exist, the backend will start creating it.
         // The user will see the error on the specific page, which is the expected behavior.
         console.warn("An error occurred during index warm-up (this is often expected if indexes are being created):", error);
     }
@@ -296,3 +296,4 @@ export default function AdminLayout({
     </div>
   );
 }
+

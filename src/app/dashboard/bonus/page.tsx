@@ -24,7 +24,7 @@ import { HighTierPartnerDialog } from '@/components/HighTierPartnerDialog';
 import promoConfig from '@/lib/promo-config.json';
 import { RegistrationDialog } from '@/components/RegistrationDialog';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { motion } from 'framer-motion';
+import { motion } from '@/lib/motion';
 
 
 const agreementText = `
@@ -277,7 +277,6 @@ const ReferralDashboard = () => {
         <div className="space-y-6">
              <motion.div variants={fadeUp} initial="hidden" animate="visible" transition={{ duration: 0.4, ease: 'easeOut' }}>
                 <Card className="relative overflow-hidden border-border/60">
-                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(94,234,212,0.12),_transparent_55%)] pointer-events-none" />
                     <CardHeader>
                         <CardTitle className="flex flex-wrap items-center justify-between gap-2">
                             <span className="flex items-center gap-2">
@@ -531,3 +530,4 @@ export default function BonusPage() {
     // If user is a partner, show the full dashboard.
     return <ReferralDashboard />;
 }
+

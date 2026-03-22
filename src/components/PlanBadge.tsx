@@ -15,9 +15,9 @@ interface PlanBadgeProps extends React.HTMLAttributes<HTMLDivElement> {
 
 const planStyles: Record<PlanBadgeProps['plan'], string> = {
   Free: 'border-muted-foreground/30 text-muted-foreground bg-muted/40',
-  PRO: 'border-amber-300 text-amber-700 bg-amber-50',
-  Business: 'border-sky-300 text-sky-700 bg-sky-50',
-  Enterprise: 'border-emerald-300 text-emerald-700 bg-emerald-50',
+  PRO: 'border-border text-foreground bg-background',
+  Business: 'border-border text-foreground bg-background',
+  Enterprise: 'border-border text-foreground bg-background',
 };
 
 const sizeStyles: Record<PlanBadgeSize, string> = {

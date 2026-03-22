@@ -2,8 +2,8 @@
 'use server';
 
 import TelegramBot from '@/lib/telegram/telegraf-compat';
-import { db } from '@/lib/firebase';
-import { collection, getDocs, limit, orderBy, query, where, doc, getDoc } from '@/lib/mongoFirestoreServer';
+import { db } from '@/lib/db';
+import { collection, getDocs, limit, orderBy, query, where, doc, getDoc } from '@/lib/db-server';
 import { getBotRuntimeStatus } from '@/server-functions/telegram/controller';
 import { SERVER_ANALYSIS_COLLECTION } from '@/server-functions/config';
 

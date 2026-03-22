@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 // Function to fetch data on the server
 async function getLicensorData(): Promise<LegalEntity> {
-  const entity = await getLegalEntity();
+  const entity = await getLegalEntity({ logErrors: false });
   // Provide fallback default data if nothing is in the database
   return entity || {
     name: 'ИП [ФАМИЛИЯ ИМЯ ОТЧЕСТВО]',

@@ -13,7 +13,7 @@ export const CtaSection = () => {
         <RegistrationDialog isOpen={isRegisterOpen} onClose={() => setIsRegisterOpen(false)} />
         <section className="py-20">
             <div className="container mx-auto">
-                <GlassCard gradient="blue" className="text-center p-8">
+                <GlassCard className="text-center p-8">
                     <h2 className="text-3xl font-bold text-foreground">Начните экономить время уже сегодня!</h2>
                     <p className="mt-2 text-muted-foreground">Присоединяйтесь к тысячам сметчиков, которые уже автоматизировали свою работу</p>
                     <div className="mt-8 flex flex-col items-center">

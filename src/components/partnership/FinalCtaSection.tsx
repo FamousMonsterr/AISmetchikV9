@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import { motion } from "framer-motion";
+import { motion } from "@/lib/motion";
 import { GlassCard } from '@/components/ui/glass-card';
 import { CtaButton } from "@/components/landing/CtaButton";
 import { Loader2 } from 'lucide-react';
@@ -16,7 +16,7 @@ export const FinalCtaSection = () => {
     // Set timer only on client
     const calculateTimeLeft = () => {
       const initialSeconds = (29 * 24 * 60 * 60) + (22 * 60 * 60) + (18 * 60) + 16;
-      const startTimeItem = localStorage.getItem('timerStartTime');
+      const startTimeItem = window.localStorage.getItem('timerStartTime');
       const now = new Date().getTime();
       let startTimestamp;
 
@@ -24,7 +24,7 @@ export const FinalCtaSection = () => {
           startTimestamp = parseInt(startTimeItem, 10);
       } else {
           startTimestamp = now;
-          localStorage.setItem('timerStartTime', String(startTimestamp));
+          window.localStorage.setItem('timerStartTime', String(startTimestamp));
       }
       
       const elapsedSeconds = Math.floor((now - startTimestamp) / 1000);
@@ -64,7 +64,7 @@ export const FinalCtaSection = () => {
       <LegalEntityRegistrationDialog isOpen={isPartnerRegisterOpen} onClose={() => setIsPartnerRegisterOpen(false)} isPartnerRegistration={true} />
       <section className="py-20">
         <div className="container mx-auto">
-          <GlassCard gradient="blue" className="text-center p-8">
+          <GlassCard className="text-center p-8">
             <h2 className="text-3xl font-bold text-foreground">Начните зарабатывать, пока это не сделали ваши конкуренты</h2>
             <p className="mt-2 text-muted-foreground">Текущие льготные условия партнерской программы действительны до <span className="font-bold text-foreground">31 декабря 2025 года</span>.</p>
             
@@ -92,3 +92,4 @@ export const FinalCtaSection = () => {
     </>
   );
 };
+

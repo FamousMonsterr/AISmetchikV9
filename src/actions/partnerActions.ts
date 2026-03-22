@@ -1,8 +1,8 @@
 // src/actions/partnerActions.ts
 'use server';
 
-import { db } from '@/lib/firebase';
-import { collection, query, where, getDocs, orderBy, doc, updateDoc, serverTimestamp, addDoc } from '@/lib/mongoFirestoreServer';
+import { db } from '@/lib/db';
+import { collection, query, where, getDocs, orderBy, doc, updateDoc, serverTimestamp, addDoc } from '@/lib/db-server';
 import type { AppUser } from '@/contexts/AppContext';
 import { z } from 'zod';
 

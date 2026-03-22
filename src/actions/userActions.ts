@@ -3,8 +3,8 @@
 'use server';
 
 import { z } from 'zod';
-import { db } from '@/lib/firebase';
-import { collection, addDoc, doc, updateDoc, getDoc, serverTimestamp, query, where, getDocs, orderBy, runTransaction, setDoc, writeBatch, deleteDoc, increment, Timestamp } from '@/lib/mongoFirestoreServer';
+import { db } from '@/lib/db';
+import { collection, addDoc, doc, updateDoc, getDoc, serverTimestamp, query, where, getDocs, orderBy, runTransaction, setDoc, writeBatch, deleteDoc, increment, Timestamp } from '@/lib/db-server';
 import { randomBytes, createHash } from 'crypto';
 import { getDb } from '@/lib/mongodb';
 import { getMailer, getMailerFrom, isMailerConfigured } from '@/lib/mailer';

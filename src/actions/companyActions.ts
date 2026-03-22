@@ -2,8 +2,8 @@
 'use server';
 
 import { z } from 'zod';
-import { db } from '@/lib/firebase';
-import { collection, addDoc, doc, updateDoc, getDoc, getDocs, serverTimestamp, query, where, orderBy, deleteDoc, writeBatch } from '@/lib/mongoFirestoreServer';
+import { db } from '@/lib/db';
+import { collection, addDoc, doc, updateDoc, getDoc, getDocs, serverTimestamp, query, where, orderBy, deleteDoc, writeBatch } from '@/lib/db-server';
 import type { Company } from '@/contexts/AppContext';
 import { getEnvSettings } from './adminActions';
 import axios from 'axios';

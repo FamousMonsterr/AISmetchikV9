@@ -1,6 +1,6 @@
 "use client";
 
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion } from "@/lib/motion";
 import { Loader2 } from "lucide-react";
 import { useAppContext } from "@/contexts/AppContext";
 import { cn } from "@/lib/utils";
@@ -35,3 +35,4 @@ export function NavigationLoader({ className }: { className?: string } = {}) {
     </AnimatePresence>
   );
 }
+

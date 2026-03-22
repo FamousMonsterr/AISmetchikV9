@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { generateJson } from '@/services/ai';
-import { isPdfLikeFile, parseNonPdfFileForModel } from '@/server-functions/analysis/nonPdfParser';
+import { isPdfLikeFile, parseNonPdfFileForModel } from '@/server-functions/analysis/non-pdf-parser';
 import { requireAuthenticatedUser, validateRequestedUserId } from '@/lib/api-auth';
 import { enforceRateLimit } from '@/lib/rate-limit';
 import { validateFileUriAgainstAllowlist } from '@/lib/file-uri-security';

@@ -7,8 +7,8 @@ import { Users, FileText, BadgeDollarSign, AlertTriangle, Loader2, Star, Server,
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, PieChart, Pie, Cell } from "recharts";
-import { collection, getDocs }from '@/lib/mongoFirestore';
-import { db } from '@/lib/firebase';
+import { collection, getDocs }from '@/lib/db-client';
+import { db } from '@/lib/db';
 import { AppUser, HistoryRequest, UserPlan } from '@/contexts/AppContext';
 import { format, subDays, eachDayOfInterval, parse } from 'date-fns';
 import { ru } from 'date-fns/locale';

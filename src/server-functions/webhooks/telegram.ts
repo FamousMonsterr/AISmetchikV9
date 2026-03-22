@@ -1,8 +1,8 @@
 // src/server-functions/webhooks/telegram.ts
 
 import TelegramBot from '@/lib/telegram/telegraf-compat';
-import { db } from '@/lib/firebase';
-import { doc, getDoc } from '@/lib/mongoFirestoreServer';
+import { db } from '@/lib/db';
+import { doc, getDoc } from '@/lib/db-server';
 import { processTelegramWebhookUpdate } from '@/server-functions/telegram/bot';
 
 export const TELEGRAM_AUDIENCES = ['default', 'user', 'partner', 'manager', 'admin'] as const;

@@ -2,7 +2,7 @@
 
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { db } from '@/lib/firebase';
+import { db } from '@/lib/db';
 import {
   collection,
   doc,
@@ -11,7 +11,7 @@ import {
   serverTimestamp,
   where,
   writeBatch,
-} from '@/lib/mongoFirestoreServer';
+} from '@/lib/db-server';
 import { logUserAction } from '@/lib/logger';
 
 type PriceBaseSpecificationItem = {

@@ -9,8 +9,8 @@ import { PlusCircle, Loader2, MoreVertical, Edit, Trash2, Star, CheckCircle, Bui
 import { useAppContext, type Company } from '@/contexts/AppContext';
 import { useToast } from '@/hooks/use-toast';
 import { deleteCompany, setDefaultCompany } from '@/actions/companyActions';
-import { onSnapshot, query, collection, where, orderBy, FirebaseError, getDocs } from '@/lib/mongoFirestore';
-import { db } from '@/lib/firebase';
+import { onSnapshot, query, collection, where, orderBy, DatabaseError, getDocs } from '@/lib/db-client';
+import { db } from '@/lib/db';
 import { CompanyFormDialog } from '@/components/CompanyFormDialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
@@ -83,7 +83,7 @@ export default function CompaniesPage() {
             const userCompanies = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Company[];
             setCompanies(userCompanies);
             setIsLoading(false);
-        }, (error: FirebaseError) => {
+        }, (error: DatabaseError) => {
             console.error("Error fetching companies: ", error);
             if (error.code === 'failed-precondition' && error.message.includes('index')) {
                  toast({

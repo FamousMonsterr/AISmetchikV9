@@ -8,6 +8,10 @@ on:
   schedule:
     - cron: "17 3 * * *"
 
+env:
+  CI: true
+  NEXT_TELEMETRY_DISABLED: "1"
+
 concurrency:
   group: external-checks-${{ github.event_name }}-${{ github.ref || github.event.workflow_run.head_branch || 'scheduled' }}
   cancel-in-progress: true

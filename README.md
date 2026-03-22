@@ -206,13 +206,6 @@ Playwright trace/html report и `.artifacts/smoke` автоматически в
 
 ---
 
-## 🔁 Миграция Firestore → MongoDB
-
-Для переноса данных используйте скрипт `scripts/migrate-firestore-to-mongo.ts`.
-
-- Установите `FIREBASE_SERVICE_ACCOUNT_PATH`, `MONGODB_URI`, `MONGODB_DB`
-- Запустите: `node scripts/migrate-firestore-to-mongo.ts`
-
 ## 📌 Индексы MongoDB
 
 Создание индексов для текущих запросов:
@@ -255,12 +248,6 @@ Telegram Mini App auth:
 ```bash
 npm run qa:seed-user
 ```
-
-## 🔐 Сброс пароля для перенесенных аккаунтов
-
-После миграции пароли из Firebase не переносятся. При первой попытке входа пользователю автоматически отправляется ссылка на сброс пароля.
-
----
 
 ## 🤝 Участие в разработке
 

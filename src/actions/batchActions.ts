@@ -2,8 +2,8 @@
 'use server';
 
 import { z } from 'zod';
-import { db } from '@/lib/firebase';
-import { collection, doc, getDoc, writeBatch, updateDoc } from '@/lib/mongoFirestoreServer';
+import { db } from '@/lib/db';
+import { collection, doc, getDoc, writeBatch, updateDoc } from '@/lib/db-server';
 import { getUserPriceBase } from './userActions';
 import { suggestPrivatePricesFlow } from '@/ai/flows/suggest-private-prices-flow';
 import { logUserAction } from '@/lib/logger';

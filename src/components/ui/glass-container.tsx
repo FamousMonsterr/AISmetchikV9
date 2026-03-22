@@ -1,7 +1,7 @@
-"use client";
+﻿"use client";
 
 import React, { ReactNode } from 'react';
-import { motion } from 'framer-motion';
+import { motion } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 
 interface GlassContainerProps {
@@ -52,3 +52,4 @@ export const GlassContainer = ({
     </motion.div>
   );
 };
+

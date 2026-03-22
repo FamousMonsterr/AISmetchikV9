@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import JSZip from 'jszip';
-import ExcelJS from 'exceljs';
-import { isPdfLikeFile, parseNonPdfBufferForModel } from '@/server-functions/analysis/nonPdfParser';
+import XlsxPopulate from 'xlsx-populate';
+import { isPdfLikeFile, parseNonPdfBufferForModel } from '@/server-functions/analysis/non-pdf-parser';
 
 const TINY_PNG_BASE64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO2pQ6sAAAAASUVORK5CYII=';
 const TINY_PNG_BUFFER = Buffer.from(TINY_PNG_BASE64, 'base64');
@@ -21,17 +21,19 @@ async function buildDocxBuffer(): Promise<Buffer> {
 }
 
 async function buildXlsxBuffer(): Promise<Buffer> {
-  const workbook = new ExcelJS.Workbook();
-  const sheet = workbook.addWorksheet('Спецификация');
-  sheet.addRow(['Позиция', 'Количество']);
-  sheet.addRow(['IP-камера', 8]);
-  const workbookBuffer = Buffer.from(await workbook.xlsx.writeBuffer());
+  const workbook = await XlsxPopulate.fromBlankAsync();
+  const sheet = workbook.sheet(0).name('Спецификация');
+  sheet.cell(1, 1).value('Позиция');
+  sheet.cell(1, 2).value('Количество');
+  sheet.cell(2, 1).value('IP-камера');
+  sheet.cell(2, 2).value(8);
+  const workbookBuffer = Buffer.from(await workbook.outputAsync('nodebuffer'));
   const zip = await JSZip.loadAsync(workbookBuffer);
   zip.file('xl/media/image1.png', TINY_PNG_BUFFER);
   return zip.generateAsync({ type: 'nodebuffer' });
 }
 
-describe('nonPdfParser', () => {
+describe('non-pdf-parser', () => {
   it('detects pdf by mime or extension', () => {
     expect(isPdfLikeFile('application/pdf', 'input.bin')).toBe(true);
     expect(isPdfLikeFile('application/octet-stream', 'drawing.PDF')).toBe(true);

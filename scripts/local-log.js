@@ -9,7 +9,9 @@ function rotateLogFile(logPath) {
     const stats = fs.statSync(logPath);
     if (!stats.size) return;
     const archiveFile = process.env.LOCAL_LOG_ARCHIVE_FILE || 'old.localhost.log';
-    const archivePath = path.isAbsolute(archiveFile) ? archiveFile : path.join(process.cwd(), archiveFile);
+    const archivePath = path.isAbsolute(archiveFile)
+      ? archiveFile
+      : path.join(/* turbopackIgnore: true */ process.cwd(), archiveFile);
     const content = fs.readFileSync(logPath);
     const header = `\n[LOCAL LOG ARCHIVE] ${new Date().toISOString()}\n`;
     fs.appendFileSync(archivePath, header);
@@ -23,7 +25,9 @@ function rotateLogFile(logPath) {
 function attachLocalLogFile() {
   if (globalThis[LOG_FLAG]) return;
   const logFile = process.env.LOCAL_LOG_FILE || '.localhost.log';
-  const logPath = path.isAbsolute(logFile) ? logFile : path.join(process.cwd(), logFile);
+  const logPath = path.isAbsolute(logFile)
+    ? logFile
+    : path.join(/* turbopackIgnore: true */ process.cwd(), logFile);
   rotateLogFile(logPath);
   const logStream = fs.createWriteStream(logPath, { flags: 'a' });
 

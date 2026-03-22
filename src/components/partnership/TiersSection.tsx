@@ -1,6 +1,6 @@
 "use client";
 import React, { useState } from 'react';
-import { motion } from "framer-motion";
+import { motion } from "@/lib/motion";
 import { CtaButton } from "@/components/landing/CtaButton";
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -120,3 +120,4 @@ export const TiersSection = () => {
         </>
     );
 };
+

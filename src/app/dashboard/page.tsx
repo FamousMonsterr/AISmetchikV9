@@ -68,14 +68,14 @@ const PwaPrompt = () => {
 
         // Show prompt only on Android if it's not already a PWA
         // and the user hasn't dismissed it this session.
-        if (isAndroid && !isPwa && !sessionStorage.getItem('pwa-prompt-dismissed')) {
+        if (isAndroid && !isPwa && !window.sessionStorage.getItem('pwa-prompt-dismissed')) {
             setIsVisible(true);
         }
     }, []);
 
     const handleDismiss = () => {
         setIsVisible(false);
-        sessionStorage.setItem('pwa-prompt-dismissed', 'true');
+        window.sessionStorage.setItem('pwa-prompt-dismissed', 'true');
     };
 
     if (!isVisible) return null;
@@ -145,9 +145,9 @@ export default function DashboardPage() {
 
   
   useEffect(() => {
-    if (typeof window !== 'undefined' && localStorage.getItem('showWelcomeModal') === 'true') {
+    if (typeof window !== 'undefined' && window.localStorage.getItem('showWelcomeModal') === 'true') {
         setShowWelcomeModal(true);
-        localStorage.removeItem('showWelcomeModal');
+        window.localStorage.removeItem('showWelcomeModal');
     }
   }, []);
 

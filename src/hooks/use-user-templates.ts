@@ -2,8 +2,8 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { collection, onSnapshot, query, where, orderBy } from '@/lib/mongoFirestore';
-import { db } from '@/lib/firebase';
+import { collection, onSnapshot, query, where, orderBy } from '@/lib/db-client';
+import { db } from '@/lib/db';
 import { useAppContext } from '@/contexts/AppContext';
 import type { UserTemplate } from '@/lib/template-utils';
 

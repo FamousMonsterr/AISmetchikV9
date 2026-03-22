@@ -1,6 +1,6 @@
 "use client";
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "@/lib/motion";
 import { GlassCard } from '@/components/ui/glass-card';
 import { CtaButton } from "@/components/landing/CtaButton";
 import { Button } from "@/components/ui/button";
@@ -173,3 +173,4 @@ export const UseCasesSection = () => {
         </>
     );
 };
+

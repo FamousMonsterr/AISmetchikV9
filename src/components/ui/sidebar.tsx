@@ -1,7 +1,7 @@
-"use client";
+﻿"use client";
 
 import React, { useState, createContext, useContext } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "@/lib/motion";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
@@ -50,12 +50,12 @@ export const Sidebar = ({
                  initial={{ x: "-100%" }}
                  animate={{ x: 0 }}
                  exit={{ x: "-100%" }}
-                 transition={{
+                transition={{
                     duration: 0.2,
                     ease: "easeInOut",
                  }}
                 className={cn(
-                    "glass-effect fixed top-0 left-0 h-full w-64 bg-background/80 dark:bg-neutral-900/80 border-r border-white/10 z-50 md:hidden",
+                    "fixed top-0 left-0 z-50 h-full w-64 border-r border-border bg-card shadow-lg md:hidden",
                     className,
                 )}
             >
@@ -170,3 +170,4 @@ export const SidebarLink = ({
     </Link>
   );
 };
+

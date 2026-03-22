@@ -118,19 +118,6 @@ Variables: 5338
 - `lotId` | const | 35:13
 - `lotId` | const | 60:13
 
-## scripts/migrate-firestore-to-mongo.ts
-
-- `mongoUri` | const | 9:7
-- `mongoDbName` | const | 10:7
-- `serviceAccountPath` | const | 11:7
-- `serviceAccount` | const | 21:7
-- `firestore` | const | 29:7
-- `collections` | const | 31:7
-- `output` | const | 63:11
-- `snapshot` | const | 73:9
-- `db` | const | 78:9
-- `bulkOps` | const | 79:9
-- `data` | const | 80:11
 - `client` | const | 96:9
 - `collectionName` | const | 99:16
 
@@ -5341,7 +5328,7 @@ Variables: 5338
 - `[effectivePlan, setEffectivePlan]` | const | 499:9
 - `[effectiveRole, setEffectiveRole]` | const | 500:9
 - `{ data: session, status }` | const | 501:9
-- `firebaseUser` | const | 502:9
+- `sessionUser` | const | 502:9
 - `authLoading` | const | 503:9
 - `authError` | const | 504:9
 - `router` | const | 505:9
@@ -5496,7 +5483,7 @@ Variables: 5338
 - `allowedIds` | const | 33:9
 - `allowedSet` | const | 35:9
 
-## src/lib/firebase.ts
+## src/lib/db.ts
 
 - `db` | const | 2:14
 
@@ -5579,7 +5566,7 @@ Variables: 5338
 - `config` | const | 43:9
 - `config` | const | 48:9
 
-## src/lib/mongoFirestore.ts
+## src/lib/db-client.ts
 
 - `isServer` | const | 43:7
 - `collectionName` | const | 51:11
@@ -5610,7 +5597,7 @@ Variables: 5338
 - `url` | const | 268:9
 - `eventSource` | const | 281:9
 
-## src/lib/mongoFirestoreServer.ts
+## src/lib/db-server.ts
 
 - `collectionName` | const | 55:11
 - `docId` | const | 56:11

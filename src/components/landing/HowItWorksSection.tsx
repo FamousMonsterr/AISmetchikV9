@@ -3,7 +3,7 @@
 
 import { GlassCard } from '@/components/ui/glass-card';
 import { FileText, CheckCircle } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion } from '@/lib/motion';
 import { LogoIcon } from '../Logo';
 
 export const HowItWorksSection = () => {
@@ -52,7 +52,7 @@ export const HowItWorksSection = () => {
                             custom={index}
                             variants={cardVariants}
                         >
-                            <GlassCard className="text-center h-full" gradient="none">
+                            <GlassCard className="text-center h-full">
                                 <div className="mx-auto bg-primary/10 text-primary p-3 rounded-full w-fit mb-4">
                                     <step.icon className="h-8 w-8 text-primary" />
                                 </div>
@@ -66,3 +66,4 @@ export const HowItWorksSection = () => {
         </motion.section>
     );
 };
+

@@ -11,8 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Loader2, FileText, Building, User, AlertTriangle, UploadCloud, PhoneCall, ShieldCheck } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAppContext, type Company } from '@/contexts/AppContext';
-import { onSnapshot, query, collection, where, addDoc, serverTimestamp, doc, updateDoc } from '@/lib/mongoFirestore';
-import { db } from '@/lib/firebase';
+import { onSnapshot, query, collection, where, addDoc, serverTimestamp, doc, updateDoc } from '@/lib/db-client';
+import { db } from '@/lib/db';
 import { getLegalEntity, type LegalEntity } from '@/actions/adminActions';
 import { pdf } from '@react-pdf/renderer';
 import { saveAs } from 'file-saver';

@@ -1,8 +1,8 @@
 'use server';
 
 // src/server-functions/admin/actions.ts
-import { db } from '@/lib/firebase';
-import { collection, getDocs, limit, orderBy, query, where, updateDoc } from '@/lib/mongoFirestoreServer';
+import { db } from '@/lib/db';
+import { collection, getDocs, limit, orderBy, query, where, updateDoc } from '@/lib/db-server';
 import type { ServerAnalysisJob } from '../analysis/types';
 import { getServerAnalysisJob } from '../analysis/jobService';
 import { runServerAnalysisWorkerOnce } from '../analysis/worker';

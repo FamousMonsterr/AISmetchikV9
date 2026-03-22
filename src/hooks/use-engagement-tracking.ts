@@ -30,8 +30,8 @@ export const useEngagementTracking = (userId?: string | null) => {
       if (!userId) return;
       const storageKey = `eng-${key}`;
       if (typeof window === "undefined") return;
-      if (localStorage.getItem(storageKey) === "1") return;
-      localStorage.setItem(storageKey, "1");
+      if (window.localStorage.getItem(storageKey) === "1") return;
+      window.localStorage.setItem(storageKey, "1");
       void sendEvent(type, userId);
     },
     [userId]

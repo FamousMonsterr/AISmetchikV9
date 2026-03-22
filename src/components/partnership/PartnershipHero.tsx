@@ -45,7 +45,7 @@ const TypingAnimation = ({ words }: { words: string[] }) => {
   }, [charIndex, currentWord.length, isDeleting, words.length]);
 
   return (
-    <span className="bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-400 bg-clip-text text-transparent">
+    <span className="text-amber-500 dark:text-amber-300">
       {currentWord.slice(0, charIndex)}
     </span>
   );
@@ -73,7 +73,7 @@ export const PartnershipHero = () => {
             <div>
               в создании смет
               <br />
-              <span className="bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-400 bg-clip-text text-transparent">
+              <span className="text-amber-500 dark:text-amber-300">
                 слаботочных систем
               </span>
             </div>

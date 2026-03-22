@@ -23,7 +23,7 @@ import { BottomGradient, LabelInputContainer } from '@/components/ui/aceternity-
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from '@/lib/motion';
 
 interface CompanyFormDialogProps {
   isOpen: boolean;
@@ -35,8 +35,8 @@ interface CompanyFormDialogProps {
 
 const FormSchema = z.object({
     name: z.string().min(2, "Название/ФИО должно содержать не менее 2 символов.").max(100),
-    type: z.enum(['LLC', 'IE', 'SelfEmployed'], { required_error: "Выберите тип компании" }),
-    taxSystem: z.enum(['none', 'vat_included', 'vat_added', 'usn'], { required_error: "Выберите систему налогообложения" }),
+    type: z.enum(['LLC', 'IE', 'SelfEmployed'], { error: "Выберите тип компании" }),
+    taxSystem: z.enum(['none', 'vat_included', 'vat_added', 'usn'], { error: "Выберите систему налогообложения" }),
     
     fullName: z.string().max(255).optional(),
     inn: z.string().optional(),
@@ -451,3 +451,4 @@ export function CompanyFormDialog({ isOpen, onClose, onSuccess, company, isClien
     </Dialog>
   );
 }
+

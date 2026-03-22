@@ -1,5 +1,3 @@
-# syntax=docker/dockerfile:1
-
 FROM node:25.2.1-alpine AS deps
 WORKDIR /app
 RUN apk add --no-cache libc6-compat
@@ -8,6 +6,7 @@ RUN npm ci
 
 FROM node:25.2.1-alpine AS builder
 WORKDIR /app
+ENV NEXT_TELEMETRY_DISABLED=1
 RUN apk add --no-cache libc6-compat
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
@@ -17,6 +16,7 @@ FROM node:25.2.1-alpine AS worker
 WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3000
+ENV NEXT_TELEMETRY_DISABLED=1
 RUN apk add --no-cache libc6-compat
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/package-lock.json ./package-lock.json
@@ -30,6 +30,7 @@ FROM node:25.2.1-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3000
+ENV NEXT_TELEMETRY_DISABLED=1
 RUN apk add --no-cache libc6-compat wget
 
 RUN addgroup -S nextjs && adduser -S nextjs -G nextjs

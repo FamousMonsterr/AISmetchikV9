@@ -25,7 +25,7 @@ export const WindowOfOpportunitySection = () => {
       ) : null}
       <section className="py-20">
         <div className="container mx-auto">
-          <GlassCard gradient="blue" className="text-center">
+          <GlassCard className="text-center">
             <div className="max-w-3xl mx-auto">
               <div className="mx-auto bg-primary/10 text-primary p-4 rounded-full w-fit mb-6">
                 <Zap className="h-10 w-10 text-primary" />
@@ -35,7 +35,7 @@ export const WindowOfOpportunitySection = () => {
                 Рынок слаботочных систем находится на пороге цифровой революции. Старые методы работы уходят в прошлое, а
                 спрос на автоматизацию и эффективность растет с каждым днем.
               </p>
-              <p className="mt-4 text-2xl font-bold text-foreground bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
+              <p className="mt-4 text-2xl font-bold text-primary">
                 Вы можете стать лидером этой трансформации в своем регионе.
               </p>
               <p className="text-muted-foreground mt-4">

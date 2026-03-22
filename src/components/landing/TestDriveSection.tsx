@@ -10,7 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAppContext } from '@/contexts/AppContext';
 import { ProcessingDialog } from '@/components/ProcessingDialog';
 import { InsufficientCreditsDialog } from '@/components/InsufficientCreditsDialog';
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "@/lib/motion";
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import aiConfig from '@/lib/ai-config.json';
@@ -98,7 +98,7 @@ export function TestDriveSection() {
         />
         <section className="py-10" id="test-drive">
             <div className="container mx-auto">
-                <GlassCard className="text-center" gradient="none" interactive={false}>
+                <GlassCard className="text-center" interactive={false}>
                     <h2 className="text-3xl font-bold text-foreground">Попробуйте прямо сейчас</h2>
                     <p className="mt-2 text-muted-foreground">Загрузите один файл, чтобы оценить возможности AI. Зарегистрируйтесь, чтобы сохранить результат.</p>
                     <div className="mt-6 flex flex-col items-center gap-4">
@@ -156,3 +156,4 @@ export function TestDriveSection() {
         </>
     );
 }
+

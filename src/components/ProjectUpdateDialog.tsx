@@ -10,8 +10,8 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Loader2, RefreshCcw } from 'lucide-react';
 import { useAppContext, type HistoryRequest } from '@/contexts/AppContext';
-import { onSnapshot, collection, query, where, orderBy, FirebaseError, getDocs } from '@/lib/mongoFirestore';
-import { db } from '@/lib/firebase';
+import { onSnapshot, collection, query, where, orderBy, DatabaseError, getDocs } from '@/lib/db-client';
+import { db } from '@/lib/db';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
@@ -75,7 +75,7 @@ export function ProjectUpdateDialog({
       fetchedProjects.sort((a, b) => (b.version || 0) - (a.version || 0));
       setProjects(fetchedProjects);
       setIsLoading(false);
-    }, (error: FirebaseError) => {
+    }, (error: DatabaseError) => {
       console.error("Error fetching projects for dialog:", error);
       toast({ title: "Ошибка загрузки версий", description: error.message, variant: "destructive"});
       setIsLoading(false);

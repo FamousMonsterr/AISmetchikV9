@@ -18,8 +18,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { useDropzone } from 'react-dropzone';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { onSnapshot, query, collection, where, FirebaseError } from '@/lib/mongoFirestore';
-import { db } from '@/lib/firebase';
+import { onSnapshot, query, collection, where, DatabaseError } from '@/lib/db-client';
+import { db } from '@/lib/db';
 import { exportPriceBaseToExcel, parseExcelRowsFromArrayBuffer } from '@/services/excel/browserExcel';
 
 const sortPriceBaseItems = (items: PriceBaseItem[]) =>
@@ -72,7 +72,7 @@ export default function PriceBasePage() {
             );
             setBaseItems(items);
             setIsLoading(false);
-        }, (error: FirebaseError) => {
+        }, (error: DatabaseError) => {
             console.error("Error fetching price base:", error);
             if (error.code === 'failed-precondition' && error.message.includes('index')) {
                 toast({

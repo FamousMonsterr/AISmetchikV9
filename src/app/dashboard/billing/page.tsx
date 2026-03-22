@@ -206,7 +206,6 @@ export default function BillingPage() {
         ctaIcon={<Mail className="mr-2 h-4 w-4" />}
         onCta={() => submitRequestCard('estimate_department')}
         isPending={isRequestPending}
-        variant="gradient"
       />
       
       <InvoiceHistory />

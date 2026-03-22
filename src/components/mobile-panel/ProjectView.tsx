@@ -1,9 +1,9 @@
-// src/components/mobile-panel/ProjectView.tsx
+﻿// src/components/mobile-panel/ProjectView.tsx
 // @ts-nocheck
 "use client";
 
 import React, { useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion } from '@/lib/motion';
 import dynamic from 'next/dynamic';
 import { Loader2 } from 'lucide-react';
 import { useAppContext, type HistoryRequest } from '@/contexts/AppContext';
@@ -42,3 +42,4 @@ export const ProjectView = ({ project: initialProject, onBack }: ProjectViewProp
         </motion.div>
     );
 };
+

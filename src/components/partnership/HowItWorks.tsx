@@ -1,6 +1,6 @@
 "use client";
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "@/lib/motion";
 import { GlassCard } from '@/components/ui/glass-card';
 import { Briefcase, Megaphone, Database, ChevronDown, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -99,3 +99,4 @@ export const HowItWorks = () => {
         </section>
     );
 };
+

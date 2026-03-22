@@ -2,8 +2,8 @@
 'use server';
 
 import TelegramBot from '@/lib/telegram/telegraf-compat';
-import { db } from '@/lib/firebase';
-import { doc, getDoc, serverTimestamp, setDoc } from '@/lib/mongoFirestoreServer';
+import { db } from '@/lib/db';
+import { doc, getDoc, serverTimestamp, setDoc } from '@/lib/db-server';
 import { getEnvSettings } from '@/actions/adminActions';
 
 export type TelegramDispatchInput = {

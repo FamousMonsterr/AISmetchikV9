@@ -4,8 +4,8 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { useAppContext, type Notification } from '@/contexts/AppContext';
-import { db } from '@/lib/firebase';
-import { collection, query, where, getDocs, doc, updateDoc, arrayUnion, serverTimestamp } from '@/lib/mongoFirestore';
+import { db } from '@/lib/db';
+import { collection, query, where, getDocs, doc, updateDoc, arrayUnion, serverTimestamp } from '@/lib/db-client';
 import { Loader2, Bell, Info, AlertTriangle } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';

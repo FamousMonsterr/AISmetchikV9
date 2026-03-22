@@ -6,12 +6,12 @@ const createJobMock = vi.fn();
 const getAppSettingsMock = vi.fn();
 const getAiAgentConfigMock = vi.fn();
 
-vi.mock('@/lib/firebase', () => ({ db: {} }));
+vi.mock('@/lib/db', () => ({ db: {} }));
 vi.mock('@/actions/adminActions', () => ({
   getAppSettings: (...args: any[]) => getAppSettingsMock(...args),
   getAiAgentConfig: (...args: any[]) => getAiAgentConfigMock(...args),
 }));
-vi.mock('@/lib/mongoFirestoreServer', () => ({
+vi.mock('@/lib/db-server', () => ({
   doc: vi.fn((_db: any, _collection: string, id: string) => ({ id })),
   getDoc: (...args: any[]) => getDocMock(...args),
 }));

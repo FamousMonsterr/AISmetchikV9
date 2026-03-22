@@ -141,7 +141,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
     
      return (
         <div className="grid min-h-[100dvh] w-full md:grid-cols-[auto_1fr] bg-background min-w-0">
-            <Sidebar open={open} setOpen={setOpen} className="bg-card/80">
+            <Sidebar open={open} setOpen={setOpen} className="bg-card">
                 <SidebarBody className="justify-between gap-10 !p-2 sm:!p-4">
                     <div className="flex flex-col flex-1 overflow-y-auto">
                          <div className={cn("flex items-center p-2 mb-4", open ? "justify-between" : "justify-center")}>
@@ -201,7 +201,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                 </SidebarBody>
             </Sidebar>
             <div className="flex flex-col min-h-[100dvh] overflow-hidden min-w-0">
-                <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background/80 backdrop-blur-sm px-4 md:hidden">
+                <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 md:hidden">
                     <Button
                         variant="ghost"
                         size="icon"

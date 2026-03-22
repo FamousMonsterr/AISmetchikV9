@@ -5,8 +5,8 @@
 import { z } from 'zod';
 import TelegramBot from '@/lib/telegram/telegraf-compat';
 import { logUserAction } from '@/lib/logger';
-import { doc, updateDoc, getDoc, collection, query, where, orderBy, limit, getDocs } from '@/lib/mongoFirestoreServer';
-import { db } from '@/lib/firebase';
+import { doc, updateDoc, getDoc, collection, query, where, orderBy, limit, getDocs } from '@/lib/db-server';
+import { db } from '@/lib/db';
 import { parse, validate } from '@tma.js/init-data-node';
 import { getEnvSettings } from '@/actions/adminActions';
 import { getServerSession } from 'next-auth';

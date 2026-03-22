@@ -4,7 +4,7 @@
 import { GlassCard } from '@/components/ui/glass-card';
 import { PlanBadge } from '@/components/PlanBadge';
 import { Star } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion } from '@/lib/motion';
 
 export const FeaturesSection = () => {
     const features = [
@@ -55,7 +55,7 @@ export const FeaturesSection = () => {
                             custom={index}
                             variants={cardVariants}
                          >
-                            <GlassCard className="h-full" gradient="none">
+                            <GlassCard className="h-full">
                                 <div className="flex flex-col h-full">
                                     <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
                                         {feature.title}
@@ -72,3 +72,4 @@ export const FeaturesSection = () => {
         </motion.section>
     );
 };
+

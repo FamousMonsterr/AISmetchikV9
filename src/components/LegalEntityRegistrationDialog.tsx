@@ -23,7 +23,7 @@ import { cn } from "@/lib/utils";
 import { Calendar as CalendarIcon } from "lucide-react";
 import { suggestCompanyDetails, addCompany, type DadataSuggestion } from '@/actions/companyActions';
 import { debounce } from 'lodash';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from '@/lib/motion';
 import { submitHighTierApplication } from '@/actions/partnerActions';
 import Link from 'next/link';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
@@ -346,3 +346,4 @@ export function LegalEntityRegistrationDialog({ isOpen, onClose, isRegistration 
     </Dialog>
   );
 }
+

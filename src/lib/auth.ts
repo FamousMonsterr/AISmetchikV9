@@ -1,4 +1,5 @@
 import type { NextAuthOptions } from 'next-auth';
+import AppleProvider from 'next-auth/providers/apple';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import GoogleProvider from 'next-auth/providers/google';
 import bcrypt from 'bcryptjs';
@@ -180,6 +181,10 @@ async function syncExistingUserForSession(user: Record<string, any>, provider: '
 
 export function isGoogleAuthEnabled(): boolean {
   return Boolean(process.env.GOOGLE_CLIENT_ID?.trim() && process.env.GOOGLE_CLIENT_SECRET?.trim());
+}
+
+export function isAppleAuthEnabled(): boolean {
+  return Boolean(process.env.APPLE_ID?.trim() && process.env.APPLE_SECRET?.trim());
 }
 
 function getTelegramAuthToken(): string {
@@ -497,6 +502,14 @@ export const authOptions = {
                 response_type: 'code',
               },
             },
+          }),
+        ]
+      : []),
+    ...(isAppleAuthEnabled()
+      ? [
+          AppleProvider({
+            clientId: process.env.APPLE_ID as string,
+            clientSecret: process.env.APPLE_SECRET as string,
           }),
         ]
       : []),

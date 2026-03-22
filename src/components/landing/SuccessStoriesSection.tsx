@@ -1,6 +1,6 @@
 "use client";
 import { GlassCard } from '@/components/ui/glass-card';
-import { motion } from 'framer-motion';
+import { motion } from '@/lib/motion';
 import { Clock, Smartphone, TrendingUp } from 'lucide-react';
 
 const stories = [
@@ -50,7 +50,7 @@ export const SuccessStoriesSection = () => {
                             viewport={{ once: true, amount: 0.5 }}
                             transition={{ duration: 0.5, delay: index * 0.1 }}
                         >
-                            <GlassCard className="h-full flex flex-col" gradient="none">
+                            <GlassCard className="h-full flex flex-col">
                                 <div className="flex-grow">
                                     <div className="flex items-center gap-4 mb-4">
                                         <div className="bg-primary/10 text-primary p-3 rounded-full w-fit">
@@ -72,3 +72,4 @@ export const SuccessStoriesSection = () => {
         </section>
     );
 };
+

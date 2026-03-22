@@ -178,7 +178,7 @@ export default function TelegramUsersPage() {
             comparison = aValue - bValue;
         } else if (aValue instanceof Date && bValue instanceof Date) {
             comparison = aValue.getTime() - bValue.getTime();
-        } else if (aValue?.toDate && bValue?.toDate) { // Firebase Timestamp
+        } else if (aValue?.toDate && bValue?.toDate) { // database timestamp
             comparison = aValue.toDate().getTime() - bValue.toDate().getTime();
         } else {
             comparison = String(aValue).localeCompare(String(bValue));

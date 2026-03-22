@@ -10,7 +10,6 @@ import { ThemeProvider } from "next-themes";
 import { AppProvider, useAppContext } from "@/contexts/AppContext";
 import { Header } from "@/components/landing/Header";
 import { Footer } from "@/components/landing/Footer";
-import { LiquidGlassFilter } from "@/components/ui/liquid-glass-filter";
 import { StickyBanner } from "@/components/ui/sticky-banner";
 import { Button } from "@/components/ui/button";
 import { CookieConsentDialog } from "@/components/CookieConsentDialog";
@@ -30,10 +29,7 @@ function SiteLayout({ children }: { children: React.ReactNode }) {
       {!isSpecialPage && (
         <>
           <div className="fixed inset-0 -z-20 bg-light-bg-primary dark:bg-dark-bg-primary" />
-          <div className="fixed inset-0 -z-10">
-            <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-96 h-96 bg-purple-600/10 dark:bg-purple-900/40 rounded-full opacity-50 blur-3xl" />
-            <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-blue-600/10 dark:bg-blue-900/40 rounded-full opacity-50 blur-3xl" />
-          </div>
+          <div className="fixed inset-0 -z-10 bg-[linear-gradient(to_bottom,hsl(var(--background)),hsl(var(--background)))]" />
         </>
       )}
 
@@ -50,7 +46,7 @@ function SiteLayout({ children }: { children: React.ReactNode }) {
               asChild
               variant="secondary"
               size="sm"
-              className="bg-white/10 text-white hover:bg-white/20"
+              className="border-primary-foreground/20 bg-primary-foreground text-foreground hover:bg-primary-foreground/90"
             >
               <Link href="/dashboard/bonus" onClick={() => setNavigating(true)}>
                 <Gift className="h-4 w-4 mr-1" /> Получить бонус
@@ -89,7 +85,6 @@ export function RootClientShell({ children }: { children: React.ReactNode }) {
       <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
         <Suspense fallback={null}>
           <AppProvider>
-            <LiquidGlassFilter />
             <SiteLayout>{children}</SiteLayout>
             <NavigationLoader />
             <Toaster />

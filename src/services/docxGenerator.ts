@@ -6,6 +6,29 @@ import { calculateItemSum } from '@/lib/calculation';
 import { getTemplateConfig } from '@/lib/document-constructor';
 import type { TemplateStyleConfig } from '@/lib/template-utils';
 
+type DocxImageType = 'jpg' | 'png' | 'gif' | 'bmp';
+
+const detectDocxImageType = (buffer: ArrayBuffer): DocxImageType => {
+    const bytes = new Uint8Array(buffer);
+
+    if (bytes.length >= 4) {
+        if (bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47) {
+            return 'png';
+        }
+        if (bytes[0] === 0xff && bytes[1] === 0xd8) {
+            return 'jpg';
+        }
+        if (bytes[0] === 0x47 && bytes[1] === 0x49 && bytes[2] === 0x46) {
+            return 'gif';
+        }
+        if (bytes[0] === 0x42 && bytes[1] === 0x4d) {
+            return 'bmp';
+        }
+    }
+
+    return 'png';
+};
+
 
 interface GenerateDocxParams {
     company: Partial<Company>;
@@ -96,6 +119,7 @@ export const generateDocx = async ({
             new Paragraph({
                 children: [
                     new ImageRun({
+                        type: detectDocxImageType(logoBuffer),
                         data: logoBuffer,
                         transformation: {
                             width: 150,
@@ -262,6 +286,7 @@ export const generateDocx = async ({
                         new Paragraph({
                             children: [
                                 new ImageRun({
+                                    type: detectDocxImageType(signatureBuffer),
                                     data: signatureBuffer,
                                     transformation: {
                                         width: 160,
@@ -282,6 +307,7 @@ export const generateDocx = async ({
                         new Paragraph({
                             children: [
                                 new ImageRun({
+                                    type: detectDocxImageType(stampBuffer),
                                     data: stampBuffer,
                                     transformation: {
                                         width: 140,

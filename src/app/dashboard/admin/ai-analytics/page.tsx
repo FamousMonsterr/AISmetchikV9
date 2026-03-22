@@ -7,8 +7,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, RefreshCw, FileClock, User, FileText, CheckCircle, AlertTriangle, Search, ChevronDown, ChevronUp } from "lucide-react";
-import { onSnapshot, collection, query, orderBy, limit, DocumentData, updateDoc, doc } from '@/lib/mongoFirestore';
-import { db } from '@/lib/firebase';
+import { onSnapshot, collection, query, orderBy, limit, DocumentData, updateDoc, doc } from '@/lib/db-client';
+import { db } from '@/lib/db';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { cn } from '@/lib/utils';

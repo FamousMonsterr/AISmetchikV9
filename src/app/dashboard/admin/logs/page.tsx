@@ -7,8 +7,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, RefreshCw, FileClock, User, FileText, BadgeDollarSign, BadgeCheck, BadgeX, MailCheck, Shield, Star, GitMerge, FileUp, KeySquare, Cog, Archive, Send, Library } from "lucide-react";
-import { onSnapshot, collection, query, orderBy, limit, DocumentData, FirebaseError } from '@/lib/mongoFirestore';
-import { db } from '@/lib/firebase';
+import { onSnapshot, collection, query, orderBy, limit, DocumentData, DatabaseError } from '@/lib/db-client';
+import { db } from '@/lib/db';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -37,7 +37,7 @@ export default function AdminLogsPage() {
             const logList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             setLogs(logList);
             setIsLoading(false);
-        }, (error: FirebaseError) => {
+        }, (error: DatabaseError) => {
             console.error("Error fetching logs:", error);
             if (error.code === 'failed-precondition' && error.message.includes('index')) {
                 toast({

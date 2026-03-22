@@ -1,8 +1,8 @@
-// src/components/requests/RequestFeatureCard.tsx
+﻿// src/components/requests/RequestFeatureCard.tsx
 "use client";
 
 import type React from 'react';
-import { motion } from 'framer-motion';
+import { motion } from '@/lib/motion';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Check, Loader2 } from 'lucide-react';
@@ -18,7 +18,6 @@ type RequestFeatureCardProps = {
   ctaIcon?: React.ReactNode;
   onCta?: () => void;
   isPending?: boolean;
-  variant?: 'default' | 'gradient';
   className?: string;
 };
 
@@ -34,7 +33,6 @@ export function RequestFeatureCard({
   ctaIcon,
   onCta,
   isPending,
-  variant = 'default',
   className,
 }: RequestFeatureCardProps) {
   return (
@@ -43,11 +41,7 @@ export function RequestFeatureCard({
       animate={{ opacity: 1, y: 0 }}
       whileHover={{ y: -3 }}
       transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-      className={cn(
-        'request-card',
-        variant === 'gradient' && 'request-card--gradient',
-        className,
-      )}
+      className={cn('request-card', className)}
     >
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
@@ -78,3 +72,4 @@ export function RequestFeatureCard({
     </MotionCard>
   );
 }
+

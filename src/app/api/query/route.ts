@@ -34,7 +34,7 @@ type CachedPayload = {
 
 const queryResponseCache = new Map<string, CachedPayload>();
 const queryInFlight = new Map<string, Promise<{ status: number; payload: any }>>();
-const queryMetricsLogPath = resolve(process.cwd(), QUERY_METRICS_LOG_FILE);
+const queryMetricsLogPath = resolve(/* turbopackIgnore: true */ process.cwd(), QUERY_METRICS_LOG_FILE);
 let queryMetricsDirReadyPromise: Promise<void> | null = null;
 let queryMetricsWriteChain = Promise.resolve();
 

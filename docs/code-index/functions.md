@@ -50,12 +50,6 @@ Functions: 1114
 - `addDays` | arrow-function | 9:7
 - `run` | function-declaration | 11:16
 
-## scripts/migrate-firestore-to-mongo.ts
-
-- `convertValue` | function-declaration | 52:10
-- `migrateCollection` | function-declaration | 72:16
-- `run` | function-declaration | 95:16
-
 ## scripts/server-analysis-worker.ts
 
 - `main` | function-declaration | 7:16
@@ -1706,7 +1700,7 @@ Functions: 1114
 - `resolveDefaultTemplateId` | arrow-function | 10:14
 - `filterTemplatesForPlan` | arrow-function | 21:14
 
-## src/lib/firebase.ts
+## src/lib/db.ts
 
 - None
 
@@ -1739,7 +1733,7 @@ Functions: 1114
 - `getMailerFrom` | function-declaration | 42:23
 - `getMailer` | function-declaration | 47:23
 
-## src/lib/mongoFirestore.ts
+## src/lib/db-client.ts
 
 - `collection` | function-declaration | 45:17
 - `doc` | function-declaration | 49:17
@@ -1765,7 +1759,7 @@ Functions: 1114
 - `onSnapshot` | function-declaration | 213:17
 - `fetchSnapshot` | arrow-function | 233:9
 
-## src/lib/mongoFirestoreServer.ts
+## src/lib/db-server.ts
 
 - `collection` | function-declaration | 49:17
 - `doc` | function-declaration | 53:17

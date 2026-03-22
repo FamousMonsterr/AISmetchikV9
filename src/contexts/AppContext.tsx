@@ -5,9 +5,9 @@
 import type React from 'react';
 import { createContext, useContext, useState, useCallback, useEffect, useMemo, useTransition, useRef } from 'react';
 import { nanoid } from 'nanoid'; 
-import { doc, onSnapshot, updateDoc, serverTimestamp, getDoc, collection, query, where, getDocs, increment, Timestamp } from '@/lib/mongoFirestore';
+import { doc, onSnapshot, updateDoc, serverTimestamp, getDoc, collection, query, where, getDocs, increment, Timestamp } from '@/lib/db-client';
 import { signOut, useSession } from 'next-auth/react';
-import { db } from '@/lib/firebase';
+import { db } from '@/lib/db';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import type { AiSpecificationItem } from '@/ai/genkit-schemas';
 import { linkTelegramAccount } from '@/actions/telegramActions';
@@ -63,7 +63,7 @@ export interface AppUser {
   bonusCreditsExpireAt?: Date | null;
   purchasedCreditsExpireAt?: Date | null;
   creditsUpdatedAt?: any;
-  createdAt?: any; // Can be Firebase Timestamp or Date
+  createdAt?: any; // Can be database timestamp or Date
   updatedAt?: any;
 
   // Permissions
@@ -77,7 +77,7 @@ export interface AppUser {
 
   // Status
   status: 'active' | 'blocked';
-  archivedAt?: any | null; // Firebase Timestamp or null
+  archivedAt?: any | null; // database timestamp or null
 
   // Temporary & Trial Roles
   originalPlan?: UserPlan | null; 
@@ -192,14 +192,14 @@ export interface QuoteConfig {
 }
 
 export interface HistoryRequest {
-  id: string; // Firestore document ID
+  id: string; // database document ID
   userId: string;
   fileName: string;
   fileUri?: string | null; // URI of the file in Gemini
   mimeType?: string | null;
   fileSha1?: string; // SHA-1 hash of the original file
   status: 'processing' | 'success' | 'failed' | 'reported' | 'draft' | 'cancelled';
-  timestamp: any; // Firebase Timestamp or Date
+  timestamp: any; // database timestamp or Date
   cost: number;
   error?: string; // For failed status
   modelUsed?: string; // The model used for the analysis
@@ -213,10 +213,10 @@ export interface HistoryRequest {
   importantExtractionNotes?: string[] | null;
   analysisDetails?: AnalysisDetails | null;
 
-  reportedAt?: any; // Firebase Timestamp or Date
-  resolvedAt?: any; // Firebase Timestamp or Date
+  reportedAt?: any; // database timestamp or Date
+  resolvedAt?: any; // database timestamp or Date
   resolvedBy?: string; // UID of admin who resolved it
-  archivedAt?: any | null; // Firebase Timestamp or null
+  archivedAt?: any | null; // database timestamp or null
   quoteConfig?: QuoteConfig; // Storing the config used for this request
   
   // Object Grouping
@@ -241,7 +241,7 @@ export interface HistoryRequest {
 }
 
 export interface Company {
-  id: string; // Firestore document ID
+  id: string; // database document ID
   userId: string;
   isDefault: boolean;
   name: string; // Short name for LLC, or Full Name for IE/Self-employed
@@ -265,8 +265,8 @@ export interface Company {
   checkingAccount?: string;
   ceoName?: string; // Only for LLC
   ceoBasis?: string; // Only for LLC
-  createdAt: any; // Firebase Timestamp
-  updatedAt: any; // Firebase Timestamp
+  createdAt: any; // database timestamp
+  updatedAt: any; // database timestamp
 }
 
 export interface LegalEntity extends Omit<Company, 'id' | 'userId' | 'isDefault' | 'createdAt' | 'updatedAt' | 'taxSystem' | 'type' | 'isClient'> {
@@ -473,7 +473,7 @@ export const initialQuoteConfig: QuoteConfig = {
 
 const AppContext = createContext<AppState | undefined>(undefined);
 
-// Helper to convert Firestore Timestamps to JS Dates in a nested object
+// Helper to convert database timestamps to JS Dates in a nested object
 const convertTimestampsToDates = (obj: any): any => {
     if (!obj) return obj;
     if (Array.isArray(obj)) {
@@ -500,14 +500,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [effectivePlan, setEffectivePlan] = useState<UserPlan>('Free');
   const [effectiveRole, setEffectiveRole] = useState<UserRole>('User');
   const { data: session, status } = useSession();
-  const firebaseUser = session?.user ?? null;
-  const firebaseUserId = useMemo(() => {
-    const idValue = (firebaseUser as any)?.id;
+  const sessionUser = session?.user ?? null;
+  const sessionUserId = useMemo(() => {
+    const idValue = (sessionUser as any)?.id;
     if (typeof idValue === 'string') return idValue;
     if (idValue == null) return '';
     if (typeof idValue?.toString === 'function') return idValue.toString();
     return String(idValue);
-  }, [firebaseUser]);
+  }, [sessionUser]);
   const authLoading = status === 'loading';
   const authError = null;
   const router = useRouter();
@@ -655,21 +655,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setIsLoading(true);
         return;
     }
-    if (authError || !firebaseUser) {
+    if (authError || !sessionUser) {
         setUser(null);
         setIsLoading(false);
         setEffectivePlan('Free');
         setEffectiveRole('User');
         return;
     }
-    if (!firebaseUserId) {
+    if (!sessionUserId) {
         console.error("Authenticated session has no user id. Forcing logout.");
         signOut().then(() => setUser(null));
         setIsLoading(false);
         return;
     }
 
-    const userDocRef = doc(db, 'users', firebaseUserId);
+    const userDocRef = doc(db, 'users', sessionUserId);
     const unsubscribe = onSnapshot(userDocRef, async (docSnap) => {
         if (docSnap.exists()) {
             const rawData = { uid: docSnap.id, ...docSnap.data() };
@@ -711,7 +711,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
             setIsLoading(false);
         } else {
-            console.error("Firestore document not found for authenticated user. Forcing logout.");
+            console.error("User document not found for authenticated session. Forcing logout.");
             signOut().then(() => setUser(null));
             setIsLoading(false);
         }
@@ -727,7 +727,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
 
     return () => unsubscribe();
-  }, [firebaseUser, firebaseUserId, authLoading, authError, checkUserPlan, telegram, isSameUserSnapshot, shouldForceSignOutOnRealtimeError]);
+  }, [sessionUser, sessionUserId, authLoading, authError, checkUserPlan, telegram, isSameUserSnapshot, shouldForceSignOutOnRealtimeError]);
   
    useEffect(() => {
     if (telegram) {

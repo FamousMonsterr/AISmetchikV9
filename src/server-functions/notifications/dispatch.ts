@@ -1,8 +1,8 @@
 // src/server-functions/notifications/dispatch.ts
 'use server';
 
-import { db } from '@/lib/firebase';
-import { collection, doc, serverTimestamp, setDoc } from '@/lib/mongoFirestoreServer';
+import { db } from '@/lib/db';
+import { collection, doc, serverTimestamp, setDoc } from '@/lib/db-server';
 import { sendTelegramMessage, type TelegramDispatchResult } from './telegram';
 
 export type NotificationChannel = 'in_app' | 'telegram';

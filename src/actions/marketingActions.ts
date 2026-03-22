@@ -1,8 +1,8 @@
 'use server';
 
 import { z } from 'zod';
-import { db } from '@/lib/firebase';
-import { collection, doc, getDoc, getDocs, query, serverTimestamp, updateDoc, where } from '@/lib/mongoFirestoreServer';
+import { db } from '@/lib/db';
+import { collection, doc, getDoc, getDocs, query, serverTimestamp, updateDoc, where } from '@/lib/db-server';
 import { grantCredits } from '@/services/credits';
 
 const BONUS_CREDITS = 10;

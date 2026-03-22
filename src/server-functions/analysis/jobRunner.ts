@@ -2,8 +2,8 @@
 // src/server-functions/analysis/jobRunner.ts
 'use server';
 
-import { doc, getDoc, setDoc, serverTimestamp, updateDoc } from '@/lib/mongoFirestoreServer';
-import { db } from '@/lib/firebase';
+import { doc, getDoc, setDoc, serverTimestamp, updateDoc } from '@/lib/db-server';
+import { db } from '@/lib/db';
 import constructorConfig from '@/lib/ai-constructor-config.json';
 import { generateJson } from '@/services/ai';
 import { hydrateSpecificationsForDB } from '@/lib/utils';
@@ -16,7 +16,7 @@ import { SERVER_STAGE_LABELS, type ServerStageKey } from '@/lib/server-analysis-
 import { reportUserBug } from '@/actions/adminActions';
 import { logProjectEvent } from '@/lib/logger';
 import { dispatchNotification } from '@/server-functions/notifications/dispatch';
-import { isPdfLikeFile, parseNonPdfFileForModel, type ParsedModelImage } from './nonPdfParser';
+import { isPdfLikeFile, parseNonPdfFileForModel, type ParsedModelImage } from './non-pdf-parser';
 import type { PdfEngine } from '@/services/openrouter';
 import { toUserFacingAnalysisError } from '@/lib/analysis-errors';
 

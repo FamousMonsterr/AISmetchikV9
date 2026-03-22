@@ -1,5 +1,5 @@
 import JSZip from 'jszip';
-import ExcelJS from 'exceljs';
+import XlsxPopulate from 'xlsx-populate';
 
 export interface ParsedModelImage {
   dataUri: string;
@@ -206,24 +206,43 @@ async function parseDocxBuffer(fileBuffer: Buffer): Promise<{ text: string; imag
 }
 
 async function parseXlsxBuffer(fileBuffer: Buffer): Promise<{ text: string; images: ParsedModelImage[] }> {
-  const workbook = new ExcelJS.Workbook();
-  await workbook.xlsx.load(fileBuffer as any);
+  const workbook = await XlsxPopulate.fromDataAsync(fileBuffer);
   const sheetBlocks: string[] = [];
 
-  for (const sheet of workbook.worksheets) {
+  const toMatrix = (value: unknown): unknown[][] => {
+    if (!Array.isArray(value)) {
+      return value === undefined ? [] : [[value]];
+    }
+    if (value.length === 0) return [];
+    if (Array.isArray(value[0])) return value as unknown[][];
+    return [value as unknown[]];
+  };
+
+  const normalizeCellValue = (value: unknown): string => {
+    if (value == null) return '';
+    if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+      return String(value);
+    }
+    if (value instanceof Date) {
+      return value.toISOString();
+    }
+    if (typeof value === 'object' && value && typeof (value as any).text === 'function') {
+      return String((value as any).text() || '');
+    }
+    if (typeof value === 'object' && value && 'text' in (value as any)) {
+      return String((value as any).text || '');
+    }
+    return String(value);
+  };
+
+  for (const sheet of workbook.sheets()) {
+    const usedRange = sheet.usedRange();
+    if (!usedRange) continue;
+
+    const matrix = toMatrix(usedRange.value());
     const csvRows: string[] = [];
-    for (let rowNumber = 1; rowNumber <= sheet.rowCount; rowNumber += 1) {
-      const row = sheet.getRow(rowNumber);
-      const rowValues = Array.isArray(row.values) ? row.values.slice(1) : [];
-      const values = rowValues.map((value: any) => {
-        if (value == null) return '';
-        if (typeof value === 'object') {
-          if (value.text) return String(value.text);
-          if (value.result != null) return String(value.result);
-          if (value.formula) return `=${value.formula}`;
-        }
-        return String(value);
-      });
+    for (const row of matrix) {
+      const values = (row || []).map((value) => normalizeCellValue(value));
       const line = values.join(',').trim();
       if (line) {
         csvRows.push(line);
@@ -232,7 +251,7 @@ async function parseXlsxBuffer(fileBuffer: Buffer): Promise<{ text: string; imag
 
     const csv = csvRows.join('\n').trim();
     if (!csv) continue;
-    sheetBlocks.push(`### Лист: ${sheet.name}\n${csv}`);
+    sheetBlocks.push(`### Лист: ${sheet.name()}\n${csv}`);
   }
 
   const zip = await JSZip.loadAsync(fileBuffer);

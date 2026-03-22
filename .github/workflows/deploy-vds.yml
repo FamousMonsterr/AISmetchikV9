@@ -10,6 +10,11 @@ concurrency:
   group: deploy-vds
   cancel-in-progress: true
 
+env:
+  CI: true
+  NEXT_TELEMETRY_DISABLED: "1"
+  COMPOSE_BAKE: "false"
+
 jobs:
   preflight:
     runs-on: ubuntu-latest
@@ -61,6 +66,7 @@ jobs:
       needs.preflight.outputs.ready == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    environment: production
 
     steps:
       - name: Deploy over SSH
@@ -74,6 +80,7 @@ jobs:
           script_stop: false
           script: |
             set -ex
+            DEPLOY_GIT_REF="${{ github.event.workflow_run.head_sha || github.sha }}"
             TLS_DOMAIN="$(printf '%s' "${{ secrets.VDS_DOMAIN }}" | xargs)"
             TLS_EMAIL="$(printf '%s' "${{ secrets.LETSENCRYPT_EMAIL }}" | xargs)"
             TLS_SUBDOMAINS="$(printf '%s' "${{ secrets.VDS_SUBDOMAINS }}" | tr -d '\r')"
@@ -115,7 +122,7 @@ jobs:
               *) : ;;
             esac
             compose_cmd() {
-              docker compose --env-file deploy/.env.vds -f deploy/docker-compose.vds.yml "$@"
+              COMPOSE_BAKE=false docker compose --env-file deploy/.env.vds -f deploy/docker-compose.vds.yml "$@"
             }
             cert_has_files() {
               domain="$1"
@@ -132,10 +139,9 @@ jobs:
                 sh -c "for d in /etc/letsencrypt/live/${prefix}*; do [ -d \"\$d\" ] || continue; [ -f \"\$d/fullchain.pem\" ] && [ -f \"\$d/privkey.pem\" ] && basename \"\$d\" && exit 0; done; exit 1" 2>/dev/null || true
             }
             cd "${{ secrets.VDS_DEPLOY_PATH || '/opt/ai-smetchik' }}"
-            git fetch origin main
-            git checkout main
+            git fetch --prune origin main
             git restore deploy/nginx/default.conf || true
-            git pull --ff-only origin main
+            git switch --detach "$DEPLOY_GIT_REF"
             df -h
             docker system df || true
             docker container prune -f || true

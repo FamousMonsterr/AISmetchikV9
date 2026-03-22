@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion } from '@/lib/motion';
 import { FileText, Settings2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DocumentGenerationDialog } from '@/components/DocumentGenerationDialog';
@@ -77,3 +77,4 @@ export const ActionBlock = ({ price, setPrice, project, quoteConfig, companies, 
         </>
     );
 };
+

@@ -42,7 +42,7 @@ type DbCacheEntry = {
 
 const dbResponseCache = new Map<string, DbCacheEntry>();
 const dbInFlight = new Map<string, Promise<{ status: number; payload: any }>>();
-const dbMetricsLogPath = resolve(process.cwd(), DB_METRICS_LOG_FILE);
+const dbMetricsLogPath = resolve(/* turbopackIgnore: true */ process.cwd(), DB_METRICS_LOG_FILE);
 
 let dbMetricsDirReadyPromise: Promise<void> | null = null;
 let dbMetricsWriteChain = Promise.resolve();

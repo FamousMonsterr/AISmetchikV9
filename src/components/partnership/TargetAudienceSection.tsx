@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import { motion } from "framer-motion";
+import { motion } from "@/lib/motion";
 import { GlassCard } from '@/components/ui/glass-card';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 import { PieChart, Pie, Cell } from "recharts";
@@ -117,3 +117,4 @@ export const TargetAudienceSection = () => {
     </section>
   );
 };
+

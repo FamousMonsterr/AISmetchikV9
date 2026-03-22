@@ -1,8 +1,8 @@
 'use server';
 
 import { z } from 'zod';
-import { db } from '@/lib/firebase';
-import { collection, addDoc, serverTimestamp, getDocs, query, orderBy, where, doc, updateDoc } from '@/lib/mongoFirestoreServer';
+import { db } from '@/lib/db';
+import { collection, addDoc, serverTimestamp, getDocs, query, orderBy, where, doc, updateDoc } from '@/lib/db-server';
 import { getDb } from '@/lib/mongodb';
 
 export type ServiceRequestType =
@@ -19,7 +19,7 @@ const CreateRequestSchema = z.object({
   userName: z.string().optional(),
   userEmail: z.string().optional(),
   type: z.enum(['plan_upgrade', 'estimate_department', 'crm_connector', 's3_storage', 'partner_status']),
-  payload: z.record(z.any()).optional(),
+  payload: z.record(z.string(), z.any()).optional(),
 });
 
 const GetRequestsSchema = z.object({

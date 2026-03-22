@@ -1,8 +1,8 @@
-// src/components/ui/sticky-banner.tsx
+﻿// src/components/ui/sticky-banner.tsx
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "@/lib/motion";
 import { Button } from "./button";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -25,7 +25,7 @@ export const StickyBanner = ({
     // This effect runs only on the client-side
     if (storageKey) {
       try {
-        const closed = localStorage.getItem(storageKey);
+        const closed = window.localStorage.getItem(storageKey);
         // Only set to false if it's explicitly not "true".
         // This handles null/undefined cases gracefully.
         if (closed !== "true") {
@@ -46,7 +46,7 @@ export const StickyBanner = ({
     setIsDismissed(true);
     if (storageKey) {
       try {
-        localStorage.setItem(storageKey, "true");
+        window.localStorage.setItem(storageKey, "true");
       } catch (error) {
         console.error("Could not write to localStorage for banner:", error);
       }
@@ -68,7 +68,7 @@ export const StickyBanner = ({
           transition={{ duration: 0.3, ease: "easeInOut" }}
           className={cn(
             "relative z-[60] flex items-center justify-center px-3 py-2 text-sm font-medium",
-            "bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white", // Example gradient
+            "bg-primary text-primary-foreground",
             className
           )}
         >
@@ -89,3 +89,4 @@ export const StickyBanner = ({
     </AnimatePresence>
   );
 };
+

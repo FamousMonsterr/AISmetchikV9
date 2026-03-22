@@ -3,8 +3,8 @@
 'use server';
 
 import { z } from 'zod';
-import { db } from '@/lib/firebase';
-import { collection, getDocs, doc, updateDoc, writeBatch, getDoc, serverTimestamp, query, where, orderBy, setDoc, deleteDoc, addDoc, limit, Timestamp } from '@/lib/mongoFirestoreServer';
+import { db } from '@/lib/db';
+import { collection, getDocs, doc, updateDoc, writeBatch, getDoc, serverTimestamp, query, where, orderBy, setDoc, deleteDoc, addDoc, limit, Timestamp } from '@/lib/db-server';
 import { type AppUser, type SystemRole, type UserPlan, type HistoryRequest, type Company, type Notification, type Survey, SurveyResponse, BannerConfig } from '@/contexts/AppContext';
 import { promises as fs } from 'fs';
 import path from 'path';
@@ -610,7 +610,10 @@ export const activateTrial = async (data: z.infer<typeof ActivateTrialSchema>): 
 };
 
 // --- Legal Entity Management ---
-export const getLegalEntity = async (): Promise<LegalEntity | null> => {
+export const getLegalEntity = async (
+    options?: { logErrors?: boolean }
+): Promise<LegalEntity | null> => {
+    const shouldLogErrors = options?.logErrors !== false;
     try {
         const docRef = doc(db, 'configs', 'legalEntity');
         const docSnap = await getDoc(docRef);
@@ -619,7 +622,9 @@ export const getLegalEntity = async (): Promise<LegalEntity | null> => {
         }
         return null; // Return null if not found
     } catch (error) {
-        console.error("Error getting legal entity:", error);
+        if (shouldLogErrors) {
+            console.error("Error getting legal entity:", error);
+        }
         return null; // Return null on error
     }
 }
@@ -1830,7 +1835,7 @@ export const wipeAllData = async (currentUserId: string): Promise<{ success: boo
                 batchSize++;
                 deletedDocsCount++;
 
-                if (batchSize >= 499) { // Firestore batch limit is 500
+                if (batchSize >= 499) { // Safety limit for batched writes
                     await batch.commit();
                     // batch = writeBatch(db); // Re-initialization is tricky inside a loop, for very large dbs a more robust solution would be needed
                     batchSize = 0;

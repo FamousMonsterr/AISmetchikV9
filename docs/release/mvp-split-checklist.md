@@ -1,7 +1,7 @@
 # MVP Split Checklist (Frontend/Backend)
 
 ## 1. Backend repo bootstrap (`ai-smetchik-backend`)
-- Move `src/app/api/**`, `src/server-functions/**`, `src/services/**`, `src/actions/**`, `src/lib/mongodb.ts`, `src/lib/mongoFirestoreServer.ts`, auth/JWT helpers.
+- Move `src/app/api/**`, `src/server-functions/**`, `src/services/**`, `src/actions/**`, `src/lib/mongodb.ts`, `src/lib/db-server.ts`, auth/JWT helpers.
 - Keep `scripts/server-analysis-worker.ts` and cron scripts.
 - Keep OpenAPI spec: `docs/openapi/v1.yaml`.
 

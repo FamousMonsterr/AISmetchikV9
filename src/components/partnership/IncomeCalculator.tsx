@@ -78,7 +78,7 @@ export const IncomeCalculator = () => {
                     <h2 className="text-3xl font-bold text-foreground">Калькулятор дохода</h2>
                     <p className="text-muted-foreground mt-2">Смоделируйте свой ежемесячный доход, изменяя параметры</p>
                 </div>
-                <GlassCard gradient="purple">
+                <GlassCard>
                     <div className="grid md:grid-cols-2 gap-8 items-start">
                         <div className="space-y-6">
                              <div>
@@ -101,7 +101,7 @@ export const IncomeCalculator = () => {
                         </div>
                         <div className="p-4 rounded-lg bg-background/50">
                              <p className="text-muted-foreground text-center">Ваш потенциальный доход в месяц:</p>
-                             <p className="text-5xl md:text-6xl font-extrabold my-2 text-center bg-gradient-to-r from-amber-600 via-amber-500 to-amber-600 dark:from-amber-400 dark:via-yellow-300 dark:to-amber-400 bg-clip-text text-transparent">
+                             <p className="my-2 text-center text-5xl font-extrabold text-amber-600 dark:text-amber-300 md:text-6xl">
                                 {monthlyIncome.toLocaleString('ru-RU', { style: 'currency', currency: 'RUB', maximumFractionDigits: 0 })}
                             </p>
                              <div className="mt-8 p-4 border border-dashed rounded-lg">

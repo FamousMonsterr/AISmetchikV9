@@ -2,7 +2,7 @@
 "use client";
 
 import React, { ReactNode } from 'react';
-import { motion } from 'framer-motion';
+import { motion } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 
 interface NavItem {
@@ -37,7 +37,7 @@ export const GlassNavbar = ({
   return (
     <motion.nav
       className={cn(
-        'glass-effect fixed top-0 left-0 right-0 z-40 bg-background/50 dark:bg-background/30',
+        'fixed top-0 left-0 right-0 z-40 border-b border-border bg-background/96 shadow-sm',
         containerVariants[variant],
         className
       )}
@@ -65,3 +65,4 @@ export const GlassNavbar = ({
     </motion.nav>
   );
 };
+

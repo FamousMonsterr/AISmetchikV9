@@ -1,8 +1,8 @@
 // src/server-functions/analysis/jobService.ts
 'use server';
 
-import { db } from '@/lib/firebase';
-import { collection, doc, getDoc, serverTimestamp, setDoc, updateDoc, arrayUnion, query, where, orderBy, limit as limitClause, getDocs } from '@/lib/mongoFirestoreServer';
+import { db } from '@/lib/db';
+import { collection, doc, getDoc, serverTimestamp, setDoc, updateDoc, arrayUnion, query, where, orderBy, limit as limitClause, getDocs } from '@/lib/db-server';
 import { getDb } from '@/lib/mongodb';
 import { SERVER_ANALYSIS_COLLECTION } from '../config';
 import type { CreateServerAnalysisJobInput, ServerAnalysisJob, ServerAnalysisJobStatus } from './types';

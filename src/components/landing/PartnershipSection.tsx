@@ -20,9 +20,9 @@ export const PartnershipSection = () => {
     return (
         <section className="py-20">
             <div className="container mx-auto">
-                <GlassCard className="text-center" gradient="purple">
+                <GlassCard className="text-center">
                     <h2 className="text-3xl font-bold text-foreground">Станьте партнером и зарабатывайте</h2>
-                    <p className="mt-4 text-4xl md:text-5xl font-extrabold bg-gradient-to-r from-amber-600 via-amber-500 to-amber-600 dark:from-amber-400 dark:via-yellow-300 dark:to-amber-400 bg-clip-text text-transparent">
+                    <p className="mt-4 text-4xl font-extrabold text-amber-600 dark:text-amber-300 md:text-5xl">
                         до 450 000 ₽ в месяц
                     </p>
                     <p className="text-muted-foreground mt-4 max-w-2xl mx-auto">

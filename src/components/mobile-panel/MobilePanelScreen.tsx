@@ -5,7 +5,7 @@
 import { useState, useCallback, useEffect, useMemo } from 'react';
 import dynamic from 'next/dynamic';
 import { useDropzone } from 'react-dropzone';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion } from '@/lib/motion';
 import { Loader2, FileUp, Check, X, Search } from 'lucide-react';
 import { useAppContext, type HistoryRequest } from '@/contexts/AppContext';
 import { useToast } from '@/hooks/use-toast';
@@ -166,7 +166,7 @@ export function MobilePanelScreen() {
                                 className="mb-4 sticky top-2 z-20"
                             >
                                 <input {...getInputProps()} />
-                                <div className="relative overflow-hidden group bg-gradient-to-br from-primary to-primary/80 dark:from-blue-500 dark:to-indigo-600 rounded-2xl p-6 text-white text-center shadow-lg shadow-blue-200 cursor-pointer">
+                                <div className="relative overflow-hidden group cursor-pointer rounded-2xl bg-primary p-6 text-center text-white shadow-lg shadow-primary/20 dark:bg-primary/90">
                                   <AnimatePresence mode="wait">
                                     {!selectedFile ? (
                                         <motion.div key="prompt" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
@@ -217,3 +217,4 @@ export function MobilePanelScreen() {
         </div>
     );
 };
+

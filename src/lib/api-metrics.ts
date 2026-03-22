@@ -3,7 +3,7 @@ import { dirname, resolve } from 'node:path';
 
 const API_METRICS_LOG_ENABLED = process.env.API_METRICS_LOG_ENABLED !== 'false';
 const API_METRICS_LOG_FILE = process.env.API_METRICS_LOG_FILE || '.logs/api-analysis-metrics.jsonl';
-const metricsLogPath = resolve(process.cwd(), API_METRICS_LOG_FILE);
+const metricsLogPath = resolve(/* turbopackIgnore: true */ process.cwd(), API_METRICS_LOG_FILE);
 
 let metricsDirReadyPromise: Promise<void> | null = null;
 let metricsWriteChain = Promise.resolve();

@@ -1,6 +1,6 @@
 "use client";
 import React from 'react';
-import { motion } from "framer-motion";
+import { motion } from "@/lib/motion";
 import { GlassCard } from '@/components/ui/glass-card';
 import { CountUp } from '@/components/CountUp';
 import { Briefcase, User, UserCog, TrendingUp } from 'lucide-react';
@@ -84,7 +84,7 @@ const MarketPotentialSection = () => {
             transition: {
                 delay: i * 0.15,
                 duration: 0.5,
-                ease: 'easeOut'
+                ease: 'easeOut' as const
             },
         }),
     };
@@ -139,7 +139,7 @@ const MarketPotentialSection = () => {
                     transition={{ duration: 0.7, delay: 0.5, type: 'spring' }}
                 >
                     <p className="text-lg text-muted-foreground">Емкость рынка в год составляет</p>
-                    <div className="text-6xl sm:text-7xl md:text-8xl lg:text-9xl font-extrabold my-2 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 bg-clip-text text-transparent">
+                    <div className="my-2 text-6xl font-extrabold text-primary sm:text-7xl md:text-8xl lg:text-9xl">
                         <FormattedCountUp value={totalMarket} duration={3} /> ₽
                     </div>
                      <motion.p
@@ -158,3 +158,4 @@ const MarketPotentialSection = () => {
 };
 
 export { MarketPotentialSection };
+

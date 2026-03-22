@@ -1,6 +1,6 @@
 // src/lib/logger.ts
-import { collection, addDoc, serverTimestamp } from '@/lib/mongoFirestoreServer';
-import { db } from '@/lib/firebase';
+import { collection, addDoc, serverTimestamp } from '@/lib/db-server';
+import { db } from '@/lib/db';
 
 export type ActionType = 
     | 'USER_LOGIN'

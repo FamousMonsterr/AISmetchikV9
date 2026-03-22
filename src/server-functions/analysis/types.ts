@@ -1,5 +1,5 @@
 // src/server-functions/analysis/types.ts
-import type { Timestamp } from '@/lib/mongoFirestoreServer';
+import type { Timestamp } from '@/lib/db-server';
 import type { UserPlan } from '@/contexts/AppContext';
 
 export type ServerAnalysisJobStatus = 'queued' | 'running' | 'succeeded' | 'failed' | 'cancelled';
