@@ -57,6 +57,7 @@ function resolveSurfaceUrls(domains, fallbackBaseUrl) {
 
 const surfaceUrls = resolveSurfaceUrls(smokeDomains, baseUrl);
 const dashboardBaseUrl = surfaceUrls.lk || surfaceUrls.root;
+const authBaseUrl = surfaceUrls.lk || surfaceUrls.root;
 
 const tempUser = {
   email: `autoreg_${Date.now()}@example.com`,
@@ -269,7 +270,7 @@ async function visitSurfacePages(page) {
 }
 
 async function registerTempUser(page) {
-  await visitAndAssert(page, `${surfaceUrls.root}/auth/register`, [{ kind: 'text', value: 'Создать аккаунт в AI Сметчик' }]);
+  await visitAndAssert(page, `${authBaseUrl}/auth/register`, [{ kind: 'text', value: 'Создать аккаунт' }]);
   await page.fill('#register-email', tempUser.email);
   await page.fill('#register-phone', tempUser.phone);
   await page.fill('#register-password', tempUser.password);
@@ -389,11 +390,11 @@ async function skipProjectUploadSmoke() {
 
 async function cleanupAccount(requestContext) {
   try {
-    const loginResp = await requestContext.post(`${baseUrl}/api/v1/auth/login`, {
+    const loginResp = await requestContext.post(`${authBaseUrl}/api/v1/auth/login`, {
       data: { email: tempUser.email, password: tempUser.password },
     });
     if (!loginResp.ok()) {
-      logStep({ name: 'cleanup-login', status: 'warn', url: `${baseUrl}/api/v1/auth/login`, detail: `status=${loginResp.status()}` });
+      logStep({ name: 'cleanup-login', status: 'warn', url: `${authBaseUrl}/api/v1/auth/login`, detail: `status=${loginResp.status()}` });
       return;
     }
     const loginJson = await loginResp.json();
@@ -402,17 +403,17 @@ async function cleanupAccount(requestContext) {
       logStep({ name: 'cleanup-token', status: 'warn', url: `${baseUrl}/api/v1/auth/login`, detail: 'accessToken not found' });
       return;
     }
-    const deleteResp = await requestContext.delete(`${baseUrl}/api/v1/auth/account`, {
+    const deleteResp = await requestContext.delete(`${authBaseUrl}/api/v1/auth/account`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     logStep({
       name: 'cleanup-account',
       status: deleteResp.ok() ? 'ok' : 'warn',
-      url: `${baseUrl}/api/v1/auth/account`,
+      url: `${authBaseUrl}/api/v1/auth/account`,
       detail: `status=${deleteResp.status()}`,
     });
   } catch (error) {
-    logStep({ name: 'cleanup-account', status: 'warn', url: `${baseUrl}/api/v1/auth/account`, detail: error.message });
+    logStep({ name: 'cleanup-account', status: 'warn', url: `${authBaseUrl}/api/v1/auth/account`, detail: error.message });
   }
 }
 
@@ -469,9 +470,9 @@ async function main() {
     await visitPages(page, [
       { name: 'public-home', url: `${surfaceUrls.root}/`, text: 'Начать бесплатно' },
       { name: 'public-partnership', url: `${surfaceUrls.root}/partnership`, text: 'партнерской программе', acceptUrlPatterns: [/\/partnership\b/] },
-      { name: 'public-login', url: `${surfaceUrls.root}/auth/login`, text: 'Вход в AI Сметчик' },
-      { name: 'public-register', url: `${surfaceUrls.root}/auth/register`, text: 'Создать аккаунт в AI Сметчик' },
-      { name: 'public-reset', url: `${surfaceUrls.root}/auth/reset`, text: 'Сброс пароля' },
+      { name: 'public-login', url: `${authBaseUrl}/auth/login`, text: 'Войти' },
+      { name: 'public-register', url: `${authBaseUrl}/auth/register`, text: 'Создать аккаунт' },
+      { name: 'public-reset', url: `${authBaseUrl}/auth/reset`, text: 'Сброс пароля' },
     ], 'Починить public smoke');
     await registerTempUser(page);
     await closeWelcomeModalIfPresent(page);
