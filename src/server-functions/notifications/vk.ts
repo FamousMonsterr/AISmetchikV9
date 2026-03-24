@@ -1,63 +1,37 @@
-// src/server-functions/notifications/telegram.ts
 'use server';
 
-import TelegramBot from '@/lib/telegram/telegraf-compat';
-import { db } from '@/lib/db';
-import { doc, getDoc, serverTimestamp, setDoc } from '@/lib/db-server';
-import { getEnvSettings } from '@/actions/adminActions';
+import { db } from '@/lib/firebase';
+import { doc, getDoc, serverTimestamp, setDoc } from '@/lib/mongoFirestoreServer';
+import { sendVkMessage } from '@/server-functions/webhooks/vk';
 
-export type TelegramDispatchInput = {
+export type VkDispatchInput = {
   userId?: string;
-  chatId?: number;
+  peerId?: number | string | null;
   message: string;
-  parseMode?: 'Markdown' | 'MarkdownV2' | 'HTML';
-  disableWebPagePreview?: boolean;
   idempotencyKey?: string;
   cooldownSeconds?: number;
   metadata?: Record<string, any>;
 };
 
-export type TelegramDispatchResult = {
+export type VkDispatchResult = {
   success: boolean;
   skipped?: boolean;
   reason?: string;
-  chatId?: number | null;
-  messageId?: number | null;
+  peerId?: number | string | null;
 };
 
-let sendBot: TelegramBot | null = null;
-let sendBotToken: string | null = null;
-
-const getSendBot = async () => {
-  const env = await getEnvSettings({ allowInternal: true });
-  const token =
-    env.telegramBotTokenUser ||
-    env.telegramBotToken ||
-    process.env.TELEGRAM_BOT_TOKEN_USER ||
-    process.env.TELEGRAM_BOT_TOKEN;
-  if (!token) {
-    throw new Error('TELEGRAM_BOT_TOKEN не задан.');
-  }
-  if (sendBot && sendBotToken === token) {
-    return sendBot;
-  }
-  sendBot = new TelegramBot(token, { polling: false });
-  sendBotToken = token;
-  return sendBot;
-};
-
-const resolveChatId = async (input: TelegramDispatchInput): Promise<number | null> => {
-  if (input.chatId) return input.chatId;
+const resolvePeerId = async (input: VkDispatchInput): Promise<number | string | null> => {
+  if (input.peerId) return input.peerId;
   if (!input.userId) return null;
   const userRef = doc(db, 'users', input.userId);
   const userSnap = await getDoc(userRef);
   if (!userSnap.exists()) return null;
-  const chatId = (userSnap.data() as any).telegramChatId;
-  return typeof chatId === 'number' ? chatId : null;
+  const userData = userSnap.data() as any;
+  return userData?.vkPeerId || userData?.vkId || null;
 };
 
 const checkCooldown = async (key: string, cooldownSeconds: number) => {
-  const limitRef = doc(db, 'telegram_rate_limits', key);
+  const limitRef = doc(db, 'vk_rate_limits', key);
   const limitSnap = await getDoc(limitRef);
   if (!limitSnap.exists()) return false;
   const lastSentAt = limitSnap.data()?.lastSentAt;
@@ -67,7 +41,7 @@ const checkCooldown = async (key: string, cooldownSeconds: number) => {
 };
 
 const saveCooldown = async (key: string) => {
-  const limitRef = doc(db, 'telegram_rate_limits', key);
+  const limitRef = doc(db, 'vk_rate_limits', key);
   await setDoc(limitRef, { lastSentAt: serverTimestamp() }, { merge: true });
 };
 
@@ -83,74 +57,72 @@ const writeDispatchLog = async (idempotencyKey: string, payload: Record<string, 
   await setDoc(dispatchRef, { ...payload, updatedAt: serverTimestamp() }, { merge: true });
 };
 
-export async function sendTelegramMessage(input: TelegramDispatchInput): Promise<TelegramDispatchResult> {
+export async function sendVkNotification(input: VkDispatchInput): Promise<VkDispatchResult> {
   if (!input.message?.trim()) {
     return { success: false, skipped: true, reason: 'empty_message' };
   }
 
-  const chatId = await resolveChatId(input);
-  if (!chatId) {
-    return { success: false, skipped: true, reason: 'missing_chat_id' };
+  const peerId = await resolvePeerId(input);
+  if (!peerId) {
+    return { success: false, skipped: true, reason: 'missing_peer_id' };
   }
 
   if (input.idempotencyKey) {
     const existing = await checkIdempotency(input.idempotencyKey);
     if (existing?.status === 'sent') {
-      return { success: true, skipped: true, reason: 'idempotent', chatId, messageId: existing?.messageId || null };
+      return { success: true, skipped: true, reason: 'idempotent', peerId };
     }
   }
 
   const cooldownSeconds = input.cooldownSeconds ?? 2;
-  const rateKey = input.userId ? `user:${input.userId}` : `chat:${chatId}`;
+  const rateKey = input.userId ? `user:${input.userId}` : `peer:${String(peerId)}`;
   if (cooldownSeconds > 0 && rateKey) {
     const limited = await checkCooldown(rateKey, cooldownSeconds);
     if (limited) {
       if (input.idempotencyKey) {
         await writeDispatchLog(input.idempotencyKey, {
-          channel: 'telegram',
+          channel: 'vk',
           status: 'skipped',
           reason: 'rate_limited',
           userId: input.userId || null,
-          chatId,
+          peerId: String(peerId),
         });
       }
-      return { success: false, skipped: true, reason: 'rate_limited', chatId };
+      return { success: false, skipped: true, reason: 'rate_limited', peerId };
     }
   }
 
   try {
-    const bot = await getSendBot();
-    const response = await bot.sendMessage(chatId, input.message, {
-      parse_mode: input.parseMode,
-      disable_web_page_preview: input.disableWebPagePreview ?? true,
+    await sendVkMessage({
+      peerId,
+      message: input.message,
     });
     if (rateKey) {
       await saveCooldown(rateKey);
     }
     if (input.idempotencyKey) {
       await writeDispatchLog(input.idempotencyKey, {
-        channel: 'telegram',
+        channel: 'vk',
         status: 'sent',
         userId: input.userId || null,
-        chatId,
-        messageId: response?.message_id || null,
+        peerId: String(peerId),
         metadata: input.metadata || null,
         createdAt: serverTimestamp(),
       });
     }
-    return { success: true, chatId, messageId: response?.message_id || null };
+    return { success: true, peerId };
   } catch (error: any) {
     if (input.idempotencyKey) {
       await writeDispatchLog(input.idempotencyKey, {
-        channel: 'telegram',
+        channel: 'vk',
         status: 'failed',
         userId: input.userId || null,
-        chatId,
+        peerId: String(peerId),
         error: error?.message || String(error),
         metadata: input.metadata || null,
         createdAt: serverTimestamp(),
       });
     }
-    return { success: false, reason: error?.message || 'send_failed', chatId };
+    return { success: false, reason: error?.message || 'send_failed', peerId };
   }
 }

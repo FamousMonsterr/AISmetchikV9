@@ -4,7 +4,7 @@ import { appendFile, mkdir } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { createHash, randomUUID } from 'node:crypto';
 import { authOptions } from '@/lib/auth';
-import { getDb } from '@/lib/mongodb';
+import { getDbForCollection } from '@/lib/mongodb';
 import { ObjectId } from 'mongodb';
 
 type WhereFilter = { field: string; op: string; value: any };
@@ -188,7 +188,6 @@ export async function POST(req: Request) {
 
   const admin = isAdmin(session);
   const userId = session.user.id;
-  const db = await getDb();
   const skipCache = body.cache === false || body.noCache === true;
   const cacheTtlMs = body.type === 'doc' ? DOC_CACHE_TTL_MS : QUERY_CACHE_TTL_MS;
   const cacheKey = buildCacheKey(session, body);
@@ -245,6 +244,8 @@ export async function POST(req: Request) {
       if (!admin && adminCollections.has(body.collection)) {
         return { status: 403, payload: { message: 'Forbidden' } };
       }
+
+      const db = await getDbForCollection(body.collection);
 
       if (body.type === 'doc') {
         if (!body.id) {

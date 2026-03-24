@@ -11,9 +11,18 @@ import { parse, validate } from '@tma.js/init-data-node';
 import { getEnvSettings } from '@/actions/adminActions';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { validateTelegramWebPayload } from '@/lib/telegram-web';
+import { getDb } from '@/lib/mongodb';
 
 const LinkAccountSchema = z.object({
-  initData: z.string(),
+  initData: z.string().optional(),
+  id: z.union([z.string(), z.number()]).optional(),
+  first_name: z.string().optional(),
+  last_name: z.string().optional(),
+  username: z.string().optional(),
+  photo_url: z.string().optional(),
+  auth_date: z.union([z.string(), z.number()]).optional(),
+  hash: z.string().optional(),
 });
 
 export async function linkTelegramAccount(data: z.infer<typeof LinkAccountSchema>): Promise<{ success: boolean; message: string; telegramUser?: any; }> {
@@ -30,34 +39,77 @@ export async function linkTelegramAccount(data: z.infer<typeof LinkAccountSchema
 
   const { initData } = validation.data;
   const envSettings = await getEnvSettings({ allowInternal: true });
-  const botToken = envSettings.telegramBotToken || process.env.TELEGRAM_BOT_TOKEN;
+  const botToken =
+    envSettings.telegramBotTokenUser ||
+    envSettings.telegramBotToken ||
+    process.env.TELEGRAM_BOT_TOKEN_USER ||
+    process.env.TELEGRAM_BOT_TOKEN;
 
   if (!botToken) {
     return { success: false, message: 'Сервер не настроен для работы с Telegram.' };
   }
 
   try {
-    validate(initData, botToken, { expiresIn: 3600 }); // 1 hour expiration
-    const validatedData = parse(initData);
-    
-    if (!validatedData.user) {
-        throw new Error("Не удалось получить данные пользователя из Telegram.");
+    const telegramUser = initData
+      ? (() => {
+          validate(initData, botToken, { expiresIn: 3600 });
+          const validatedData = parse(initData);
+          if (!validatedData.user) {
+            throw new Error("Не удалось получить данные пользователя из Telegram.");
+          }
+          return validatedData.user;
+        })()
+      : validateTelegramWebPayload(validation.data as any, botToken, 3600);
+
+    const { id: telegramChatId, username: telegramUsername } = telegramUser as any;
+    const normalizedChatId = Number(telegramChatId);
+    if (!Number.isFinite(normalizedChatId) || normalizedChatId <= 0) {
+      return { success: false, message: 'Telegram вернул некорректный chat id.' };
     }
-    
-    const { id: telegramChatId, username: telegramUsername, firstName } = validatedData.user;
+    const mongo = await getDb();
+    const linkedUser = await mongo.collection<any>('users').findOne({
+      telegramChatId: normalizedChatId,
+      _id: { $ne: userId },
+    });
+    if (linkedUser) {
+      return { success: false, message: 'Этот Telegram аккаунт уже привязан к другому пользователю.' };
+    }
     
     const userRef = doc(db, 'users', userId);
     await updateDoc(userRef, {
-        telegramChatId: telegramChatId,
+        telegramChatId: normalizedChatId,
         telegramUsername: telegramUsername || '',
-        // displayName: firstName, 
+        telegramLinkedAt: new Date(),
+        updatedAt: new Date(),
     });
 
-    return { success: true, message: 'Аккаунт Telegram успешно привязан.', telegramUser: validatedData.user };
+    return { success: true, message: 'Аккаунт Telegram успешно привязан.', telegramUser };
 
   } catch (error: any) {
     console.error("Ошибка привязки аккаунта Telegram:", error);
     return { success: false, message: error.message || 'Ошибка валидации данных Telegram.' };
+  }
+}
+
+export async function unlinkTelegramAccount(): Promise<{ success: boolean; message: string }> {
+  const session = await getServerSession(authOptions);
+  const userId = session?.user?.id;
+  if (!userId) {
+    return { success: false, message: 'Требуется аутентификация.' };
+  }
+
+  try {
+    const userRef = doc(db, 'users', userId);
+    await updateDoc(userRef, {
+      telegramChatId: null,
+      telegramUsername: '',
+      telegramLinkedAt: null,
+      updatedAt: new Date(),
+    });
+    return { success: true, message: 'Связь с Telegram удалена.' };
+  } catch (error: any) {
+    console.error("Ошибка отвязки аккаунта Telegram:", error);
+    return { success: false, message: error.message || 'Не удалось отвязать Telegram.' };
   }
 }
 
@@ -78,7 +130,11 @@ export async function sendFileToTelegramUser(data: z.infer<typeof SendFileSchema
   }
 
   const envSettings = await getEnvSettings({ allowInternal: true });
-  const botToken = envSettings.telegramBotToken || process.env.TELEGRAM_BOT_TOKEN;
+  const botToken =
+    envSettings.telegramBotTokenUser ||
+    envSettings.telegramBotToken ||
+    process.env.TELEGRAM_BOT_TOKEN_USER ||
+    process.env.TELEGRAM_BOT_TOKEN;
   if (!botToken) {
     console.error("TELEGRAM_BOT_TOKEN is not configured.");
     return { success: false, message: "Сервер не настроен для отправки файлов." };
@@ -153,15 +209,24 @@ export async function syncTelegramChatId(): Promise<{ success: boolean; message:
       return { success: false, message: 'Чат не найден. Напишите /start боту по вашей ссылке.' };
     }
     const chatData = snap.docs[0].data() as any;
-    const chatId = chatData?.chatId;
-    if (!chatId) {
+    const chatId = Number(chatData?.chatId);
+    if (!Number.isFinite(chatId) || chatId <= 0) {
       return { success: false, message: 'Чат найден, но chat_id отсутствует.' };
+    }
+    const mongo = await getDb();
+    const linkedUser = await mongo.collection<any>('users').findOne({
+      telegramChatId: chatId,
+      _id: { $ne: userId },
+    });
+    if (linkedUser) {
+      return { success: false, message: 'Этот Telegram чат уже привязан к другому пользователю.' };
     }
 
     const userRef = doc(db, 'users', userId);
     await updateDoc(userRef, {
       telegramChatId: chatId,
       telegramUsername: chatData?.username || '',
+      telegramLinkedAt: new Date(),
       updatedAt: new Date(),
     });
 

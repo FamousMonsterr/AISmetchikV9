@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { nanoid } from 'nanoid';
-import { getClient, getDb } from '@/lib/mongodb';
+import { getClient, getDb, getDbForCollection } from '@/lib/mongodb';
 
 export type DocumentData = Record<string, any>;
 
@@ -214,7 +214,7 @@ function createQuerySnapshot(docs: DocumentData[], collectionName?: string) {
 }
 
 async function executeQuery(queryRef: QueryRef) {
-  const db = await getDb();
+  const db = await getDbForCollection(queryRef.collection);
   const filter = buildMongoFilter(queryRef.filters);
   const cursor = db.collection(queryRef.collection).find(filter);
   if (queryRef.orderBy.length) {
@@ -232,7 +232,7 @@ async function executeQuery(queryRef: QueryRef) {
 }
 
 async function executeDocFetch(docRef: DocRef) {
-  const db = await getDb();
+  const db = await getDbForCollection(docRef.collection);
   const doc = await db.collection(docRef.collection).findOne({ _id: docRef.id });
   return createDocSnapshot(doc, docRef.collection);
 }
@@ -250,14 +250,14 @@ export async function getDocs(ref: QueryRef | CollectionRef) {
 }
 
 export async function addDoc(ref: CollectionRef, data: DocumentData) {
-  const db = await getDb();
+  const db = await getDbForCollection(ref.name);
   const docId = nanoid();
   await db.collection(ref.name).insertOne({ _id: docId, ...data });
   return { id: docId };
 }
 
 export async function setDoc(ref: DocRef, data: DocumentData, options?: { merge?: boolean }) {
-  const db = await getDb();
+  const db = await getDbForCollection(ref.collection);
   if (options?.merge) {
     const update = splitUpdateOps(data);
     await db.collection(ref.collection).updateOne({ _id: ref.id }, update, { upsert: true });
@@ -267,13 +267,13 @@ export async function setDoc(ref: DocRef, data: DocumentData, options?: { merge?
 }
 
 export async function updateDoc(ref: DocRef, data: DocumentData) {
-  const db = await getDb();
+  const db = await getDbForCollection(ref.collection);
   const update = splitUpdateOps(data);
   await db.collection(ref.collection).updateOne({ _id: ref.id }, update);
 }
 
 export async function deleteDoc(ref: DocRef) {
-  const db = await getDb();
+  const db = await getDbForCollection(ref.collection);
   await db.collection(ref.collection).deleteOne({ _id: ref.id });
 }
 
@@ -371,6 +371,7 @@ export function writeBatch(_db: unknown) {
       });
 
       for (const [collectionName, collectionOps] of opsByCollection.entries()) {
+        const db = await getDbForCollection(collectionName);
         const bulkOps = collectionOps.map((op) => {
           if (op.type === 'set') {
             if (op.options?.merge) {
@@ -404,7 +405,6 @@ export function writeBatch(_db: unknown) {
             },
           };
         });
-
         if (bulkOps.length) {
           await db.collection(collectionName).bulkWrite(bulkOps);
         }

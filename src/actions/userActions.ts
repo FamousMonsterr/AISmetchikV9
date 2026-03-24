@@ -20,6 +20,7 @@ import { authOptions } from '@/lib/auth';
 import { getAppSettings } from '@/actions/adminActions';
 import { createServerAnalysisJob } from '@/server-functions/analysis/jobService';
 import { validateFileUriAgainstAllowlist } from '@/lib/file-uri-security';
+import { normalizePhone } from '@/lib/auth-identifiers';
 
 async function resolveActingUserId(userId?: string): Promise<string> {
   const session = await getServerSession(authOptions);
@@ -41,7 +42,7 @@ async function resolveActingUserId(userId?: string): Promise<string> {
 const UpdateProfileSchema = z.object({
   userId: z.string().min(1, 'Необходимо указать ID пользователя.'),
   displayName: z.string().min(2, 'Никнейм должен содержать не менее 2 символов.').max(50, 'Никнейм не должен превышать 50 символов.'),
-  telegramUsername: z.string().max(32, 'Имя пользователя Telegram не должно превышать 32 символов.').optional(),
+  phone: z.string().max(32, 'Телефон не должен превышать 32 символа.').optional(),
   documentTemplates: z
     .object({
       proposal: z.string().optional(),
@@ -85,9 +86,16 @@ export const deleteOwnAccount = async (): Promise<{ success: boolean; message: s
       email: anonymizedEmail,
       displayName: 'Deleted User',
       phone: '',
+      phoneNormalized: '',
       phoneVerified: false,
       telegramUsername: '',
       telegramChatId: null,
+      telegramLinkedAt: null,
+      vkId: null,
+      vkUsername: '',
+      vkLinkedAt: null,
+      vkPhotoUrl: null,
+      vkPeerId: null,
       status: 'blocked',
       archivedAt: serverTimestamp(),
       deletedAt: serverTimestamp(),
@@ -113,7 +121,7 @@ export const updateUserProfile = async (data: z.infer<typeof UpdateProfileSchema
   let {
     userId,
     displayName,
-    telegramUsername,
+    phone,
     documentTemplates,
     signatureUrl,
     signatureObjectKey,
@@ -133,12 +141,25 @@ export const updateUserProfile = async (data: z.infer<typeof UpdateProfileSchema
   const userRef = doc(db, 'users', userId);
 
   try {
+    const normalizedPhone = normalizePhone(phone || '');
+    if (normalizedPhone) {
+      const dbClient = await getDb();
+      const existingByPhone = await dbClient.collection('users').findOne({
+        phoneNormalized: normalizedPhone,
+        _id: { $ne: userId },
+      } as any);
+      if (existingByPhone) {
+        return { success: false, message: 'Этот телефон уже используется другим аккаунтом.' };
+      }
+    }
+
     const updatePayload: Record<string, any> = {
       displayName,
-      telegramUsername: telegramUsername || '', // Store empty string if not provided
+      phone: phone || '',
+      phoneNormalized: normalizedPhone,
       updatedAt: serverTimestamp(),
     };
-    const updatedFields = ['displayName', 'telegramUsername'];
+    const updatedFields = ['displayName', 'phone', 'phoneNormalized'];
 
     if (documentTemplates !== undefined) {
       updatePayload.documentTemplates = documentTemplates;

@@ -25,11 +25,6 @@ const EnvSettingsComponent = dynamic(
   () => import('@/components/admin/EnvSettings').then((m) => m.EnvSettings),
   { ssr: false, loading: () => <TabLoader /> }
 );
-const S3AdminPage = dynamic(
-  () => import('../s3/page'),
-  { ssr: false, loading: () => <TabLoader /> }
-);
-
 export default function AdminSettingsPage() {
   const { user } = useAppContext();
   
@@ -48,11 +43,10 @@ export default function AdminSettingsPage() {
 
   return (
     <Tabs defaultValue="general" className="w-full">
-      <TabsList className="grid w-full grid-cols-4">
+      <TabsList className="grid w-full grid-cols-3">
         <TabsTrigger value="general">Общие настройки</TabsTrigger>
         <TabsTrigger value="legal">Юр. лицо</TabsTrigger>
         <TabsTrigger value="env">Переменные API</TabsTrigger>
-        <TabsTrigger value="s3">S3-хранилище</TabsTrigger>
       </TabsList>
       <TabsContent value="general" className="mt-4">
         <GeneralSettings />
@@ -62,9 +56,6 @@ export default function AdminSettingsPage() {
       </TabsContent>
       <TabsContent value="env" className="mt-4">
          <EnvSettingsComponent />
-      </TabsContent>
-      <TabsContent value="s3" className="mt-4">
-        <S3AdminPage />
       </TabsContent>
     </Tabs>
   );

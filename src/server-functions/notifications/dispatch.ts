@@ -4,8 +4,9 @@
 import { db } from '@/lib/db';
 import { collection, doc, serverTimestamp, setDoc } from '@/lib/db-server';
 import { sendTelegramMessage, type TelegramDispatchResult } from './telegram';
+import { sendVkNotification, type VkDispatchResult } from './vk';
 
-export type NotificationChannel = 'in_app' | 'telegram';
+export type NotificationChannel = 'in_app' | 'telegram' | 'vk';
 
 export type DispatchNotificationInput = {
   userId: string;
@@ -20,6 +21,9 @@ export type DispatchNotificationInput = {
     parseMode?: 'Markdown' | 'MarkdownV2' | 'HTML';
     disableWebPagePreview?: boolean;
   };
+  vk?: {
+    peerId?: number | string | null;
+  };
   idempotencyKey?: string;
   metadata?: Record<string, any>;
 };
@@ -28,6 +32,7 @@ export type DispatchNotificationResult = {
   success: boolean;
   inAppId?: string | null;
   telegram?: TelegramDispatchResult;
+  vk?: VkDispatchResult;
 };
 
 export async function dispatchNotification(input: DispatchNotificationInput): Promise<DispatchNotificationResult> {
@@ -35,7 +40,7 @@ export async function dispatchNotification(input: DispatchNotificationInput): Pr
     return { success: false };
   }
 
-  const channels = input.channels?.length ? input.channels : ['in_app', 'telegram'];
+  const channels = input.channels?.length ? input.channels : ['in_app', 'telegram', 'vk'];
   let inAppId: string | null = null;
   if (channels.includes('in_app')) {
     const notifRef = doc(collection(db, 'user_notifications'));
@@ -66,5 +71,17 @@ export async function dispatchNotification(input: DispatchNotificationInput): Pr
     });
   }
 
-  return { success: true, inAppId, telegram: telegramResult };
+  let vkResult: VkDispatchResult | undefined;
+  if (channels.includes('vk')) {
+    const message = `${input.title}\n${input.content}${input.projectId ? `\nПроект: ${input.projectId}` : ''}`;
+    vkResult = await sendVkNotification({
+      userId: input.userId,
+      peerId: input.vk?.peerId,
+      message,
+      idempotencyKey: input.idempotencyKey ? `vk:${input.idempotencyKey}` : undefined,
+      metadata: input.metadata,
+    });
+  }
+
+  return { success: true, inAppId, telegram: telegramResult, vk: vkResult };
 }

@@ -5,7 +5,7 @@ import { appendFile, mkdir } from 'node:fs/promises';
 import { createHash, randomUUID } from 'node:crypto';
 import { dirname, resolve } from 'node:path';
 import { authOptions } from '@/lib/auth';
-import { getDb } from '@/lib/mongodb';
+import { getDbForCollection } from '@/lib/mongodb';
 
 type DocRef = { collection: string; id: string };
 type WhereFilter = { field: string; op: string; value: any };
@@ -276,7 +276,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ message: 'Missing operation' }, { status: 400 });
   }
 
-  const db = await getDb();
   const admin = isAdmin(session);
   const userId = session.user.id;
 
@@ -286,6 +285,7 @@ export async function POST(req: Request) {
   const requestStartedAt = Date.now();
   const requestId = randomUUID();
   const collection = getCollectionFromBody(body);
+  const db = await getDbForCollection(collection);
   const actorRole = session.user.systemRole || 'User';
   const actorHash = getActorFingerprint(userId);
   const queryShape = getQueryShape(body);

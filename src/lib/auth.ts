@@ -1,23 +1,21 @@
 import type { NextAuthOptions } from 'next-auth';
-import AppleProvider from 'next-auth/providers/apple';
 import CredentialsProvider from 'next-auth/providers/credentials';
-import GoogleProvider from 'next-auth/providers/google';
+import VKProvider from 'next-auth/providers/vk';
 import bcrypt from 'bcryptjs';
 import { nanoid } from 'nanoid';
 import { parse as parseTelegramInitData, validate as validateTelegramInitData } from '@tma.js/init-data-node';
 import { getDb } from '@/lib/mongodb';
 import modelsConfig from '@/lib/ai-config.json';
 import { consumePasskeySignInTicket } from '@/lib/passkeys/store';
+import { normalizeEmail, resolveIdentifier } from '@/lib/auth-identifiers';
+import { deriveTelegramBotUsername, validateTelegramWebPayload } from '@/lib/telegram-web';
+import { resolveVkIdentity } from '@/lib/vk-auth';
 
 function normalizeId(id: any): string {
   if (typeof id === 'string') return id;
   if (id == null) return '';
   if (typeof id.toString === 'function') return id.toString();
   return String(id);
-}
-
-function normalizeEmail(email: unknown): string {
-  return typeof email === 'string' ? email.trim().toLowerCase() : '';
 }
 
 function getSharedAuthCookieDomain(): string {
@@ -53,6 +51,8 @@ function getDefaultModelValue(): string {
 
 function buildUserDefaults(params: {
   email: string;
+  phone?: string | null;
+  phoneNormalized?: string | null;
   displayName?: string | null;
   avatarUrl?: string | null;
 }) {
@@ -61,9 +61,12 @@ function buildUserDefaults(params: {
 
   return {
     displayName: params.displayName?.trim() || emailPrefix,
-    phone: '',
+    phone: params.phone || '',
+    phoneNormalized: params.phoneNormalized || '',
     phoneVerified: false,
     telegramUsername: '',
+    telegramChatId: null,
+    telegramLinkedAt: null,
     systemRole: 'User',
     plan: 'Free',
     isTester: false,
@@ -91,6 +94,11 @@ function buildUserDefaults(params: {
     avatarUrlExpirationTimestamp: null,
     googleId: null,
     googleLinkedAt: null,
+    vkId: null,
+    vkUsername: '',
+    vkLinkedAt: null,
+    vkPhotoUrl: null,
+    vkPeerId: null,
     authProvider: 'credentials',
     lastLoginAt: now,
   };
@@ -158,13 +166,17 @@ function toSessionUser(user: Record<string, any>) {
   };
 }
 
-async function syncExistingUserForSession(user: Record<string, any>, provider: 'credentials' | 'google' | 'passkey' | 'telegram') {
+type RuntimeAuthProvider = 'credentials' | 'passkey' | 'telegram' | 'vk';
+
+async function syncExistingUserForSession(user: Record<string, any>, provider: RuntimeAuthProvider) {
   const db = await getDb();
   const email = normalizeEmail(user.email);
   const updates = getMissingDefaults(
     user,
     buildUserDefaults({
       email,
+      phone: user.phone,
+      phoneNormalized: user.phoneNormalized,
       displayName: user.displayName,
       avatarUrl: user.avatarUrl,
     }),
@@ -179,14 +191,6 @@ async function syncExistingUserForSession(user: Record<string, any>, provider: '
   return toSessionUser({ ...user, ...updates, authProvider: provider });
 }
 
-export function isGoogleAuthEnabled(): boolean {
-  return Boolean(process.env.GOOGLE_CLIENT_ID?.trim() && process.env.GOOGLE_CLIENT_SECRET?.trim());
-}
-
-export function isAppleAuthEnabled(): boolean {
-  return Boolean(process.env.APPLE_ID?.trim() && process.env.APPLE_SECRET?.trim());
-}
-
 function getTelegramAuthToken(): string {
   return (
     process.env.TELEGRAM_BOT_TOKEN_USER?.trim() ||
@@ -197,6 +201,14 @@ function getTelegramAuthToken(): string {
 
 function getTelegramAuthEmailDomain(): string {
   return process.env.TELEGRAM_AUTH_EMAIL_DOMAIN?.trim() || 'telegram.local';
+}
+
+export function getTelegramBotUsername(): string {
+  return (
+    process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME?.trim() ||
+    deriveTelegramBotUsername(process.env.NEXT_PUBLIC_TELEGRAM_BOT_URL || '') ||
+    ''
+  );
 }
 
 function buildTelegramSyntheticEmail(telegramId: number | string): string {
@@ -215,85 +227,12 @@ export function isTelegramMiniAppAuthEnabled(): boolean {
   return Boolean(getTelegramAuthToken());
 }
 
-async function syncGoogleUser(profile: Record<string, any>, account?: Record<string, any>) {
-  const email = normalizeEmail(profile?.email);
-  if (!email) {
-    throw new Error('Google account did not return an email address.');
-  }
-  if (profile?.email_verified === false) {
-    throw new Error('Google email address is not verified.');
-  }
+export function isTelegramWebAuthEnabled(): boolean {
+  return Boolean(getTelegramAuthToken() && getTelegramBotUsername());
+}
 
-  const db = await getDb();
-  const usersCollection = db.collection('users');
-  const now = new Date();
-  const providerAccountId = account?.providerAccountId ? String(account.providerAccountId) : '';
-  const existingUser = await usersCollection.findOne({ email });
-
-  if (existingUser?.status === 'blocked' || existingUser?.archivedAt) {
-    throw new Error('Аккаунт заблокирован. Обратитесь к администратору.');
-  }
-
-  const displayName = typeof profile?.name === 'string' ? profile.name : null;
-  const avatarUrl = typeof profile?.picture === 'string' ? profile.picture : null;
-
-  if (!existingUser) {
-    const userId = nanoid();
-    const userData: any = {
-      _id: userId,
-      email,
-      ...buildUserDefaults({ email, displayName, avatarUrl }),
-      displayName: displayName?.trim() || email.split('@')[0] || 'Пользователь',
-      avatarUrl,
-      authProvider: 'google',
-      googleId: providerAccountId || null,
-      googleLinkedAt: now,
-      lastLoginAt: now,
-      updatedAt: now,
-    };
-
-    await usersCollection.insertOne(userData);
-    return toSessionUser(userData);
-  }
-
-  const updates: Record<string, any> = {
-    updatedAt: now,
-    lastLoginAt: now,
-    authProvider: 'google',
-    googleId: providerAccountId || existingUser.googleId || null,
-    googleLinkedAt: existingUser.googleLinkedAt || now,
-  };
-
-  Object.assign(
-    updates,
-    getMissingDefaults(
-      existingUser,
-      buildUserDefaults({
-        email,
-        displayName,
-        avatarUrl: existingUser.avatarUrl || avatarUrl,
-      }),
-    ),
-  );
-
-  if (!existingUser.avatarUrl && avatarUrl) {
-    updates.avatarUrl = avatarUrl;
-  }
-  if (!existingUser.displayName && displayName) {
-    updates.displayName = displayName;
-  }
-  if (!existingUser.status) {
-    updates.status = 'active';
-  }
-  if (!existingUser.plan) {
-    updates.plan = 'Free';
-  }
-  if (!existingUser.systemRole) {
-    updates.systemRole = 'User';
-  }
-
-  await usersCollection.updateOne({ _id: existingUser._id }, { $set: updates });
-  return toSessionUser({ ...existingUser, ...updates });
+export function isVkAuthEnabled(): boolean {
+  return Boolean(process.env.VK_ID_CLIENT_ID?.trim() && process.env.VK_ID_CLIENT_SECRET?.trim());
 }
 
 async function syncTelegramUser(telegramUser: Record<string, any>) {
@@ -372,6 +311,86 @@ async function syncTelegramUser(telegramUser: Record<string, any>) {
   return toSessionUser({ ...existingUser, ...updates });
 }
 
+async function syncVkUser(profile: Record<string, any>, account?: Record<string, any>) {
+  const {
+    vkId,
+    email,
+    displayName,
+    vkUsername,
+    vkPhotoUrl: avatarUrl,
+  } = resolveVkIdentity(profile, account);
+
+  const db = await getDb();
+  const usersCollection = db.collection('users');
+  const now = new Date();
+
+  const existingByVk = await usersCollection.findOne({ vkId });
+  const existingByEmail = existingByVk ? null : await usersCollection.findOne({ email });
+  const existingUser = existingByVk || existingByEmail;
+
+  if (existingUser?.status === 'blocked' || existingUser?.archivedAt) {
+    throw new Error('Аккаунт заблокирован. Обратитесь к администратору.');
+  }
+
+  if (!existingUser) {
+    const userId = nanoid();
+    const userData: any = {
+      _id: userId,
+      email,
+      ...buildUserDefaults({ email, displayName, avatarUrl }),
+      displayName,
+      avatarUrl,
+      vkId,
+      vkUsername,
+      vkPhotoUrl: avatarUrl,
+      vkLinkedAt: now,
+      authProvider: 'vk',
+      lastLoginAt: now,
+      updatedAt: now,
+    };
+
+    await usersCollection.insertOne(userData);
+    return toSessionUser(userData);
+  }
+
+  const updates: Record<string, any> = {
+    updatedAt: now,
+    lastLoginAt: now,
+    authProvider: 'vk',
+    vkId,
+    vkUsername: vkUsername || existingUser.vkUsername || '',
+    vkPhotoUrl: avatarUrl || existingUser.vkPhotoUrl || existingUser.avatarUrl || null,
+    vkLinkedAt: existingUser.vkLinkedAt || now,
+  };
+
+  Object.assign(
+    updates,
+    getMissingDefaults(
+      existingUser,
+      buildUserDefaults({
+        email,
+        phone: existingUser.phone,
+        phoneNormalized: existingUser.phoneNormalized,
+        displayName,
+        avatarUrl: existingUser.avatarUrl || avatarUrl,
+      }),
+    ),
+  );
+
+  if (!existingUser.email) {
+    updates.email = email;
+  }
+  if (!existingUser.displayName && displayName) {
+    updates.displayName = displayName;
+  }
+  if (!existingUser.avatarUrl && avatarUrl) {
+    updates.avatarUrl = avatarUrl;
+  }
+
+  await usersCollection.updateOne({ _id: existingUser._id }, { $set: updates });
+  return toSessionUser({ ...existingUser, ...updates });
+}
+
 const sharedAuthCookieDomain = getSharedAuthCookieDomain();
 
 export const authOptions = {
@@ -402,17 +421,27 @@ export const authOptions = {
     CredentialsProvider({
       name: 'Credentials',
       credentials: {
-        email: { label: 'Email', type: 'email' },
+        identifier: { label: 'Email or phone', type: 'text' },
         password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
+        if (!credentials?.identifier || !credentials?.password) {
           return null;
         }
 
         const db = await getDb();
-        const email = normalizeEmail(credentials.email);
-        const user = await db.collection('users').findOne({ email });
+        const identifier = resolveIdentifier(credentials.identifier);
+        const query =
+          identifier.type === 'email'
+            ? { email: identifier.value }
+            : identifier.type === 'phone'
+              ? { phoneNormalized: identifier.value }
+              : null;
+        if (!query) {
+          return null;
+        }
+
+        const user = await db.collection('users').findOne(query);
         if (!user || user.status === 'blocked' || user.archivedAt) {
           return null;
         }
@@ -465,8 +494,8 @@ export const authOptions = {
       },
     }),
     CredentialsProvider({
-      id: 'telegram',
-      name: 'Telegram',
+      id: 'telegram-miniapp',
+      name: 'Telegram Mini App',
       credentials: {
         initData: { label: 'Telegram initData', type: 'text' },
       },
@@ -490,26 +519,39 @@ export const authOptions = {
         return syncTelegramUser(parsed.user as Record<string, any>);
       },
     }),
-    ...(isGoogleAuthEnabled()
+    CredentialsProvider({
+      id: 'telegram-web',
+      name: 'Telegram Web',
+      credentials: {
+        id: { label: 'Telegram user id', type: 'text' },
+        first_name: { label: 'First name', type: 'text' },
+        last_name: { label: 'Last name', type: 'text' },
+        username: { label: 'Username', type: 'text' },
+        photo_url: { label: 'Photo URL', type: 'text' },
+        auth_date: { label: 'Auth date', type: 'text' },
+        hash: { label: 'Hash', type: 'text' },
+      },
+      async authorize(credentials) {
+        const botToken = getTelegramAuthToken();
+        if (!botToken) {
+          throw new Error('Telegram auth is not configured.');
+        }
+
+        const validated = validateTelegramWebPayload(credentials as Record<string, unknown>, botToken, 3600);
+        return syncTelegramUser(validated as Record<string, any>);
+      },
+    }),
+    ...(isVkAuthEnabled()
       ? [
-          GoogleProvider({
-            clientId: process.env.GOOGLE_CLIENT_ID as string,
-            clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
+          VKProvider({
+            clientId: process.env.VK_ID_CLIENT_ID as string,
+            clientSecret: process.env.VK_ID_CLIENT_SECRET as string,
             authorization: {
               params: {
-                prompt: 'select_account',
-                access_type: 'offline',
-                response_type: 'code',
+                scope: 'email',
+                v: '5.131',
               },
             },
-          }),
-        ]
-      : []),
-    ...(isAppleAuthEnabled()
-      ? [
-          AppleProvider({
-            clientId: process.env.APPLE_ID as string,
-            clientSecret: process.env.APPLE_SECRET as string,
           }),
         ]
       : []),
@@ -517,21 +559,22 @@ export const authOptions = {
   callbacks: {
     async jwt({ token, user, account, profile }) {
       const nextToken = token as any;
-      if (account?.provider === 'google') {
-        const linkedUser = await syncGoogleUser(profile as Record<string, any>, account as Record<string, any>);
+      if (account?.provider === 'vk') {
+        const linkedUser = await syncVkUser(profile as Record<string, any>, account as Record<string, any>);
         nextToken.id = linkedUser.id;
         nextToken.systemRole = linkedUser.systemRole;
         nextToken.plan = linkedUser.plan;
         nextToken.isPartner = linkedUser.isPartner;
         nextToken.image = linkedUser.image || null;
-        nextToken.authProvider = 'google';
+        nextToken.authProvider = 'vk';
       } else if (user) {
         nextToken.id = normalizeId(user.id);
         nextToken.systemRole = (user as any).systemRole;
         nextToken.plan = (user as any).plan;
         nextToken.isPartner = !!(user as any).isPartner;
         nextToken.image = (user as any).image || null;
-        nextToken.authProvider = (user as any).authProvider || account?.provider || 'credentials';
+        const provider = (user as any).authProvider || account?.provider || 'credentials';
+        nextToken.authProvider = provider === 'telegram-miniapp' || provider === 'telegram-web' ? 'telegram' : provider;
       }
 
       if (!nextToken.id && nextToken.sub) {

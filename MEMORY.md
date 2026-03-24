@@ -1,4 +1,32 @@
-# MEMORY (обновлено: 22 марта 2026)
+# MEMORY (обновлено: 24 марта 2026)
+
+## Обновление 24 марта 2026
+- S3-админка сведена к одной канонической странице `/dashboard/admin/s3` с bucket-first моделью:
+  - отдельные вкладки по назначениям `analysis`, `avatars`, `user_docs`, `project_docs`;
+  - per-bucket primary/backup preset и bucket routing;
+  - дублирующие `S3Info`/`S3Testing` выведены из рабочего контура.
+- Логовая нагрузка вынесена в отдельную MongoDB:
+  - `MONGODB_LOGS_URI`, `MONGODB_LOGS_DB`;
+  - логовые коллекции маршрутизируются отдельно от основной БД;
+  - индексы на log DB и main DB разделены в `scripts/create-mongo-indexes.ts`.
+- Auth/Bots:
+  - Google login убран из runtime-контура;
+  - основной вход: `email/phone + password`;
+  - passkey сохранён;
+  - добавлены Telegram Mini App + Telegram Web login;
+  - добавлен VK auth/linking + VK webhook bot surface;
+  - профиль получил блок `Связанные аккаунты` для Telegram/VK;
+  - admin runtime для ботов сведён в `/dashboard/admin/bots` с вкладками `Telegram` и `VK`.
+- Доведены критичные связки auth/bots:
+  - `telegramChatId`/`vkId` проверяются на конфликт с другим пользователем;
+  - popup-link VK возвращает данные аккаунта без принудительного reload;
+  - ручное редактирование `telegramUsername` из профиля убрано, связь теперь provider-backed.
+- Актуальные локальные проверки после правок:
+  - `npm run lint` ✅
+  - `npm run typecheck` ✅
+  - `npm run test` ✅
+  - `npm run build` ✅
+- Build остаётся с прежним неблокирующим warning от `next.config.js -> /api/db` про NFT trace.
 
 ## Что сделано в сессии 22 марта 2026
 - Исправлен production-контур повтора серверного анализа:

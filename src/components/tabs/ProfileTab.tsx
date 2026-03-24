@@ -9,17 +9,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { PlanBadge } from '@/components/PlanBadge';
-import { Copy, Bot, User as UserIcon, Send, Save, Loader2, Mail, Briefcase, KeySquare, Sun, Moon, Monitor, Crown } from 'lucide-react';
+import { Copy, Save, Loader2, Mail, Briefcase, Sun, Moon, Monitor, Crown } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { updateUserProfile, updateMarketingConsent, deleteOwnAccount } from '@/actions/userActions';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { CheckCircle } from 'lucide-react';
 import { BottomGradient, LabelInputContainer } from '@/components/ui/aceternity-ui';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { getPublicEnvSettings } from '@/actions/adminActions';
-import { syncTelegramChatId } from '@/actions/telegramActions';
 import { useTheme } from 'next-themes';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { getNextPlan, getPlanLabel } from '@/lib/plan-utils';
@@ -36,6 +34,7 @@ import { useDocumentTemplates } from '@/hooks/use-document-templates';
 import { filterTemplatesForPlan, resolveDefaultTemplateId } from '@/lib/document-template-utils';
 import { signOut } from 'next-auth/react';
 import { PasskeyPanel } from '@/components/auth/PasskeyPanel';
+import { LinkedAuthAccounts } from '@/components/tabs/LinkedAuthAccounts';
 
 
 export default function ProfileTab() {
@@ -54,7 +53,7 @@ export default function ProfileTab() {
   const [editingTemplate, setEditingTemplate] = useState<UserTemplate | null>(null);
 
   const [displayName, setDisplayName] = useState(user?.displayName || '');
-  const [telegramUsernameState, setTelegramUsernameState] = useState(user?.telegramUsername || '');
+  const [phone, setPhone] = useState(user?.phone || '');
   const [documentTemplates, setDocumentTemplates] = useState({
     proposal: user?.documentTemplates?.proposal || '',
     invoice: user?.documentTemplates?.invoice || '',
@@ -82,7 +81,6 @@ export default function ProfileTab() {
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
 
   const [botUrl, setBotUrl] = useState('');
-  const [isSyncingChat, setIsSyncingChat] = useState(false);
   const { theme, setTheme } = useTheme();
 
     useEffect(() => {
@@ -93,12 +91,9 @@ export default function ProfileTab() {
         fetchBotUrl();
     }, []);
 
-  const referralLink = user?.uid ? `${botUrl}?start=ref_${user.uid}` : '';
-  const chatLink = user?.uid ? `${botUrl}?start=uid_${user.uid}` : botUrl;
-
   useEffect(() => {
     setDisplayName(user?.displayName || '');
-    setTelegramUsernameState(user?.telegramUsername || '');
+    setPhone(user?.phone || '');
     setDocumentTemplates({
       proposal: user?.documentTemplates?.proposal || '',
       invoice: user?.documentTemplates?.invoice || '',
@@ -135,7 +130,7 @@ export default function ProfileTab() {
       const result = await updateUserProfile({
         userId: user.uid,
         displayName,
-        telegramUsername: telegramUsernameState,
+        phone,
         documentTemplates,
         signatureUrl: signatureState.url || null,
         signatureObjectKey: signatureState.objectKey || null,
@@ -154,7 +149,7 @@ export default function ProfileTab() {
         setUser({
           ...user,
           displayName,
-          telegramUsername: telegramUsernameState,
+          phone,
           documentTemplates,
           signatureUrl: signatureState.url || null,
           signatureObjectKey: signatureState.objectKey || null,
@@ -201,26 +196,6 @@ export default function ProfileTab() {
         toast({ title: 'Ошибка', description: result.message, variant: 'destructive' });
       }
     });
-  };
-
-  const handleSyncChatId = async () => {
-    if (!user) return;
-    setIsSyncingChat(true);
-    try {
-      const result = await syncTelegramChatId();
-      if (!result.success) {
-        throw new Error(result.message);
-      }
-      toast({ title: "Готово", description: result.message });
-      setUser({
-        ...user,
-        telegramChatId: result.chatId || user.telegramChatId,
-      });
-    } catch (error: any) {
-      toast({ title: "Ошибка", description: error.message || 'Не удалось получить chat_id.', variant: "destructive" });
-    } finally {
-      setIsSyncingChat(false);
-    }
   };
 
   const handleDeleteAccount = () => {
@@ -299,7 +274,7 @@ export default function ProfileTab() {
 
   const isProfileChanged =
     displayName !== user?.displayName ||
-    telegramUsernameState !== user?.telegramUsername ||
+    phone !== (user?.phone || '') ||
     templatesChanged ||
     signatureState.url !== (user?.signatureUrl || '') ||
     signatureState.objectKey !== (user?.signatureObjectKey || '') ||
@@ -383,7 +358,7 @@ export default function ProfileTab() {
           const result = await updateUserProfile({
             userId: user.uid,
             displayName,
-            telegramUsername: telegramUsernameState,
+            phone,
             avatarUrl: uploaded.accessUrl,
             avatarObjectKey: uploaded.objectKey,
             avatarUrlExpirationTimestamp: typeof uploaded.urlExpirationTimestamp === 'number' ? uploaded.urlExpirationTimestamp : null,
@@ -431,7 +406,7 @@ export default function ProfileTab() {
         updateUserProfile({
           userId: user.uid,
           displayName,
-          telegramUsername: telegramUsernameState,
+          phone,
           avatarUrl: null,
           avatarObjectKey: null,
           avatarUrlExpirationTimestamp: null,
@@ -517,13 +492,13 @@ export default function ProfileTab() {
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-           <LabelInputContainer>
+          <LabelInputContainer>
             <Label htmlFor="displayName">Никнейм</Label>
             <Input id="displayName" value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="Ваш никнейм" disabled={isPending}/>
           </LabelInputContainer>
           <LabelInputContainer>
-            <Label htmlFor="telegramUsername">Имя пользователя Telegram</Label>
-            <Input id="telegramUsername" value={telegramUsernameState} onChange={(e) => setTelegramUsernameState(e.target.value)} placeholder="@username" disabled={isPending}/>
+            <Label htmlFor="profile-phone">Телефон</Label>
+            <Input id="profile-phone" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+7 999 123-45-67" disabled={isPending}/>
           </LabelInputContainer>
            <LabelInputContainer>
             <Label>Email</Label>
@@ -634,6 +609,15 @@ export default function ProfileTab() {
         title="Passkey и безопасность"
         description="Зарегистрируйте passkey для быстрого входа без пароля и управляйте уже сохранёнными устройствами."
       />
+
+      {user && (
+        <LinkedAuthAccounts
+          user={user}
+          telegramUser={telegramUser}
+          botUrl={botUrl}
+          onUserPatch={(patch) => setUser((prev) => (prev ? { ...prev, ...patch } : prev))}
+        />
+      )}
 
       <Card className="border-destructive/40">
         <CardHeader>
@@ -849,52 +833,6 @@ export default function ProfileTab() {
         </CardContent>
       </Card>
       
-       <Card>
-        <CardHeader>
-          <CardTitle>Интеграция с Telegram</CardTitle>
-          <CardDescription>Привяжите ваш аккаунт Telegram для получения уведомлений и файлов прямо в мессенджер.</CardDescription>
-        </CardHeader>
-        <CardContent>
-            {user?.telegramChatId ? (
-                <Alert variant="default" className="bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-800">
-                    <CheckCircle className="h-4 w-4 text-green-600"/>
-                    <AlertTitle className="text-green-800 dark:text-green-300">Аккаунт успешно привязан</AlertTitle>
-                    <AlertDescription className="text-green-700 dark:text-green-400">
-                        Ваш аккаунт связан с Telegram: <strong>@{user.telegramUsername || telegramUser?.username || 'user'}</strong>. Теперь вы можете получать файлы прямо в чат с ботом.
-                        <div className="mt-3">
-                          <Button variant="outline" size="sm" onClick={handleSyncChatId} disabled={isSyncingChat}>
-                              {isSyncingChat ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                              Обновить chat-ID
-                          </Button>
-                        </div>
-                    </AlertDescription>
-                </Alert>
-            ) : (
-                <Alert variant="destructive">
-                    <Bot className="h-4 w-4"/>
-                    <AlertTitle>Аккаунт не привязан</AlertTitle>
-                    <AlertDescription>
-                        Чтобы получать файлы в Telegram, откройте бота и напишите /start. Затем нажмите «Получить chat-ID».
-                    </AlertDescription>
-                     <div className="mt-4">
-                        <div className="flex flex-wrap gap-2">
-                          <Button asChild>
-                              <a href={chatLink} target="_blank" rel="noopener noreferrer">
-                                  <Bot className="mr-2 h-4 w-4"/>
-                                  Открыть бота
-                              </a>
-                          </Button>
-                          <Button variant="outline" onClick={handleSyncChatId} disabled={isSyncingChat}>
-                              {isSyncingChat ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                              Получить chat-ID
-                          </Button>
-                        </div>
-                    </div>
-                </Alert>
-            )}
-        </CardContent>
-      </Card>
-
       <AvatarCropDialog
         isOpen={isAvatarCropOpen}
         file={avatarFile}

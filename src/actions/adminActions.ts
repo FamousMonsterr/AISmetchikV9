@@ -14,12 +14,13 @@ import { LegalEntitySchema, type LegalEntity } from '@/ai/genkit-schemas';
 import TelegramBot from '@/lib/telegram/telegraf-compat';
 import { nanoid } from 'nanoid';
 import { XMLParser, XMLBuilder } from 'fast-xml-parser';
-import { S3Client, PutObjectCommand, GetObjectCommand, GetBucketCorsCommand, PutBucketCorsCommand, DeleteBucketCorsCommand, ListBucketsCommand, CreateBucketCommand } from "@aws-sdk/client-s3";
+import { S3Client, PutObjectCommand, GetObjectCommand, GetBucketCorsCommand, PutBucketCorsCommand, DeleteBucketCorsCommand, ListBucketsCommand, CreateBucketCommand, DeleteBucketCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { logUserAction, logAiApiCall, type ActionType } from '@/lib/logger';
 import { grantCredits, refundCredits } from '@/services/credits';
 import { startManagedBot, stopManagedBot, getBotRuntimeStatus, forceUnlockBot } from '@/server-functions/telegram/controller';
 import { registerTelegramWebhook, clearTelegramWebhook, TELEGRAM_AUDIENCES, type TelegramAudience } from '@/server-functions/webhooks/telegram';
+import { deleteVkCallbackServer, getVkCallbackStatus, pingVkApi, registerVkCallbackServer, sendVkMessage } from '@/server-functions/webhooks/vk';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 
@@ -861,10 +862,9 @@ export const reportUserBug = async (data: z.infer<typeof BugReportSchema>) => {
 // --- ENV VARS Management ---
 export interface EnvSettings {
     superAdminEmail?: string;
-    googleClientId?: string;
-    googleClientSecret?: string;
     telegramBotToken?: string;
     nextPublicTelegramBotUrl?: string;
+    nextPublicTelegramBotUsername?: string;
     telegramAuthEmailDomain?: string;
     telegramBotEnabled?: boolean;
     telegramBotMode?: 'polling' | 'webhook';
@@ -886,6 +886,16 @@ export interface EnvSettings {
     telegramBotSecretTokenAdmin?: string;
     telegramBotWebhookUrlAdmin?: string;
     telegramBotEnabledAdmin?: boolean;
+    vkAuthEmailDomain?: string;
+    vkIdClientId?: string;
+    vkIdClientSecret?: string;
+    vkIdRedirectUri?: string;
+    vkBotEnabled?: boolean;
+    vkGroupId?: string;
+    vkAccessToken?: string;
+    vkCallbackSecret?: string;
+    vkConfirmationToken?: string;
+    vkWebhookUrl?: string;
     qaTestUserEmail?: string;
     qaTestUserPassword?: string;
     qaTestUserPhone?: string;
@@ -909,6 +919,8 @@ export interface EnvSettings {
     passkeyAttestation?: 'none' | 'direct' | 'indirect' | 'enterprise';
     mongoUri?: string;
     mongoDbName?: string;
+    mongoLogsUri?: string;
+    mongoLogsDbName?: string;
     smtpEnabled?: boolean;
     smtpHost?: string;
     smtpPort?: number;
@@ -931,12 +943,20 @@ export interface EnvSettings {
     s3AvatarBucketName?: string;
     s3AvatarBucketIsPublic?: boolean;
     s3AvatarPresetId?: string;
+    s3AvatarSecondaryBucketName?: string;
+    s3AvatarSecondaryPresetId?: string;
     s3UserDocsBucketName?: string;
     s3UserDocsBucketIsPublic?: boolean;
     s3UserDocsPresetId?: string;
+    s3UserDocsSecondaryBucketName?: string;
+    s3UserDocsSecondaryPresetId?: string;
     s3ProjectDocsBucketName?: string;
     s3ProjectDocsBucketIsPublic?: boolean;
     s3ProjectDocsPresetId?: string;
+    s3ProjectDocsSecondaryBucketName?: string;
+    s3ProjectDocsSecondaryPresetId?: string;
+    s3AnalysisSecondaryBucketName?: string;
+    s3AnalysisSecondaryPresetId?: string;
     s3Presets?: Array<{
         id: string;
         name: string;
@@ -964,10 +984,9 @@ export interface EnvSettings {
 
 const EnvSettingsSchema = z.object({
     superAdminEmail: z.string().email('Неверный формат email.').optional().or(z.literal('')),
-    googleClientId: z.string().optional().or(z.literal('')),
-    googleClientSecret: z.string().optional().or(z.literal('')),
     telegramBotToken: z.string().optional().or(z.literal('')),
     nextPublicTelegramBotUrl: z.string().url('Неверный URL.').optional().or(z.literal('')),
+    nextPublicTelegramBotUsername: z.string().optional().or(z.literal('')),
     telegramAuthEmailDomain: z.string().optional().or(z.literal('')),
     telegramBotEnabled: z.boolean().optional(),
     telegramBotMode: z.enum(['polling', 'webhook']).optional(),
@@ -989,6 +1008,16 @@ const EnvSettingsSchema = z.object({
     telegramBotSecretTokenAdmin: z.string().optional().or(z.literal('')),
     telegramBotWebhookUrlAdmin: z.string().url('Неверный URL вебхука (admin).').optional().or(z.literal('')),
     telegramBotEnabledAdmin: z.boolean().optional(),
+    vkAuthEmailDomain: z.string().optional().or(z.literal('')),
+    vkIdClientId: z.string().optional().or(z.literal('')),
+    vkIdClientSecret: z.string().optional().or(z.literal('')),
+    vkIdRedirectUri: z.string().url('Неверный VK redirect URL.').optional().or(z.literal('')),
+    vkBotEnabled: z.boolean().optional(),
+    vkGroupId: z.string().optional().or(z.literal('')),
+    vkAccessToken: z.string().optional().or(z.literal('')),
+    vkCallbackSecret: z.string().optional().or(z.literal('')),
+    vkConfirmationToken: z.string().optional().or(z.literal('')),
+    vkWebhookUrl: z.string().url('Неверный VK webhook URL.').optional().or(z.literal('')),
     qaTestUserEmail: z.string().email('Неверный email QA пользователя.').optional().or(z.literal('')),
     qaTestUserPassword: z.string().optional().or(z.literal('')),
     qaTestUserPhone: z.string().optional().or(z.literal('')),
@@ -1012,6 +1041,8 @@ const EnvSettingsSchema = z.object({
     passkeyAttestation: z.enum(['none', 'direct', 'indirect', 'enterprise']).optional(),
     mongoUri: z.string().url('Неверный URL MongoDB.').optional().or(z.literal('')),
     mongoDbName: z.string().optional().or(z.literal('')),
+    mongoLogsUri: z.string().url('Неверный URL MongoDB для логов.').optional().or(z.literal('')),
+    mongoLogsDbName: z.string().optional().or(z.literal('')),
     smtpEnabled: z.boolean().optional(),
     smtpHost: z.string().optional().or(z.literal('')),
     smtpPort: z.number().int().min(1).optional(),
@@ -1034,12 +1065,20 @@ const EnvSettingsSchema = z.object({
     s3AvatarBucketName: z.string().optional().or(z.literal('')),
     s3AvatarBucketIsPublic: z.boolean().optional(),
     s3AvatarPresetId: z.string().optional().or(z.literal('')),
+    s3AvatarSecondaryBucketName: z.string().optional().or(z.literal('')),
+    s3AvatarSecondaryPresetId: z.string().optional().or(z.literal('')),
     s3UserDocsBucketName: z.string().optional().or(z.literal('')),
     s3UserDocsBucketIsPublic: z.boolean().optional(),
     s3UserDocsPresetId: z.string().optional().or(z.literal('')),
+    s3UserDocsSecondaryBucketName: z.string().optional().or(z.literal('')),
+    s3UserDocsSecondaryPresetId: z.string().optional().or(z.literal('')),
     s3ProjectDocsBucketName: z.string().optional().or(z.literal('')),
     s3ProjectDocsBucketIsPublic: z.boolean().optional(),
     s3ProjectDocsPresetId: z.string().optional().or(z.literal('')),
+    s3ProjectDocsSecondaryBucketName: z.string().optional().or(z.literal('')),
+    s3ProjectDocsSecondaryPresetId: z.string().optional().or(z.literal('')),
+    s3AnalysisSecondaryBucketName: z.string().optional().or(z.literal('')),
+    s3AnalysisSecondaryPresetId: z.string().optional().or(z.literal('')),
     s3Presets: z.array(z.any()).optional(),
     s3ActivePresetId: z.string().optional().or(z.literal('')),
     s3SecondaryEnabled: z.boolean().optional(),
@@ -1058,7 +1097,6 @@ type GetEnvOptions = {
 };
 
 const SECRET_FIELDS: Array<keyof EnvSettings> = [
-    'googleClientSecret',
     'telegramBotToken',
     'telegramBotSecretToken',
     'telegramBotTokenUser',
@@ -1069,6 +1107,10 @@ const SECRET_FIELDS: Array<keyof EnvSettings> = [
     'telegramBotSecretTokenManager',
     'telegramBotTokenAdmin',
     'telegramBotSecretTokenAdmin',
+    'vkIdClientSecret',
+    'vkAccessToken',
+    'vkCallbackSecret',
+    'vkConfirmationToken',
     'qaTestUserPassword',
     'dadataApiKey',
     'dadataApiSecret',
@@ -1077,6 +1119,8 @@ const SECRET_FIELDS: Array<keyof EnvSettings> = [
     'localHfApiKey',
     'mongoUri',
     'mongoDbName',
+    'mongoLogsUri',
+    'mongoLogsDbName',
     'smtpUser',
     'smtpPass',
     's3AccessKeyId',
@@ -1088,10 +1132,18 @@ const SECRET_FIELDS: Array<keyof EnvSettings> = [
     's3PersonalBucketName',
     's3AvatarBucketName',
     's3AvatarPresetId',
+    's3AvatarSecondaryBucketName',
+    's3AvatarSecondaryPresetId',
     's3UserDocsBucketName',
     's3UserDocsPresetId',
+    's3UserDocsSecondaryBucketName',
+    's3UserDocsSecondaryPresetId',
     's3ProjectDocsBucketName',
     's3ProjectDocsPresetId',
+    's3ProjectDocsSecondaryBucketName',
+    's3ProjectDocsSecondaryPresetId',
+    's3AnalysisSecondaryBucketName',
+    's3AnalysisSecondaryPresetId',
     's3Presets',
     's3ActivePresetId',
     's3SecondaryPresetId',
@@ -1110,9 +1162,9 @@ const sanitizeEnvSettings = (settings: EnvSettings): EnvSettings => {
 const ENV_FILE_MAP: Record<string, (settings: EnvSettings) => string | undefined> = {
     MONGODB_URI: (s) => s.mongoUri,
     MONGODB_DB: (s) => s.mongoDbName,
+    MONGODB_LOGS_URI: (s) => s.mongoLogsUri,
+    MONGODB_LOGS_DB: (s) => s.mongoLogsDbName,
     SUPER_ADMIN_EMAIL: (s) => s.superAdminEmail,
-    GOOGLE_CLIENT_ID: (s) => s.googleClientId,
-    GOOGLE_CLIENT_SECRET: (s) => s.googleClientSecret,
     TELEGRAM_BOT_TOKEN: (s) => s.telegramBotToken,
     TELEGRAM_AUTH_EMAIL_DOMAIN: (s) => s.telegramAuthEmailDomain,
     TELEGRAM_BOT_SECRET_TOKEN: (s) => s.telegramBotSecretToken,
@@ -1134,6 +1186,17 @@ const ENV_FILE_MAP: Record<string, (settings: EnvSettings) => string | undefined
     QA_TEST_USER_PHONE: (s) => s.qaTestUserPhone,
     QA_PROTECT_USER: (s) => s.qaProtectUser !== undefined ? String(!!s.qaProtectUser) : undefined,
     NEXT_PUBLIC_TELEGRAM_BOT_URL: (s) => s.nextPublicTelegramBotUrl,
+    NEXT_PUBLIC_TELEGRAM_BOT_USERNAME: (s) => s.nextPublicTelegramBotUsername,
+    VK_AUTH_EMAIL_DOMAIN: (s) => s.vkAuthEmailDomain,
+    VK_ID_CLIENT_ID: (s) => s.vkIdClientId,
+    VK_ID_CLIENT_SECRET: (s) => s.vkIdClientSecret,
+    VK_ID_REDIRECT_URI: (s) => s.vkIdRedirectUri,
+    VK_BOT_ENABLED: (s) => s.vkBotEnabled !== undefined ? String(!!s.vkBotEnabled) : undefined,
+    VK_GROUP_ID: (s) => s.vkGroupId,
+    VK_ACCESS_TOKEN: (s) => s.vkAccessToken,
+    VK_CALLBACK_SECRET: (s) => s.vkCallbackSecret,
+    VK_CONFIRMATION_TOKEN: (s) => s.vkConfirmationToken,
+    VK_WEBHOOK_URL: (s) => s.vkWebhookUrl,
     DADATA_API_KEY: (s) => s.dadataApiKey,
     DADATA_API_SECRET: (s) => s.dadataApiSecret,
     OZON_BANK_API_BASE_URL: (s) => s.ozonBankApiBaseUrl,
@@ -1172,12 +1235,20 @@ const ENV_FILE_MAP: Record<string, (settings: EnvSettings) => string | undefined
     S3_AVATAR_BUCKET_NAME: (s) => s.s3AvatarBucketName,
     S3_AVATAR_BUCKET_IS_PUBLIC: (s) => s.s3AvatarBucketIsPublic !== undefined ? String(!!s.s3AvatarBucketIsPublic) : undefined,
     S3_AVATAR_PRESET_ID: (s) => s.s3AvatarPresetId,
+    S3_AVATAR_SECONDARY_BUCKET_NAME: (s) => s.s3AvatarSecondaryBucketName,
+    S3_AVATAR_SECONDARY_PRESET_ID: (s) => s.s3AvatarSecondaryPresetId,
     S3_USER_DOCS_BUCKET_NAME: (s) => s.s3UserDocsBucketName,
     S3_USER_DOCS_BUCKET_IS_PUBLIC: (s) => s.s3UserDocsBucketIsPublic !== undefined ? String(!!s.s3UserDocsBucketIsPublic) : undefined,
     S3_USER_DOCS_PRESET_ID: (s) => s.s3UserDocsPresetId,
+    S3_USER_DOCS_SECONDARY_BUCKET_NAME: (s) => s.s3UserDocsSecondaryBucketName,
+    S3_USER_DOCS_SECONDARY_PRESET_ID: (s) => s.s3UserDocsSecondaryPresetId,
     S3_PROJECT_DOCS_BUCKET_NAME: (s) => s.s3ProjectDocsBucketName,
     S3_PROJECT_DOCS_BUCKET_IS_PUBLIC: (s) => s.s3ProjectDocsBucketIsPublic !== undefined ? String(!!s.s3ProjectDocsBucketIsPublic) : undefined,
     S3_PROJECT_DOCS_PRESET_ID: (s) => s.s3ProjectDocsPresetId,
+    S3_PROJECT_DOCS_SECONDARY_BUCKET_NAME: (s) => s.s3ProjectDocsSecondaryBucketName,
+    S3_PROJECT_DOCS_SECONDARY_PRESET_ID: (s) => s.s3ProjectDocsSecondaryPresetId,
+    S3_ANALYSIS_SECONDARY_BUCKET_NAME: (s) => s.s3AnalysisSecondaryBucketName,
+    S3_ANALYSIS_SECONDARY_PRESET_ID: (s) => s.s3AnalysisSecondaryPresetId,
 };
 
 const envLine = (key: string, value: string) => `${key}="${value.replace(/"/g, '\\"')}"`;
@@ -1216,8 +1287,10 @@ async function persistEnvFile(settings: EnvSettings) {
 
 export type ConnectivityStatus = {
     mongo: { ok: boolean; message: string; uriSource: 'env' | 'panel' | 'none' };
+    mongoLogs: { ok: boolean; message: string; uriSource: 'env' | 'panel' | 'inherit-main' | 'none' };
     s3: { ok: boolean; message: string };
     telegram: { ok: boolean; message: string };
+    vk: { ok: boolean; message: string };
     openrouter: { ok: boolean; message: string };
 };
 
@@ -1268,9 +1341,20 @@ export async function testConnectivity(options: { requesterId?: string; requireA
     const env = await getEnvSettings({ allowInternal: true });
     const mongoUri = process.env.MONGODB_URI || env.mongoUri;
     const mongoDbName = process.env.MONGODB_DB || env.mongoDbName;
+    const mongoLogsUri = process.env.MONGODB_LOGS_URI || env.mongoLogsUri || mongoUri;
+    const mongoLogsDbName = process.env.MONGODB_LOGS_DB || env.mongoLogsDbName || mongoDbName;
 
     const status: ConnectivityStatus = {
         mongo: { ok: false, message: '', uriSource: mongoUri ? (process.env.MONGODB_URI ? 'env' : 'panel') : 'none' },
+        mongoLogs: {
+            ok: false,
+            message: '',
+            uriSource: process.env.MONGODB_LOGS_URI
+              ? 'env'
+              : env.mongoLogsUri
+                ? 'panel'
+                : (mongoUri ? 'inherit-main' : 'none'),
+        },
         s3: { ok: false, message: 'Не проверено' },
         telegram: {
             ok: !!(
@@ -1298,6 +1382,24 @@ export async function testConnectivity(options: { requesterId?: string; requireA
                 process.env.TELEGRAM_BOT_TOKEN_ADMIN
             ) ? 'Токен найден (default или audience).' : 'Токен отсутствует',
         },
+        vk: {
+            ok: !!(
+                env.vkIdClientId ||
+                env.vkIdClientSecret ||
+                env.vkAccessToken ||
+                process.env.VK_ID_CLIENT_ID ||
+                process.env.VK_ID_CLIENT_SECRET ||
+                process.env.VK_ACCESS_TOKEN
+            ),
+            message: (
+                env.vkIdClientId ||
+                env.vkIdClientSecret ||
+                env.vkAccessToken ||
+                process.env.VK_ID_CLIENT_ID ||
+                process.env.VK_ID_CLIENT_SECRET ||
+                process.env.VK_ACCESS_TOKEN
+            ) ? 'VK env найден.' : 'VK env отсутствует',
+        },
         openrouter: { ok: !!(env.openRouterApiKey || process.env.OPENROUTER_API_KEY), message: (env.openRouterApiKey || process.env.OPENROUTER_API_KEY) ? 'Ключ найден' : 'Ключ отсутствует' },
     };
 
@@ -1315,6 +1417,24 @@ export async function testConnectivity(options: { requesterId?: string; requireA
         } catch (err: any) {
             status.mongo.ok = false;
             status.mongo.message = err.message || 'Ошибка подключения.';
+        }
+    }
+
+    if (!mongoLogsUri || !mongoLogsDbName) {
+        status.mongoLogs.ok = false;
+        status.mongoLogs.message = 'MONGODB_LOGS_URI или MONGODB_LOGS_DB не заданы.';
+    } else {
+        try {
+            const client = await new MongoClient(mongoLogsUri).connect();
+            await client.db(mongoLogsDbName).command({ ping: 1 });
+            await client.close();
+            status.mongoLogs.ok = true;
+            status.mongoLogs.message = mongoLogsUri === mongoUri && mongoLogsDbName === mongoDbName
+              ? 'Используется та же база, что и основная.'
+              : 'Подключение к log DB успешно.';
+        } catch (err: any) {
+            status.mongoLogs.ok = false;
+            status.mongoLogs.message = err.message || 'Ошибка подключения к log DB.';
         }
     }
 
@@ -1797,6 +1917,73 @@ export const pingTelegramBot = async (adminUserId: string): Promise<{ success: b
 export const pingTelegramWebhookEndpoint = async (adminUserId: string): Promise<{ success: boolean; message: string }> =>
     pingTelegramWebhookByAudienceService(adminUserId, 'default');
 
+export const getVkBotStatus = async (adminUserId: string): Promise<{ success: boolean; status?: any; message?: string }> => {
+    try {
+        await ensureAdminActor(adminUserId);
+        const status = await getVkCallbackStatus();
+        return { success: true, status };
+    } catch (error: any) {
+        return { success: false, message: error?.message || 'Не удалось получить VK статус.' };
+    }
+};
+
+export const testVkApiConnection = async (adminUserId: string): Promise<{ success: boolean; message: string }> => {
+    try {
+        await ensureAdminActor(adminUserId);
+        const result = await pingVkApi();
+        const group = Array.isArray(result?.result) ? result.result[0] : result?.result;
+        return { success: true, message: `VK API OK: ${group?.name || group?.screen_name || 'group'}` };
+    } catch (error: any) {
+        return { success: false, message: error?.message || 'VK API недоступен.' };
+    }
+};
+
+export const registerVkWebhookService = async (adminUserId: string): Promise<{ success: boolean; message: string }> => {
+    try {
+        const actorId = await ensureAdminActor(adminUserId);
+        const result = await registerVkCallbackServer();
+        await logUserAction(actorId, 'ADMIN_UPDATE_ENV_SETTINGS', { action: 'register_vk_callback', serverId: result.serverId || null });
+        return { success: true, message: result.serverId ? `VK callback server зарегистрирован: ${result.serverId}` : 'VK callback server обновлен.' };
+    } catch (error: any) {
+        return { success: false, message: error?.message || 'Не удалось зарегистрировать VK callback server.' };
+    }
+};
+
+export const deleteVkWebhookService = async (adminUserId: string, serverId?: number | string): Promise<{ success: boolean; message: string }> => {
+    try {
+        const actorId = await ensureAdminActor(adminUserId);
+        const result = await deleteVkCallbackServer(serverId);
+        await logUserAction(actorId, 'ADMIN_UPDATE_ENV_SETTINGS', { action: 'delete_vk_callback', serverId: result.serverId || null });
+        return { success: true, message: result.serverId ? `VK callback server удален: ${result.serverId}` : 'VK callback server не найден.' };
+    } catch (error: any) {
+        return { success: false, message: error?.message || 'Не удалось удалить VK callback server.' };
+    }
+};
+
+export const sendVkTestMessageService = async (
+    adminUserId: string,
+    targetUserId?: string,
+): Promise<{ success: boolean; message: string }> => {
+    try {
+        const actorId = await ensureAdminActor(adminUserId);
+        const recipientId = targetUserId || actorId;
+        const recipientDoc = await getDoc(doc(db, 'users', recipientId));
+        const recipient = recipientDoc.data() as any;
+        const peerId = recipient?.vkPeerId || recipient?.vkId;
+        if (!peerId) {
+            return { success: false, message: 'У получателя нет связанного VK peer_id.' };
+        }
+        await sendVkMessage({
+            peerId,
+            message: `Тест VK ✅ ${new Date().toLocaleString()}`,
+        });
+        await logUserAction(actorId, 'ADMIN_SEND_VK_MESSAGE', { action: 'send_vk_test_message', targetUserId: recipientId });
+        return { success: true, message: 'Тестовое сообщение в VK отправлено.' };
+    } catch (error: any) {
+        return { success: false, message: error?.message || 'Не удалось отправить VK сообщение.' };
+    }
+};
+
 
 // --- DANGER ZONE ---
 
@@ -2073,6 +2260,42 @@ export async function getS3Client(
         };
     };
 
+    const resolveSecondaryRouteTarget = () => {
+        if (bucketType === 'analysis' || bucketType === 'default') {
+            return {
+                explicit: !!settings.s3AnalysisSecondaryPresetId,
+                presetId: settings.s3AnalysisSecondaryPresetId || settings.s3SecondaryPresetId,
+                bucketName: settings.s3AnalysisSecondaryBucketName || settings.s3BucketName,
+            };
+        }
+        if (bucketType === 'avatars') {
+            return {
+                explicit: !!settings.s3AvatarSecondaryPresetId,
+                presetId: settings.s3AvatarSecondaryPresetId || settings.s3SecondaryPresetId,
+                bucketName: settings.s3AvatarSecondaryBucketName || settings.s3AvatarBucketName || settings.s3PersonalBucketName,
+            };
+        }
+        if (bucketType === 'user_docs') {
+            return {
+                explicit: !!settings.s3UserDocsSecondaryPresetId,
+                presetId: settings.s3UserDocsSecondaryPresetId || settings.s3SecondaryPresetId,
+                bucketName: settings.s3UserDocsSecondaryBucketName || settings.s3UserDocsBucketName,
+            };
+        }
+        if (bucketType === 'project_docs') {
+            return {
+                explicit: !!settings.s3ProjectDocsSecondaryPresetId,
+                presetId: settings.s3ProjectDocsSecondaryPresetId || settings.s3SecondaryPresetId,
+                bucketName: settings.s3ProjectDocsSecondaryBucketName || settings.s3ProjectDocsBucketName,
+            };
+        }
+        return {
+            explicit: false,
+            presetId: settings.s3SecondaryPresetId,
+            bucketName: settings.s3BucketName,
+        };
+    };
+
     const resolvePresetForPurpose = () => {
         if (preferredPresetId) return preferredPresetId;
         if (bucketType === 'avatars' && settings.s3AvatarPresetId) return settings.s3AvatarPresetId;
@@ -2081,10 +2304,10 @@ export async function getS3Client(
         return settings.s3ActivePresetId;
     };
 
-    const tryCreate = (presetId?: string) => {
+    const tryCreate = (presetId?: string, bucketNameOverride?: string) => {
         const cfg = resolveConfig(presetId);
         const resolvedBucket = resolveBucketForPurpose(cfg);
-        const bucketName = resolvedBucket.bucketName;
+        const bucketName = bucketNameOverride || resolvedBucket.bucketName;
         const bucketIsPublic = resolvedBucket.bucketIsPublic;
         if (!settings.s3StorageEnabled || !cfg.endpoint || !cfg.region || !cfg.accessKeyId || !cfg.secretAccessKey) {
             throw new Error("S3 storage is not configured or enabled completely in the admin panel.");
@@ -2110,9 +2333,10 @@ export async function getS3Client(
         const presetId = resolvePresetForPurpose();
         return tryCreate(presetId);
     } catch (primaryError) {
-        if (settings.s3SecondaryEnabled && settings.s3SecondaryPresetId) {
+        const secondaryTarget = resolveSecondaryRouteTarget();
+        if (secondaryTarget.presetId && (secondaryTarget.explicit || settings.s3SecondaryEnabled)) {
             try {
-                return tryCreate(settings.s3SecondaryPresetId);
+                return tryCreate(secondaryTarget.presetId, secondaryTarget.bucketName);
             } catch (fallbackError) {
                 throw primaryError;
             }
@@ -2148,6 +2372,16 @@ export const createBucket = async ({ bucketName, presetId }: { bucketName: strin
         return { success: true, message: `Бакет "${bucketName}" успешно создан.` };
     } catch (e: any) {
          return { success: false, message: `Ошибка создания: ${e.message}` };
+    }
+};
+
+export const deleteBucket = async ({ bucketName, presetId }: { bucketName: string, presetId?: string }): Promise<{ success: boolean; message: string; }> => {
+    try {
+        const { s3Client } = await getS3Client(presetId, { allowBucketless: true });
+        await s3Client.send(new DeleteBucketCommand({ Bucket: bucketName }));
+        return { success: true, message: `Бакет "${bucketName}" удалён.` };
+    } catch (e: any) {
+        return { success: false, message: `Ошибка удаления: ${e.message}` };
     }
 };
 

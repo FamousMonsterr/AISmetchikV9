@@ -1,6 +1,6 @@
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { getDb } from '@/lib/mongodb';
+import { getDbForCollection } from '@/lib/mongodb';
 
 type WhereFilter = { field: string; op: string; value: any };
 
@@ -50,7 +50,7 @@ export async function GET(req: Request) {
     return new Response('Missing collection', { status: 400 });
   }
 
-  const db = await getDb();
+  const db = await getDbForCollection(collection);
   const encoder = new TextEncoder();
 
   const stream = new ReadableStream({

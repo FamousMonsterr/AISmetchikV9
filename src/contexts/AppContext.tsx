@@ -40,10 +40,17 @@ export interface AppUser {
   uid: string;
   email: string | null;
   phone?: string | null; // Added phone number
+  phoneNormalized?: string | null;
   phoneVerified?: boolean; // Added verification status
   displayName: string;
-  telegramUsername?: string;
-  telegramChatId?: number; // Add this
+  telegramUsername?: string | null;
+  telegramChatId?: number | null; // Add this
+  telegramLinkedAt?: any | null;
+  vkId?: string | null;
+  vkUsername?: string | null;
+  vkLinkedAt?: any | null;
+  vkPhotoUrl?: string | null;
+  vkPeerId?: number | null;
   
   systemRole: SystemRole;
   plan: UserPlan;

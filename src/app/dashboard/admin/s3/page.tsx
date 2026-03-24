@@ -7,9 +7,7 @@ import { useAppContext } from '@/contexts/AppContext';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Save } from 'lucide-react';
 
-import { S3Info } from "@/components/admin/s3/S3Info";
 import { S3Settings } from "@/components/admin/s3/S3Settings";
-import { S3Testing } from "@/components/admin/s3/S3Testing";
 import { Button } from '@/components/ui/button';
 import { Card, CardFooter } from '@/components/ui/card';
 
@@ -64,9 +62,7 @@ export default function S3AdminPage() {
 
     return (
         <div className="space-y-4">
-            <S3Info />
             <S3Settings settings={settings} setSettings={setSettings as (settings: EnvSettings) => void} isPending={isPending} />
-            <S3Testing settings={settings} />
              <div className="sticky bottom-6">
                 <Card>
                     <CardFooter className="pt-6">

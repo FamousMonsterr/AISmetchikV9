@@ -66,13 +66,16 @@ cp .env.example .env
 
 Откройте `.env` и вставьте ваши реальные значения:
 
-- `MONGODB_URI` и `MONGODB_DB`: Параметры подключения к MongoDB.
+- `MONGODB_URI` и `MONGODB_DB`: основная MongoDB для бизнес-данных.
+- `MONGODB_LOGS_URI` и `MONGODB_LOGS_DB`: отдельная MongoDB для `user_logs`, `ai_api_logs`, `project_event_logs`, `engagement_events`. Если не заданы, логовые коллекции используют основную базу.
 - `NEXTAUTH_SECRET` и `NEXTAUTH_URL`: Настройки NextAuth (JWT).
 - `OPENROUTER_API_KEY`: Ваш API ключ для OpenRouter.
 - `SUPER_ADMIN_EMAIL`: Email пользователя, который будет иметь полные права администратора в системе.
-- `GOOGLE_CLIENT_ID` и `GOOGLE_CLIENT_SECRET`: для Google OAuth.
+- `VK_ID_CLIENT_ID`, `VK_ID_CLIENT_SECRET`, `VK_ID_REDIRECT_URI`: для VK OAuth.
+- `VK_BOT_ENABLED`, `VK_GROUP_ID`, `VK_ACCESS_TOKEN`, `VK_CALLBACK_SECRET`, `VK_CONFIRMATION_TOKEN`, `VK_WEBHOOK_URL`: для VK Callback API и bot runtime.
+- `VK_AUTH_EMAIL_DOMAIN`: домен для synthetic email при входе через VK, если провайдер не вернул email.
 - `PASSKEY_*`: параметры WebAuthn/passkey (`PASSKEY_ORIGIN`, `PASSKEY_RP_ID`, `PASSKEY_RP_NAME`, `PASSKEY_TIMEOUT_MS`, `PASSKEY_CHALLENGE_TTL_MS`, `PASSKEY_USER_VERIFICATION`, `PASSKEY_ATTESTATION`).
-- `TELEGRAM_AUTH_EMAIL_DOMAIN`: домен для synthetic email при входе через Telegram Mini App.
+- `TELEGRAM_AUTH_EMAIL_DOMAIN`: домен для synthetic email при входе через Telegram.
 
 #### b) Конфигурация AI-промптов
 
@@ -212,6 +215,8 @@ Playwright trace/html report и `.artifacts/smoke` автоматически в
 
 - `npm run mongo:indexes`
 
+Скрипт создаёт индексы отдельно для основной базы и log DB. Перед запуском проверьте `MONGODB_LOGS_*`, если хотите физически разделить логовую нагрузку и основной рабочий контур.
+
 ## 🤖 Telegram audience matrix
 
 Используются отдельные переменные по аудиториям:
@@ -232,7 +237,8 @@ Telegram Mini App auth:
 
 - вход внутри Telegram WebApp использует `TELEGRAM_BOT_TOKEN_USER` с fallback на `TELEGRAM_BOT_TOKEN`;
 - если у пользователя ещё нет email, создаётся synthetic email на домене `TELEGRAM_AUTH_EMAIL_DOMAIN`;
-- параметры Google OAuth, passkey и Telegram auth можно сохранять из админ-панели: `Dashboard -> Admin -> Settings -> Переменные API`.
+- если VK не вернул email, создаётся synthetic email на домене `VK_AUTH_EMAIL_DOMAIN`;
+- параметры VK auth, passkey и Telegram auth можно сохранять из админ-панели: `Dashboard -> Admin -> Settings -> Переменные API`.
 
 ## 🧪 QA аккаунт
 

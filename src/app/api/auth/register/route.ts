@@ -6,6 +6,7 @@ import { getDb } from '@/lib/mongodb';
 import modelsConfig from '@/lib/ai-config.json';
 import promoConfig from '@/lib/promo-config.json';
 import { grantCredits } from '@/services/credits';
+import { normalizeEmail, normalizePhone } from '@/lib/auth-identifiers';
 
 export async function POST(req: Request) {
   const body = await req.json().catch(() => null);
@@ -13,8 +14,10 @@ export async function POST(req: Request) {
     return NextResponse.json({ message: 'Email and password are required.' }, { status: 400 });
   }
 
-  const email = String(body.email).toLowerCase();
+  const email = normalizeEmail(body.email);
   const password = String(body.password);
+  const phone = String(body.phone || '').trim();
+  const phoneNormalized = normalizePhone(phone);
   if (password.length < 6) {
     return NextResponse.json({ message: 'Password must be at least 6 characters.' }, { status: 400 });
   }
@@ -23,6 +26,12 @@ export async function POST(req: Request) {
   const existingUser = await db.collection('users').findOne({ email });
   if (existingUser) {
     return NextResponse.json({ message: 'Email already registered.' }, { status: 409 });
+  }
+  if (phoneNormalized) {
+    const existingByPhone = await db.collection('users').findOne({ phoneNormalized });
+    if (existingByPhone) {
+      return NextResponse.json({ message: 'Телефон уже зарегистрирован.' }, { status: 409 });
+    }
   }
 
   const { apiModels } = modelsConfig as any;
@@ -40,10 +49,19 @@ export async function POST(req: Request) {
     _id: userId,
     email,
     passwordHash,
-    phone: body.phone || '',
+    phone,
+    phoneNormalized,
     phoneVerified: false,
     displayName: email.split('@')[0] || 'Пользователь',
     telegramUsername: '',
+    telegramChatId: null,
+    telegramLinkedAt: null,
+    vkId: null,
+    vkUsername: '',
+    vkLinkedAt: null,
+    vkPhotoUrl: null,
+    vkPeerId: null,
+    authProvider: 'credentials',
     systemRole,
     plan,
     isTester: isSuperAdmin,

@@ -46,7 +46,7 @@ const navGroups = [
         links: [
             { href: "/dashboard/admin/notifications", label: "Уведомления", icon: Bell },
             { href: "/dashboard/admin/marketing", label: "Маркетинг", icon: Palette },
-            { href: "/dashboard/admin/telegram", label: "Telegram", icon: Send },
+            { href: "/dashboard/admin/bots", label: "Bots", icon: Send },
         ],
     },
     {
