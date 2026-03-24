@@ -1,6 +1,15 @@
 import { defineConfig } from '@playwright/test';
 
-const baseURL = process.env.E2E_BASE_URL || 'http://localhost:3000';
+function normalizeBaseUrl(rawValue: string | undefined) {
+  const value = rawValue?.trim();
+  if (!value) {
+    return 'http://localhost:3000';
+  }
+  const withProtocol = /^https?:\/\//i.test(value) ? value : `https://${value}`;
+  return withProtocol.replace(/\/$/, '');
+}
+
+const baseURL = normalizeBaseUrl(process.env.E2E_BASE_URL);
 
 export default defineConfig({
   testDir: 'tests/e2e',

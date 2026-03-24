@@ -12,8 +12,7 @@ test.describe('public flows', () => {
 
   test('shows referral trial hint on registration', async ({ page }) => {
     await page.goto('/auth/register?ref=TESTREF');
-    await expect(page.getByText('Бонус от друга!')).toBeVisible();
-    await expect(page.getByText('доступ к PRO')).toBeVisible();
+    await expect(page.getByText('По приглашению друга вы получите доступ к PRO')).toBeVisible();
   });
 
   test('registers temp account and deletes it via v1 API', async ({ page, request }) => {
@@ -52,7 +51,7 @@ test.describe('authenticated flows', () => {
 
   const login = async (page: any) => {
     await page.goto('/auth/login');
-    await page.fill('#login-email', userEmail!);
+    await page.fill('#login-identifier', userEmail!);
     await page.fill('#login-password', userPassword!);
     await page.click('button[type="submit"]');
     await page.waitForURL('**/dashboard', { timeout: 30_000 });

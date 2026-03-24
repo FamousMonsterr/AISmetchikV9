@@ -305,7 +305,7 @@ async function registerTempUser(page) {
 
 async function loginTempUser(page) {
   await visitAndAssert(page, `${authBaseUrl}/auth/login`, [{ kind: 'text', value: 'Войти' }]);
-  await page.fill('#login-email', tempUser.email);
+  await page.fill('#login-identifier', tempUser.email);
   await page.fill('#login-password', tempUser.password);
   await Promise.all([
     page.waitForURL(/\/dashboard\b/, { timeout: 120_000 }),

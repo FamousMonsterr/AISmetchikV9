@@ -57,7 +57,7 @@ async function loginOrRegister(page) {
   if (envEmail && envPassword) {
     console.log(`[auth] using existing account: ${envEmail}`);
     await page.goto(`${baseUrl}/auth/login`, { waitUntil: 'domcontentloaded', timeout: 90_000 });
-    await page.fill('#login-email', envEmail);
+    await page.fill('#login-identifier', envEmail);
     await page.fill('#login-password', envPassword);
     await Promise.all([
       page.waitForURL('**/dashboard**', { timeout: 60_000 }),
