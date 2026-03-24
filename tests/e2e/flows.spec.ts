@@ -55,11 +55,12 @@ test.describe('authenticated flows', () => {
     await page.fill('#login-password', userPassword!);
     await page.click('button[type="submit"]');
     await page.waitForURL('**/dashboard', { timeout: 30_000 });
+    return new URL(page.url()).origin;
   };
 
   test('billing shows credit history block', async ({ page }) => {
-    await login(page);
-    await page.goto('/dashboard/billing');
+    const dashboardOrigin = await login(page);
+    await page.goto(`${dashboardOrigin}/dashboard/billing`);
     await expect(page.getByText('История кредитов')).toBeVisible();
   });
 });
