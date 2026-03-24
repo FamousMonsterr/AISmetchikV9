@@ -99,14 +99,22 @@ export function RegistrationDialog({
           throw new Error(errorPayload.message || "Не удалось зарегистрироваться.");
         }
 
-        const loginResult = await signIn("credentials", { email, password, redirect: false });
+        const loginResult = await signIn("credentials", { identifier: email, password, redirect: false });
         if (!loginResult || loginResult.error) {
           throw new Error("Аккаунт создан, но вход не выполнился автоматически.");
         }
 
         const session = await getSession();
-        if (!session?.user?.id) {
+        const sessionUserId = session?.user?.id;
+        if (!sessionUserId) {
           throw new Error("Не удалось открыть сессию после входа.");
+        }
+
+        const isFirstLogin = !localStorage.getItem(`hasLoggedIn_${sessionUserId}`);
+        if (isFirstLogin) {
+          localStorage.setItem(`hasLoggedIn_${sessionUserId}`, "true");
+          localStorage.setItem("showWelcomeModal", "true");
+          localStorage.setItem("showWelcomeToast", "true");
         }
 
         toast({ title: "Регистрация завершена" });

@@ -1,6 +1,16 @@
 # MEMORY (обновлено: 24 марта 2026)
 
 ## Обновление 24 марта 2026
+- Пакет `feat: unify storage admin and auth bot controls` rebased поверх актуального `origin/main`.
+- После ребейза подтверждено локально:
+  - `npm run lint` ✅
+  - `npm run typecheck` ✅
+  - `npm run test` ✅
+  - `npm run build` ✅
+- GitHub Secrets для `external-checks` теперь заведены:
+  - `E2E_BASE_URL`
+  - `E2E_USER_EMAIL`
+  - `E2E_USER_PASSWORD`
 - S3-админка сведена к одной канонической странице `/dashboard/admin/s3` с bucket-first моделью:
   - отдельные вкладки по назначениям `analysis`, `avatars`, `user_docs`, `project_docs`;
   - per-bucket primary/backup preset и bucket routing;

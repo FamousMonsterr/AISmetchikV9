@@ -4,7 +4,7 @@ import { useEffect, useState, useTransition, type FormEvent, type ReactNode } fr
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { getSession, signIn } from "next-auth/react";
-import { Chrome, Loader2, UserPlus } from "lucide-react";
+import { Loader2, UserPlus } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -20,10 +20,6 @@ import promoConfig from "@/lib/promo-config.json";
 import modelsConfig from "@/lib/ai-config.json";
 const { apiModels } = modelsConfig;
 // --- КОНЕЦ ЗАЩИЩЕННОЙ ЗОНЫ ---
-
-type RegisterPageContentProps = {
-  googleAuthEnabled: boolean;
-};
 
 function ConsentRow({
   checked,
@@ -46,7 +42,7 @@ function ConsentRow({
   );
 }
 
-export function RegisterPageContent({ googleAuthEnabled }: RegisterPageContentProps) {
+export function RegisterPageContent() {
   const searchParams = useSearchParams();
   const { toast } = useToast();
   const { setNavigating } = useAppContext();
@@ -62,14 +58,20 @@ export function RegisterPageContent({ googleAuthEnabled }: RegisterPageContentPr
   const [showPromoInput, setShowPromoInput] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
-  const [isGooglePending, setIsGooglePending] = useState(false);
-
   const referralCode = searchParams.get("ref");
 
   const finalizeSuccessfulLogin = async () => {
     const session = await getSession();
-    if (!session?.user?.id) {
+    const sessionUserId = session?.user?.id;
+    if (!sessionUserId) {
       throw new Error("Не удалось открыть сессию после входа.");
+    }
+
+    const isFirstLogin = !localStorage.getItem(`hasLoggedIn_${sessionUserId}`);
+    if (isFirstLogin) {
+      localStorage.setItem(`hasLoggedIn_${sessionUserId}`, "true");
+      localStorage.setItem("showWelcomeModal", "true");
+      localStorage.setItem("showWelcomeToast", "true");
     }
 
     toast({ title: "Регистрация завершена" });
@@ -83,64 +85,6 @@ export function RegisterPageContent({ googleAuthEnabled }: RegisterPageContentPr
       setShowPromoInput(true);
     }
   }, [referralCode]);
-
-  useEffect(() => {
-    if (searchParams.get("google") !== "1") {
-      return;
-    }
-
-    let cancelled = false;
-    setIsGooglePending(true);
-
-    void finalizeSuccessfulLogin().catch((callbackError: any) => {
-      if (cancelled) {
-        return;
-      }
-
-      setIsGooglePending(false);
-      setError(callbackError.message);
-      toast({
-        title: "Ошибка регистрации",
-        description: callbackError.message,
-        variant: "destructive",
-      });
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [searchParams, toast]);
-
-  const handleGoogleRegister = async () => {
-    if (!googleAuthEnabled || isGooglePending) {
-      return;
-    }
-
-    setError(null);
-    setIsGooglePending(true);
-
-    try {
-      const result = await signIn("google", {
-        redirect: false,
-        callbackUrl: "/auth/register?google=1",
-      });
-
-      if (!result || result.error || !result.url) {
-        throw new Error("Не удалось продолжить через Google.");
-      }
-
-      setNavigating(true);
-      window.location.assign(result.url);
-    } catch (googleError: any) {
-      setIsGooglePending(false);
-      setError(googleError.message);
-      toast({
-        title: "Ошибка регистрации",
-        description: googleError.message,
-        variant: "destructive",
-      });
-    }
-  };
 
   const handleRegister = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -184,7 +128,7 @@ export function RegisterPageContent({ googleAuthEnabled }: RegisterPageContentPr
         }
 
         const loginResult = await signIn("credentials", {
-          email,
+          identifier: email,
           password,
           redirect: false,
         });
@@ -217,7 +161,7 @@ export function RegisterPageContent({ googleAuthEnabled }: RegisterPageContentPr
             <div className="space-y-2">
               <h1 className="text-2xl font-semibold text-white">Создать аккаунт</h1>
               <p className="text-sm text-slate-400">
-                Быстрый старт по email или через Google.
+                Быстрый старт по email.
               </p>
             </div>
 
@@ -230,22 +174,6 @@ export function RegisterPageContent({ googleAuthEnabled }: RegisterPageContentPr
                   <AlertTitle className="text-rose-50">Ошибка регистрации</AlertTitle>
                   <AlertDescription className="text-rose-100">{error}</AlertDescription>
                 </Alert>
-              )}
-
-              {googleAuthEnabled && (
-                <Button
-                  type="button"
-                  onClick={handleGoogleRegister}
-                  disabled={isPending || isGooglePending}
-                  className="h-11 w-full border border-white/10 bg-white/5 text-slate-100 hover:bg-white/10"
-                >
-                  {isGooglePending ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <Chrome className="mr-2 h-4 w-4" />
-                  )}
-                  Продолжить с Google
-                </Button>
               )}
 
               <form className="space-y-4" onSubmit={handleRegister}>

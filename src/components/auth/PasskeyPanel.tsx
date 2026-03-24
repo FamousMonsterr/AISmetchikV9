@@ -371,7 +371,7 @@ export function PasskeyPanel({
               />
               <p className="text-xs leading-5 text-muted-foreground">
                 Так будет проще отличать ключи доступа в профиле: iCloud Keychain,
-                Google Password Manager или аппаратный security key.
+                встроенный менеджер ключей браузера или аппаратный security key.
               </p>
             </div>
             <Button variant="outline" onClick={handleRegister} disabled={isBusy || !supported} className="w-full">

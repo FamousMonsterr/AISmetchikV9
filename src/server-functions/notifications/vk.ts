@@ -1,7 +1,7 @@
 'use server';
 
-import { db } from '@/lib/firebase';
-import { doc, getDoc, serverTimestamp, setDoc } from '@/lib/mongoFirestoreServer';
+import { db } from '@/lib/db';
+import { doc, getDoc, serverTimestamp, setDoc } from '@/lib/db-server';
 import { sendVkMessage } from '@/server-functions/webhooks/vk';
 
 export type VkDispatchInput = {

@@ -1,5 +1,5 @@
-import { doc, getDoc, setDoc, collection, query, where, limit, getDocs, updateDoc, serverTimestamp } from '@/lib/mongoFirestoreServer';
-import { db } from '@/lib/firebase';
+import { doc, getDoc, setDoc, collection, query, where, limit, getDocs, updateDoc, serverTimestamp } from '@/lib/db-server';
+import { db } from '@/lib/db';
 import { getVkApiVersion } from '@/lib/vk-auth';
 
 type VkEnvSettings = {
