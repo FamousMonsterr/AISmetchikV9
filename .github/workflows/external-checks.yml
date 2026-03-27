@@ -11,6 +11,12 @@ on:
 env:
   CI: true
   NEXT_TELEMETRY_DISABLED: "1"
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+  NPM_CONFIG_AUDIT: "false"
+  NPM_CONFIG_FUND: "false"
+
+permissions:
+  contents: read
 
 concurrency:
   group: external-checks-${{ github.event_name }}-${{ github.ref || github.event.workflow_run.head_branch || 'scheduled' }}
@@ -21,7 +27,7 @@ jobs:
     if: >-
       github.event_name != 'workflow_run' ||
       (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main')
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     outputs:
       e2e_ready: ${{ steps.check.outputs.e2e_ready }}
       smoke_ready: ${{ steps.check.outputs.smoke_ready }}
@@ -56,7 +62,7 @@ jobs:
   e2e:
     needs: preflight
     if: needs.preflight.outputs.e2e_ready == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
       E2E_BASE_URL: ${{ secrets.E2E_BASE_URL }}
@@ -69,11 +75,19 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v5
         with:
-          node-version: 25.2.1
+          node-version-file: .nvmrc
           cache: npm
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --no-audit --no-fund
+
+      - name: Restore Playwright browsers cache
+        uses: actions/cache@v4
+        with:
+          path: /home/runner/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
 
       - name: Install Playwright
         run: npx playwright install --with-deps chromium
@@ -95,7 +109,7 @@ jobs:
   smoke-subdomains:
     needs: preflight
     if: needs.preflight.outputs.smoke_ready == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     env:
       SMOKE_DOMAINS: ${{ vars.SMOKE_DOMAINS }}
@@ -106,11 +120,11 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v5
         with:
-          node-version: 25.2.1
+          node-version-file: .nvmrc
           cache: npm
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --no-audit --no-fund
 
       - name: Smoke health checks
         run: npm run test:smoke-subdomains
@@ -118,7 +132,7 @@ jobs:
   smoke-browser:
     needs: preflight
     if: needs.preflight.outputs.smoke_ready == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 35
     env:
       SMOKE_BASE_URL: ${{ vars.SMOKE_BASE_URL }}
@@ -130,11 +144,19 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v5
         with:
-          node-version: 25.2.1
+          node-version-file: .nvmrc
           cache: npm
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --no-audit --no-fund
+
+      - name: Restore Playwright browsers cache
+        uses: actions/cache@v4
+        with:
+          path: /home/runner/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
 
       - name: Install Playwright
         run: npx playwright install --with-deps chromium

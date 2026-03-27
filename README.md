@@ -35,7 +35,7 @@
 
 ### 1. Предварительные требования
 
-- [Node.js](https://nodejs.org/) `25.2.1`
+- [Node.js](https://nodejs.org/) `24.x (LTS)`
 - `npm` `11.x`
 - Доступ к MongoDB серверу
 

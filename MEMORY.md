@@ -22,6 +22,11 @@
   - `npm run typecheck` ✅
   - `npm run test` ✅
   - `npm run build` ✅
+- CI/CD cleanup по логам:
+  - репозиторий и workflow возвращены на единый `Node 24`-контур (`package.json`, `.nvmrc`, `.node-version`, `Dockerfile`, `README`, `ci.yml`, `external-checks.yml`);
+  - в GitHub Actions добавлены `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24`, отключение `npm audit/fund` шума и cache для `.next/cache` / `Playwright`;
+  - warning `--localstorage-file was provided without a valid path` не найден в коде проекта и признан наиболее вероятным шумом `Node 25 + Next/Turbopack`, поэтому основной mitigation — отказ от `Node 25` в release-контуре.
+- `.localhost.log` повторно проверен: новых runtime-ошибок нет, только регистрация global error handlers.
 
 ## Обновление 24 марта 2026
 - Пакет `feat: unify storage admin and auth bot controls` rebased поверх актуального `origin/main`.

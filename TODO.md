@@ -201,6 +201,27 @@
   - Telegram Mini App login, если есть `initData`;
   - VK login, если env заданы.
 
+## 10. CI/CD cleanup по логам 27 марта 2026
+- [x] Убрать нестабильный runtime `Node 25.2.1` из репозитория и CI:
+  - `package.json -> engines.node` переведён на `>=24 <25`;
+  - `.nvmrc` и `.node-version` возвращены на `24`;
+  - `Dockerfile` переведён на `node:24-alpine`;
+  - workflow теперь берут версию из `.nvmrc`, а не хардкодят `25.2.1`.
+- [x] Убрать лишний шум `npm ci` в GitHub Actions:
+  - отключены `npm audit` и `npm fund` в CI;
+  - установка зависимостей переведена на `npm ci --no-audit --no-fund`.
+- [x] Снизить предупреждения GitHub Actions про JavaScript actions runtime:
+  - добавлен `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true` в workflow env.
+- [x] Снизить шум и ускорить `build`:
+  - добавлен cache для `.next/cache` в job `build`.
+- [x] Снизить шум и ускорить `external-checks`:
+  - добавлен cache для `Playwright` browser binaries.
+- [x] Разобрать warning `--localstorage-file was provided without a valid path`:
+  - первичная проверка repo-кода не нашла ни CLI-флага, ни `NODE_OPTIONS`, ни прямых упоминаний `localstorage-file`;
+  - warning один раз воспроизвёлся на локальном `next build` под текущим локальным `Node 25`, но не воспроизводится стабильно;
+  - наиболее вероятный источник: шум/регрессия рантайма `Node 25` при `Next 16 + Turbopack`, а не код проекта;
+  - практическое решение: CI/CD и runtime репозитория возвращены на `Node 24`, где этот warning не должен быть частью основного release-контура.
+
 ## 9. Локальный лог
 - [x] `.localhost.log` сейчас чистый, ошибок по коду в нём не видно.
 - [ ] После этой серии правок снова проверить лог, чтобы убедиться, что новые auth/runtime ошибки не появились.

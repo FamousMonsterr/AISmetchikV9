@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "engines": {
-    "node": "25.2.1"
+    "node": ">=24 <25"
   },
   "description": "AI Smetchik platform for low-voltage system estimators and installers, built with Next.js and MongoDB.",
   "scripts": {
