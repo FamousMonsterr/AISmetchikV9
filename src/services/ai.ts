@@ -3,17 +3,19 @@
 'use server';
 
 import * as openRouterService from './openrouter';
-import aiConfig from '@/lib/ai-config.json';
 import { type PdfEngine } from './openrouter';
 import { getAppSettings, getEnvSettings } from '@/actions/adminActions';
+import { readAiConfig } from '@/lib/ai-config-runtime';
 import { logAiApiCall } from '@/lib/logger';
 
 export const getDefaultModel = async (): Promise<string> => {
+    const aiConfig = await readAiConfig();
     const model = aiConfig.apiModels.find(m => m.isServiceModel) || aiConfig.apiModels.find(m => m.isDefault);
     return model ? model.value : aiConfig.apiModels[0]?.value || '';
 };
 
 export const getVoiceModel = async (): Promise<string> => {
+    const aiConfig = await readAiConfig();
     const model = aiConfig.apiModels.find(m => m.isVoiceModel) || aiConfig.apiModels.find(m => m.canProcessAudio);
     return model ? model.value : '';
 };
@@ -129,6 +131,7 @@ async function generateLocalHfJson(params: AiServiceParams & { processedPrompt: 
  * This is for non-streaming, JSON-focused responses.
  */
 export async function generateJson(params: AiServiceParams & { responseMimeType?: "application/json" | "text/plain", pdfEngine?: PdfEngine, stream?: boolean }): Promise<{ text: string | null; thoughts: string | null; rawResponse: any; requestDetails: any; }> {
+    const aiConfig = await readAiConfig();
     const finalModelId = params.model;
     const modelInfo = aiConfig.apiModels.find(m => m.value === finalModelId);
     if (!modelInfo) throw new Error(`Model configuration for ${finalModelId} not found.`);
@@ -218,6 +221,7 @@ export async function generateJson(params: AiServiceParams & { responseMimeType?
  * Central service to generate a stream via OpenRouter.
  */
 export async function generateStream(params: AiServiceParams & { responseMimeType?: "application/json" | "text/plain", pdfEngine?: PdfEngine }): Promise<Response> {
+     const aiConfig = await readAiConfig();
      const finalModelId = params.model;
      const providerInfo = aiConfig.providers.openrouter;
      const modelInfo = aiConfig.apiModels.find(m => m.value === finalModelId);

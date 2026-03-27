@@ -200,9 +200,12 @@ export function EnvSettings() {
                   type="url"
                   value={settings.passkeyOrigin || ''}
                   onChange={(e) => setSettings({ ...settings, passkeyOrigin: e.target.value })}
-                  placeholder="https://aismetchik.ru"
+                  placeholder="https://lk.aismetchik.ru"
                   disabled={isPending}
                 />
+                <p className="text-xs text-muted-foreground">
+                  Указывайте origin той страницы, где реально открывается passkey-логин.
+                </p>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="passkeyRpId">PASSKEY_RP_ID</Label>
@@ -290,6 +293,11 @@ export function EnvSettings() {
                 <div className="space-y-2">
                     <Label htmlFor="telegramBotUsername">Публичный username бота</Label>
                     <Input id="telegramBotUsername" value={settings.nextPublicTelegramBotUsername || ''} onChange={(e) => setSettings({ ...settings, nextPublicTelegramBotUsername: e.target.value })} placeholder="AI_Smetchik_Bot" disabled={isPending} />
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="telegramWebappUrl">Telegram WebApp URL</Label>
+                    <Input id="telegramWebappUrl" type="url" value={settings.nextPublicTelegramWebappUrl || ''} onChange={(e) => setSettings({ ...settings, nextPublicTelegramWebappUrl: e.target.value })} placeholder="https://lk.aismetchik.ru" disabled={isPending} />
+                    <p className="text-xs text-muted-foreground">Используется кнопкой «Открыть приложение» внутри Telegram-бота.</p>
                 </div>
                 <div className="space-y-2">
                     <Label>Режим бота</Label>

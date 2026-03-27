@@ -11,12 +11,36 @@
   - client-side WebAuthn/base64url сериализация переведена на browser-safe путь без хрупкой зависимости от node-style encode/decode;
   - `credential.id/rawId` нормализуется единообразно при регистрации и логине;
   - login/profile UI для passkey упрощен до коротких действий без лишних пояснений.
+  - активный passkey UX дополнительно дожат:
+    - удалён дублирующий `CompactPasskeyAuth`;
+    - `PasskeyPanel` переведён на прямые actions без полей `email/nickname` в активном сценарии;
+    - verify теперь отсекает просроченные challenge;
+    - удаление ключа больше не возвращает ложный success при пустом обновлении.
+    - добавлен ранний guard на mismatch `PASSKEY_ORIGIN` vs request origin, чтобы неправильный host не ломал flow только на позднем verify.
 - Telegram:
   - webhook URL теперь может автоматически выводиться из `NEXTAUTH_URL` / `NEXT_PUBLIC_SITE_URL`;
   - для `aismetchik.ru` поддерживаются канонические surface URL:
     - root: `/api/telegram/webhook`
     - `lk/admin/crm/partner`: `/api/telegram/webhook/<audience>`;
   - шаблоны `.env.example` и `deploy/.env.vds.example` обновлены готовыми production-примерами.
+  - пользовательский flow упрощён:
+    - убран auto-start Telegram Mini App login на странице входа, вместо него оставлена явная кнопка;
+    - профиль сведен к короткому сценарию `Открыть бота -> Проверить после /start -> Подключить / Отвязать`;
+    - `/unlink` в самом Telegram-боте теперь реально отвязывает аккаунт, и такая же inline-кнопка появилась в `bot /profile`.
+  - следующий пакет Telegram hardening уже внесён:
+    - добавлен единый server runtime resolver `src/lib/telegram/runtime.ts` для `/auth/login`, NextAuth и server actions;
+    - скрытая auto-link привязка из `AppContext` удалена;
+    - `Открыть бота` теперь ведёт на персональный deep-link `?start=uid_<userId>`, чтобы `Проверить после /start` реально находил `telegram_chats.refUserId`;
+    - `NEXT_PUBLIC_TELEGRAM_WEBAPP_URL` вынесен в управляемые admin env, и кнопки внутри бота теперь берут WebApp URL не только из чистого `process.env`.
+- AI/admin cleanup:
+  - из `/dashboard/price-base` убрана явная disabled-кнопка `Оптимизировать (AI)`, чтобы пользователь не видел неработающий control;
+  - `Admin -> AI Agent` теперь честно считает `hasUnsavedChanges`, кнопка сохранения не горит постоянно.
+  - server runtime для AI теперь частично отвязан от статического JSON-import:
+    - добавлен `src/lib/ai-config-runtime.ts`;
+    - `services/ai`, `services/openrouter`, `lib/auth`, `api/auth/register` читают актуальный `ai-config.json` с диска, а не только закешированный import.
+- Legacy cleanup:
+  - db compatibility layer больше не светит `FirebaseError` как active naming по умолчанию;
+  - введены `DbClientError` / `DbServerError`, оставив alias только для совместимости.
 - Локально подтверждено после этих правок:
   - `npm run lint` ✅
   - `npm run typecheck` ✅

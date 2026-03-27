@@ -19,6 +19,7 @@ type LinkedAuthAccountsProps = {
     username?: string;
   } | null;
   botUrl?: string;
+  botUsername?: string;
   onUserPatch: (patch: Partial<AppUser>) => void;
 };
 
@@ -26,13 +27,38 @@ export function LinkedAuthAccounts({
   user,
   telegramUser,
   botUrl,
+  botUsername,
   onUserPatch,
 }: LinkedAuthAccountsProps) {
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
-  const botUsername = useMemo(() => deriveTelegramBotUsername(botUrl || ''), [botUrl]);
+  const resolvedBotUsername = useMemo(
+    () => deriveTelegramBotUsername(botUsername || botUrl || ''),
+    [botUrl, botUsername],
+  );
+  const resolvedBotUrl = useMemo(() => {
+    if (botUrl?.trim()) {
+      return botUrl.trim();
+    }
+    return resolvedBotUsername ? `https://t.me/${resolvedBotUsername}` : '';
+  }, [botUrl, resolvedBotUsername]);
+  const resolvedBotStartUrl = useMemo(() => {
+    if (!resolvedBotUsername) {
+      return resolvedBotUrl;
+    }
+    const payload = encodeURIComponent(`uid_${user.uid}`);
+    return `https://t.me/${resolvedBotUsername}?start=${payload}`;
+  }, [resolvedBotUrl, resolvedBotUsername, user.uid]);
   const telegramInitData = typeof window !== 'undefined' ? (window as any)?.Telegram?.WebApp?.initData || '' : '';
+
+  const openTelegramBot = () => {
+    if (!resolvedBotStartUrl) {
+      toast({ title: 'Telegram', description: 'Публичная ссылка на бота не настроена.', variant: 'destructive' });
+      return;
+    }
+    window.open(resolvedBotStartUrl, '_blank', 'noopener,noreferrer');
+  };
 
   const handleTelegramWidgetAuth = async (payload: Record<string, unknown>) => {
     setStatusMessage(null);
@@ -85,7 +111,7 @@ export function LinkedAuthAccounts({
       const result = await unlinkTelegramAccount();
       if (result.success) {
         onUserPatch({
-          telegramChatId: undefined,
+          telegramChatId: null,
           telegramUsername: '',
           telegramLinkedAt: null,
         });
@@ -193,31 +219,40 @@ export function LinkedAuthAccounts({
             </div>
 
             <div className="flex flex-wrap gap-2">
-              {telegramInitData && (
-                <Button type="button" variant="outline" onClick={handleMiniAppLink} disabled={isPending}>
-                  {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <MessageCircle className="mr-2 h-4 w-4" />}
-                  Подключить в Mini App
+              {user.telegramChatId && (
+                <Button type="button" variant="outline" onClick={handleTelegramUnlink} disabled={isPending}>
+                  {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Unlink2 className="mr-2 h-4 w-4" />}
+                  Отвязать Telegram
                 </Button>
               )}
-              {user.telegramChatId && (
-                <>
-                  <Button type="button" variant="outline" onClick={handleTelegramSync} disabled={isPending}>
-                    <RefreshCw className="mr-2 h-4 w-4" />
-                    Обновить chat_id
-                  </Button>
-                  <Button type="button" variant="ghost" onClick={handleTelegramUnlink} disabled={isPending}>
-                    <Unlink2 className="mr-2 h-4 w-4" />
-                    Отвязать
-                  </Button>
-                </>
+              {!user.telegramChatId && resolvedBotUrl && (
+                <Button type="button" variant="outline" onClick={openTelegramBot} disabled={isPending}>
+                  <MessageCircle className="mr-2 h-4 w-4" />
+                  Открыть бота
+                </Button>
+              )}
+              {!user.telegramChatId && telegramInitData && (
+                <Button type="button" onClick={handleMiniAppLink} disabled={isPending}>
+                  {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <MessageCircle className="mr-2 h-4 w-4" />}
+                  Подключить Telegram
+                </Button>
+              )}
+              {!user.telegramChatId && (
+                <Button type="button" variant="ghost" onClick={handleTelegramSync} disabled={isPending}>
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                  Проверить после /start
+                </Button>
               )}
             </div>
 
-            {!telegramInitData && botUsername && (
+            {!telegramInitData && !user.telegramChatId && resolvedBotUsername && (
               <div className="rounded-lg border border-dashed p-3">
                 <p className="mb-2 text-xs uppercase tracking-[0.24em] text-muted-foreground">Telegram</p>
+                <p className="mb-3 text-sm text-muted-foreground">
+                  Нажмите кнопку бота, выполните `/start`, затем вернитесь и нажмите «Проверить после /start».
+                </p>
                 <TelegramAuthWidget
-                  botUsername={botUsername}
+                  botUsername={resolvedBotUsername}
                   onAuth={handleTelegramWidgetAuth}
                   size="large"
                   requestWriteAccess

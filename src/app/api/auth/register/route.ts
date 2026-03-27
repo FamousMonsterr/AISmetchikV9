@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { nanoid } from 'nanoid';
 import { getDb } from '@/lib/mongodb';
-import modelsConfig from '@/lib/ai-config.json';
+import { readAiConfig } from '@/lib/ai-config-runtime';
 import promoConfig from '@/lib/promo-config.json';
 import { grantCredits } from '@/services/credits';
 import { normalizeEmail, normalizePhone } from '@/lib/auth-identifiers';
@@ -23,6 +23,7 @@ export async function POST(req: Request) {
   }
 
   const db = await getDb();
+  const modelsConfig = await readAiConfig();
   const existingUser = await db.collection('users').findOne({ email });
   if (existingUser) {
     return NextResponse.json({ message: 'Email already registered.' }, { status: 409 });

@@ -123,6 +123,9 @@ export async function completePasskeyRegistration(input: PasskeyRegistrationResp
   if (challengeRecord.usedAt) {
     throw new Error('Passkey registration challenge has already been used.');
   }
+  if (new Date(challengeRecord.expiresAt) <= new Date()) {
+    throw new Error('Passkey registration challenge expired.');
+  }
 
   const config = resolvePasskeyConfig(input.requestOrigin || challengeRecord.origin);
   if (challengeRecord.userId && challengeRecord.userId !== input.userId) {
@@ -272,6 +275,9 @@ export async function completePasskeyAuthentication(input: PasskeyAuthentication
   if (challengeRecord.usedAt) {
     throw new Error('Passkey authentication challenge has already been used.');
   }
+  if (new Date(challengeRecord.expiresAt) <= new Date()) {
+    throw new Error('Passkey authentication challenge expired.');
+  }
 
   const config = resolvePasskeyConfig(input.requestOrigin || challengeRecord.origin);
   const clientData = parseClientDataJSON(input.credential.response.clientDataJSON);
@@ -351,7 +357,10 @@ export async function listCurrentUserPasskeys(userId: string): Promise<PasskeyCr
 }
 
 export async function deleteCurrentUserPasskey(userId: string, credentialId: string) {
-  await revokePasskeyCredential(userId, credentialId);
+  const revoked = await revokePasskeyCredential(userId, credentialId);
+  if (!revoked) {
+    throw new Error('Ключ доступа не найден или уже удалён.');
+  }
   return { ok: true };
 }
 

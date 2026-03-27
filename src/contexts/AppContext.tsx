@@ -10,7 +10,6 @@ import { signOut, useSession } from 'next-auth/react';
 import { db } from '@/lib/db';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import type { AiSpecificationItem } from '@/ai/genkit-schemas';
-import { linkTelegramAccount } from '@/actions/telegramActions';
 import { z } from 'zod';
 import { updateUserPwaStatus, saveProjectVersion } from '@/actions/userActions';
 import { useToast } from '@/hooks/use-toast';
@@ -716,10 +715,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
             if (userChanged) {
                 checkUserPlan(userData);
-
-                if (telegram?.initData && !userData.telegramChatId) {
-                    linkTelegramAccount({ initData: telegram.initData });
-                }
 
                 if (typeof window !== 'undefined') {
                     const isPwa = window.matchMedia('(display-mode: standalone)').matches;

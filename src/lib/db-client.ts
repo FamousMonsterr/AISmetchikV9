@@ -3,13 +3,15 @@ import { nanoid } from 'nanoid';
 
 export type DocumentData = Record<string, any>;
 
-export class FirebaseError extends Error {
+export class DbClientError extends Error {
   code: string;
   constructor(code: string, message: string) {
     super(message);
     this.code = code;
   }
 }
+
+export { DbClientError as FirebaseError };
 
 export class Timestamp {
   private readonly value: Date;
@@ -100,7 +102,7 @@ async function requestQueryPayload(descriptor: any): Promise<any> {
       body: JSON.stringify(descriptor),
     });
     if (!res.ok) {
-      throw new FirebaseError('realtime/fetch-failed', await res.text());
+      throw new DbClientError('realtime/fetch-failed', await res.text());
     }
     const payload = await res.json();
     writeClientCache(key, payload);
@@ -220,14 +222,14 @@ async function executeDocWrite(op: string, payload: any) {
   });
   if (!res.ok) {
     const errorText = await res.text();
-    throw new FirebaseError('db/request-failed', errorText || 'Database request failed.');
+    throw new DbClientError('db/request-failed', errorText || 'Database request failed.');
   }
   return res.json();
 }
 
 export async function getDoc(ref: DocRef) {
   if (isServer) {
-    throw new FirebaseError('client-only', 'getDoc is client-only in this module.');
+    throw new DbClientError('client-only', 'getDoc is client-only in this module.');
   }
   const data = await executeDocWrite('getDoc', { ref });
   return createDocSnapshot(data.doc ?? null, ref.collection);
@@ -235,7 +237,7 @@ export async function getDoc(ref: DocRef) {
 
 export async function getDocs(ref: QueryRef | CollectionRef) {
   if (isServer) {
-    throw new FirebaseError('client-only', 'getDocs is client-only in this module.');
+    throw new DbClientError('client-only', 'getDocs is client-only in this module.');
   }
   if ((ref as QueryRef).type === 'query') {
     const data = await executeDocWrite('getDocs', { query: ref });
@@ -248,7 +250,7 @@ export async function getDocs(ref: QueryRef | CollectionRef) {
 
 export async function addDoc(ref: CollectionRef, data: DocumentData) {
   if (isServer) {
-    throw new FirebaseError('client-only', 'addDoc is client-only in this module.');
+    throw new DbClientError('client-only', 'addDoc is client-only in this module.');
   }
   const result = await executeDocWrite('addDoc', { ref, data });
   return { id: result.id };
@@ -256,40 +258,40 @@ export async function addDoc(ref: CollectionRef, data: DocumentData) {
 
 export async function setDoc(ref: DocRef, data: DocumentData, options?: { merge?: boolean }) {
   if (isServer) {
-    throw new FirebaseError('client-only', 'setDoc is client-only in this module.');
+    throw new DbClientError('client-only', 'setDoc is client-only in this module.');
   }
   await executeDocWrite('setDoc', { ref, data, options });
 }
 
 export async function updateDoc(ref: DocRef, data: DocumentData) {
   if (isServer) {
-    throw new FirebaseError('client-only', 'updateDoc is client-only in this module.');
+    throw new DbClientError('client-only', 'updateDoc is client-only in this module.');
   }
   await executeDocWrite('updateDoc', { ref, data });
 }
 
 export async function deleteDoc(ref: DocRef) {
   if (isServer) {
-    throw new FirebaseError('client-only', 'deleteDoc is client-only in this module.');
+    throw new DbClientError('client-only', 'deleteDoc is client-only in this module.');
   }
   await executeDocWrite('deleteDoc', { ref });
 }
 
 export function runTransaction() {
-  throw new FirebaseError('client-only', 'Transactions are server-only.');
+  throw new DbClientError('client-only', 'Transactions are server-only.');
 }
 
 export function writeBatch() {
-  throw new FirebaseError('client-only', 'Batched writes are server-only.');
+  throw new DbClientError('client-only', 'Batched writes are server-only.');
 }
 
 export function onSnapshot(
   target: DocRef | QueryRef,
   onNext: (snapshot: any) => void,
-  onError?: (error: FirebaseError) => void,
+  onError?: (error: DbClientError) => void,
 ) {
   if (isServer) {
-    throw new FirebaseError('realtime/server-only', 'Realtime subscriptions must run on the client.');
+    throw new DbClientError('realtime/server-only', 'Realtime subscriptions must run on the client.');
   }
 
   const isDoc = (target as DocRef).id !== undefined && (target as QueryRef).type !== 'query';
@@ -312,7 +314,7 @@ export function onSnapshot(
         onNext(createQuerySnapshot(payload.docs ?? [], descriptor.collection));
       }
     } catch (error: any) {
-      onError?.(error instanceof FirebaseError ? error : new FirebaseError('realtime/fetch-failed', error.message));
+      onError?.(error instanceof DbClientError ? error : new DbClientError('realtime/fetch-failed', error.message));
     }
   };
 
@@ -386,7 +388,7 @@ export function onSnapshot(
       eventSource.close();
       eventSource = null;
     }
-    onError?.(new FirebaseError('realtime/connection-failed', 'Realtime SSE недоступен, переключаемся на polling.'));
+    onError?.(new DbClientError('realtime/connection-failed', 'Realtime SSE недоступен, переключаемся на polling.'));
     fetchSnapshot();
     pollingIntervalId = window.setInterval(fetchSnapshot, REALTIME_POLL_INTERVAL_MS);
   };

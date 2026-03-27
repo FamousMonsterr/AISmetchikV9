@@ -5,10 +5,11 @@ import bcrypt from 'bcryptjs';
 import { nanoid } from 'nanoid';
 import { parse as parseTelegramInitData, validate as validateTelegramInitData } from '@tma.js/init-data-node';
 import { getDb } from '@/lib/mongodb';
-import modelsConfig from '@/lib/ai-config.json';
+import { readAiConfigSync } from '@/lib/ai-config-runtime';
 import { consumePasskeySignInTicket } from '@/lib/passkeys/store';
 import { normalizeEmail, resolveIdentifier } from '@/lib/auth-identifiers';
-import { deriveTelegramBotUsername, validateTelegramWebPayload } from '@/lib/telegram-web';
+import { validateTelegramWebPayload } from '@/lib/telegram-web';
+import { getTelegramRuntimeConfig } from '@/lib/telegram/runtime';
 import { resolveVkIdentity } from '@/lib/vk-auth';
 
 function normalizeId(id: any): string {
@@ -44,7 +45,7 @@ function getSharedAuthCookieDomain(): string {
 }
 
 function getDefaultModelValue(): string {
-  const { apiModels } = modelsConfig as any;
+  const { apiModels } = readAiConfigSync() as any;
   const defaultModel = apiModels.find((m: any) => m.isDefault) || apiModels[0];
   return defaultModel?.value || 'google/gemini-3-flash-preview';
 }
@@ -191,24 +192,8 @@ async function syncExistingUserForSession(user: Record<string, any>, provider: R
   return toSessionUser({ ...user, ...updates, authProvider: provider });
 }
 
-function getTelegramAuthToken(): string {
-  return (
-    process.env.TELEGRAM_BOT_TOKEN_USER?.trim() ||
-    process.env.TELEGRAM_BOT_TOKEN?.trim() ||
-    ''
-  );
-}
-
 function getTelegramAuthEmailDomain(): string {
   return process.env.TELEGRAM_AUTH_EMAIL_DOMAIN?.trim() || 'telegram.local';
-}
-
-export function getTelegramBotUsername(): string {
-  return (
-    process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME?.trim() ||
-    deriveTelegramBotUsername(process.env.NEXT_PUBLIC_TELEGRAM_BOT_URL || '') ||
-    ''
-  );
 }
 
 function buildTelegramSyntheticEmail(telegramId: number | string): string {
@@ -221,14 +206,6 @@ function buildTelegramDisplayName(telegramUser: Record<string, any>) {
     .join(' ')
     .trim();
   return fullName || telegramUser.username || `Telegram ${telegramUser.id}`;
-}
-
-export function isTelegramMiniAppAuthEnabled(): boolean {
-  return Boolean(getTelegramAuthToken());
-}
-
-export function isTelegramWebAuthEnabled(): boolean {
-  return Boolean(getTelegramAuthToken() && getTelegramBotUsername());
 }
 
 export function isVkAuthEnabled(): boolean {
@@ -505,7 +482,8 @@ export const authOptions = {
           return null;
         }
 
-        const botToken = getTelegramAuthToken();
+        const runtime = await getTelegramRuntimeConfig();
+        const botToken = runtime.authToken;
         if (!botToken) {
           throw new Error('Telegram auth is not configured.');
         }
@@ -532,7 +510,8 @@ export const authOptions = {
         hash: { label: 'Hash', type: 'text' },
       },
       async authorize(credentials) {
-        const botToken = getTelegramAuthToken();
+        const runtime = await getTelegramRuntimeConfig();
+        const botToken = runtime.authToken;
         if (!botToken) {
           throw new Error('Telegram auth is not configured.');
         }

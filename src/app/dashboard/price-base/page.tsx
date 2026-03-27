@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Download, Wand2, FileQuestion, FolderKanban, FileUp, Pencil } from "lucide-react";
+import { Loader2, Download, FileQuestion, FolderKanban, FileUp, Pencil } from "lucide-react";
 import { useAppContext, type PriceBaseItem } from '@/contexts/AppContext';
 import { updatePriceBaseItem, savePriceBaseItems } from '@/actions/userActions';
 import { ExcelImportDialog } from '@/components/ExcelImportDialog';
@@ -284,7 +284,6 @@ export default function PriceBasePage() {
                                         <Label htmlFor="markup" className="flex items-center">Надбавка / Скидка (%)</Label>
                                         <Input id="markup" type="number" value={markup} onChange={(e) => setMarkup(Number(e.target.value))} placeholder="Напр., 10 или -5" />
                                     </div>
-                                    <Button variant="outline" disabled><Wand2 className="mr-2 h-4 w-4" />Оптимизировать (AI)</Button>
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <Card>

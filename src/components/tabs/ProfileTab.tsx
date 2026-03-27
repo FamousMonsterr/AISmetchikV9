@@ -81,15 +81,17 @@ export default function ProfileTab() {
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
 
   const [botUrl, setBotUrl] = useState('');
+  const [botUsername, setBotUsername] = useState('');
   const { theme, setTheme } = useTheme();
 
-    useEffect(() => {
+  useEffect(() => {
     const fetchBotUrl = async () => {
-            const settings = await getPublicEnvSettings();
-            setBotUrl(settings.nextPublicTelegramBotUrl || process.env.NEXT_PUBLIC_TELEGRAM_BOT_URL || 'https://t.me/AI_Smetchik_Bot');
-        };
-        fetchBotUrl();
-    }, []);
+      const settings = await getPublicEnvSettings();
+      setBotUrl(settings.nextPublicTelegramBotUrl || process.env.NEXT_PUBLIC_TELEGRAM_BOT_URL || '');
+      setBotUsername(settings.nextPublicTelegramBotUsername || process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME || '');
+    };
+    fetchBotUrl();
+  }, []);
 
   useEffect(() => {
     setDisplayName(user?.displayName || '');
@@ -614,6 +616,7 @@ export default function ProfileTab() {
           user={user}
           telegramUser={telegramUser}
           botUrl={botUrl}
+          botUsername={botUsername}
           onUserPatch={(patch) => setUser((prev) => (prev ? { ...prev, ...patch } : prev))}
         />
       )}

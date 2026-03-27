@@ -4,14 +4,13 @@
 
 import { z } from 'zod';
 import TelegramBot from '@/lib/telegram/telegraf-compat';
-import { logUserAction } from '@/lib/logger';
 import { doc, updateDoc, getDoc, collection, query, where, orderBy, limit, getDocs } from '@/lib/db-server';
 import { db } from '@/lib/db';
 import { parse, validate } from '@tma.js/init-data-node';
-import { getEnvSettings } from '@/actions/adminActions';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { validateTelegramWebPayload } from '@/lib/telegram-web';
+import { getTelegramRuntimeConfig } from '@/lib/telegram/runtime';
 import { getDb } from '@/lib/mongodb';
 
 const LinkAccountSchema = z.object({
@@ -38,12 +37,8 @@ export async function linkTelegramAccount(data: z.infer<typeof LinkAccountSchema
   }
 
   const { initData } = validation.data;
-  const envSettings = await getEnvSettings({ allowInternal: true });
-  const botToken =
-    envSettings.telegramBotTokenUser ||
-    envSettings.telegramBotToken ||
-    process.env.TELEGRAM_BOT_TOKEN_USER ||
-    process.env.TELEGRAM_BOT_TOKEN;
+  const runtime = await getTelegramRuntimeConfig();
+  const botToken = runtime.authToken;
 
   if (!botToken) {
     return { success: false, message: 'Сервер не настроен для работы с Telegram.' };
@@ -129,12 +124,8 @@ export async function sendFileToTelegramUser(data: z.infer<typeof SendFileSchema
     return { success: false, message: "Требуется аутентификация." };
   }
 
-  const envSettings = await getEnvSettings({ allowInternal: true });
-  const botToken =
-    envSettings.telegramBotTokenUser ||
-    envSettings.telegramBotToken ||
-    process.env.TELEGRAM_BOT_TOKEN_USER ||
-    process.env.TELEGRAM_BOT_TOKEN;
+  const runtime = await getTelegramRuntimeConfig();
+  const botToken = runtime.authToken;
   if (!botToken) {
     console.error("TELEGRAM_BOT_TOKEN is not configured.");
     return { success: false, message: "Сервер не настроен для отправки файлов." };

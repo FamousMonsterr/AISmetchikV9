@@ -18,9 +18,20 @@ function getOriginFromUrl(url: string) {
 }
 
 export function resolvePasskeyOrigin(requestOrigin?: string | null): string {
-  const explicitOrigin = process.env.PASSKEY_ORIGIN || process.env.NEXT_PUBLIC_SITE_URL || requestOrigin;
-  if (explicitOrigin) {
-    return normalizeOrigin(explicitOrigin);
+  const normalizedRequestOrigin = requestOrigin ? normalizeOrigin(requestOrigin) : '';
+  const configuredOrigin = process.env.PASSKEY_ORIGIN || process.env.NEXT_PUBLIC_SITE_URL;
+  if (configuredOrigin) {
+    const normalizedConfiguredOrigin = normalizeOrigin(configuredOrigin);
+    if (normalizedRequestOrigin && normalizedConfiguredOrigin !== normalizedRequestOrigin) {
+      throw new Error(
+        `PASSKEY_ORIGIN mismatch: expected ${normalizedConfiguredOrigin}, received ${normalizedRequestOrigin}. ` +
+        'PASSKEY_ORIGIN должен совпадать с origin страницы, где открыт passkey.',
+      );
+    }
+    return normalizedConfiguredOrigin;
+  }
+  if (normalizedRequestOrigin) {
+    return normalizedRequestOrigin;
   }
   throw new Error('Passkey origin is not configured. Set PASSKEY_ORIGIN or NEXT_PUBLIC_SITE_URL.');
 }

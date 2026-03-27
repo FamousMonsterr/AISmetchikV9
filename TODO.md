@@ -83,6 +83,7 @@
   - [`src/components/auth/PasskeyPanel.tsx`](/Users/timofey/Downloads/download%20(1)/src/components/auth/PasskeyPanel.tsx);
   - [`src/components/auth/CompactPasskeyAuth.tsx`](/Users/timofey/Downloads/download%20(1)/src/components/auth/CompactPasskeyAuth.tsx).
   - Вероятный итог: один канонический компактный passkey UX, без двух параллельных визуальных паттернов.
+  - Решение: `CompactPasskeyAuth` удалён, активный контур оставлен только на `LoginForm + PasskeyPanel`.
 - [ ] Проверить legacy-следы по auth-архитектуре из старых веток:
   - упоминания Google auth в docs/backup контуре;
   - старые ожидания по `middleware` vs `proxy`;
@@ -109,6 +110,7 @@
   - `TELEGRAM_BOT_WEBHOOK_URL_ADMIN`;
   - `NEXT_PUBLIC_TELEGRAM_BOT_URL`;
   - `NEXT_PUBLIC_TELEGRAM_BOT_USERNAME`;
+  - `NEXT_PUBLIC_TELEGRAM_WEBAPP_URL`;
 - [ ] Для production/VDS использовать шаблон из `deploy/.env.vds.example`.
 
 ### 4.2 Куда именно должны смотреть webhook URL
@@ -127,6 +129,9 @@
   - [`src/server-functions/webhooks/telegram.ts`](/Users/timofey/Downloads/download%20(1)/src/server-functions/webhooks/telegram.ts)
   - [`src/app/api/telegram/webhook/[audience]/route.ts`](/Users/timofey/Downloads/download%20(1)/src/app/api/telegram/webhook/%5Baudience%5D/route.ts)
 - [ ] Убедиться, что `NEXT_PUBLIC_TELEGRAM_BOT_USERNAME` и/или `NEXT_PUBLIC_TELEGRAM_BOT_URL` реально заполнены в runtime, иначе Telegram Web Login на форме логина не отрисуется.
+- [x] Свести login/runtime Telegram к одному серверному resolver:
+  - добавлен `src/lib/telegram/runtime.ts`;
+  - `/auth/login`, NextAuth и Telegram server actions теперь читают один и тот же runtime-контур из `envSettings` + `process.env` fallback.
 - [ ] В админке проверить рабочесть действий:
   - register webhook;
   - clear webhook;
@@ -134,6 +139,17 @@
   - ping webhook;
   - send test message.
 - [ ] Если webhook-адреса не заданы, показывать не абстрактную ошибку, а конкретную подсказку: какой env-параметр отсутствует.
+- [x] Реализовать реальную отвязку в самом Telegram-боте:
+  - `/unlink` больше не заглушка;
+  - в `/profile` бота добавлена inline-кнопка `Отвязать Telegram`.
+- [x] Убрать скрытую автоматическую привязку Telegram из `AppContext`:
+  - привязка больше не происходит молча на фоне только из-за наличия `initData`.
+- [x] Сделать профильный Telegram flow самодостаточным:
+  - `Открыть бота` теперь ведёт на deep-link `t.me/<bot>?start=uid_<userId>`;
+  - `Проверить после /start` теперь согласован с `refUserId` логикой в боте.
+- [x] Вынести `NEXT_PUBLIC_TELEGRAM_WEBAPP_URL` в управляемые admin env:
+  - поле добавлено в `EnvSettings`, schema и `.env` persist map;
+  - бот использует его для кнопки `Открыть приложение`.
 
 ## 5. Passkey / base64 / WebAuthn
 
@@ -151,6 +167,13 @@
   - вход существующим ключом;
   - удаление ключа.
 - [ ] Убедиться, что `PASSKEY_ORIGIN`, `PASSKEY_RP_ID`, `PASSKEY_RP_NAME` корректно попадают из env/admin runtime.
+- [x] Добавить ранний runtime guard для неправильного origin:
+  - `resolvePasskeyOrigin()` теперь явно роняет mismatch между `PASSKEY_ORIGIN` и origin реального запроса, вместо позднего сломанного WebAuthn verify.
+- [x] Защитить verify-контур от просроченных challenge:
+  - registration/authentication verify теперь проверяют `expiresAt`.
+- [x] Сделать удаление passkey честным:
+  - revoke подтверждает изменение записи;
+  - API больше не возвращает false-positive success.
 
 ### 5.3 UX-правки
 - [x] Упростить экран логина:
@@ -161,9 +184,10 @@
   - короткий заголовок;
   - один action на подключение;
   - список ключей без лишней документации на экране.
-- [ ] Проверить, можно ли сделать passkey action более прямым:
+- [x] Проверить, можно ли сделать passkey action более прямым:
   - кнопка сразу вызывает `navigator.credentials.get/create`;
   - UI только показывает ошибку/успех, а не длинные пояснения.
+  - Решение: email/nickname поля убраны из активного UI, passkey сведен к прямым действиям.
 
 ## 6. Login/auth cleanup
 - [x] Пересобрать [`src/components/auth/LoginForm.tsx`](/Users/timofey/Downloads/download%20(1)/src/components/auth/LoginForm.tsx) в более строгий и короткий сценарий:
@@ -172,7 +196,8 @@
   - VK button;
   - Telegram widget только когда реально настроен;
   - без декоративного текста про `Root + subdomains`, `One credential`, и т.п.
-- [ ] Проверить, не мешает ли auto-start Telegram Mini App входа обычному login UX.
+- [x] Проверить, не мешает ли auto-start Telegram Mini App входа обычному login UX.
+  - Решение: автозапуск убран, Telegram Mini App login теперь явный и повторяемый по кнопке.
 - [ ] Проверить post-auth redirect через [`src/lib/navigation.ts`](/Users/timofey/Downloads/download%20(1)/src/lib/navigation.ts).
 - [ ] Проверить shared cookie домен для subdomains:
   - `NEXTAUTH_COOKIE_DOMAIN`;
@@ -201,6 +226,25 @@
   - Telegram widget rendering при заполненных env;
   - Telegram Mini App login, если есть `initData`;
   - VK login, если env заданы.
+
+## 11. Новые findings после read-only аудита 27 марта 2026
+- [x] Свести Telegram login runtime и профиль к одному источнику правды:
+  - добавлен `src/lib/telegram/runtime.ts`;
+  - `/auth/login`, NextAuth и Telegram server actions больше не зависят только от `process.env`.
+- [ ] Проверить `PASSKEY_ORIGIN`/`PASSKEY_RP_ID` на реальном `lk.`-логине:
+  - root-origin легко ломает WebAuthn на `lk.aismetchik.ru`;
+  - нужен smoke сценарий и, возможно, дополнительная runtime-валидация при сохранении env.
+- [ ] Разбить `Admin -> S3`:
+  - сейчас это слишком тяжёлый и рискованный монолитный экран;
+  - минимум: развести destructive actions, preset management и bucket routing.
+- [ ] Свести `Admin -> AI Agent` к одному source of truth:
+  - UI пишет конфиг на диск;
+  - runtime частично уже переведён на живое чтение `ai-config.json` через `src/lib/ai-config-runtime.ts` в `services/ai`, `services/openrouter`, `auth`, `register`;
+  - клиентский слой и вспомогательные UI-импорты ещё используют статический JSON-import;
+  - нужен единый путь чтения/применения конфига.
+- [ ] Продолжить выпиливание Firebase-лексики:
+  - `FirebaseError` в db-layer уже переименован на `DbClientError/DbServerError`;
+  - осталось дочистить consumer-слой и тексты.
 
 ## 10. CI/CD cleanup по логам 27 марта 2026
 - [x] Убрать нестабильный runtime `Node 25.2.1` из репозитория и CI:

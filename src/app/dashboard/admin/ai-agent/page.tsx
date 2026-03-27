@@ -25,6 +25,7 @@ export default function AdminAiAgentPage() {
   const { toast } = useToast();
   const { user } = useAppContext();
   const [config, setConfig] = useState<AiAgentConfig | null>(null);
+  const [initialConfigSnapshot, setInitialConfigSnapshot] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isPending, startTransition] = useTransition();
   const [isModelDialogOpen, setIsModelDialogOpen] = useState(false);
@@ -33,10 +34,11 @@ export default function AdminAiAgentPage() {
   const loadedForUserRef = useRef<string | null>(null);
   
   const hasUnsavedChanges = useMemo(() => {
-    // This logic needs to be implemented if you want to track changes
-    // For now, we'll just enable the save button always
-    return true;
-  }, [config]);
+    if (!config) {
+      return false;
+    }
+    return JSON.stringify(config) !== initialConfigSnapshot;
+  }, [config, initialConfigSnapshot]);
 
   useEffect(() => {
     if (!user || user.systemRole !== 'Super Admin') {
@@ -54,6 +56,7 @@ export default function AdminAiAgentPage() {
       try {
         const currentConfig = await getAiAgentConfig();
         setConfig(currentConfig);
+        setInitialConfigSnapshot(JSON.stringify(currentConfig));
       } catch (error) {
         toast({
           title: "Ошибка",
@@ -268,6 +271,7 @@ const moveEngine = (engine: string, direction: 'up' | 'down') => {
       };
       const result = await updateAiAgentConfig(user.uid, preparedConfig);
       if (result.success) {
+        setInitialConfigSnapshot(JSON.stringify(preparedConfig));
         toast({ title: "Успешно", description: result.message });
       } else {
         toast({ title: "Ошибка", description: result.message, variant: "destructive" });

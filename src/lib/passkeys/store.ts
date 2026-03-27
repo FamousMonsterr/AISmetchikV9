@@ -102,7 +102,7 @@ export async function markPasskeyCredentialUsed(credentialId: string, counter: n
 
 export async function revokePasskeyCredential(userId: string, credentialId: string) {
   const db = await getDb();
-  await db.collection<any>(CREDENTIALS_COLLECTION).updateOne(
+  const result = await db.collection<any>(CREDENTIALS_COLLECTION).updateOne(
     { userId, credentialId },
     {
       $set: {
@@ -110,6 +110,7 @@ export async function revokePasskeyCredential(userId: string, credentialId: stri
       },
     },
   );
+  return result.modifiedCount > 0;
 }
 
 export async function findPasskeyUserByIdentifier(identifier: string) {

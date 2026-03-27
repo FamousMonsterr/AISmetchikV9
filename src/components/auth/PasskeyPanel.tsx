@@ -12,8 +12,6 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import {
@@ -38,6 +36,7 @@ type PasskeyPanelProps = {
   title?: string;
   description?: string;
   showManagement?: boolean;
+  variant?: 'card' | 'inline';
   onAuthenticationSuccess?: () => Promise<void> | void;
 };
 
@@ -68,10 +67,9 @@ export function PasskeyPanel({
   title = 'Ключ доступа',
   description = '',
   showManagement = true,
+  variant = 'card',
   onAuthenticationSuccess,
 }: PasskeyPanelProps) {
-  const [identifier, setIdentifier] = useState('');
-  const [nickname, setNickname] = useState('');
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [credentials, setCredentials] = useState<PasskeyCredentialSummary[]>([]);
@@ -127,6 +125,14 @@ export function PasskeyPanel({
     void refreshCredentials();
   }, []);
 
+  const formatCredentialLabel = (credential: PasskeyCredentialSummary, index: number) => {
+    if (credential.nickname?.trim()) {
+      return credential.nickname.trim();
+    }
+    const shortId = credential.credentialId.slice(0, 10);
+    return `Ключ ${index + 1} · ${shortId}`;
+  };
+
   const handleRegister = () => {
     setError(null);
     setStatus(null);
@@ -138,9 +144,7 @@ export function PasskeyPanel({
 
         const options = await postJson<PasskeyRegistrationOptionsResponse>(
           '/api/auth/passkey/register/options',
-          {
-            nickname: nickname || null,
-          },
+          {},
         );
 
         const credential = (await navigator.credentials.create({
@@ -151,17 +155,15 @@ export function PasskeyPanel({
           throw new Error('Не удалось создать ключ доступа. Повторите попытку.');
         }
 
-        const result = await postJson<{ ok: boolean; credential: { credentialId: string } }>(
+        await postJson<{ ok: boolean; credential: { credentialId: string } }>(
           '/api/auth/passkey/register/verify',
           {
             challengeId: options.challengeId,
-            nickname: nickname || null,
             credential: serializeCreationCredential(credential),
           },
         );
 
         setStatus('Ключ доступа подключён.');
-        setNickname('');
         await refreshCredentials();
       } catch (registerError: any) {
         setError(parsePasskeyError(registerError));
@@ -180,9 +182,7 @@ export function PasskeyPanel({
 
         const options = await postJson<PasskeyAuthenticationOptionsResponse>(
           '/api/auth/passkey/authenticate/options',
-          {
-            identifier: identifier.trim() || null,
-          },
+          {},
         );
 
         const credential = (await navigator.credentials.get({
@@ -239,17 +239,20 @@ export function PasskeyPanel({
     });
   };
 
-  return (
-    <Card className="w-full border border-border/60 bg-background/60 shadow-sm">
-      <CardHeader className="space-y-3">
-        <div className="flex items-center gap-2">
-          <ShieldCheck className="h-5 w-5" />
-          <CardTitle>{title}</CardTitle>
+  const content = (
+    <div className="space-y-5">
+      {variant === 'inline' && (title || description) && (
+        <div className="space-y-3">
+          {title ? (
+            <div className="flex items-center gap-2">
+              <ShieldCheck className="h-5 w-5" />
+              <div className="text-base font-semibold">{title}</div>
+            </div>
+          ) : null}
+          {description ? <p className="text-sm text-muted-foreground">{description}</p> : null}
         </div>
-        {description ? <CardDescription>{description}</CardDescription> : null}
-      </CardHeader>
+      )}
 
-      <CardContent className="space-y-5">
         {!supported && (
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
@@ -278,46 +281,26 @@ export function PasskeyPanel({
 
         {(mode === 'both' || mode === 'authentication') && (
           <div className="space-y-3 rounded-xl border border-dashed border-border/70 p-4">
-            <div className="space-y-1">
-              <Label htmlFor="passkey-identifier">Email</Label>
-              <Input
-                id="passkey-identifier"
-                value={identifier}
-                onChange={(event) => setIdentifier(event.target.value)}
-                placeholder="Можно оставить пустым"
-                autoComplete="username webauthn"
-              />
-            </div>
             <Button onClick={handleAuthenticate} disabled={isBusy || !supported} className="w-full">
               {isBusy ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : (
                 <LogIn className="mr-2 h-4 w-4" />
               )}
-              Войти по passkey
+              Войти по ключу доступа
             </Button>
           </div>
         )}
 
         {(mode === 'both' || mode === 'registration') && (
           <div className="space-y-3 rounded-xl border border-dashed border-border/70 p-4">
-            <div className="space-y-1">
-              <Label htmlFor="passkey-nickname">Название</Label>
-              <Input
-                id="passkey-nickname"
-                value={nickname}
-                onChange={(event) => setNickname(event.target.value)}
-                placeholder="Например, MacBook"
-                autoComplete="off"
-              />
-            </div>
             <Button variant="outline" onClick={handleRegister} disabled={isBusy || !supported} className="w-full">
               {isBusy ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : (
                 <KeyRound className="mr-2 h-4 w-4" />
               )}
-              Подключить passkey
+              Подключить ключ доступа
             </Button>
           </div>
         )}
@@ -341,9 +324,7 @@ export function PasskeyPanel({
                     className="flex items-center justify-between rounded-md border p-3"
                   >
                     <div>
-                      <div className="font-medium">
-                        {credential.nickname || credential.credentialId}
-                      </div>
+                      <div className="font-medium">{formatCredentialLabel(credential, credentials.indexOf(credential))}</div>
                       <div className="text-xs text-muted-foreground">
                         {credential.createdAt}
                       </div>
@@ -362,7 +343,23 @@ export function PasskeyPanel({
             )}
           </div>
         )}
-      </CardContent>
+    </div>
+  );
+
+  if (variant === 'inline') {
+    return <div className="space-y-5 rounded-2xl border border-white/10 bg-white/5 p-4">{content}</div>;
+  }
+
+  return (
+    <Card className="w-full border border-border/60 bg-background/60 shadow-sm">
+      <CardHeader className="space-y-3">
+        <div className="flex items-center gap-2">
+          <ShieldCheck className="h-5 w-5" />
+          <CardTitle>{title}</CardTitle>
+        </div>
+        {description ? <CardDescription>{description}</CardDescription> : null}
+      </CardHeader>
+      <CardContent>{content}</CardContent>
     </Card>
   );
 }

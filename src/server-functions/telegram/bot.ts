@@ -35,12 +35,14 @@ const parseStartPayload = (msg: Message): StartPayload => {
   };
 };
 
-const resolveWebAppUrl = () => {
+const resolveWebAppUrl = async () => {
+  const envSettings = await readEnvSettings();
   const envUrl =
+    envSettings.nextPublicTelegramWebappUrl ||
     process.env.NEXT_PUBLIC_TELEGRAM_WEBAPP_URL ||
     process.env.NEXT_PUBLIC_APP_URL ||
+    process.env.NEXTAUTH_URL ||
     (process.env.NEXT_PUBLIC_VERCEL_URL ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}` : undefined) ||
-    process.env.NEXT_PUBLIC_TELEGRAM_BOT_URL ||
     process.env.NEXT_PUBLIC_SITE_URL;
   return envUrl || 'https://example.com';
 };
@@ -51,6 +53,20 @@ const findUserByChatId = async (chatId: number) => {
   if (snap.empty) return null;
   const docSnap = snap.docs[0];
   return { id: docSnap.id, ...(docSnap.data() as any) };
+};
+
+const unlinkUserByChatId = async (chatId: number) => {
+  const user = await findUserByChatId(chatId);
+  if (!user) {
+    return false;
+  }
+  await updateDoc(doc(db, 'users', user.id), {
+    telegramChatId: null,
+    telegramUsername: '',
+    telegramLinkedAt: null,
+    updatedAt: serverTimestamp(),
+  });
+  return true;
 };
 
 const webhookBots = new Map<string, TelegramBot>();
@@ -65,7 +81,7 @@ const ensureBotToken = async () => {
 };
 
 const registerHandlers = (bot: TelegramBot, audience: TelegramAudience = 'default') => {
-  const webAppUrl = resolveWebAppUrl();
+  const webAppUrlPromise = resolveWebAppUrl();
 
   const saveChat = async (msg: Message, payload: StartPayload) => {
     const chatId = msg.chat.id;
@@ -95,6 +111,7 @@ const registerHandlers = (bot: TelegramBot, audience: TelegramAudience = 'defaul
       await updateDoc(userRef, {
         telegramChatId: chatId,
         telegramUsername: msg.from?.username || '',
+        telegramLinkedAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       }).catch((err) => {
         console.warn('Failed to update user with telegram chat', { userId, chatId, err: err?.message });
@@ -103,6 +120,7 @@ const registerHandlers = (bot: TelegramBot, audience: TelegramAudience = 'defaul
   };
 
   const sendWelcome = async (chatId: number) => {
+    const webAppUrl = await webAppUrlPromise;
     const keyboard = {
       inline_keyboard: [
         [{ text: 'Открыть приложение', web_app: { url: webAppUrl } }],
@@ -117,6 +135,7 @@ const registerHandlers = (bot: TelegramBot, audience: TelegramAudience = 'defaul
   };
 
   const sendProfile = async (chatId: number) => {
+    const webAppUrl = await webAppUrlPromise;
     const user = await findUserByChatId(chatId);
     if (!user) {
       await bot.sendMessage(chatId, 'Не найден аккаунт. Откройте приложение через /start для привязки.');
@@ -129,11 +148,19 @@ const registerHandlers = (bot: TelegramBot, audience: TelegramAudience = 'defaul
     await bot.sendMessage(
       chatId,
       `Профиль: ${username}\nПлан: ${plan}\nКредиты: ${credits}\nСостояние: ${state}\n\nОткройте приложение, чтобы пополнить или управлять тарифом.`,
-      { reply_markup: { inline_keyboard: [[{ text: 'Открыть приложение', web_app: { url: webAppUrl } }]] } }
+      {
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: 'Открыть приложение', web_app: { url: webAppUrl } }],
+            [{ text: 'Отвязать Telegram', callback_data: 'unlink' }],
+          ],
+        },
+      }
     );
   };
 
   const sendHistory = async (chatId: number) => {
+    const webAppUrl = await webAppUrlPromise;
     const user = await findUserByChatId(chatId);
     if (!user) {
       await bot.sendMessage(chatId, 'История недоступна. Откройте приложение через /start для привязки.');
@@ -147,6 +174,7 @@ const registerHandlers = (bot: TelegramBot, audience: TelegramAudience = 'defaul
   };
 
   const sendNew = async (chatId: number) => {
+    const webAppUrl = await webAppUrlPromise;
     await bot.sendMessage(
       chatId,
       'Создание нового расчёта доступно в приложении. Откройте калькулятор и загрузите файл.',
@@ -163,6 +191,7 @@ const registerHandlers = (bot: TelegramBot, audience: TelegramAudience = 'defaul
   };
 
   const sendPay = async (chatId: number) => {
+    const webAppUrl = await webAppUrlPromise;
     await bot.sendMessage(
       chatId,
       'Оплата и тарифы доступны в приложении (Профиль → Тариф). Можно оплатить по карте или счету от юрлица. Укажите реквизиты в профиле для счета.',
@@ -172,6 +201,14 @@ const registerHandlers = (bot: TelegramBot, audience: TelegramAudience = 'defaul
 
   const sendPing = async (chatId: number) => {
     await bot.sendMessage(chatId, `pong (${audience}) ✅ ${new Date().toLocaleString()}`);
+  };
+
+  const unlinkAccount = async (chatId: number) => {
+    const unlinked = await unlinkUserByChatId(chatId);
+    await bot.sendMessage(
+      chatId,
+      unlinked ? 'Telegram отвязан. При необходимости привяжите его снова через /start.' : 'Связанный аккаунт не найден.',
+    );
   };
 
   bot.onText(/\/.*/i, async (msg) => {
@@ -221,7 +258,7 @@ const registerHandlers = (bot: TelegramBot, audience: TelegramAudience = 'defaul
       return;
     }
     if (command === '/unlink') {
-      await bot.sendMessage(msg.chat.id, 'Отвязка выполняется в профиле пользователя (скоро в боте).');
+      await unlinkAccount(msg.chat.id);
       return;
     }
     if (command === '/ref' || command === '/stats' || command === '/clients' || command === '/attestation' || command === '/payout') {
@@ -253,6 +290,12 @@ const registerHandlers = (bot: TelegramBot, audience: TelegramAudience = 'defaul
           q.message!.chat.id,
           'Команды:\n/start — меню и запуск приложения\n/profile — профиль\n/new — новый расчёт\n/history — история\n/help — эта справка\n/pay — оплата\n/ping — проверка связи'
         );
+        return;
+      }
+      if (q.data === 'unlink') {
+        await unlinkUserByChatId(q.message!.chat.id);
+        await bot.answerCallbackQuery(q.id, { text: 'Telegram отвязан' });
+        await bot.sendMessage(q.message!.chat.id, 'Связь с Telegram удалена. Для новой привязки используйте /start.');
         return;
       }
       await bot.answerCallbackQuery(q.id, { text: 'Команда не распознана' });

@@ -865,6 +865,7 @@ export interface EnvSettings {
     telegramBotToken?: string;
     nextPublicTelegramBotUrl?: string;
     nextPublicTelegramBotUsername?: string;
+    nextPublicTelegramWebappUrl?: string;
     telegramAuthEmailDomain?: string;
     telegramBotEnabled?: boolean;
     telegramBotMode?: 'polling' | 'webhook';
@@ -987,6 +988,7 @@ const EnvSettingsSchema = z.object({
     telegramBotToken: z.string().optional().or(z.literal('')),
     nextPublicTelegramBotUrl: z.string().url('Неверный URL.').optional().or(z.literal('')),
     nextPublicTelegramBotUsername: z.string().optional().or(z.literal('')),
+    nextPublicTelegramWebappUrl: z.string().url('Неверный URL.').optional().or(z.literal('')),
     telegramAuthEmailDomain: z.string().optional().or(z.literal('')),
     telegramBotEnabled: z.boolean().optional(),
     telegramBotMode: z.enum(['polling', 'webhook']).optional(),
@@ -1187,6 +1189,7 @@ const ENV_FILE_MAP: Record<string, (settings: EnvSettings) => string | undefined
     QA_PROTECT_USER: (s) => s.qaProtectUser !== undefined ? String(!!s.qaProtectUser) : undefined,
     NEXT_PUBLIC_TELEGRAM_BOT_URL: (s) => s.nextPublicTelegramBotUrl,
     NEXT_PUBLIC_TELEGRAM_BOT_USERNAME: (s) => s.nextPublicTelegramBotUsername,
+    NEXT_PUBLIC_TELEGRAM_WEBAPP_URL: (s) => s.nextPublicTelegramWebappUrl,
     VK_AUTH_EMAIL_DOMAIN: (s) => s.vkAuthEmailDomain,
     VK_ID_CLIENT_ID: (s) => s.vkIdClientId,
     VK_ID_CLIENT_SECRET: (s) => s.vkIdClientSecret,

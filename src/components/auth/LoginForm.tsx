@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition, type FormEvent } from 'react';
+import { useEffect, useState, useTransition, type FormEvent } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { getSession, signIn } from 'next-auth/react';
@@ -39,13 +39,11 @@ export function LoginForm({
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [showPasskey, setShowPasskey] = useState(false);
   const [telegramInitData, setTelegramInitData] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isLoginPending, startLoginTransition] = useTransition();
   const [isProviderPending, startProviderTransition] = useTransition();
   const [isResetPending, startResetTransition] = useTransition();
-  const hasAutoStartedTelegramLogin = useRef(false);
 
   const finalizeSuccessfulLogin = async () => {
     const session = await getSession();
@@ -233,19 +231,9 @@ export function LoginForm({
     };
   }, [searchParams, toast]);
 
-  useEffect(() => {
-    if (hasAutoStartedTelegramLogin.current) {
-      return;
-    }
-    if (!telegramMiniAppAuthEnabled || !telegramInitData) {
-      return;
-    }
-    hasAutoStartedTelegramLogin.current = true;
-    void handleTelegramMiniAppLogin();
-  }, [telegramInitData, telegramMiniAppAuthEnabled]);
-
   const isBusy = isLoginPending || isProviderPending;
-  const showTelegramWidget = telegramWebAuthEnabled && !!telegramBotUsername && !telegramInitData;
+  const showTelegramMiniAppButton = telegramMiniAppAuthEnabled && !!telegramInitData;
+  const showTelegramWidget = telegramWebAuthEnabled && !!telegramBotUsername && !showTelegramMiniAppButton;
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-[#07111b] text-slate-100">
@@ -334,10 +322,12 @@ export function LoginForm({
 
                 <div className="space-y-3">
                   <div className="flex flex-wrap gap-2">
-                    <Button type="button" variant="outline" onClick={() => setShowPasskey((prev) => !prev)} disabled={isBusy}>
-                      <KeyRound className="mr-2 h-4 w-4" />
-                      Ключ доступа
-                    </Button>
+                    {showTelegramMiniAppButton && (
+                      <Button type="button" variant="outline" onClick={handleTelegramMiniAppLogin} disabled={isBusy}>
+                        {isProviderPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                        Telegram
+                      </Button>
+                    )}
                     {vkAuthEnabled && (
                       <Button type="button" variant="outline" onClick={handleVkLogin} disabled={isBusy}>
                         {isProviderPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
@@ -358,14 +348,13 @@ export function LoginForm({
                   )}
                 </div>
 
-                {showPasskey && (
-                  <PasskeyPanel
-                    mode="authentication"
-                    title="Ключ доступа"
-                    showManagement={false}
-                    onAuthenticationSuccess={finalizeSuccessfulLogin}
-                  />
-                )}
+                <PasskeyPanel
+                  mode="authentication"
+                  title="Ключ доступа"
+                  showManagement={false}
+                  variant="inline"
+                  onAuthenticationSuccess={finalizeSuccessfulLogin}
+                />
 
                 <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-slate-300">
                   <Button type="button" variant="link" className="px-0 text-slate-300" onClick={handlePasswordReset} disabled={isResetPending}>

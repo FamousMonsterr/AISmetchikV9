@@ -1,15 +1,18 @@
 import { LoginForm } from '@/components/auth/LoginForm';
-import { getTelegramBotUsername, isTelegramMiniAppAuthEnabled, isTelegramWebAuthEnabled, isVkAuthEnabled } from '@/lib/auth';
+import { isVkAuthEnabled } from '@/lib/auth';
+import { getTelegramRuntimeConfig } from '@/lib/telegram/runtime';
 
 export const dynamic = 'force-dynamic';
 
-export default function LoginPage() {
+export default async function LoginPage() {
+  const telegram = await getTelegramRuntimeConfig();
+
   return (
     <LoginForm
       vkAuthEnabled={isVkAuthEnabled()}
-      telegramMiniAppAuthEnabled={isTelegramMiniAppAuthEnabled()}
-      telegramWebAuthEnabled={isTelegramWebAuthEnabled()}
-      telegramBotUsername={getTelegramBotUsername()}
+      telegramMiniAppAuthEnabled={telegram.miniAppAuthEnabled}
+      telegramWebAuthEnabled={telegram.webAuthEnabled}
+      telegramBotUsername={telegram.botUsername}
     />
   );
 }

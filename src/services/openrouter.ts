@@ -4,7 +4,7 @@
 
 import { getEnvSettings } from '@/actions/adminActions';
 import { logAiApiCall } from "@/lib/logger";
-import aiConfig from '@/lib/ai-config.json';
+import { readAiConfig } from '@/lib/ai-config-runtime';
 import { Readable } from 'stream';
 
 // --- Types ---
@@ -29,7 +29,7 @@ export type PdfEngine = 'auto' | 'native' | 'mistral-ocr' | 'pdf-text';
 
 interface OpenRouterParams {
     prompt: string;
-    modelInfo: typeof aiConfig.apiModels[number] & { pdfEngineOverride?: 'pdf-text' | 'mistral-ocr' | 'native' };
+    modelInfo: any;
     temperature?: number;
     file?: { fileUri: string; mimeType: string; fileName?: string } | null;
     images?: Array<{ dataUri: string; mimeType?: string; source?: string }>;
@@ -188,6 +188,7 @@ async function tryGenerateWithEngine({
  * Returns a ReadableStream from the OpenRouter API.
  */
 export async function generateOpenRouterContentStreamed(params: OpenRouterParams): Promise<Response> {
+    const aiConfig = await readAiConfig();
     const providerPriority = aiConfig.providers.openrouter.pdfProcessingPriority as PdfEngine[];
     const modelOverride = params.modelInfo.pdfEngineOverride;
     const engineFromParam = params.pdfEngine;
@@ -219,6 +220,7 @@ export async function generateOpenRouterContentStreamed(params: OpenRouterParams
  */
 export async function generateOpenRouterContent(params: OpenRouterParams): Promise<{ text: string | null; thoughts: string | null; rawResponse: any; }> {
     const { userId = 'anonymous', modelInfo } = params;
+    const aiConfig = await readAiConfig();
     const providerPriority = aiConfig.providers.openrouter.pdfProcessingPriority as PdfEngine[];
     const modelOverride = params.modelInfo.pdfEngineOverride;
     const engineFromParam = params.pdfEngine;

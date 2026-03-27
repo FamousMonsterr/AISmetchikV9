@@ -4,13 +4,15 @@ import { getClient, getDb, getDbForCollection } from '@/lib/mongodb';
 
 export type DocumentData = Record<string, any>;
 
-export class FirebaseError extends Error {
+export class DbServerError extends Error {
   code: string;
   constructor(code: string, message: string) {
     super(message);
     this.code = code;
   }
 }
+
+export { DbServerError as FirebaseError };
 
 export class Timestamp {
   private readonly value: Date;
@@ -414,5 +416,5 @@ export function writeBatch(_db: unknown) {
 }
 
 export function onSnapshot() {
-  throw new FirebaseError('server-only', 'Realtime subscriptions must run on the client.');
+  throw new DbServerError('server-only', 'Realtime subscriptions must run on the client.');
 }

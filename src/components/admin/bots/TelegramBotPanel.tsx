@@ -97,7 +97,9 @@ export function TelegramBotPanel() {
       <Card>
         <CardHeader>
           <CardTitle>Telegram runtime</CardTitle>
-          <CardDescription>Polling/webhook lifecycle, lock и проверка аудитории.</CardDescription>
+          <CardDescription>
+            `Start polling` запускает только default polling runtime. Для webhook-ботов ниже используются `Register webhook` и проверки по аудиториям.
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex flex-wrap items-center gap-2">
@@ -111,7 +113,7 @@ export function TelegramBotPanel() {
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" onClick={() => runAction(() => startTelegramBotService(user.uid))} disabled={isPending}>
               <Play className="mr-2 h-4 w-4" />
-              Start polling
+              Start default polling
             </Button>
             <Button variant="outline" onClick={() => runAction(() => stopTelegramBotService(user.uid))} disabled={isPending}>
               <Power className="mr-2 h-4 w-4" />
