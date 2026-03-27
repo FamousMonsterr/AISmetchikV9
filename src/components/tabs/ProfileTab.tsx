@@ -606,8 +606,7 @@ export default function ProfileTab() {
 
       <PasskeyPanel
         mode="both"
-        title="Passkey и безопасность"
-        description="Зарегистрируйте passkey для быстрого входа без пароля и управляйте уже сохранёнными устройствами."
+        title="Ключ доступа"
       />
 
       {user && (

@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, useTransition, type FormEvent } from 'reac
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { getSession, signIn } from 'next-auth/react';
-import { Eye, EyeOff, KeyRound, Loader2, MessageCircle } from 'lucide-react';
+import { Eye, EyeOff, KeyRound, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -252,24 +252,16 @@ export function LoginForm({
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(56,189,248,0.16),_transparent_28%),radial-gradient(circle_at_80%_15%,_rgba(34,197,94,0.16),_transparent_24%),linear-gradient(180deg,#06101a_0%,#09131d_50%,#07111b_100%)]" />
       <div className="absolute inset-0 opacity-[0.2] [background-image:linear-gradient(rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.05)_1px,transparent_1px)] [background-size:56px_56px]" />
 
-      <div className="relative mx-auto flex min-h-screen w-full max-w-5xl items-center justify-center px-4 py-10">
-        <div className="grid w-full gap-6 lg:grid-cols-[1.05fr_0.95fr]">
-          <section className="hidden rounded-[32px] border border-white/10 bg-white/5 p-8 shadow-[0_32px_120px_rgba(0,0,0,0.35)] backdrop-blur-xl lg:flex lg:flex-col lg:justify-between">
-            <div className="space-y-6">
-              <Logo href="/" className="px-0 text-slate-100" />
-              <div className="space-y-3">
-                <p className="text-xs uppercase tracking-[0.35em] text-cyan-300/80">Авторизация</p>
-                <h1 className="max-w-lg text-4xl font-semibold leading-tight text-white">
-                  Вход в AI Сметчик.
-                </h1>
-                <p className="max-w-md text-sm leading-6 text-slate-300">
-                  Сначала email или телефон с паролем. Затем passkey, Telegram и VK.
-                </p>
-              </div>
-            </div>
-
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-300">
-              Один credential-вход на root и поддомены. Ниже компактные действия для passkey, Telegram и VK.
+      <div className="relative mx-auto flex min-h-screen w-full max-w-4xl items-center justify-center px-4 py-10">
+        <div className="grid w-full gap-6 lg:grid-cols-[0.9fr_1.1fr]">
+          <section className="hidden rounded-[32px] border border-white/10 bg-white/5 p-8 shadow-[0_32px_120px_rgba(0,0,0,0.35)] backdrop-blur-xl lg:flex lg:flex-col lg:justify-center">
+            <Logo href="/" className="px-0 text-slate-100" />
+            <div className="mt-6 space-y-3">
+              <p className="text-xs uppercase tracking-[0.35em] text-cyan-300/80">Авторизация</p>
+              <h1 className="text-4xl font-semibold leading-tight text-white">Вход в AI Сметчик</h1>
+              <p className="text-sm leading-6 text-slate-300">
+                Email или телефон, пароль и быстрые способы входа.
+              </p>
             </div>
           </section>
 
@@ -278,28 +270,13 @@ export function LoginForm({
               <CardHeader className="space-y-3">
                 <div className="flex items-center justify-between">
                   <Logo href="/" className="px-0 text-slate-100 lg:hidden" />
-                  <div className="rounded-full border border-emerald-400/30 bg-emerald-500/10 px-3 py-1 text-xs text-emerald-200">
-                    Root + subdomains
-                  </div>
                 </div>
                 <div className="space-y-1">
                   <CardTitle className="text-2xl text-white">Вход</CardTitle>
-                  <CardDescription className="text-slate-300">
-                    Email/телефон + пароль, затем дополнительные способы входа.
-                  </CardDescription>
+                  <CardDescription className="text-slate-300">Введите данные для входа.</CardDescription>
                 </div>
               </CardHeader>
               <CardContent className="space-y-5">
-                {telegramInitData && (
-                  <Alert className="border-sky-400/30 bg-sky-500/10 text-sky-50">
-                    <MessageCircle className="h-4 w-4" />
-                    <AlertTitle>Telegram Mini App</AlertTitle>
-                    <AlertDescription>
-                      Обнаружен `initData`. Вход запускается автоматически через Telegram.
-                    </AlertDescription>
-                  </Alert>
-                )}
-
                 {error && (
                   <Alert variant="destructive" className="border-red-500/30 bg-red-500/10 text-red-50">
                     <AlertTitle>Ошибка</AlertTitle>
@@ -359,7 +336,7 @@ export function LoginForm({
                   <div className="flex flex-wrap gap-2">
                     <Button type="button" variant="outline" onClick={() => setShowPasskey((prev) => !prev)} disabled={isBusy}>
                       <KeyRound className="mr-2 h-4 w-4" />
-                      Passkey
+                      Ключ доступа
                     </Button>
                     {vkAuthEnabled && (
                       <Button type="button" variant="outline" onClick={handleVkLogin} disabled={isBusy}>
@@ -371,7 +348,6 @@ export function LoginForm({
 
                   {showTelegramWidget && (
                     <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
-                      <p className="mb-2 text-xs uppercase tracking-[0.24em] text-slate-400">Telegram</p>
                       <TelegramAuthWidget
                         botUsername={telegramBotUsername}
                         onAuth={handleTelegramWebLogin}
@@ -380,19 +356,12 @@ export function LoginForm({
                       />
                     </div>
                   )}
-
-                  {!showTelegramWidget && !telegramInitData && (
-                    <p className="text-xs text-slate-400">
-                      Telegram Web login станет доступен после настройки bot username и токена.
-                    </p>
-                  )}
                 </div>
 
                 {showPasskey && (
                   <PasskeyPanel
                     mode="authentication"
-                    title="Passkey"
-                    description="Вход без пароля через WebAuthn."
+                    title="Ключ доступа"
                     showManagement={false}
                     onAuthenticationSuccess={finalizeSuccessfulLogin}
                   />

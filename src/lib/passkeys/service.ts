@@ -13,6 +13,7 @@ import {
   cosePublicKeyToJwk,
   isPasskeyChallengeMatch,
   isPasskeyOriginMatch,
+  normalizeCredentialId,
   parseAttestationObject,
   parseAuthenticatorData,
   parseClientDataJSON,
@@ -153,7 +154,9 @@ export async function completePasskeyRegistration(input: PasskeyRegistrationResp
     throw new Error('RP ID hash mismatch.');
   }
 
-  const credentialId = authenticatorData.credentialId?.length ? toBase64Url(authenticatorData.credentialId) : input.credential.id;
+  const credentialId = authenticatorData.credentialId?.length
+    ? toBase64Url(authenticatorData.credentialId)
+    : normalizeCredentialId(input.credential.rawId || input.credential.id);
   const publicKeyJwk = cosePublicKeyToJwk(authenticatorData.credentialPublicKey || {});
   const existingCredential = await findPasskeyCredentialByCredentialId(credentialId);
   if (existingCredential && !existingCredential.revokedAt) {
@@ -282,7 +285,7 @@ export async function completePasskeyAuthentication(input: PasskeyAuthentication
     throw new Error('Invalid clientDataJSON type for authentication.');
   }
 
-  const credentialId = input.credential.id || input.credential.rawId;
+  const credentialId = normalizeCredentialId(input.credential.rawId || input.credential.id);
   const credential = challengeRecord.userId
     ? await findPasskeyCredentialByUserIdAndCredentialId(challengeRecord.userId, credentialId)
     : await findPasskeyCredentialByCredentialId(credentialId);

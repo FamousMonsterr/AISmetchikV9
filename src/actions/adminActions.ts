@@ -19,7 +19,7 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { logUserAction, logAiApiCall, type ActionType } from '@/lib/logger';
 import { grantCredits, refundCredits } from '@/services/credits';
 import { startManagedBot, stopManagedBot, getBotRuntimeStatus, forceUnlockBot } from '@/server-functions/telegram/controller';
-import { registerTelegramWebhook, clearTelegramWebhook, TELEGRAM_AUDIENCES, type TelegramAudience } from '@/server-functions/webhooks/telegram';
+import { registerTelegramWebhook, clearTelegramWebhook, resolveTelegramWebhookUrl, TELEGRAM_AUDIENCES, type TelegramAudience } from '@/server-functions/webhooks/telegram';
 import { deleteVkCallbackServer, getVkCallbackStatus, pingVkApi, registerVkCallbackServer, sendVkMessage } from '@/server-functions/webhooks/vk';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
@@ -1690,11 +1690,22 @@ const resolveTelegramAudienceConfig = (envSettings: EnvSettings, audience: Teleg
         || process.env.TELEGRAM_BOT_SECRET_TOKEN
         || '';
 
-    const webhookUrl = (envSettings as any)[`telegramBotWebhookUrl${suffix}`]
+    const webhookBaseUrl = (envSettings as any)[`telegramBotWebhookUrl${suffix}`]
         || process.env[`TELEGRAM_BOT_WEBHOOK_URL_${envSuffix}`]
         || envSettings.telegramBotWebhookUrl
         || process.env.TELEGRAM_BOT_WEBHOOK_URL
+        || process.env.NEXTAUTH_URL
+        || process.env.NEXT_PUBLIC_SITE_URL
         || '';
+
+    let webhookUrl = '';
+    if (webhookBaseUrl) {
+        try {
+            webhookUrl = resolveTelegramWebhookUrl(webhookBaseUrl, audience);
+        } catch {
+            webhookUrl = webhookBaseUrl;
+        }
+    }
 
     const enabledScoped = (envSettings as any)[`telegramBotEnabled${suffix}`];
     const enabled = enabledScoped == null
@@ -1741,6 +1752,14 @@ export const getTelegramAudienceStatus = async (
             tokenSet: !!config.token,
             secretSet: !!config.secretToken,
             webhookUrl: config.webhookUrl || null,
+            webhookUrlSource: config.webhookUrl
+                ? ((envSettings as any)[`telegramBotWebhookUrl${TELEGRAM_AUDIENCE_SUFFIX[parsed.data]}`]
+                    || process.env[`TELEGRAM_BOT_WEBHOOK_URL_${parsed.data.toUpperCase()}`]
+                    || envSettings.telegramBotWebhookUrl
+                    || process.env.TELEGRAM_BOT_WEBHOOK_URL
+                    ? 'configured'
+                    : 'derived')
+                : null,
             webhookInfoUrl: webhookInfo?.url || null,
             webhookPendingUpdateCount: webhookInfo?.pending_update_count ?? null,
             webhookLastErrorDate: webhookInfo?.last_error_date ?? null,

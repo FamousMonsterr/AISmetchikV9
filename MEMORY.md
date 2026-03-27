@@ -1,4 +1,27 @@
-# MEMORY (обновлено: 24 марта 2026)
+# MEMORY (обновлено: 27 марта 2026)
+
+## Обновление 27 марта 2026
+- Проведен аудит веток и очищены refs:
+  - удалены merged/устаревшие ветки `feature/credits-sbp-templates`, `plan-models-abtest`, `chore/deps-node24-telegraf-exceljs`, `feat/bots-crm-subdomains-hardening`, `codex/implement-logo-with-scaling-rules`;
+  - локально оставлен только `codex-release-backup` как резерв до финального ручного разбора.
+- Собран рабочий реестр изменений:
+  - `TODO.md`;
+  - `docs/telegram-bot-setup.md`.
+- Passkey:
+  - client-side WebAuthn/base64url сериализация переведена на browser-safe путь без хрупкой зависимости от node-style encode/decode;
+  - `credential.id/rawId` нормализуется единообразно при регистрации и логине;
+  - login/profile UI для passkey упрощен до коротких действий без лишних пояснений.
+- Telegram:
+  - webhook URL теперь может автоматически выводиться из `NEXTAUTH_URL` / `NEXT_PUBLIC_SITE_URL`;
+  - для `aismetchik.ru` поддерживаются канонические surface URL:
+    - root: `/api/telegram/webhook`
+    - `lk/admin/crm/partner`: `/api/telegram/webhook/<audience>`;
+  - шаблоны `.env.example` и `deploy/.env.vds.example` обновлены готовыми production-примерами.
+- Локально подтверждено после этих правок:
+  - `npm run lint` ✅
+  - `npm run typecheck` ✅
+  - `npm run test` ✅
+  - `npm run build` ✅
 
 ## Обновление 24 марта 2026
 - Пакет `feat: unify storage admin and auth bot controls` rebased поверх актуального `origin/main`.

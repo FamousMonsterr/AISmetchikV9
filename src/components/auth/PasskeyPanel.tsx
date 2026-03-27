@@ -1,16 +1,13 @@
 "use client";
 
-import { useEffect, useState, useTransition, type ReactNode } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 import { signIn } from 'next-auth/react';
 import {
   AlertCircle,
   KeyRound,
-  Laptop,
   Loader2,
   LogIn,
-  QrCode,
   ShieldCheck,
-  Smartphone,
   Trash2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -66,28 +63,10 @@ async function getJson<T>(url: string): Promise<T> {
   return payload as T;
 }
 
-function CapabilityCard({
-  icon,
-  title,
-  description,
-}: {
-  icon: ReactNode;
-  title: string;
-  description: string;
-}) {
-  return (
-    <div className="rounded-xl border border-border/60 bg-muted/20 p-3">
-      <div className="mb-2 text-primary">{icon}</div>
-      <p className="text-sm font-medium">{title}</p>
-      <p className="mt-1 text-xs leading-5 text-muted-foreground">{description}</p>
-    </div>
-  );
-}
-
 export function PasskeyPanel({
   mode = 'both',
-  title = 'Вход по passkey',
-  description = 'Войдите или сохраните ключ доступа passkey через WebAuthn на этом устройстве.',
+  title = 'Ключ доступа',
+  description = '',
   showManagement = true,
   onAuthenticationSuccess,
 }: PasskeyPanelProps) {
@@ -181,7 +160,7 @@ export function PasskeyPanel({
           },
         );
 
-        setStatus(`Ключ доступа сохранён: ${result.credential.credentialId}.`);
+        setStatus('Ключ доступа подключён.');
         setNickname('');
         await refreshCredentials();
       } catch (registerError: any) {
@@ -260,11 +239,6 @@ export function PasskeyPanel({
     });
   };
 
-  const canShowAutofillHint = capabilities.conditionalMediationAvailable === true;
-  const authButtonLabel = identifier.trim()
-    ? 'Продолжить с ключом доступа'
-    : 'Войти по ключу доступа';
-
   return (
     <Card className="w-full border border-border/60 bg-background/60 shadow-sm">
       <CardHeader className="space-y-3">
@@ -272,45 +246,16 @@ export function PasskeyPanel({
           <ShieldCheck className="h-5 w-5" />
           <CardTitle>{title}</CardTitle>
         </div>
-        <CardDescription>{description}</CardDescription>
+        {description ? <CardDescription>{description}</CardDescription> : null}
       </CardHeader>
 
       <CardContent className="space-y-5">
-        <div className="grid gap-3 sm:grid-cols-3">
-          <CapabilityCard
-            icon={<Laptop className="h-4 w-4" />}
-            title="Это устройство"
-            description={
-              capabilities.platformAuthenticatorAvailable === true
-                ? 'Можно использовать встроенную биометрию или локально сохранённый ключ доступа.'
-                : capabilities.platformAuthenticatorAvailable === false
-                  ? 'Встроенный ключ недоступен. Можно войти через телефон по QR или внешний ключ.'
-                  : 'Проверяем, доступен ли локальный способ входа на этом устройстве.'
-            }
-          />
-          <CapabilityCard
-            icon={<QrCode className="h-4 w-4" />}
-            title="Телефон по QR"
-            description="Если passkey сохранён на телефоне, браузер предложит отсканировать QR-код и подтвердить вход."
-          />
-          <CapabilityCard
-            icon={<Smartphone className="h-4 w-4" />}
-            title="Внешний ключ"
-            description={
-              canShowAutofillHint
-                ? 'Браузер поддерживает быстрый выбор сохранённых passkey и совместимых ключей.'
-                : 'Подойдут security key, телефон поблизости или другой совместимый WebAuthn-ключ.'
-            }
-          />
-        </div>
-
         {!supported && (
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>WebAuthn недоступен</AlertTitle>
             <AlertDescription>
-              На этом устройстве вход по ключу доступа сейчас недоступен. Используйте Edge,
-              Chrome, Safari или современную версию браузера.
+              Используйте современный Chrome, Edge или Safari.
             </AlertDescription>
           </Alert>
         )}
@@ -325,7 +270,7 @@ export function PasskeyPanel({
 
         {status && (
           <Alert>
-            <Smartphone className="h-4 w-4" />
+            <KeyRound className="h-4 w-4" />
             <AlertTitle>Готово</AlertTitle>
             <AlertDescription>{status}</AlertDescription>
           </Alert>
@@ -334,18 +279,14 @@ export function PasskeyPanel({
         {(mode === 'both' || mode === 'authentication') && (
           <div className="space-y-3 rounded-xl border border-dashed border-border/70 p-4">
             <div className="space-y-1">
-              <Label htmlFor="passkey-identifier">Email или логин</Label>
+              <Label htmlFor="passkey-identifier">Email</Label>
               <Input
                 id="passkey-identifier"
                 value={identifier}
                 onChange={(event) => setIdentifier(event.target.value)}
-                placeholder="Укажите email, если хотите сузить поиск ключа доступа"
+                placeholder="Можно оставить пустым"
                 autoComplete="username webauthn"
               />
-              <p className="text-xs leading-5 text-muted-foreground">
-                Если ключ сохранён на этом устройстве, браузер предложит его автоматически,
-                либо покажет QR для входа с телефона.
-              </p>
             </div>
             <Button onClick={handleAuthenticate} disabled={isBusy || !supported} className="w-full">
               {isBusy ? (
@@ -353,7 +294,7 @@ export function PasskeyPanel({
               ) : (
                 <LogIn className="mr-2 h-4 w-4" />
               )}
-              {authButtonLabel}
+              Войти по passkey
             </Button>
           </div>
         )}
@@ -361,18 +302,14 @@ export function PasskeyPanel({
         {(mode === 'both' || mode === 'registration') && (
           <div className="space-y-3 rounded-xl border border-dashed border-border/70 p-4">
             <div className="space-y-1">
-              <Label htmlFor="passkey-nickname">Название ключа доступа</Label>
+              <Label htmlFor="passkey-nickname">Название</Label>
               <Input
                 id="passkey-nickname"
                 value={nickname}
                 onChange={(event) => setNickname(event.target.value)}
-                placeholder="Например, Рабочий ноутбук"
+                placeholder="Например, MacBook"
                 autoComplete="off"
               />
-              <p className="text-xs leading-5 text-muted-foreground">
-                Так будет проще отличать ключи доступа в профиле: iCloud Keychain,
-                встроенный менеджер ключей браузера или аппаратный security key.
-              </p>
             </div>
             <Button variant="outline" onClick={handleRegister} disabled={isBusy || !supported} className="w-full">
               {isBusy ? (
@@ -380,7 +317,7 @@ export function PasskeyPanel({
               ) : (
                 <KeyRound className="mr-2 h-4 w-4" />
               )}
-              Сохранить ключ доступа
+              Подключить passkey
             </Button>
           </div>
         )}
@@ -394,7 +331,7 @@ export function PasskeyPanel({
 
             {credentials.length === 0 ? (
               <div className="rounded-md border bg-muted/20 p-3 text-sm text-muted-foreground">
-                Пока у вас нет сохранённых ключей доступа.
+                Ключи доступа ещё не подключены.
               </div>
             ) : (
               <div className="space-y-2">
@@ -408,7 +345,7 @@ export function PasskeyPanel({
                         {credential.nickname || credential.credentialId}
                       </div>
                       <div className="text-xs text-muted-foreground">
-                        {credential.createdAt} · счётчик {credential.counter}
+                        {credential.createdAt}
                       </div>
                     </div>
                     <Button

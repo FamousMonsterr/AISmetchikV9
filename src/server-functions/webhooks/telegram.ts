@@ -8,6 +8,16 @@ import { processTelegramWebhookUpdate } from '@/server-functions/telegram/bot';
 export const TELEGRAM_AUDIENCES = ['default', 'user', 'partner', 'manager', 'admin'] as const;
 export type TelegramAudience = (typeof TELEGRAM_AUDIENCES)[number];
 
+const TELEGRAM_AUDIENCE_HOST_PREFIX: Record<TelegramAudience, string | null> = {
+  default: null,
+  user: 'lk',
+  partner: 'partner',
+  manager: 'crm',
+  admin: 'admin',
+};
+
+const KNOWN_SURFACE_HOSTS = new Set(['admin', 'lk', 'crm', 'partner', 'm']);
+
 type TelegramWebhookSettings = {
   telegramBotToken?: string;
   telegramBotSecretToken?: string;
@@ -46,6 +56,58 @@ function suffixFor(audience: TelegramAudience) {
   return audience === 'default' ? '' : audience[0].toUpperCase() + audience.slice(1);
 }
 
+function isLocalLikeHostname(hostname: string) {
+  return (
+    hostname === 'localhost' ||
+    hostname.endsWith('.localhost') ||
+    /^\d{1,3}(\.\d{1,3}){3}$/.test(hostname)
+  );
+}
+
+function stripKnownSurfaceHost(hostname: string) {
+  const parts = hostname.split('.');
+  if (parts.length > 2 && KNOWN_SURFACE_HOSTS.has(parts[0])) {
+    return parts.slice(1).join('.');
+  }
+  return hostname;
+}
+
+export function resolveTelegramWebhookUrl(baseUrl: string, audience: TelegramAudience): string {
+  const parsed = new URL(baseUrl);
+  const localLike = isLocalLikeHostname(parsed.hostname);
+  const hostPrefix = TELEGRAM_AUDIENCE_HOST_PREFIX[audience];
+
+  parsed.hash = '';
+  parsed.search = '';
+  parsed.pathname = audience === 'default'
+    ? '/api/telegram/webhook'
+    : `/api/telegram/webhook/${audience}`;
+
+  if (!localLike) {
+    const baseHostname = stripKnownSurfaceHost(parsed.hostname);
+    parsed.hostname = hostPrefix ? `${hostPrefix}.${baseHostname}` : baseHostname;
+  }
+
+  return parsed.toString();
+}
+
+function resolveTelegramWebhookBaseUrl() {
+  const baseUrl =
+    process.env.NEXTAUTH_URL?.trim() ||
+    process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
+    '';
+
+  if (!baseUrl) {
+    return '';
+  }
+
+  try {
+    return new URL(baseUrl).toString();
+  } catch {
+    return '';
+  }
+}
+
 async function resolveAudienceConfig(audience?: TelegramAudience) {
   const resolvedAudience = normalizeAudience(audience);
   const settings = await readEnvSettings();
@@ -68,7 +130,16 @@ async function resolveAudienceConfig(audience?: TelegramAudience) {
     settings[`telegramBotWebhookUrl${suffix}`] ||
     process.env[`TELEGRAM_BOT_WEBHOOK_URL_${envSuffix}`] ||
     settings.telegramBotWebhookUrl ||
-    process.env.TELEGRAM_BOT_WEBHOOK_URL;
+    process.env.TELEGRAM_BOT_WEBHOOK_URL ||
+    resolveTelegramWebhookBaseUrl();
+
+  const resolvedWebhookUrl = webhookUrl
+    ? (
+        webhookUrl.startsWith('http://') || webhookUrl.startsWith('https://')
+          ? resolveTelegramWebhookUrl(webhookUrl, resolvedAudience)
+          : ''
+      )
+    : '';
 
   const enabledScoped = settings[`telegramBotEnabled${suffix}`];
   const enabled = enabledScoped == null ? settings.telegramBotEnabled !== false : enabledScoped !== false;
@@ -77,7 +148,7 @@ async function resolveAudienceConfig(audience?: TelegramAudience) {
     audience: resolvedAudience,
     token,
     secret,
-    webhookUrl,
+    webhookUrl: resolvedWebhookUrl,
     enabled,
   };
 }
