@@ -1,5 +1,3 @@
-import XlsxPopulate from 'xlsx-populate/browser/xlsx-populate-no-encryption.min.js';
-
 type PriceBaseExportRow = {
   'Наименование': string;
   'Модель/Артикул': string;
@@ -19,6 +17,15 @@ const EXCEL_COLUMNS: (keyof PriceBaseExportRow)[] = [
   'Цена монтажа (средняя)',
   'Раздел',
 ];
+
+let xlsxPopulatePromise: Promise<any> | null = null;
+
+async function loadXlsxPopulate() {
+  if (!xlsxPopulatePromise) {
+    xlsxPopulatePromise = import('xlsx-populate/browser/xlsx-populate-no-encryption.min.js').then((module) => module.default);
+  }
+  return xlsxPopulatePromise;
+}
 
 function normalizeCellValue(value: unknown): string {
   if (value == null) return '';
@@ -73,6 +80,7 @@ function triggerDownload(blob: Blob, fileName: string) {
 }
 
 export async function exportPriceBaseToExcel(rows: PriceBaseExportRow[], fileName: string) {
+  const XlsxPopulate = await loadXlsxPopulate();
   const workbook = await XlsxPopulate.fromBlankAsync();
   const sheet = workbook.sheet(0).name('База цен');
 
@@ -103,6 +111,7 @@ export async function exportPriceBaseToExcel(rows: PriceBaseExportRow[], fileNam
 }
 
 export async function parseExcelRowsFromArrayBuffer(arrayBuffer: ArrayBuffer): Promise<{ headers: string[]; data: Record<string, string>[] }> {
+  const XlsxPopulate = await loadXlsxPopulate();
   const workbook = await XlsxPopulate.fromDataAsync(arrayBuffer);
   const sheet = workbook.sheet(0);
   if (!sheet) {

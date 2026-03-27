@@ -24,8 +24,13 @@
   - `npm run build` ✅
 - CI/CD cleanup по логам:
   - репозиторий и workflow возвращены на единый `Node 24`-контур (`package.json`, `.nvmrc`, `.node-version`, `Dockerfile`, `README`, `ci.yml`, `external-checks.yml`);
-  - в GitHub Actions добавлены `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24`, отключение `npm audit/fund` шума и cache для `.next/cache` / `Playwright`;
-  - warning `--localstorage-file was provided without a valid path` не найден в коде проекта и признан наиболее вероятным шумом `Node 25 + Next/Turbopack`, поэтому основной mitigation — отказ от `Node 25` в release-контуре.
+  - в GitHub Actions и deploy workflow добавлены `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24`, отключение `npm audit/fund` шума, cache для `.next/cache` / `Playwright`, а runner закреплён на `ubuntu-24.04`;
+  - локальные Firebase secrets/служебные файлы добавлены в `.gitignore`, чтобы не шумели в рабочем дереве.
+- Price base / Excel:
+  - warning `--localstorage-file was provided without a valid path` локализован через sourcemap к SSR bundle страницы `/dashboard/price-base`;
+  - корень: top-level import `xlsx-populate/browser` в `src/services/excel/browserExcel.ts`, из-за которого browser stream/storage-полифиллы попадали в server build;
+  - исправление: `xlsx-populate/browser` загружается lazy через `import()` внутри export/parse функций;
+  - локальный `next build` после этого проходит без warning даже на текущем локальном `Node 25`.
 - `.localhost.log` повторно проверен: новых runtime-ошибок нет, только регистрация global error handlers.
 
 ## Обновление 24 марта 2026

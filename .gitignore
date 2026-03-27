@@ -45,6 +45,9 @@ old.localhost.log
 .codex-artifacts/
 .playwright-cli/
 output/
+.firebaserc
+src/.firebaserc
+est-smetter-firebase-adminsdk-fbsvc-e5d604b115.json
 
 # macOS specific
 .DS_Store
@@ -52,4 +55,3 @@ node_modules
 
 # npm cache
 .npm-cache/
-

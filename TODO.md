@@ -69,9 +69,10 @@
   - `.firebaserc`;
   - `src/.firebaserc`;
   - `est-smetter-firebase-adminsdk-fbsvc-e5d604b115.json`.
-- [ ] Если это локальные секреты/миграционные артефакты:
+- [x] Если это локальные секреты/миграционные артефакты:
   - не коммитить;
   - при необходимости добавить/уточнить `.gitignore`.
+  - Решение: добавлены явные ignore-правила для `.firebaserc`, `src/.firebaserc`, `est-smetter-firebase-adminsdk-fbsvc-e5d604b115.json`.
 
 ## 3. Дубли и параллельные реализации
 - [ ] Проверить необходимость обёртки [`src/components/SpecificationPageContent.tsx`](/Users/timofey/Downloads/download%20(1)/src/components/SpecificationPageContent.tsx)
@@ -179,7 +180,7 @@
   - TLS/host consistency.
 
 ## 7. Документация и память проекта
-- [ ] Обновить `MEMORY.md` по результатам этой сессии:
+- [x] Обновить `MEMORY.md` по результатам этой сессии:
   - какие ветки признаны устаревшими;
   - какие удалены;
   - какие auth-фиксы внесены;
@@ -218,10 +219,11 @@
   - добавлен cache для `Playwright` browser binaries.
 - [x] Разобрать warning `--localstorage-file was provided without a valid path`:
   - первичная проверка repo-кода не нашла ни CLI-флага, ни `NODE_OPTIONS`, ни прямых упоминаний `localstorage-file`;
-  - warning один раз воспроизвёлся на локальном `next build` под текущим локальным `Node 25`, но не воспроизводится стабильно;
-  - наиболее вероятный источник: шум/регрессия рантайма `Node 25` при `Next 16 + Turbopack`, а не код проекта;
-  - практическое решение: CI/CD и runtime репозитория возвращены на `Node 24`, где этот warning не должен быть частью основного release-контура.
+  - через sourcemap локализован реальный источник: SSR bundle страницы `/dashboard/price-base` подтягивал `xlsx-populate/browser` из [`browserExcel.ts`](/Users/timofey/Downloads/download%20(1)/src/services/excel/browserExcel.ts) через top-level import;
+  - исправление: `xlsx-populate/browser` переведён на lazy `import()` внутри `exportPriceBaseToExcel` / `parseExcelRowsFromArrayBuffer`;
+  - результат: локальный `next build` под текущим локальным `Node 25` проходит без warning `--localstorage-file`;
+  - дополнительный mitigation сохранён: CI/CD и release-контур остаются на `Node 24`.
 
 ## 9. Локальный лог
 - [x] `.localhost.log` сейчас чистый, ошибок по коду в нём не видно.
-- [ ] После этой серии правок снова проверить лог, чтобы убедиться, что новые auth/runtime ошибки не появились.
+- [x] После этой серии правок снова проверить лог, чтобы убедиться, что новые auth/runtime ошибки не появились.
