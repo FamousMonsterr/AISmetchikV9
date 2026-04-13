@@ -1,41 +1,21 @@
 import type { Metadata, Viewport } from "next";
+import { Inter, JetBrains_Mono } from "next/font/google";
 import localFont from "next/font/local";
 import "./globals.css";
 import { RootClientShell } from "@/components/layout/RootClientShell";
 
-const inter = localFont({
-  src: [
-    {
-      path: "../../public/fonts/Inter-Regular.woff2",
-      weight: "400",
-      style: "normal",
-    },
-    {
-      path: "../../public/fonts/Inter-Medium.woff2",
-      weight: "500",
-      style: "normal",
-    },
-    {
-      path: "../../public/fonts/Inter-SemiBold.woff2",
-      weight: "600",
-      style: "normal",
-    },
-    {
-      path: "../../public/fonts/Inter-Bold.woff2",
-      weight: "700",
-      style: "normal",
-    },
-  ],
+// New Design System Fonts (Google Fonts)
+const inter = Inter({
+  subsets: ["latin", "cyrillic"],
   variable: "--font-sans",
   display: "swap",
   fallback: ["-apple-system", "BlinkMacSystemFont", "Segoe UI", "sans-serif"],
 });
 
-const jetbrainsMono = localFont({
-  src: "../../public/fonts/JetBrainsMono-Regular.woff2",
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ["latin", "cyrillic"],
   variable: "--font-mono",
   weight: "400",
-  style: "normal",
   display: "swap",
   fallback: ["monospace"],
 });

@@ -94,7 +94,7 @@
 
   /* Animation */
   --duration-fast: 150ms;
-  --duration-normal: 250ms;
+  --duration-medium: 250ms;
   --duration-slow: 350ms;
   --duration-slower: 500ms;
 
@@ -259,12 +259,12 @@
   /* Buttons */
   .btn {
     @apply inline-flex items-center justify-center gap-2 px-6 py-3 
-      font-medium rounded-lg transition-all duration-normal
+      font-medium rounded-lg transition-all duration-[250ms]
       focus:outline-none focus:ring-2 focus:ring-accent/50;
   }
 
   .btn-primary {
-    @apply bg-accent text-white shadow-glow;
+    @apply bg-accent text-white;
     box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1) inset, var(--shadow-glow);
   }
 
@@ -285,7 +285,7 @@
   /* Cards */
   .card {
     @apply bg-bg-secondary border border-border rounded-2xl p-8
-      transition-all duration-normal;
+      transition-all duration-[250ms];
   }
 
   .card:hover {
