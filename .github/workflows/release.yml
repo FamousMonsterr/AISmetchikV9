@@ -1,0 +1,175 @@
+name: Release & Versioning
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version_type:
+        description: 'Тип версии (patch, minor, major)'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+
+concurrency:
+  group: release-versioning
+  cancel-in-progress: true
+
+env:
+  CI: true
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+  NEXT_TELEMETRY_DISABLED: "1"
+
+permissions:
+  contents: write
+  deployments: read
+  packages: write
+
+jobs:
+  create-release:
+    runs-on: ubuntu-24.04
+    outputs:
+      version: ${{ steps.get_version.outputs.version }}
+      changelog: ${{ steps.changelog.outputs.changelog }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Get version from tag or create new
+        id: get_version
+        run: |
+          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            VERSION="${{ github.ref_name }}"
+            echo "::notice::Using tag version: $VERSION"
+          else
+            # Автоматическое создание версии
+            VERSION_TYPE="${{ github.event.inputs.version_type || 'patch' }}"
+            LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+            CURRENT_VERSION="${LATEST_TAG#v}"
+            
+            IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_VERSION"
+            
+            case "$VERSION_TYPE" in
+              major)
+                NEW_MAJOR=$((MAJOR + 1))
+                VERSION="v${NEW_MAJOR}.0.0"
+                ;;
+              minor)
+                NEW_MINOR=$((MINOR + 1))
+                VERSION="v${MAJOR}.${NEW_MINOR}.0"
+                ;;
+              patch)
+                NEW_PATCH=$((PATCH + 1))
+                VERSION="v${MAJOR}.${MINOR}.${NEW_PATCH}"
+                ;;
+            esac
+            
+            echo "::notice::Created new version: $VERSION"
+          fi
+          
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          VERSION="${{ steps.get_version.outputs.version }}"
+          
+          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || git rev-list --max-parents=0 HEAD)
+          else
+            PREV_TAG=$(git describe --tags --abbrev=0 2>/dev/null || git rev-list --max-parents=0 HEAD)
+          fi
+          
+          CHANGELOG=$(git log --pretty=format:"- %s (%h)" "$PREV_TAG"..HEAD 2>/dev/null || echo "- Initial release")
+          
+          echo "changelog<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$CHANGELOG" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+          
+          echo "$CHANGELOG" > CHANGELOG.md
+
+      - name: Create GitHub Release
+        if: github.event_name == 'workflow_dispatch'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.VERSION }}
+          name: Release ${{ env.VERSION }}
+          body: |
+            ## Changes in ${{ env.VERSION }}
+            
+            ${{ steps.changelog.outputs.changelog }}
+            
+            ---
+            *Auto-generated release*
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+
+      - name: Update package.json version
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          VERSION_NUM="${{ steps.get_version.outputs.version#v }}"
+          npm version "$VERSION_NUM" --no-git-tag-version
+          
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add package.json package-lock.json
+          git commit -m "chore: bump version to $VERSION_NUM"
+          git push origin main
+
+  build-artifacts:
+    needs: create-release
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        run: npm run build
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-${{ needs.create-release.outputs.version }}
+          path: |
+            .next/
+            !.next/cache/
+          retention-days: 30
+
+  notify:
+    needs: [create-release, build-artifacts]
+    runs-on: ubuntu-24.04
+    if: always()
+    steps:
+      - name: Summary
+        run: |
+          echo "## 📦 Release ${{ needs.create-release.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Changelog" >> $GITHUB_STEP_SUMMARY
+          echo "${{ needs.create-release.outputs.changelog }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Build Status:** ${{ needs.build-artifacts.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Triggered by:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY

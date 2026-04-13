@@ -1,0 +1,37 @@
+{
+    "name": "AI Smetchik",
+    "short_name": "AI Smetchik",
+    "description": "AI-powered estimation tool for low-voltage system installers",
+    "icons": [
+        {
+            "src": "/icons/icon-192x192.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        },
+        {
+            "src": "/icons/icon-512x512.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        }
+    ],
+    "start_url": "/dashboard",
+    "display": "standalone",
+    "background_color": "#ffffff",
+    "theme_color": "#221F20",
+    "share_target": {
+        "action": "/dashboard?share-received=true",
+        "method": "POST",
+        "enctype": "multipart/form-data",
+        "params": {
+            "title": "name",
+            "text": "description",
+            "url": "url",
+            "files": [
+                {
+                    "name": "files",
+                    "accept": ["*/*"]
+                }
+            ]
+        }
+    }
+}

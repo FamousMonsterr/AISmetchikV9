@@ -1,0 +1,174 @@
+name: External Checks
+
+on:
+  workflow_run:
+    workflows: ["Deploy VDS"]
+    types: [completed]
+  workflow_dispatch:
+  schedule:
+    - cron: "17 3 * * *"
+
+env:
+  CI: true
+  NEXT_TELEMETRY_DISABLED: "1"
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+  NPM_CONFIG_AUDIT: "false"
+  NPM_CONFIG_FUND: "false"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: external-checks-${{ github.event_name }}-${{ github.ref || github.event.workflow_run.head_branch || 'scheduled' }}
+  cancel-in-progress: true
+
+jobs:
+  preflight:
+    if: >-
+      github.event_name != 'workflow_run' ||
+      (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main')
+    runs-on: ubuntu-24.04
+    outputs:
+      e2e_ready: ${{ steps.check.outputs.e2e_ready }}
+      smoke_ready: ${{ steps.check.outputs.smoke_ready }}
+    steps:
+      - name: Validate external-check inputs
+        id: check
+        env:
+          E2E_BASE_URL: ${{ secrets.E2E_BASE_URL }}
+          E2E_USER_EMAIL: ${{ secrets.E2E_USER_EMAIL }}
+          E2E_USER_PASSWORD: ${{ secrets.E2E_USER_PASSWORD }}
+          SMOKE_DOMAINS: ${{ vars.SMOKE_DOMAINS }}
+          SMOKE_BASE_URL: ${{ vars.SMOKE_BASE_URL }}
+        run: |
+          e2e_ready=true
+          smoke_ready=true
+
+          for var in E2E_BASE_URL E2E_USER_EMAIL E2E_USER_PASSWORD; do
+            if [ -z "${!var}" ]; then
+              echo "::warning::Missing external E2E setting: ${var}"
+              e2e_ready=false
+            fi
+          done
+
+          if [ -z "$SMOKE_DOMAINS" ] && [ -z "$SMOKE_BASE_URL" ]; then
+            echo "::warning::Missing external smoke settings: set SMOKE_DOMAINS or SMOKE_BASE_URL as repository variables."
+            smoke_ready=false
+          fi
+
+          echo "e2e_ready=${e2e_ready}" >> "$GITHUB_OUTPUT"
+          echo "smoke_ready=${smoke_ready}" >> "$GITHUB_OUTPUT"
+
+  e2e:
+    needs: preflight
+    if: needs.preflight.outputs.e2e_ready == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      E2E_BASE_URL: ${{ secrets.E2E_BASE_URL }}
+      E2E_USER_EMAIL: ${{ secrets.E2E_USER_EMAIL }}
+      E2E_USER_PASSWORD: ${{ secrets.E2E_USER_PASSWORD }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Restore Playwright browsers cache
+        uses: actions/cache@v4
+        with:
+          path: /home/runner/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
+
+      - name: Install Playwright
+        run: npx playwright install --with-deps chromium
+
+      - name: Run Playwright E2E
+        run: npm run test:e2e
+
+      - name: Upload Playwright artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-artifacts-${{ github.run_id }}
+          path: |
+            playwright-report
+            test-results
+          if-no-files-found: ignore
+          retention-days: 14
+
+  smoke-subdomains:
+    needs: preflight
+    if: needs.preflight.outputs.smoke_ready == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      SMOKE_DOMAINS: ${{ vars.SMOKE_DOMAINS }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Smoke health checks
+        run: npm run test:smoke-subdomains
+
+  smoke-browser:
+    needs: preflight
+    if: needs.preflight.outputs.smoke_ready == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      SMOKE_BASE_URL: ${{ vars.SMOKE_BASE_URL }}
+      SMOKE_DOMAINS: ${{ vars.SMOKE_DOMAINS }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Restore Playwright browsers cache
+        uses: actions/cache@v4
+        with:
+          path: /home/runner/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
+
+      - name: Install Playwright
+        run: npx playwright install --with-deps chromium
+
+      - name: Run browser smoke
+        run: npm run test:smoke-browser
+
+      - name: Upload smoke artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-artifacts-${{ github.run_id }}
+          path: .artifacts/smoke
+          if-no-files-found: ignore
+          retention-days: 14

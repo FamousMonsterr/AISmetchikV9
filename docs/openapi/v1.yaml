@@ -1,0 +1,148 @@
+openapi: 3.1.0
+info:
+  title: AI Smetchik Backend API v1
+  version: 1.0.0
+  description: |
+    MVP API namespace for split frontend/backend deployment.
+servers:
+  - url: https://api.example.com
+security:
+  - bearerAuth: []
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    AuthTokens:
+      type: object
+      properties:
+        accessToken:
+          type: string
+        refreshToken:
+          type: string
+    AnalysisJobCreateRequest:
+      type: object
+      required: [projectId, fileUri, fileSha1, fileName, mimeType, model]
+      properties:
+        projectId: { type: string }
+        fileUri: { type: string, format: uri }
+        fileSha1: { type: string }
+        fileName: { type: string }
+        mimeType: { type: string }
+        objectKey: { type: string }
+        model: { type: string }
+        temperature: { type: number }
+        includeThoughts: { type: boolean }
+paths:
+  /v1/auth/login:
+    post:
+      security: []
+      summary: Login and issue JWT tokens
+      requestBody:
+        required: true
+      responses:
+        '200':
+          description: OK
+  /v1/auth/refresh:
+    post:
+      security: []
+      summary: Refresh access token
+      requestBody:
+        required: true
+      responses:
+        '200':
+          description: OK
+  /v1/auth/me:
+    get:
+      summary: Get current user profile from access token
+      responses:
+        '200':
+          description: OK
+  /v1/analysis/jobs:
+    post:
+      summary: Enqueue analysis job
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AnalysisJobCreateRequest'
+      responses:
+        '200':
+          description: Enqueued
+  /v1/analysis/jobs/{jobId}:
+    get:
+      summary: Get analysis job status
+      parameters:
+        - in: path
+          name: jobId
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: OK
+  /v1/analysis/jobs/{jobId}/cancel:
+    post:
+      summary: Cancel analysis job
+      parameters:
+        - in: path
+          name: jobId
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Cancelled
+  /v1/admin/analysis/worker/run:
+    post:
+      summary: Run worker loop once (admin)
+      responses:
+        '200':
+          description: OK
+  /v1/admin/analysis/worker/requeue:
+    post:
+      summary: Requeue failed/cancelled jobs (admin)
+      responses:
+        '200':
+          description: OK
+  /v1/storage/presign-upload:
+    post:
+      summary: Presign upload + read URL
+      responses:
+        '200':
+          description: OK
+  /v1/storage/presign-read-refresh:
+    post:
+      summary: Refresh presigned read URL
+      responses:
+        '200':
+          description: OK
+  /v1/admin/settings/app:
+    get:
+      summary: Read app settings (admin)
+      responses:
+        '200':
+          description: OK
+    patch:
+      summary: Update app settings (admin)
+      responses:
+        '200':
+          description: OK
+  /v1/admin/settings/env:
+    get:
+      summary: Read env settings (admin, masked policy depends on endpoint)
+      responses:
+        '200':
+          description: OK
+    patch:
+      summary: Update env settings (admin)
+      responses:
+        '200':
+          description: OK
+  /v1/admin/connectivity/test:
+    get:
+      summary: Connectivity diagnostics (admin)
+      responses:
+        '200':
+          description: OK

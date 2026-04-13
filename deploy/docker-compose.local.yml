@@ -1,0 +1,16 @@
+services:
+  web:
+    environment:
+      MONGODB_URI: mongodb://mongo:27017
+      NEXTAUTH_URL: http://localhost:3000
+      NEXT_PUBLIC_SITE_URL: http://localhost:3000
+
+  worker:
+    environment:
+      MONGODB_URI: mongodb://mongo:27017
+      NEXTAUTH_URL: http://localhost:3000
+      NEXT_PUBLIC_SITE_URL: http://localhost:3000
+
+  mongo:
+    ports:
+      - "27017:27017"

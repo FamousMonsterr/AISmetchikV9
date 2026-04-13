@@ -1,0 +1,13 @@
+node_modules
+.next
+.git
+docs
+deploy
+*.log
+*.tsbuildinfo
+.artifacts
+.npm-cache
+.idx
+.vscode
+publick
+src/Fonts

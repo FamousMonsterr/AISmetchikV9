@@ -1,0 +1,284 @@
+name: Deploy VDS
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-vds
+  cancel-in-progress: true
+
+env:
+  CI: true
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+  NEXT_TELEMETRY_DISABLED: "1"
+  COMPOSE_BAKE: "false"
+
+permissions:
+  contents: read
+
+jobs:
+  preflight:
+    runs-on: ubuntu-24.04
+    outputs:
+      ready: ${{ steps.check.outputs.ready }}
+    steps:
+      - name: Check required deploy secrets
+        id: check
+        env:
+          VDS_SSH_HOST: ${{ secrets.VDS_SSH_HOST }}
+          VDS_SSH_USER: ${{ secrets.VDS_SSH_USER }}
+          VDS_SSH_KEY: ${{ secrets.VDS_SSH_KEY }}
+          VDS_DEPLOY_PATH: ${{ secrets.VDS_DEPLOY_PATH }}
+          VDS_DOMAIN: ${{ secrets.VDS_DOMAIN }}
+          VDS_SUBDOMAINS: ${{ secrets.VDS_SUBDOMAINS }}
+          LETSENCRYPT_EMAIL: ${{ secrets.LETSENCRYPT_EMAIL }}
+        run: |
+          missing=0
+          for var in VDS_SSH_HOST VDS_SSH_USER VDS_SSH_KEY VDS_DEPLOY_PATH; do
+            if [ -z "${!var}" ]; then
+              echo "::warning::Missing secret: ${var}"
+              missing=1
+            fi
+          done
+
+          if [ "$missing" -eq 1 ]; then
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Deploy skipped: configure required secrets first."
+            exit 0
+          fi
+
+          echo "ready=true" >> "$GITHUB_OUTPUT"
+          echo "Deploy secrets are configured."
+          if [ -n "$VDS_DOMAIN" ] && [ -z "$LETSENCRYPT_EMAIL" ]; then
+            echo "::warning::VDS_DOMAIN is set but LETSENCRYPT_EMAIL is missing. TLS auto-setup will be skipped."
+          fi
+          if [ -z "$VDS_DOMAIN" ] && [ -n "$LETSENCRYPT_EMAIL" ]; then
+            echo "::warning::LETSENCRYPT_EMAIL is set but VDS_DOMAIN is missing. TLS auto-setup will be skipped."
+          fi
+          if [ -n "$VDS_DOMAIN" ] && [ -z "$VDS_SUBDOMAINS" ]; then
+            echo "::notice::VDS_SUBDOMAINS is not set. Default subdomains (admin,lk,crm,partner,m) will be used."
+          fi
+
+  deploy:
+    needs: preflight
+    if: >-
+      (github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main')) &&
+      needs.preflight.outputs.ready == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    environment: production
+
+    steps:
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VDS_SSH_HOST }}
+          username: ${{ secrets.VDS_SSH_USER }}
+          key: ${{ secrets.VDS_SSH_KEY }}
+          port: ${{ secrets.VDS_SSH_PORT || '22' }}
+          command_timeout: 30m
+          script_stop: false
+          script: |
+            set -ex
+            DEPLOY_GIT_REF="${{ github.event.workflow_run.head_sha || github.sha }}"
+            TLS_DOMAIN="$(printf '%s' "${{ secrets.VDS_DOMAIN }}" | xargs)"
+            TLS_EMAIL="$(printf '%s' "${{ secrets.LETSENCRYPT_EMAIL }}" | xargs)"
+            TLS_SUBDOMAINS="$(printf '%s' "${{ secrets.VDS_SUBDOMAINS }}" | tr -d '\r')"
+            case "$TLS_SUBDOMAINS" in
+              "") TLS_SUBDOMAINS="admin,lk,crm,partner,m" ;;
+              *) : ;;
+            esac
+            TLS_ENABLED=0
+            case "$TLS_DOMAIN" in
+              "")
+                TLS_ENABLED=0
+              ;;
+              *)
+                case "$TLS_EMAIL" in
+                  "") TLS_ENABLED=0 ;;
+                  *) TLS_ENABLED=1 ;;
+                esac
+              ;;
+            esac
+            TLS_RUNTIME_ENABLED=0
+            SERVER_NAMES="_"
+            PRIMARY_DOMAIN="$TLS_DOMAIN"
+            CERTBOT_DOMAINS=()
+            case "$TLS_ENABLED" in
+              1)
+                SERVER_NAMES="$TLS_DOMAIN"
+                CERTBOT_DOMAINS=("$TLS_DOMAIN")
+                IFS=',' read -r -a SUBDOMAIN_ARR <<< "$TLS_SUBDOMAINS"
+                for raw_sub in "${SUBDOMAIN_ARR[@]}"; do
+                  sub="$(echo "$raw_sub" | xargs)"
+                  if [ -z "$sub" ]; then
+                    continue
+                  fi
+                  fqdn="${sub}.${TLS_DOMAIN}"
+                  SERVER_NAMES="${SERVER_NAMES} ${fqdn}"
+                  CERTBOT_DOMAINS+=("$fqdn")
+                done
+              ;;
+              *) : ;;
+            esac
+            compose_cmd() {
+              COMPOSE_BAKE=false docker compose --env-file deploy/.env.vds -f deploy/docker-compose.vds.yml "$@"
+            }
+            cert_has_files() {
+              domain="$1"
+              docker run --rm \
+                -v "$(pwd)/deploy/nginx/certbot/conf:/etc/letsencrypt:ro" \
+                alpine:3.20 \
+                sh -c "[ -f \"/etc/letsencrypt/live/${domain}/fullchain.pem\" ] && [ -f \"/etc/letsencrypt/live/${domain}/privkey.pem\" ]"
+            }
+            cert_find_matching_domain() {
+              prefix="$1"
+              docker run --rm \
+                -v "$(pwd)/deploy/nginx/certbot/conf:/etc/letsencrypt:ro" \
+                alpine:3.20 \
+                sh -c "for d in /etc/letsencrypt/live/${prefix}*; do [ -d \"\$d\" ] || continue; [ -f \"\$d/fullchain.pem\" ] && [ -f \"\$d/privkey.pem\" ] && basename \"\$d\" && exit 0; done; exit 1" 2>/dev/null || true
+            }
+            cd "${{ secrets.VDS_DEPLOY_PATH || '/opt/ai-smetchik' }}"
+            git fetch --prune origin main
+            git restore deploy/nginx/default.conf || true
+            git switch --detach "$DEPLOY_GIT_REF"
+            df -h
+            docker system df || true
+            docker container prune -f || true
+            docker image prune -af || true
+            docker builder prune -af || true
+
+            mkdir -p deploy/nginx/certbot/www deploy/nginx/certbot/conf
+            case "$TLS_ENABLED" in
+              1) sed "s/__SERVER_NAMES__/$SERVER_NAMES/g" deploy/nginx/default.http.conf > deploy/nginx/default.conf ;;
+              *) sed "s/__SERVER_NAMES__/_/g" deploy/nginx/default.http.conf > deploy/nginx/default.conf ;;
+            esac
+
+            compose_cmd up -d --build --remove-orphans
+            compose_cmd restart nginx
+
+            case "$TLS_ENABLED" in
+              1)
+                certbot_args=()
+                for domain in "${CERTBOT_DOMAINS[@]}"; do
+                  certbot_args+=("-d" "$domain")
+                done
+                certbot_ok=1
+                docker run --rm \
+                  -v "$(pwd)/deploy/nginx/certbot/www:/var/www/certbot" \
+                  -v "$(pwd)/deploy/nginx/certbot/conf:/etc/letsencrypt" \
+                  certbot/certbot certonly \
+                  --webroot -w /var/www/certbot \
+                  "${certbot_args[@]}" \
+                  --cert-name "$TLS_DOMAIN" \
+                  --non-interactive \
+                  --expand \
+                  --email "$TLS_EMAIL" \
+                  --agree-tos \
+                  --no-eff-email \
+                  --keep-until-expiring || certbot_ok=0
+
+                CERT_PRIMARY_DOMAIN="$TLS_DOMAIN"
+                case "$certbot_ok" in
+                  1)
+                    if ! cert_has_files "$CERT_PRIMARY_DOMAIN"; then
+                      alt_live_domain="$(cert_find_matching_domain "$TLS_DOMAIN")"
+                      if [ -n "$alt_live_domain" ]; then
+                        CERT_PRIMARY_DOMAIN="$alt_live_domain"
+                      fi
+                    fi
+                  ;;
+                  *) : ;;
+                esac
+
+                if [ "$certbot_ok" -eq 1 ] && cert_has_files "$CERT_PRIMARY_DOMAIN"; then
+                  PRIMARY_DOMAIN="$CERT_PRIMARY_DOMAIN"
+                  sed \
+                    -e "s/__SERVER_NAMES__/$SERVER_NAMES/g" \
+                    -e "s/__PRIMARY_DOMAIN__/$PRIMARY_DOMAIN/g" \
+                    deploy/nginx/default.https.conf > deploy/nginx/default.conf
+                  compose_cmd up -d --build --remove-orphans
+                  compose_cmd restart nginx
+                  TLS_RUNTIME_ENABLED=1
+                fi
+
+                if [ "$certbot_ok" -eq 0 ]; then
+                  echo "WARNING: certbot renewal failed; keeping HTTP config for this deploy"
+                  compose_cmd logs --tail=200 nginx || true
+                fi
+                if [ "$certbot_ok" -eq 1 ] && [ "$TLS_RUNTIME_ENABLED" -ne 1 ]; then
+                  echo "WARNING: certbot returned success but certificate files were not found for TLS_DOMAIN=${TLS_DOMAIN}"
+                  docker run --rm \
+                    -v "$(pwd)/deploy/nginx/certbot/conf:/etc/letsencrypt:ro" \
+                    alpine:3.20 \
+                    sh -c "ls -la /etc/letsencrypt/live || true"
+                fi
+              ;;
+              *) : ;;
+            esac
+
+            web_services=(web_landing web_admin web_lk web_crm web_partner web_mobile)
+            for svc in "${web_services[@]}"; do
+              svc_id="$(compose_cmd ps -q "$svc")"
+              if [ -z "$svc_id" ]; then
+                echo "container id not found for $svc"
+                compose_cmd ps || true
+                compose_cmd logs --tail=200 "$svc" || true
+                exit 1
+              fi
+              for i in $(seq 1 90); do
+                health="$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' "$svc_id" 2>/dev/null || echo missing)"
+                if [ "$health" = "healthy" ]; then
+                  break
+                fi
+                if [ "$health" = "unhealthy" ]; then
+                  echo "Health check failed: $svc is unhealthy"
+                  compose_cmd ps || true
+                  compose_cmd logs --tail=200 "$svc" || true
+                  exit 1
+                fi
+                if [ "$i" -eq 90 ]; then
+                  echo "Health check timeout for $svc: status=${health}"
+                  compose_cmd ps || true
+                  compose_cmd logs --tail=200 "$svc" || true
+                  exit 1
+                fi
+                sleep 2
+              done
+            done
+
+            smoke_hosts=()
+            if [ -n "$TLS_DOMAIN" ]; then
+              smoke_hosts+=("$TLS_DOMAIN")
+              IFS=',' read -r -a SUBDOMAIN_ARR <<< "$TLS_SUBDOMAINS"
+              for raw_sub in "${SUBDOMAIN_ARR[@]}"; do
+                sub="$(echo "$raw_sub" | xargs)"
+                if [ -z "$sub" ]; then
+                  continue
+                fi
+                smoke_hosts+=("${sub}.${TLS_DOMAIN}")
+              done
+            fi
+
+            smoke_scheme="http"
+            smoke_port=80
+            smoke_curl_args=(-fsS --connect-timeout 5 --max-time 15)
+            if [ "$TLS_RUNTIME_ENABLED" -eq 1 ]; then
+              smoke_scheme="https"
+              smoke_port=443
+              smoke_curl_args=(-fsS --connect-timeout 5 --max-time 15)
+            fi
+
+            if [ "${#smoke_hosts[@]}" -gt 0 ]; then
+              for host in "${smoke_hosts[@]}"; do
+                curl "${smoke_curl_args[@]}" --resolve "${host}:${smoke_port}:127.0.0.1" "${smoke_scheme}://${host}/api/healthz" > /dev/null
+              done
+            else
+              curl -fsS --connect-timeout 5 --max-time 15 http://127.0.0.1/api/healthz > /dev/null
+            fi
+
+            docker image prune -f

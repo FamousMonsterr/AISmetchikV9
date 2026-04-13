@@ -1,0 +1,218 @@
+name: Rollback Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_commit:
+        description: 'Commit SHA или тег для отката (оставьте пустым для предыдущей версии)'
+        required: false
+        default: ''
+      reason:
+        description: 'Причина отката'
+        required: true
+        default: 'Critical bug in production'
+
+concurrency:
+  group: rollback-deploy
+  cancel-in-progress: true
+
+env:
+  CI: true
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+  NEXT_TELEMETRY_DISABLED: "1"
+
+permissions:
+  contents: read
+  deployments: write
+
+jobs:
+  validate-input:
+    runs-on: ubuntu-24.04
+    outputs:
+      target_sha: ${{ steps.resolve-commit.outputs.sha }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Resolve target commit SHA
+        id: resolve-commit
+        run: |
+          TARGET="${{ github.event.inputs.target_commit }}"
+          
+          if [ -z "$TARGET" ]; then
+            # Откат к предыдущей версии
+            CURRENT_SHA="${{ github.sha }}"
+            PREV_SHA=$(git rev-parse HEAD~1)
+            echo "::notice::Откат с $CURRENT_SHA к $PREV_SHA"
+            echo "sha=$PREV_SHA" >> "$GITHUB_OUTPUT"
+          else
+            # Проверка указанного коммита/тега
+            if git rev-parse "$TARGET" >/dev/null 2>&1; then
+              RESOLVED_SHA=$(git rev-parse "$TARGET")
+              echo "::notice::Откат к $RESOLVED_SHA (указано: $TARGET)"
+              echo "sha=$RESOLVED_SHA" >> "$GITHUB_OUTPUT"
+            else
+              echo "::error::Неверный commit SHA или тег: $TARGET"
+              exit 1
+            fi
+          fi
+
+      - name: Verify target commit exists in main history
+        run: |
+          TARGET_SHA="${{ steps.resolve-commit.outputs.sha }}"
+          if ! git merge-base --is-ancestor "$TARGET_SHA" HEAD; then
+            echo "::error::Целевой коммит $TARGET_SHA не является предком текущей версии"
+            exit 1
+          fi
+          echo "::notice::Целевой коммит валиден"
+
+  rollback:
+    needs: validate-input
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    environment: production
+
+    steps:
+      - name: Checkout target version
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.validate-input.outputs.target_sha }}
+          fetch-depth: 0
+
+      - name: Create rollback tag
+        run: |
+          TARGET_SHA="${{ needs.validate-input.outputs.target_sha }}"
+          ROLLBACK_TAG="rollback-$(date +%Y%m%d-%H%M%S)"
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git tag -a "$ROLLBACK_TAG" "$TARGET_SHA" -m "Rollback: ${{ github.event.inputs.reason }}"
+          git push origin "$ROLLBACK_TAG"
+          echo "ROLLBACK_TAG=$ROLLBACK_TAG" >> "$GITHUB_ENV"
+          echo "::notice::Создан тег отката: $ROLLBACK_TAG"
+
+      - name: Deploy rolled back version
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VDS_SSH_HOST }}
+          username: ${{ secrets.VDS_SSH_USER }}
+          key: ${{ secrets.VDS_SSH_KEY }}
+          port: ${{ secrets.VDS_SSH_PORT || '22' }}
+          command_timeout: 30m
+          script_stop: false
+          script: |
+            set -ex
+            DEPLOY_GIT_REF="${{ needs.validate-input.outputs.target_sha }}"
+            TLS_DOMAIN="$(printf '%s' "${{ secrets.VDS_DOMAIN }}" | xargs)"
+            TLS_EMAIL="$(printf '%s' "${{ secrets.LETSENCRYPT_EMAIL }}" | xargs)"
+            TLS_SUBDOMAINS="$(printf '%s' "${{ secrets.VDS_SUBDOMAINS }}" | tr -d '\r')"
+            case "$TLS_SUBDOMAINS" in
+              "") TLS_SUBDOMAINS="admin,lk,crm,partner,m" ;;
+              *) : ;;
+            esac
+            TLS_ENABLED=0
+            case "$TLS_DOMAIN" in
+              "")
+                TLS_ENABLED=0
+              ;;
+              *)
+                case "$TLS_EMAIL" in
+                  "") TLS_ENABLED=0 ;;
+                  *) TLS_ENABLED=1 ;;
+                esac
+              ;;
+            esac
+            
+            compose_cmd() {
+              COMPOSE_BAKE=false docker compose --env-file deploy/.env.vds -f deploy/docker-compose.vds.yml "$@"
+            }
+            
+            cd "${{ secrets.VDS_DEPLOY_PATH || '/opt/ai-smetchik' }}"
+            
+            # Создаем бэкап текущей версии перед откатом
+            CURRENT_REF=$(git rev-parse HEAD 2>/dev/null || echo "unknown")
+            BACKUP_TAG="pre-rollback-$(date +%Y%m%d-%H%M%S)"
+            git tag -a "$BACKUP_TAG" "$CURRENT_REF" -m "Pre-rollback backup from $CURRENT_REF" || true
+            
+            git fetch --prune origin main
+            git checkout "$DEPLOY_GIT_REF"
+            
+            df -h
+            docker system df || true
+            docker container prune -f || true
+            docker image prune -af || true
+            docker builder prune -af || true
+
+            mkdir -p deploy/nginx/certbot/www deploy/nginx/certbot/conf
+            
+            case "$TLS_ENABLED" in
+              1)
+                SERVER_NAMES="$TLS_DOMAIN"
+                IFS=',' read -r -a SUBDOMAIN_ARR <<< "$TLS_SUBDOMAINS"
+                for raw_sub in "${SUBDOMAIN_ARR[@]}"; do
+                  sub="$(echo "$raw_sub" | xargs)"
+                  if [ -z "$sub" ]; then continue; fi
+                  fqdn="${sub}.${TLS_DOMAIN}"
+                  SERVER_NAMES="${SERVER_NAMES} ${fqdn}"
+                done
+                sed "s/__SERVER_NAMES__/$SERVER_NAMES/g" deploy/nginx/default.http.conf > deploy/nginx/default.conf
+              ;;
+              *)
+                sed "s/__SERVER_NAMES__/_/g" deploy/nginx/default.http.conf > deploy/nginx/default.conf
+              ;;
+            esac
+
+            compose_cmd up -d --build --remove-orphans
+            compose_cmd restart nginx
+
+            # Health checks
+            web_services=(web_landing web_admin web_lk web_crm web_partner web_mobile)
+            for svc in "${web_services[@]}"; do
+              svc_id="$(compose_cmd ps -q "$svc")"
+              if [ -z "$svc_id" ]; then
+                echo "container id not found for $svc"
+                compose_cmd ps || true
+                compose_cmd logs --tail=200 "$svc" || true
+                exit 1
+              fi
+              for i in $(seq 1 90); do
+                health="$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' "$svc_id" 2>/dev/null || echo missing)"
+                if [ "$health" = "healthy" ]; then break; fi
+                if [ "$health" = "unhealthy" ]; then
+                  echo "Health check failed: $svc is unhealthy"
+                  exit 1
+                fi
+                if [ "$i" -eq 90 ]; then
+                  echo "Health check timeout for $svc"
+                  exit 1
+                fi
+                sleep 2
+              done
+            done
+
+            # Smoke tests
+            smoke_scheme="http"
+            smoke_port=80
+            if [ "$TLS_ENABLED" -eq 1 ]; then
+              smoke_scheme="https"
+              smoke_port=443
+            fi
+            
+            if [ -n "$TLS_DOMAIN" ]; then
+              curl -fsS --connect-timeout 5 --max-time 15 --resolve "${TLS_DOMAIN}:${smoke_port}:127.0.0.1" "${smoke_scheme}://${TLS_DOMAIN}/api/healthz" > /dev/null
+            else
+              curl -fsS --connect-timeout 5 --max-time 15 http://127.0.0.1/api/healthz > /dev/null
+            fi
+
+            echo "::notice::Rollback completed successfully to $DEPLOY_GIT_REF"
+
+      - name: Notify rollback complete
+        if: always()
+        run: |
+          echo "## 🔄 Rollback Completed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Target Commit:** ${{ needs.validate-input.outputs.target_sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Reason:** ${{ github.event.inputs.reason }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Tag:** ${{ env.ROLLBACK_TAG }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Triggered by:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY

@@ -1,0 +1,1691 @@
+// src/actions/userActions.ts
+// @ts-nocheck
+'use server';
+
+import { z } from 'zod';
+import { db } from '@/lib/db';
+import { collection, addDoc, doc, updateDoc, getDoc, serverTimestamp, query, where, getDocs, orderBy, runTransaction, setDoc, writeBatch, deleteDoc, increment, Timestamp } from '@/lib/db-server';
+import { randomBytes, createHash } from 'crypto';
+import { getDb } from '@/lib/mongodb';
+import { getMailer, getMailerFrom, isMailerConfigured } from '@/lib/mailer';
+import type { HistoryRequest, AnalysisDetails, QuoteConfig, PriceBaseItem, SpecificationItem, ItemType } from '@/contexts/AppContext';
+import { DEFAULT_SERVER_QUOTE_CONFIG, SERVER_ANALYSIS_CREDIT_COST } from '@/server-functions/config';
+import { logProjectEvent, logUserAction } from '@/lib/logger';
+import { AiSpecificationItemSchema, ExtractProjectSpecificationsOutputSchema } from '@/ai/genkit-schemas';
+import { deductCredits, deductCreditsInTransaction, getCreditSummary, refundCredits, withMongoTransaction } from '@/services/credits';
+import { getPlanModelIds } from '@/lib/plan-models';
+import { grantMarketingBonusForUser } from '@/actions/marketingActions';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import { getAppSettings } from '@/actions/adminActions';
+import { createServerAnalysisJob } from '@/server-functions/analysis/jobService';
+import { validateFileUriAgainstAllowlist } from '@/lib/file-uri-security';
+import { normalizePhone } from '@/lib/auth-identifiers';
+
+async function resolveActingUserId(userId?: string): Promise<string> {
+  const session = await getServerSession(authOptions);
+  const sessionUserId = session?.user?.id;
+  if (sessionUserId) {
+    if (userId && userId !== sessionUserId) {
+      throw new Error('Нельзя выполнять действие от имени другого пользователя.');
+    }
+    return sessionUserId;
+  }
+  if (!userId) {
+    throw new Error('Не удалось определить пользователя действия.');
+  }
+  return userId;
+}
+
+
+// --- Profile Management ---
+const UpdateProfileSchema = z.object({
+  userId: z.string().min(1, 'Необходимо указать ID пользователя.'),
+  displayName: z.string().min(2, 'Никнейм должен содержать не менее 2 символов.').max(50, 'Никнейм не должен превышать 50 символов.'),
+  phone: z.string().max(32, 'Телефон не должен превышать 32 символа.').optional(),
+  documentTemplates: z
+    .object({
+      proposal: z.string().optional(),
+      invoice: z.string().optional(),
+      contract: z.string().optional(),
+    })
+    .optional(),
+  signatureUrl: z.string().optional().nullable(),
+  signatureObjectKey: z.string().optional().nullable(),
+  signatureUrlExpirationTimestamp: z.number().optional().nullable(),
+  stampUrl: z.string().optional().nullable(),
+  stampObjectKey: z.string().optional().nullable(),
+  stampUrlExpirationTimestamp: z.number().optional().nullable(),
+  avatarUrl: z.string().optional().nullable(),
+  avatarObjectKey: z.string().optional().nullable(),
+  avatarUrlExpirationTimestamp: z.number().optional().nullable(),
+});
+
+export const deleteOwnAccount = async (): Promise<{ success: boolean; message: string }> => {
+  let userId: string;
+  try {
+    userId = await resolveActingUserId();
+  } catch (error: any) {
+    return { success: false, message: error.message || 'Требуется авторизация.' };
+  }
+
+  try {
+    const dbClient = await getDb();
+    const userDoc = await dbClient.collection('users').findOne({ _id: userId as any });
+    if (!userDoc) {
+      return { success: false, message: 'Пользователь не найден.' };
+    }
+    if (userDoc.qaProtected) {
+      return { success: false, message: 'Этот QA-аккаунт защищен от удаления.' };
+    }
+
+    const now = new Date();
+    const anonymizedEmail = `deleted_${userId}_${now.getTime()}@deleted.local`;
+    const userRef = doc(db, 'users', userId);
+    await updateDoc(userRef, {
+      email: anonymizedEmail,
+      displayName: 'Deleted User',
+      phone: '',
+      phoneNormalized: '',
+      phoneVerified: false,
+      telegramUsername: '',
+      telegramChatId: null,
+      telegramLinkedAt: null,
+      vkId: null,
+      vkUsername: '',
+      vkLinkedAt: null,
+      vkPhotoUrl: null,
+      vkPeerId: null,
+      status: 'blocked',
+      archivedAt: serverTimestamp(),
+      deletedAt: serverTimestamp(),
+      deletedBySelf: true,
+      updatedAt: serverTimestamp(),
+    });
+    await logUserAction(userId, 'USER_DELETE_ACCOUNT', { deletedAt: now.toISOString() });
+    return { success: true, message: 'Аккаунт удален.' };
+  } catch (error: any) {
+    console.error('deleteOwnAccount failed:', error);
+    return { success: false, message: error.message || 'Не удалось удалить аккаунт.' };
+  }
+};
+
+export const updateUserProfile = async (data: z.infer<typeof UpdateProfileSchema>): Promise<{ success: boolean; message: string }> => {
+  const validation = UpdateProfileSchema.safeParse(data);
+  if (!validation.success) {
+    const firstError = validation.error.flatten().fieldErrors;
+    const errorMessage = Object.values(firstError)[0]?.[0] || 'Неверные данные.';
+    return { success: false, message: errorMessage };
+  }
+
+  let {
+    userId,
+    displayName,
+    phone,
+    documentTemplates,
+    signatureUrl,
+    signatureObjectKey,
+    signatureUrlExpirationTimestamp,
+    stampUrl,
+    stampObjectKey,
+    stampUrlExpirationTimestamp,
+    avatarUrl,
+    avatarObjectKey,
+    avatarUrlExpirationTimestamp,
+  } = validation.data;
+  try {
+    userId = await resolveActingUserId(userId);
+  } catch (error: any) {
+    return { success: false, message: error.message || 'Недостаточно прав.' };
+  }
+  const userRef = doc(db, 'users', userId);
+
+  try {
+    const normalizedPhone = normalizePhone(phone || '');
+    if (normalizedPhone) {
+      const dbClient = await getDb();
+      const existingByPhone = await dbClient.collection('users').findOne({
+        phoneNormalized: normalizedPhone,
+        _id: { $ne: userId },
+      } as any);
+      if (existingByPhone) {
+        return { success: false, message: 'Этот телефон уже используется другим аккаунтом.' };
+      }
+    }
+
+    const updatePayload: Record<string, any> = {
+      displayName,
+      phone: phone || '',
+      phoneNormalized: normalizedPhone,
+      updatedAt: serverTimestamp(),
+    };
+    const updatedFields = ['displayName', 'phone', 'phoneNormalized'];
+
+    if (documentTemplates !== undefined) {
+      updatePayload.documentTemplates = documentTemplates;
+      updatedFields.push('documentTemplates');
+    }
+    if (signatureUrl !== undefined) {
+      updatePayload.signatureUrl = signatureUrl ?? null;
+      updatedFields.push('signatureUrl');
+    }
+    if (signatureObjectKey !== undefined) {
+      updatePayload.signatureObjectKey = signatureObjectKey ?? null;
+      updatedFields.push('signatureObjectKey');
+    }
+    if (signatureUrlExpirationTimestamp !== undefined) {
+      updatePayload.signatureUrlExpirationTimestamp = signatureUrlExpirationTimestamp ?? null;
+      updatedFields.push('signatureUrlExpirationTimestamp');
+    }
+    if (stampUrl !== undefined) {
+      updatePayload.stampUrl = stampUrl ?? null;
+      updatedFields.push('stampUrl');
+    }
+    if (stampObjectKey !== undefined) {
+      updatePayload.stampObjectKey = stampObjectKey ?? null;
+      updatedFields.push('stampObjectKey');
+    }
+    if (stampUrlExpirationTimestamp !== undefined) {
+      updatePayload.stampUrlExpirationTimestamp = stampUrlExpirationTimestamp ?? null;
+      updatedFields.push('stampUrlExpirationTimestamp');
+    }
+    if (avatarUrl !== undefined) {
+      updatePayload.avatarUrl = avatarUrl ?? null;
+      updatedFields.push('avatarUrl');
+    }
+    if (avatarObjectKey !== undefined) {
+      updatePayload.avatarObjectKey = avatarObjectKey ?? null;
+      updatedFields.push('avatarObjectKey');
+    }
+    if (avatarUrlExpirationTimestamp !== undefined) {
+      updatePayload.avatarUrlExpirationTimestamp = avatarUrlExpirationTimestamp ?? null;
+      updatedFields.push('avatarUrlExpirationTimestamp');
+    }
+
+    await updateDoc(userRef, updatePayload);
+    
+    await logUserAction(userId, 'PROFILE_UPDATE', { fields: updatedFields });
+    return { success: true, message: 'Профиль успешно обновлен.' };
+  } catch (error) {
+    console.error("Error updating user profile:", error);
+    return { success: false, message: 'Ошибка при обновлении профиля.' };
+  }
+};
+
+// --- Plan Model Preference (A/B test) ---
+const UpdatePlanModelPreferenceSchema = z.object({
+  userId: z.string().min(1, 'Необходимо указать ID пользователя.'),
+  plan: z.enum(['Free', 'PRO']),
+  model: z.string().min(1, 'Необходимо указать модель.'),
+});
+
+export const updatePlanModelPreference = async (data: z.infer<typeof UpdatePlanModelPreferenceSchema>): Promise<{ success: boolean; message: string }> => {
+  const validation = UpdatePlanModelPreferenceSchema.safeParse(data);
+  if (!validation.success) {
+    return { success: false, message: 'Неверные данные для выбора модели.' };
+  }
+  let { userId, plan, model } = validation.data;
+  try {
+    userId = await resolveActingUserId(userId);
+  } catch (error: any) {
+    return { success: false, message: error.message || 'Недостаточно прав.' };
+  }
+  const allowedModels = new Set(getPlanModelIds(plan));
+  if (!allowedModels.has(model)) {
+    return { success: false, message: 'Выбранная модель недоступна для этого тарифа.' };
+  }
+
+  try {
+    const preferenceKey = plan === 'PRO' ? 'pro' : 'free';
+    const userRef = doc(db, 'users', userId);
+    await updateDoc(userRef, {
+      [`planModelPreferences.${preferenceKey}`]: model,
+      updatedAt: serverTimestamp(),
+    } as any);
+
+    await logUserAction(userId, 'MODEL_PREFERENCE_SET', { plan, model });
+    return { success: true, message: 'Предпочтение сохранено.' };
+  } catch (error: any) {
+    console.error("Error updating plan model preference:", error);
+    return { success: false, message: error.message || 'Не удалось сохранить выбор.' };
+  }
+};
+
+export const logThirdPartyConsent = async (userId: string, source: string = 'purchase_dialog'): Promise<{ success: boolean; message: string }> => {
+  try {
+    userId = await resolveActingUserId(userId);
+  } catch (error: any) {
+    return { success: false, message: error.message || 'Недостаточно прав.' };
+  }
+
+  try {
+    await logUserAction(userId, 'USER_CONSENT_THIRD_PARTY', { source });
+    return { success: true, message: 'Согласие зафиксировано.' };
+  } catch (error: any) {
+    return { success: false, message: error.message || 'Не удалось зафиксировать согласие.' };
+  }
+};
+
+const MarketingConsentSchema = z.object({
+  userId: z.string().min(1),
+  agreedToMarketing: z.boolean(),
+});
+
+export const updateMarketingConsent = async (data: z.infer<typeof MarketingConsentSchema>): Promise<{ success: boolean; message: string }> => {
+  const validation = MarketingConsentSchema.safeParse(data);
+  if (!validation.success) {
+    return { success: false, message: 'Неверные данные.' };
+  }
+
+  let { userId, agreedToMarketing } = validation.data;
+  try {
+    userId = await resolveActingUserId(userId);
+  } catch (error: any) {
+    return { success: false, message: error.message || 'Недостаточно прав.' };
+  }
+  const userRef = doc(db, 'users', userId);
+  try {
+    await updateDoc(userRef, {
+      agreedToMarketing,
+      marketingConsentUpdatedAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
+
+    await logUserAction(userId, 'MARKETING_CONSENT_UPDATE', { agreedToMarketing });
+    if (agreedToMarketing) {
+      await grantMarketingBonusForUser({ userId, source: 'marketing_toggle' });
+    }
+    return { success: true, message: 'Настройка рассылок обновлена.' };
+  } catch (error: any) {
+    console.error("Marketing consent update failed:", error);
+    return { success: false, message: 'Не удалось обновить настройку рассылок.' };
+  }
+};
+
+const UpdatePwaStatusSchema = z.object({
+    userId: z.string().min(1),
+    isPWA: z.boolean(),
+});
+export const updateUserPwaStatus = async (data: z.infer<typeof UpdatePwaStatusSchema>): Promise<{ success: boolean, message: string }> => {
+    const validation = UpdatePwaStatusSchema.safeParse(data);
+    if (!validation.success) {
+        return { success: false, message: 'Неверные данные.' };
+    }
+    let { userId, isPWA } = validation.data;
+    try {
+        userId = await resolveActingUserId(userId);
+    } catch (error: any) {
+        return { success: false, message: error.message || 'Недостаточно прав.' };
+    }
+    const userRef = doc(db, 'users', userId);
+    try {
+        await updateDoc(userRef, { isPWAUser: isPWA, updatedAt: serverTimestamp() });
+        return { success: true, message: 'Статус PWA обновлен.' };
+    } catch (error) {
+        console.error("Error updating PWA status:", error);
+        return { success: false, message: 'Не удалось обновить статус PWA.' };
+    }
+};
+
+
+const PasswordResetSchema = z.object({
+    email: z.string().email('Неверный формат email.'),
+});
+
+export const sendPasswordReset = async (data: z.infer<typeof PasswordResetSchema>): Promise<{ success: boolean; message: string }> => {
+    const validation = PasswordResetSchema.safeParse(data);
+    if (!validation.success) {
+        return { success: false, message: 'Пожалуйста, введите корректный email.' };
+    }
+    
+    try {
+        const mailerReady = await isMailerConfigured();
+        if (!mailerReady) {
+          return { success: false, message: 'Сброс пароля временно отключен администратором.' };
+        }
+
+        const dbClient = await getDb();
+        const email = validation.data.email.toLowerCase();
+        const user = await dbClient.collection('users').findOne({ email });
+        if (!user) {
+          return { success: false, message: 'Пользователь с таким email не найден.' };
+        }
+
+        const token = randomBytes(32).toString('hex');
+        const tokenHash = createHash('sha256').update(token).digest('hex');
+        const expiresAt = new Date(Date.now() + 1000 * 60 * 60);
+
+        await dbClient.collection('password_resets').insertOne({
+          userId: user._id,
+          tokenHash,
+          expiresAt,
+          createdAt: new Date(),
+        });
+
+        const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+        const resetLink = `${siteUrl}/auth/reset?token=${token}`;
+        const mailer = await getMailer();
+        const from = await getMailerFrom();
+        await mailer.sendMail({
+          from,
+          to: email,
+          subject: 'Сброс пароля AI Сметчик',
+          text: `Чтобы сбросить пароль, перейдите по ссылке: ${resetLink}`,
+        });
+
+        return { success: true, message: 'Письмо для сброса пароля отправлено! Проверьте вашу почту.' };
+    } catch (error: any) {
+        console.error("Password reset error:", error);
+        return { success: false, message: 'Не удалось отправить письмо для сброса пароля.' };
+    }
+}
+
+
+export const deductCredit = async (userId: string, amount: number): Promise<{success: boolean, message?: string}> => {
+  try {
+    await deductCredits({ userId, amount, reason: 'manual_deduct' });
+    return { success: true };
+  } catch (error: any) {
+    console.error("Credit deduction transaction failed:", error);
+    return { success: false, message: error.message || 'Не удалось списать кредиты.' };
+  }
+};
+
+
+const QuoteConfigSchema = z.object({
+    taxType: z.enum(['none', 'vat_included', 'vat_added', 'usn']),
+    includeCommissioning: z.boolean(),
+    commissioningCost: z.number(),
+    commissioningQuantity: z.number(),
+    includeExecutiveDocumentation: z.boolean(),
+    executiveDocumentationTotalCost: z.number(),
+    executiveDocumentationQuantity: z.number(),
+    includeMeasurementTrip: z.boolean(),
+    measurementTripCost: z.number(),
+    measurementTripQuantity: z.number(),
+    includeDismantling: z.boolean(),
+    dismantlingCost: z.number(),
+    includeWallDrilling: z.boolean(),
+    wallDrillingCount: z.number(),
+    wallDrillingCost: z.number(),
+    includeFloorDrilling: z.boolean(),
+    floorDrillingCount: z.number(),
+    floorDrillingCost: z.number(),
+});
+
+// This schema defines what the saveProjectVersion function accepts. Note it uses the full SpecificationItem.
+const SaveVersionSchema = z.object({
+  versionId: z.string().optional(),
+  userId: z.string(),
+  fileName: z.string(),
+  fileUri: z.string().optional(),
+  mimeType: z.string().optional(),
+  cost: z.number(),
+  modelUsed: z.string().optional(),
+  
+  outputSpecifications: z.array(z.any()),
+  quoteConfig: QuoteConfigSchema.optional(),
+  aiComment: z.string().nullable().optional(),
+  analysisDetails: z.any().nullable().optional(),
+  error: z.string().optional(),
+
+  status: z.enum(['processing', 'success', 'failed', 'reported', 'draft', 'cancelled']),
+  isMainVersion: z.boolean(),
+  parentProjectId: z.string().nullable().optional(),
+  importantExtractionNotes: z.array(z.string()).nullable().optional(),
+  actionHistory: z.array(z.any()).optional(),
+  version: z.number().optional(),
+  aiCallCount: z.number().optional(),
+  serverJobId: z.string().nullable().optional(),
+  s3ObjectKey: z.string().nullable().optional(),
+});
+
+
+export const saveProjectVersion = async (data: z.infer<typeof SaveVersionSchema>): Promise<{ success: boolean; message: string; project: HistoryRequest | null; }> => {
+    const validation = SaveVersionSchema.safeParse(data);
+    if (!validation.success) {
+        console.error("Version validation error:", validation.error.flatten());
+        return { success: false, message: 'Неверные данные для сохранения.', project: null };
+    }
+    
+    const { versionId, ...versionData } = validation.data;
+    const batch = writeBatch(db);
+    
+    try {
+        let docRef;
+        let message = 'Проект успешно сохранен.';
+        let action: 'PROJECT_DRAFT_CREATE' | 'PROJECT_DRAFT_UPDATE' | 'PROJECT_VERSION_PROMOTE' = 'PROJECT_DRAFT_CREATE';
+
+        // --- Versioning Logic ---
+        if (versionData.isMainVersion && versionData.parentProjectId) {
+            action = 'PROJECT_VERSION_PROMOTE';
+            // This means we are promoting a version to be the new main version.
+            const projectGroupQuery = query(
+                collection(db, 'requests'), 
+                where('parentProjectId', '==', versionData.parentProjectId)
+            );
+            const querySnapshot = await getDocs(projectGroupQuery);
+            querySnapshot.forEach(doc => {
+                if (doc.data().isMainVersion) {
+                    batch.update(doc.ref, { isMainVersion: false });
+                }
+            });
+        }
+        
+        // --- Document Creation/Update ---
+        const finalData = {
+            ...versionData,
+            aiComment: versionData.aiComment ?? '',
+            analysisDetails: versionData.analysisDetails ?? null,
+            importantExtractionNotes: versionData.importantExtractionNotes ?? [],
+            actionHistory: versionData.actionHistory ?? [],
+            timestamp: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+            aiCallCount: versionData.aiCallCount ?? 0,
+        };
+
+        if (versionId) {
+            docRef = doc(db, 'requests', versionId);
+            const docSnap = await getDoc(docRef);
+            if (!docSnap.exists() || docSnap.data().userId !== versionData.userId) {
+                throw new Error("Проект не найден или у вас нет прав на его изменение.");
+            }
+            if (action !== 'PROJECT_VERSION_PROMOTE') {
+                message = 'Изменения сохранены.';
+                action = 'PROJECT_DRAFT_UPDATE';
+            } else {
+                 message = 'Новая версия сохранена как основная.';
+            }
+            batch.update(docRef, finalData as any);
+        } else {
+            docRef = doc(collection(db, 'requests'));
+            message = 'Новая версия успешно сохранена.';
+            action = 'PROJECT_DRAFT_CREATE';
+            batch.set(docRef, { ...finalData, parentProjectId: finalData.parentProjectId || docRef.id } as any);
+        }
+
+        await batch.commit();
+
+        await logUserAction(versionData.userId, action, { projectId: docRef.id, parentProjectId: versionData.parentProjectId });
+        
+        const finalProjectDoc = await getDoc(docRef);
+        const savedProject = { id: finalProjectDoc.id, ...finalProjectDoc.data() } as HistoryRequest;
+
+        return { success: true, message: message, project: savedProject };
+    } catch (error) {
+        console.error("Error saving version:", error);
+        const errorMessage = error instanceof Error ? error.message : 'Ошибка при сохранении.';
+        return { success: false, message: errorMessage, project: null };
+    }
+};
+
+
+// New function to handle final project creation and credit deduction atomically
+export const finalizeProjectCreation = async (
+  userId: string,
+  projectData: Omit<HistoryRequest, 'id' | 'userId' | 'timestamp'>,
+  creditCost: number,
+  initialAiResponse?: any,
+): Promise<{ success: boolean; message: string; project: HistoryRequest | null; }> => {
+  const projectRef = doc(collection(db, 'requests'));
+
+  try {
+    await withMongoTransaction(async (ctx) => {
+      const now = new Date();
+      const userDoc = await ctx.db.collection('users').findOne({ _id: userId }, ctx.session ? { session: ctx.session } : undefined);
+      if (!userDoc) throw new Error('Пользователь не найден.');
+
+      await deductCreditsInTransaction(ctx, {
+        userId,
+        amount: creditCost,
+        reason: 'project_create',
+        metadata: { projectId: projectRef.id },
+      });
+
+      await ctx.db.collection('users').updateOne(
+        { _id: userId },
+        { $inc: { projectCount: 1 }, $set: { updatedAt: now } },
+        ctx.session ? { session: ctx.session } : undefined,
+      );
+
+      const finalProjectData = {
+        ...projectData,
+        userId,
+        timestamp: now,
+        updatedAt: now,
+        cost: creditCost,
+        status: 'success',
+        isMainVersion: true,
+        version: 1,
+        parentProjectId: projectRef.id,
+        actionHistory: [],
+      };
+      await ctx.db.collection('requests').insertOne(
+        { _id: projectRef.id, ...finalProjectData },
+        ctx.session ? { session: ctx.session } : undefined,
+      );
+
+      if (projectData.fileSha1 && initialAiResponse) {
+        await ctx.db.collection('file_analysis_cache').updateOne(
+          { _id: projectData.fileSha1 },
+          { $set: { originalAiResponse: initialAiResponse, createdAt: now, reportCount: 0, pipelineVersion: projectData.pipelineVersion || 'v1' } },
+          { upsert: true, ...(ctx.session ? { session: ctx.session } : {}) },
+        );
+      }
+    });
+
+    await logUserAction(userId, 'PROJECT_DRAFT_CREATE', { projectId: projectRef.id, creditCost });
+    
+    const finalProjectDoc = await getDoc(projectRef);
+    const savedProject = { id: finalProjectDoc.id, ...finalProjectDoc.data() } as HistoryRequest;
+
+    return { success: true, message: 'Проект успешно создан и сохранен!', project: savedProject };
+
+  } catch (error) {
+    console.error("Error finalizing project creation:", error);
+    const errorMessage = error instanceof Error ? error.message : 'Не удалось создать проект.';
+    return { success: false, message: errorMessage, project: null };
+  }
+};
+
+
+export const getUserHistory = async (userId: string): Promise<HistoryRequest[]> => {
+    if (!userId) {
+        throw new Error("Необходимо указать ID пользователя.");
+    }
+
+    const historyQuery = query(
+        collection(db, 'requests'),
+        where('userId', '==', userId),
+        orderBy('timestamp', 'desc')
+    );
+
+    const querySnapshot = await getDocs(historyQuery);
+    const historyList = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+    })) as HistoryRequest[];
+    
+    return historyList;
+};
+
+const ReportRequestSchema = z.object({
+  requestId: z.string().min(1),
+  fileSha1: z.string().optional(),
+  userId: z.string().min(1),
+});
+
+export const reportRequest = async (data: z.infer<typeof ReportRequestSchema>): Promise<{ success: boolean; message: string }> => {
+  const validation = ReportRequestSchema.safeParse(data);
+  if (!validation.success) {
+    return { success: false, message: 'Неверный ID запроса.' };
+  }
+  
+  const { requestId, userId, fileSha1 } = validation.data;
+
+  try {
+    const requestRef = doc(db, 'requests', requestId);
+    const requestDoc = await getDoc(requestRef);
+
+    if (!requestDoc.exists() || requestDoc.data().userId !== userId) {
+        return { success: false, message: 'Запрос не найден или у вас нет прав на это действие.' };
+    }
+
+    if (requestDoc.data().status === 'reported') {
+        return { success: false, message: 'Жалоба по этому запросу уже была отправлена.' };
+    }
+
+    await updateDoc(requestRef, { 
+        status: 'reported',
+        reportedAt: serverTimestamp(),
+        archivedAt: serverTimestamp(),
+    });
+
+    // Increment report count in cache if fileSha1 exists
+    if (fileSha1) {
+        const cacheRef = doc(db, 'file_analysis_cache', fileSha1);
+        const cacheSnap = await getDoc(cacheRef);
+        if (cacheSnap.exists()) {
+             await updateDoc(cacheRef, { reportCount: increment(1) });
+        }
+    }
+    
+    await logUserAction(userId, 'PROJECT_REPORT', { projectId: requestId });
+    return { success: true, message: 'Жалоба отправлена. Проект перемещен в архив.' };
+  } catch (error) {
+    console.error("Error reporting request:", error);
+    return { success: false, message: 'Ошибка при отправке жалобы.' };
+  }
+};
+
+const ReturnCreditSchema = z.object({
+  userId: z.string().min(1),
+  creditAmount: z.number().int().positive(),
+});
+
+export const returnCreditForFailedRequest = async (data: z.infer<typeof ReturnCreditSchema>): Promise<{ success: boolean, message: string }> => {
+    const validation = ReturnCreditSchema.safeParse(data);
+    if (!validation.success) {
+        return { success: false, message: 'Неверные данные для возврата кредита.' };
+    }
+
+    const { userId, creditAmount } = validation.data;
+    
+    try {
+        await refundCredits({
+            userId,
+            amount: creditAmount,
+            reason: 'request_failed_refund',
+            metadata: { source: 'request_failed' },
+        });
+
+        await logUserAction(userId, 'CREDIT_REFUND', {
+            amount: creditAmount,
+        });
+
+        return { success: true, message: `Кредит в размере ${creditAmount} успешно возвращен.` };
+
+    } catch (error) {
+        console.error("Error returning credit:", error);
+        const errorMessage = error instanceof Error ? error.message : 'Не удалось обработать запрос.';
+        return { success: false, message: errorMessage };
+    }
+};
+
+
+const ArchiveRequestSchema = z.object({
+  requestIds: z.array(z.string().min(1)).min(1),
+  userId: z.string().min(1),
+});
+
+export const archiveRequest = async (data: z.infer<typeof ArchiveRequestSchema>): Promise<{ success: boolean; message: string }> => {
+  const validation = ArchiveRequestSchema.safeParse(data);
+  if (!validation.success) {
+    return { success: false, message: 'Неверный ID запроса.' };
+  }
+  
+  const { requestIds, userId } = validation.data;
+
+  try {
+    const batch = writeBatch(db);
+    for (const id of requestIds) {
+      const requestRef = doc(db, 'requests', id);
+      batch.update(requestRef, { archivedAt: serverTimestamp() });
+    }
+    await batch.commit();
+    
+    await logUserAction(userId, 'PROJECT_ARCHIVE', { projectIds: requestIds });
+    const message = requestIds.length > 1 ? 'Проекты успешно архивированы.' : 'Проект успешно архивирован.';
+    return { success: true, message };
+  } catch (error) {
+    console.error("Error archiving request(s):", error);
+    return { success: false, message: 'Ошибка при архивировании.' };
+  }
+};
+
+
+export const unarchiveRequest = async (data: z.infer<typeof ArchiveRequestSchema>): Promise<{ success: boolean; message: string }> => {
+  const validation = ArchiveRequestSchema.safeParse(data);
+  if (!validation.success) {
+    return { success: false, message: 'Неверный ID запроса.' };
+  }
+  
+  const { requestIds, userId } = validation.data;
+
+  try {
+    const batch = writeBatch(db);
+    for (const id of requestIds) {
+      const requestRef = doc(db, 'requests', id);
+      batch.update(requestRef, { archivedAt: null });
+    }
+    await batch.commit();
+    
+    await logUserAction(userId, 'PROJECT_UNARCHIVE', { projectIds: requestIds });
+    const message = requestIds.length > 1 ? 'Проекты успешно восстановлены.' : 'Проект успешно восстановлен.';
+    return { success: true, message };
+  } catch (error) {
+    console.error("Error un-archiving request(s):", error);
+    return { success: false, message: 'Ошибка при восстановлении.' };
+  }
+};
+
+const DeleteRequestSchema = z.object({
+  requestIds: z.array(z.string().min(1)).min(1),
+  userId: z.string().min(1),
+});
+
+export const deleteRequest = async (data: z.infer<typeof DeleteRequestSchema>): Promise<{ success: boolean; message: string; }> => {
+    const validation = DeleteRequestSchema.safeParse(data);
+    if (!validation.success) {
+        return { success: false, message: 'Неверный ID запроса.' };
+    }
+    let { requestIds, userId } = validation.data;
+
+    try {
+        userId = await resolveActingUserId(userId);
+        await withMongoTransaction(async (ctx) => {
+            const familyIdsToDelete = new Set<string>();
+
+            for (const id of requestIds) {
+                const requestDoc = await ctx.db.collection('requests').findOne(
+                    { _id: id as any },
+                    ctx.session ? { session: ctx.session } : undefined,
+                );
+                if (!requestDoc) continue;
+                if (requestDoc.userId !== userId) {
+                    throw new Error('Нет доступа к проекту.');
+                }
+
+                const rootProjectId = requestDoc.isMainVersion === false && requestDoc.parentProjectId
+                    ? null
+                    : (requestDoc.parentProjectId || String(requestDoc._id));
+
+                if (!rootProjectId) {
+                    familyIdsToDelete.add(String(requestDoc._id));
+                    continue;
+                }
+
+                const familyDocs = await ctx.db.collection('requests').find(
+                    {
+                        $or: [
+                            { _id: rootProjectId as any },
+                            { parentProjectId: rootProjectId },
+                        ],
+                        userId,
+                    },
+                    ctx.session ? { session: ctx.session } : undefined,
+                ).toArray();
+
+                if (!familyDocs.length) {
+                    familyIdsToDelete.add(String(requestDoc._id));
+                    continue;
+                }
+
+                familyDocs.forEach((row: any) => familyIdsToDelete.add(String(row._id)));
+            }
+
+            if (!familyIdsToDelete.size) {
+                return;
+            }
+
+            const ids = Array.from(familyIdsToDelete);
+            await ctx.db.collection('server_analysis_jobs').deleteMany({ projectId: { $in: ids as any } }, ctx.session ? { session: ctx.session } : undefined);
+            await ctx.db.collection('project_event_logs').deleteMany({ projectId: { $in: ids as any } }, ctx.session ? { session: ctx.session } : undefined);
+            await ctx.db.collection('notifications').deleteMany({ projectId: { $in: ids as any }, userId }, ctx.session ? { session: ctx.session } : undefined);
+            await ctx.db.collection('requests').deleteMany({ _id: { $in: ids as any } }, ctx.session ? { session: ctx.session } : undefined);
+        });
+        await logUserAction(userId, 'PROJECT_DELETE', { projectIds: requestIds });
+        const message = requestIds.length > 1 ? 'Проекты успешно удалены.' : 'Проект успешно удален.';
+        return { success: true, message };
+    } catch (error) {
+        console.error("Error deleting request(s):", error);
+        return { success: false, message: 'Ошибка при удалении.' };
+    }
+}
+
+const UpdateRequestSchema = z.object({
+  requestIds: z.array(z.string().min(1)).min(1),
+  userId: z.string().min(1),
+  updates: z.object({
+      objectId: z.string().nullable().optional(),
+      objectName: z.string().nullable().optional(),
+      fileName: z.string().optional(),
+      actionHistory: z.array(z.any()).optional(),
+  })
+});
+
+export const updateRequest = async (data: z.infer<typeof UpdateRequestSchema>): Promise<{ success: boolean; message: string }> => {
+    const validation = UpdateRequestSchema.safeParse(data);
+    if (!validation.success) {
+        return { success: false, message: 'Неверные данные для обновления.' };
+    }
+    const { requestIds, userId, updates } = validation.data;
+
+    try {
+        const batch = writeBatch(db);
+        for(const id of requestIds) {
+            const requestRef = doc(db, 'requests', id);
+            batch.update(requestRef, { ...updates, updatedAt: serverTimestamp() });
+        }
+        await batch.commit();
+
+        if (updates.objectId !== undefined) {
+             if (updates.objectId === null) {
+                await logUserAction(userId, 'PROJECT_UNGROUP_FROM_OBJECT', { projectIds: requestIds });
+            } else {
+                await logUserAction(userId, 'PROJECT_GROUP_INTO_OBJECT', { projectIds: requestIds, objectId: updates.objectId, objectName: updates.objectName });
+            }
+        }
+        
+        return { success: true, message: 'Проекты обновлены.' };
+    } catch (error) {
+        return { success: false, message: 'Ошибка при обновлении проектов.' };
+    }
+}
+
+
+export const updatePriceBase = async (
+    userId: string, 
+    items: SpecificationItem[], 
+    section: string
+): Promise<{ success: boolean; message: string }> => {
+    if (!userId) {
+        return { success: false, message: "Необходимо указать ID пользователя." };
+    }
+
+    try {
+        const batch = writeBatch(db);
+        const priceBaseCol = collection(db, 'priceBaseItems');
+        const q = query(priceBaseCol, where('userId', '==', userId));
+        const existingPriceBaseSnap = await getDocs(q);
+        const existingItems = new Map(existingPriceBaseSnap.docs.map(d => [d.data().key, d.id]));
+
+        for (const specItem of items) {
+            if (specItem.isInformational) continue;
+            
+            const itemKey = `${specItem.name}|${specItem.model || ''}|${specItem.brand || ''}|${specItem.unit}`.toLowerCase();
+            
+            const dataToSave: Omit<PriceBaseItem, 'id' | 'createdAt'> = {
+                userId,
+                key: itemKey,
+                name: specItem.name,
+                model: specItem.model || '',
+                brand: specItem.brand || '',
+                unit: specItem.unit,
+                avgMaterialPrice: specItem.materialPrice || 0,
+                avgInstallationPrice: specItem.installationPrice || 0,
+                section,
+                updatedAt: serverTimestamp(),
+                itemType: specItem.itemType,
+            };
+
+            if (existingItems.has(itemKey)) {
+                // Update existing item
+                const docId = existingItems.get(itemKey)!;
+                const docRef = doc(priceBaseCol, docId);
+                batch.update(docRef, dataToSave as any);
+            } else {
+                // Create new item
+                const newItemRef = doc(priceBaseCol);
+                batch.set(newItemRef, { ...dataToSave, createdAt: serverTimestamp() });
+                existingItems.set(itemKey, newItemRef.id);
+            }
+        }
+        
+        await batch.commit();
+        await logUserAction(userId, 'PRICE_BASE_ITEM_UPDATE', { itemCount: items.length, section });
+        return { success: true, message: `База цен успешно обновлена. Обработано ${items.length} позиций.` };
+
+    } catch (error) {
+        console.error("Error updating price base:", error);
+        return { success: false, message: "Не удалось сохранить изменения в базе цен." };
+    }
+};
+
+
+export const getUserPriceBase = async (userId: string): Promise<PriceBaseItem[]> => {
+    if (!userId) throw new Error("Необходимо указать ID пользователя.");
+
+    const q = query(collection(db, 'priceBaseItems'), where('userId', '==', userId), orderBy('name', 'asc'));
+    const snapshot = await getDocs(q);
+
+    return snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+    })) as PriceBaseItem[];
+};
+
+
+const PriceBaseItemUpdateSchema = z.object({
+  id: z.string(),
+  name: z.string().optional(),
+  model: z.string().optional(),
+  brand: z.string().optional(),
+  unit: z.string().optional(),
+  avgMaterialPrice: z.number().optional(),
+  avgInstallationPrice: z.number().optional(),
+  section: z.string().optional(),
+});
+
+export const savePriceBaseItems = async (
+    userId: string, 
+    items: Omit<PriceBaseItem, 'id' | 'createdAt' | 'key' | 'userId'>[]
+): Promise<{ success: boolean; message: string; newIds?: string[] }> => {
+    if (!userId) return { success: false, message: "Необходимо указать ID пользователя."};
+    if (!items || items.length === 0) return { success: true, message: "Нет данных для сохранения."};
+
+    try {
+        const batch = writeBatch(db);
+        const priceBaseCol = collection(db, 'priceBaseItems');
+        const newIds: string[] = [];
+
+        for (const item of items) {
+             const newItemRef = doc(priceBaseCol);
+             const key = `${item.name}|${item.model || ''}|${item.brand || ''}|${item.unit}`.toLowerCase();
+             batch.set(newItemRef, { 
+                ...item, 
+                userId, 
+                key, 
+                createdAt: serverTimestamp() 
+            });
+            newIds.push(newItemRef.id);
+        }
+        
+        await batch.commit();
+        await logUserAction(userId, 'PRICE_BASE_IMPORT', { itemCount: items.length });
+        return { success: true, message: `База цен успешно сохранена! Добавлено ${items.length} позиций.`, newIds };
+
+    } catch (error) {
+        console.error("Error saving price base:", error);
+        return { success: false, message: "Не удалось сохранить изменения." };
+    }
+};
+
+export const updatePriceBaseItem = async (userId: string, itemId: string, updates: Partial<PriceBaseItem>): Promise<{ success: boolean; message: string; }> => {
+    if (!userId || !itemId) return { success: false, message: "Необходимо указать ID пользователя и ID позиции."};
+
+    try {
+        const docRef = doc(db, 'priceBaseItems', itemId);
+        const docSnap = await getDoc(docRef);
+        if(!docSnap.exists() || docSnap.data().userId !== userId) {
+            return { success: false, message: "Позиция не найдена или у вас нет прав на ее изменение."}
+        }
+        
+        const dataToUpdate: Partial<PriceBaseItem> & { updatedAt?: any } = { ...updates, updatedAt: serverTimestamp() };
+        const originalItem = docSnap.data() as PriceBaseItem;
+
+        const hasIdentifyingFieldChanged = 
+            ('name' in dataToUpdate && dataToUpdate.name !== originalItem.name) ||
+            ('model' in dataToUpdate && dataToUpdate.model !== originalItem.model) ||
+            ('brand' in dataToUpdate && dataToUpdate.brand !== originalItem.brand) ||
+            ('unit' in dataToUpdate && dataToUpdate.unit !== originalItem.unit);
+        
+        if(hasIdentifyingFieldChanged) {
+             const newName = dataToUpdate.name ?? originalItem.name ?? '';
+             const newModel = dataToUpdate.model ?? originalItem.model ?? '';
+             const newBrand = dataToUpdate.brand ?? originalItem.brand ?? '';
+             const newUnit = dataToUpdate.unit ?? originalItem.unit ?? '';
+             dataToUpdate.key = `${newName}|${newModel}|${newBrand}|${newUnit}`.toLowerCase();
+        }
+
+        await updateDoc(docRef, dataToUpdate as any);
+        await logUserAction(userId, 'PRICE_BASE_ITEM_UPDATE', { itemId: itemId, updatedFields: Object.keys(updates) });
+        return { success: true, message: "Позиция обновлена." };
+
+    } catch (error) {
+        console.error("Error updating price base item:", error);
+        return { success: false, message: "Не удалось сохранить изменения." };
+    }
+};
+
+export const incrementAiCallCount = async (projectId: string): Promise<{ success: boolean; message?: string }> => {
+    if (!projectId) return { success: false, message: "Project ID is required." };
+
+    const projectRef = doc(db, 'requests', projectId);
+    
+    try {
+        await updateDoc(projectRef, {
+            aiCallCount: increment(1),
+        });
+        return { success: true };
+    } catch (error) {
+        console.error("Error incrementing AI call count:", error);
+        return { success: false, message: "Could not update AI call count." };
+    }
+};
+
+// --- Processing pipeline helpers (server/client parallel flow) ---
+
+const CreateProcessingRequestSchema = z.object({
+    userId: z.string().min(1),
+    fileName: z.string().min(1),
+    fileSha1: z.string().optional(),
+    mimeType: z.string().optional(),
+    modelUsed: z.string().optional(),
+    temperature: z.number().optional(),
+    includeThoughts: z.boolean().optional(),
+    fileUri: z.string().optional(),
+    s3ObjectKey: z.string().optional(),
+    serverJobId: z.string().optional(),
+    pipelineVersion: z.enum(['v1', 'v2']).optional(),
+    objectId: z.string().nullable().optional(),
+    objectName: z.string().nullable().optional(),
+});
+
+export const createProcessingRequest = async (data: z.infer<typeof CreateProcessingRequestSchema>): Promise<{ success: boolean; message: string; project?: HistoryRequest | null; }> => {
+    const validation = CreateProcessingRequestSchema.safeParse(data);
+    if (!validation.success) {
+        return { success: false, message: 'Неверные данные для создания черновика.', project: null };
+    }
+
+    let { userId, ...payload } = validation.data;
+    try {
+        userId = await resolveActingUserId(userId);
+    } catch (error: any) {
+        return { success: false, message: error.message || 'Недостаточно прав.', project: null };
+    }
+    const projectRef = doc(collection(db, 'requests'));
+
+    try {
+        const baseData: Omit<HistoryRequest, 'id' | 'timestamp'> = {
+            userId,
+            fileName: payload.fileName,
+            fileUri: payload.fileUri || null,
+            mimeType: payload.mimeType || null,
+            fileSha1: payload.fileSha1,
+            status: 'processing',
+            cost: 0,
+            modelUsed: payload.modelUsed,
+            outputSpecifications: [],
+            aiComment: '',
+            importantExtractionNotes: [],
+            analysisDetails: null,
+            quoteConfig: DEFAULT_SERVER_QUOTE_CONFIG,
+            isMainVersion: true,
+            parentProjectId: projectRef.id,
+            version: 1,
+            aiCallCount: 0,
+            objectId: payload.objectId ?? null,
+            objectName: payload.objectName ?? null,
+            actionHistory: [],
+            serverJobId: payload.serverJobId || null,
+            s3ObjectKey: payload.s3ObjectKey || null,
+            pipelineVersion: payload.pipelineVersion || 'v1',
+            processingStage: 'created',
+            processingStageMessage: 'Проект создан и поставлен в очередь',
+            processingStageUpdatedAt: serverTimestamp(),
+            analysisSource: {
+                fileUri: payload.fileUri || null,
+                fileSha1: payload.fileSha1 || null,
+                fileName: payload.fileName,
+                mimeType: payload.mimeType || null,
+                objectKey: payload.s3ObjectKey || null,
+                model: payload.modelUsed || null,
+                temperature: payload.temperature ?? null,
+                includeThoughts: payload.includeThoughts ?? null,
+                pipelineVersion: payload.pipelineVersion || 'v1',
+                objectId: payload.objectId ?? null,
+                objectName: payload.objectName ?? null,
+            },
+        };
+
+        await setDoc(projectRef, {
+            ...baseData,
+            timestamp: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+        } as any);
+
+        await logProjectEvent({
+            projectId: projectRef.id,
+            userId,
+            action: 'PROJECT_PROCESSING_START',
+            stage: 'draft_created',
+            status: 'info',
+            source: 'server',
+            model: payload.modelUsed,
+            file: {
+                name: payload.fileName,
+                uri: payload.fileUri || null,
+                sha1: payload.fileSha1,
+                objectKey: payload.s3ObjectKey || null,
+            },
+            metadata: {
+                serverJobId: payload.serverJobId || null,
+            },
+            message: 'Создан черновик запроса на обработку',
+        });
+
+        await logUserAction(userId, 'PROJECT_PROCESSING_START', { projectId: projectRef.id });
+        const finalDoc = await getDoc(projectRef);
+        return { success: true, message: 'Черновик создан.', project: { id: projectRef.id, ...finalDoc.data() } as HistoryRequest };
+    } catch (error: any) {
+        console.error("Error creating processing request:", error);
+        await logProjectEvent({
+            projectId: projectRef.id,
+            userId,
+            action: 'PROJECT_PROCESSING_FAILED',
+            stage: 'draft_creation',
+            status: 'error',
+            source: 'server',
+            model: payload?.modelUsed,
+            file: {
+                name: payload?.fileName,
+                uri: payload?.fileUri || null,
+                sha1: payload?.fileSha1,
+                objectKey: payload?.s3ObjectKey || null,
+            },
+            metadata: {
+                serverJobId: payload?.serverJobId || null,
+            },
+            message: error?.message || 'Не удалось создать черновик.',
+            error,
+        });
+        return { success: false, message: error.message || 'Не удалось создать черновик.', project: null };
+    }
+};
+
+const FinalizeProcessingRequestSchema = z.object({
+    userId: z.string().min(1),
+    projectId: z.string().min(1),
+    creditCost: z.number().positive(),
+    fileName: z.string(),
+    fileUri: z.string(),
+    mimeType: z.string(),
+    fileSha1: z.string(),
+    modelUsed: z.string(),
+    outputSpecifications: z.array(z.any()),
+    quoteConfig: QuoteConfigSchema.optional(),
+    aiComment: z.string().nullable().optional(),
+    analysisDetails: z.any().nullable().optional(),
+    importantExtractionNotes: z.array(z.string()).nullable().optional(),
+    aiCallCount: z.number().optional(),
+    s3ObjectKey: z.string().nullable().optional(),
+    pipelineVersion: z.enum(['v1', 'v2']).optional(),
+    initialAiResponse: z.any().optional(),
+});
+
+export const finalizeProcessingRequest = async (data: z.infer<typeof FinalizeProcessingRequestSchema>): Promise<{ success: boolean; message: string; project?: HistoryRequest | null; }> => {
+    const validation = FinalizeProcessingRequestSchema.safeParse(data);
+    if (!validation.success) {
+        return { success: false, message: 'Неверные данные для завершения проекта.' };
+    }
+    let {
+        userId, projectId, creditCost, outputSpecifications, quoteConfig,
+        aiComment, analysisDetails, importantExtractionNotes, aiCallCount,
+        initialAiResponse, ...rest
+    } = validation.data;
+    try {
+        userId = await resolveActingUserId(userId);
+    } catch (error: any) {
+        return { success: false, message: error.message || 'Недостаточно прав.' };
+    }
+
+    const userRef = doc(db, 'users', userId);
+    const projectRef = doc(db, 'requests', projectId);
+
+    try {
+        await withMongoTransaction(async (ctx) => {
+            const now = new Date();
+            const userDoc = await ctx.db.collection('users').findOne({ _id: userId }, ctx.session ? { session: ctx.session } : undefined);
+            if (!userDoc) throw new Error('Пользователь не найден.');
+            const projectDoc = await ctx.db.collection('requests').findOne({ _id: projectId }, ctx.session ? { session: ctx.session } : undefined);
+            if (!projectDoc) throw new Error('Проект не найден.');
+            if (projectDoc.userId !== userId) throw new Error('Нет доступа к проекту.');
+            if (projectDoc.status === 'success') throw new Error('Проект уже завершен.');
+
+            await deductCreditsInTransaction(ctx, {
+                userId,
+                amount: creditCost,
+                reason: 'analysis_finalize',
+                metadata: { projectId },
+            });
+
+            await ctx.db.collection('users').updateOne(
+                { _id: userId },
+                { $inc: { projectCount: 1 }, $set: { updatedAt: now } },
+                ctx.session ? { session: ctx.session } : undefined,
+            );
+
+            await ctx.db.collection('requests').updateOne(
+                { _id: projectId },
+                {
+                    $set: {
+                        ...rest,
+                        status: 'success',
+                        cost: creditCost,
+                        outputSpecifications,
+                        quoteConfig: quoteConfig || projectDoc.quoteConfig || DEFAULT_SERVER_QUOTE_CONFIG,
+                        aiComment: aiComment ?? '',
+                        analysisDetails: analysisDetails ?? null,
+                        importantExtractionNotes: importantExtractionNotes ?? [],
+                        aiCallCount: aiCallCount ?? 0,
+                        pipelineVersion: rest.pipelineVersion || projectDoc.pipelineVersion || 'v1',
+                        analysisSource: projectDoc.analysisSource || {
+                            fileUri: rest.fileUri,
+                            fileSha1: rest.fileSha1,
+                            fileName: rest.fileName,
+                            mimeType: rest.mimeType,
+                            objectKey: rest.s3ObjectKey || null,
+                            model: rest.modelUsed,
+                            temperature: null,
+                            includeThoughts: null,
+                            pipelineVersion: rest.pipelineVersion || projectDoc.pipelineVersion || 'v1',
+                            objectId: projectDoc.objectId || null,
+                            objectName: projectDoc.objectName || null,
+                        },
+                        updatedAt: now,
+                    },
+                },
+                ctx.session ? { session: ctx.session } : undefined,
+            );
+
+            if (rest.fileSha1 && initialAiResponse) {
+                await ctx.db.collection('file_analysis_cache').updateOne(
+                    { _id: rest.fileSha1 },
+                    { $set: { originalAiResponse: initialAiResponse, createdAt: now, reportCount: 0, pipelineVersion: rest.pipelineVersion || 'v1' } },
+                    { upsert: true, ...(ctx.session ? { session: ctx.session } : {}) },
+                );
+            }
+        });
+
+        await logProjectEvent({
+            projectId,
+            userId,
+            action: 'PROJECT_PROCESSING_COMPLETE',
+            stage: 'finalize',
+            status: 'success',
+            source: 'server',
+            model: rest.modelUsed,
+            file: {
+                name: rest.fileName,
+                uri: rest.fileUri,
+                sha1: rest.fileSha1,
+                objectKey: rest.s3ObjectKey || null,
+            },
+            metadata: {
+                creditCost,
+                aiCallCount: aiCallCount ?? 0,
+                outputSpecificationsCount: outputSpecifications?.length ?? 0,
+                hasAnalysisDetails: !!analysisDetails,
+                importantExtractionNotesCount: importantExtractionNotes?.length ?? 0,
+            },
+            response: initialAiResponse,
+            message: 'Проект финализирован, списаны кредиты и сохранен результат.',
+        });
+
+        await logUserAction(userId, 'PROJECT_PROCESSING_COMPLETE', { projectId });
+        const finalDoc = await getDoc(projectRef);
+        return { success: true, message: 'Проект успешно завершен.', project: { id: finalDoc.id, ...finalDoc.data() } as HistoryRequest };
+    } catch (error: any) {
+        console.error("Error finalizing processing request:", error);
+        await logProjectEvent({
+            projectId,
+            userId,
+            action: 'PROJECT_PROCESSING_FAILED',
+            stage: 'finalize',
+            status: 'error',
+            source: 'server',
+            model: rest?.modelUsed,
+            file: {
+                name: rest?.fileName,
+                uri: rest?.fileUri,
+                sha1: rest?.fileSha1,
+                objectKey: rest?.s3ObjectKey || null,
+            },
+            metadata: { creditCost, aiCallCount: aiCallCount ?? 0 },
+            message: error?.message || 'Не удалось завершить проект.',
+            error,
+        });
+        return { success: false, message: error.message || 'Не удалось завершить проект.', project: null };
+    }
+};
+
+const FailProcessingRequestSchema = z.object({
+    userId: z.string().min(1),
+    projectId: z.string().min(1),
+    status: z.enum(['failed', 'cancelled']),
+    error: z.string().optional(),
+});
+
+export const failProcessingRequest = async (data: z.infer<typeof FailProcessingRequestSchema>): Promise<{ success: boolean; message: string; }> => {
+    const validation = FailProcessingRequestSchema.safeParse(data);
+    if (!validation.success) {
+        return { success: false, message: 'Неверные данные для обновления статуса.' };
+    }
+    let { userId, projectId, status, error } = validation.data;
+    try {
+        userId = await resolveActingUserId(userId);
+    } catch (e: any) {
+        return { success: false, message: e.message || 'Недостаточно прав.' };
+    }
+    const projectRef = doc(db, 'requests', projectId);
+
+    try {
+        const projectSnap = await getDoc(projectRef);
+        if (!projectSnap.exists()) throw new Error('Проект не найден.');
+        const projectData = projectSnap.data() as HistoryRequest;
+        if (projectData.userId !== userId) throw new Error('Нет доступа к проекту.');
+
+        await updateDoc(projectRef, {
+            status,
+            error: error || (status === 'cancelled' ? 'Процесс остановлен пользователем' : 'Ошибка анализа'),
+            processingStage: status,
+            processingStageMessage: error || (status === 'cancelled' ? 'Процесс остановлен пользователем' : 'Ошибка анализа'),
+            processingStageUpdatedAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+        } as any);
+
+        await logUserAction(userId, status === 'cancelled' ? 'PROJECT_PROCESSING_CANCELLED' : 'PROJECT_PROCESSING_FAILED', { projectId });
+        await logProjectEvent({
+            projectId,
+            userId,
+            action: status === 'cancelled' ? 'PROJECT_PROCESSING_CANCELLED' : 'PROJECT_PROCESSING_FAILED',
+            stage: 'status_update',
+            status: status === 'cancelled' ? 'warning' : 'error',
+            source: 'server',
+            model: projectData.modelUsed,
+            file: {
+                name: projectData.fileName,
+                uri: projectData.fileUri,
+                sha1: projectData.fileSha1,
+                objectKey: projectData.s3ObjectKey || null,
+            },
+            metadata: {
+                serverJobId: projectData.serverJobId || null,
+            },
+            message: error || (status === 'cancelled' ? 'Процесс остановлен пользователем' : 'Ошибка анализа'),
+        });
+        return { success: true, message: 'Статус обновлен.' };
+    } catch (err: any) {
+        console.error("Error failing processing request:", err);
+        await logProjectEvent({
+            projectId,
+            userId,
+            action: 'PROJECT_PROCESSING_FAILED',
+            stage: 'status_update',
+            status: 'error',
+            source: 'server',
+            message: err?.message || 'Не удалось обновить проект.',
+            error: err,
+        });
+        return { success: false, message: err.message || 'Не удалось обновить проект.' };
+    }
+};
+
+export const linkRequestToServerJob = async (data: { userId: string; projectId: string; serverJobId: string }): Promise<{ success: boolean; message: string; }> => {
+    let { userId, projectId, serverJobId } = data;
+    if (!userId || !projectId || !serverJobId) return { success: false, message: 'Неверные данные.' };
+    try {
+        userId = await resolveActingUserId(userId);
+    } catch (e: any) {
+        return { success: false, message: e.message || 'Недостаточно прав.' };
+    }
+    try {
+        const projectRef = doc(db, 'requests', projectId);
+        const projectSnap = await getDoc(projectRef);
+        if (!projectSnap.exists()) throw new Error('Проект не найден.');
+        const projectData = projectSnap.data() as HistoryRequest;
+        if (projectData.userId !== userId) throw new Error('Нет доступа к проекту.');
+        await updateDoc(projectRef, { serverJobId, updatedAt: serverTimestamp() } as any);
+        await logProjectEvent({
+            projectId,
+            userId,
+            jobId: serverJobId,
+            action: 'PROJECT_JOB_LINKED',
+            stage: 'server_job_linked',
+            status: 'info',
+            source: 'server',
+            model: projectData.modelUsed,
+            file: {
+                name: projectData.fileName,
+                uri: projectData.fileUri,
+                sha1: projectData.fileSha1,
+                objectKey: projectData.s3ObjectKey || null,
+            },
+            metadata: {
+                previousServerJobId: projectData.serverJobId || null,
+            },
+            message: 'Серверная задача связана с проектом',
+        });
+        return { success: true, message: 'Задача связана с проектом.' };
+    } catch (err: any) {
+        console.error("Error linking server job:", err);
+        await logProjectEvent({
+            projectId,
+            userId,
+            jobId: serverJobId,
+            action: 'PROJECT_JOB_LINKED',
+            stage: 'server_job_linked',
+            status: 'error',
+            source: 'server',
+            message: err?.message || 'Не удалось связать задачу.',
+            error: err,
+        });
+        return { success: false, message: err.message || 'Не удалось связать задачу.' };
+    }
+};
+
+const RestartProcessingRequestSchema = z.object({
+    userId: z.string().min(1),
+    projectId: z.string().min(1),
+    fileUri: z.string().optional(),
+    s3ObjectKey: z.string().optional(),
+});
+
+export const restartProcessingRequest = async (data: z.infer<typeof RestartProcessingRequestSchema>): Promise<{ success: boolean; message: string; }> => {
+    const validation = RestartProcessingRequestSchema.safeParse(data);
+    if (!validation.success) {
+        return { success: false, message: 'Неверные данные для перезапуска.' };
+    }
+    const { userId, projectId, fileUri, s3ObjectKey } = validation.data;
+    const projectRef = doc(db, 'requests', projectId);
+    try {
+        const snap = await getDoc(projectRef);
+        if (!snap.exists()) throw new Error('Проект не найден.');
+        const project = snap.data() as HistoryRequest;
+        if (project.userId !== userId) throw new Error('Нет доступа к проекту.');
+
+        await updateDoc(projectRef, {
+            status: 'processing',
+            error: '',
+            cost: 0,
+            fileUri: fileUri || project.fileUri || null,
+            s3ObjectKey: s3ObjectKey || project.s3ObjectKey || null,
+            serverJobId: null,
+            processingStage: 'created',
+            processingStageMessage: 'Проект отправлен на повторную обработку',
+            processingStageUpdatedAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+        } as any);
+
+        await logUserAction(userId, 'PROJECT_PROCESSING_RESTART', { projectId });
+        await logProjectEvent({
+            projectId,
+            userId,
+            action: 'PROJECT_PROCESSING_RESTART',
+            stage: 'restart',
+            status: 'info',
+            source: 'server',
+            model: project.modelUsed,
+            file: {
+                name: project.fileName,
+                uri: fileUri || project.fileUri || null,
+                sha1: project.fileSha1,
+                objectKey: s3ObjectKey || project.s3ObjectKey || null,
+            },
+            metadata: {
+                previousStatus: project.status,
+                serverJobId: project.serverJobId || null,
+            },
+            message: 'Проект отправлен на повторную обработку',
+        });
+        return { success: true, message: 'Проект отправлен на повторную обработку.' };
+    } catch (err: any) {
+        console.error("Error restarting processing request:", err);
+        await logProjectEvent({
+            projectId,
+            userId,
+            action: 'PROJECT_PROCESSING_FAILED',
+            stage: 'restart',
+            status: 'error',
+            source: 'server',
+            message: err?.message || 'Не удалось перезапустить проект.',
+            error: err,
+        });
+        return { success: false, message: err.message || 'Не удалось перезапустить проект.' };
+    }
+};
+
+export const restartProcessingRequestWithQueue = async (data: z.infer<typeof RestartProcessingRequestSchema>): Promise<{ success: boolean; message: string; jobId?: string | null; }> => {
+    const validation = RestartProcessingRequestSchema.safeParse(data);
+    if (!validation.success) {
+        return { success: false, message: 'Неверные данные для перезапуска.' };
+    }
+
+    let { userId, projectId, fileUri, s3ObjectKey } = validation.data;
+    const projectRef = doc(db, 'requests', projectId);
+
+    try {
+        userId = await resolveActingUserId(userId);
+        const snap = await getDoc(projectRef);
+        if (!snap.exists()) throw new Error('Проект не найден.');
+        const project = snap.data() as HistoryRequest;
+        if (project.userId !== userId) throw new Error('Нет доступа к проекту.');
+
+        const nextSource = {
+            ...(project.analysisSource || {}),
+            fileUri: fileUri || project.analysisSource?.fileUri || project.fileUri || null,
+            fileSha1: project.analysisSource?.fileSha1 || project.fileSha1 || null,
+            fileName: project.analysisSource?.fileName || project.fileName,
+            mimeType: project.analysisSource?.mimeType || project.mimeType || null,
+            objectKey: s3ObjectKey || project.analysisSource?.objectKey || project.s3ObjectKey || null,
+            model: project.analysisSource?.model || project.modelUsed || null,
+            temperature: project.analysisSource?.temperature ?? null,
+            includeThoughts: project.analysisSource?.includeThoughts ?? null,
+            pipelineVersion: project.analysisSource?.pipelineVersion || project.pipelineVersion || 'v1',
+            objectId: project.analysisSource?.objectId ?? project.objectId ?? null,
+            objectName: project.analysisSource?.objectName ?? project.objectName ?? null,
+        };
+
+        if (!nextSource.fileUri) throw new Error('Нет доступной ссылки на файл для повторного анализа.');
+        if (!nextSource.fileSha1) throw new Error('Отсутствует хеш файла, повтор невозможен.');
+        if (!nextSource.fileName) throw new Error('Отсутствует имя файла для перезапуска.');
+        if (!nextSource.mimeType) throw new Error('Отсутствует mimeType файла для перезапуска.');
+        if (!nextSource.model) throw new Error('Отсутствует модель анализа для перезапуска.');
+
+        const fileUriValidation = await validateFileUriAgainstAllowlist(nextSource.fileUri);
+        if (!fileUriValidation.ok) {
+            throw new Error(fileUriValidation.reason || 'Недопустимый fileUri.');
+        }
+
+        const appSettings = await getAppSettings();
+        if (!appSettings.serverFunctionsEnabled || appSettings.serverFunctionsMode !== 'server') {
+            throw new Error('Серверные функции отключены в настройках.');
+        }
+
+        const dbClient = await getDb();
+        const userDoc = await dbClient.collection('users').findOne({ _id: userId as any });
+        if (!userDoc) throw new Error('Пользователь не найден.');
+        const plan = userDoc.plan || 'Free';
+        const allowedPlans = (appSettings.serverFunctionsAllowedPlans?.length ? appSettings.serverFunctionsAllowedPlans : undefined)
+          ?? (appSettings.serverFunctionsPaidOnly ? ['PRO', 'Business', 'Enterprise'] : ['Free', 'PRO', 'Business', 'Enterprise']);
+        if (!allowedPlans.includes(plan)) {
+            throw new Error('Серверная обработка недоступна для текущего тарифа.');
+        }
+
+        const creditSummary = await getCreditSummary(userId, { refresh: true });
+        if (creditSummary.total < SERVER_ANALYSIS_CREDIT_COST) {
+            throw new Error('Недостаточно кредитов для запуска серверного анализа.');
+        }
+
+        const pipelineVersion = nextSource.pipelineVersion || appSettings.analysisPipelineVersion || 'v1';
+        const executionProvider = pipelineVersion === 'v1'
+            ? 'openrouter'
+            : (appSettings.aiExecutionProvider || 'openrouter');
+        const idempotencyKey = createHash('sha256')
+            .update(`${userId}:${projectId}:${nextSource.fileSha1}:${pipelineVersion}`)
+            .digest('hex');
+
+        const job = await createServerAnalysisJob({
+            userId,
+            projectId,
+            fileUri: nextSource.fileUri,
+            fileSha1: nextSource.fileSha1,
+            fileName: nextSource.fileName,
+            mimeType: nextSource.mimeType,
+            objectKey: nextSource.objectKey || undefined,
+            model: nextSource.model,
+            temperature: nextSource.temperature ?? undefined,
+            includeThoughts: nextSource.includeThoughts ?? undefined,
+            pipelineVersion,
+            executionProvider,
+            userPlan: plan,
+            idempotencyKey,
+            creditCost: SERVER_ANALYSIS_CREDIT_COST,
+        });
+
+        await updateDoc(projectRef, {
+            status: 'processing',
+            error: '',
+            cost: 0,
+            fileUri: nextSource.fileUri,
+            s3ObjectKey: nextSource.objectKey || null,
+            serverJobId: job.id,
+            modelUsed: nextSource.model,
+            mimeType: nextSource.mimeType,
+            fileSha1: nextSource.fileSha1,
+            pipelineVersion,
+            processingStage: 'created',
+            processingStageMessage: 'Проект отправлен на повторную обработку',
+            processingStageUpdatedAt: serverTimestamp(),
+            analysisSource: nextSource,
+            updatedAt: serverTimestamp(),
+        } as any);
+
+        await logProjectEvent({
+            projectId,
+            userId,
+            jobId: job.id,
+            action: 'PROJECT_JOB_CREATED',
+            stage: 'queued',
+            status: 'info',
+            source: 'server',
+            model: nextSource.model,
+            file: {
+                name: nextSource.fileName,
+                uri: nextSource.fileUri,
+                sha1: nextSource.fileSha1,
+                objectKey: nextSource.objectKey || null,
+            },
+            metadata: {
+                creditCost: SERVER_ANALYSIS_CREDIT_COST,
+                pipelineVersion,
+                executionProvider,
+                restart: true,
+            },
+            message: 'Создана новая серверная задача для повторного анализа',
+        });
+
+        await logUserAction(userId, 'PROJECT_PROCESSING_RESTART', { projectId });
+        await logProjectEvent({
+            projectId,
+            userId,
+            action: 'PROJECT_PROCESSING_RESTART',
+            stage: 'restart',
+            status: 'info',
+            source: 'server',
+            model: nextSource.model,
+            file: {
+                name: nextSource.fileName,
+                uri: nextSource.fileUri,
+                sha1: nextSource.fileSha1,
+                objectKey: nextSource.objectKey || null,
+            },
+            metadata: {
+                previousStatus: project.status,
+                previousServerJobId: project.serverJobId || null,
+                serverJobId: job.id,
+            },
+            message: 'Проект отправлен на повторную обработку',
+        });
+
+        return {
+            success: true,
+            message: 'Проект отправлен на повторную обработку.',
+            jobId: job.id,
+        };
+    } catch (err: any) {
+        console.error("Error restarting processing request with queue:", err);
+        await logProjectEvent({
+            projectId,
+            userId,
+            action: 'PROJECT_PROCESSING_FAILED',
+            stage: 'restart',
+            status: 'error',
+            source: 'server',
+            message: err?.message || 'Не удалось перезапустить проект.',
+            error: err,
+        });
+        return { success: false, message: err.message || 'Не удалось перезапустить проект.', jobId: null };
+    }
+};

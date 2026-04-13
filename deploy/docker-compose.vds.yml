@@ -1,0 +1,138 @@
+x-app: &app_base
+  restart: unless-stopped
+  env_file:
+    - ../.env
+  environment:
+    NODE_ENV: production
+    PORT: 3000
+    HOSTNAME: 0.0.0.0
+  logging:
+    options:
+      max-size: "10m"
+      max-file: "3"
+
+x-web: &web_base
+  <<: *app_base
+  build:
+    context: ..
+    dockerfile: Dockerfile
+    target: runner
+  healthcheck:
+    test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:3000/api/healthz || exit 1"]
+    interval: 30s
+    timeout: 10s
+    retries: 5
+    start_period: 30s
+
+services:
+  web_landing:
+    <<: *web_base
+    image: ai-smetchik-web:latest
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      HOSTNAME: 0.0.0.0
+      APP_SURFACE: landing
+
+  web_admin:
+    <<: *web_base
+    image: ai-smetchik-web:latest
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      HOSTNAME: 0.0.0.0
+      APP_SURFACE: admin
+
+  web_lk:
+    <<: *web_base
+    image: ai-smetchik-web:latest
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      HOSTNAME: 0.0.0.0
+      APP_SURFACE: lk
+
+  web_crm:
+    <<: *web_base
+    image: ai-smetchik-web:latest
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      HOSTNAME: 0.0.0.0
+      APP_SURFACE: crm
+
+  web_partner:
+    <<: *web_base
+    image: ai-smetchik-web:latest
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      HOSTNAME: 0.0.0.0
+      APP_SURFACE: partner
+
+  web_mobile:
+    <<: *web_base
+    image: ai-smetchik-web:latest
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      HOSTNAME: 0.0.0.0
+      APP_SURFACE: mobile
+
+  worker:
+    <<: *app_base
+    image: ai-smetchik-worker:latest
+    build:
+      context: ..
+      dockerfile: Dockerfile
+      target: worker
+
+  nginx:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    depends_on:
+      web_landing:
+        condition: service_started
+      web_admin:
+        condition: service_started
+      web_lk:
+        condition: service_started
+      web_crm:
+        condition: service_started
+      web_partner:
+        condition: service_started
+      web_mobile:
+        condition: service_started
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./nginx/certbot/www:/var/www/certbot
+      - ./nginx/certbot/conf:/etc/letsencrypt
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    profiles:
+      - with-mongo
+    command: ["--bind_ip_all"]
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD-SHELL", "mongosh --quiet --eval \"db.adminCommand('ping').ok\" | grep 1 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  mongo_data:
