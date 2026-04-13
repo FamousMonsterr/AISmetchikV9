@@ -143,7 +143,7 @@ jobs:
                 sh -c "for d in /etc/letsencrypt/live/${prefix}*; do [ -d \"\$d\" ] || continue; [ -f \"\$d/fullchain.pem\" ] && [ -f \"\$d/privkey.pem\" ] && basename \"\$d\" && exit 0; done; exit 1" 2>/dev/null || true
             }
             cd "${{ secrets.VDS_DEPLOY_PATH || '/opt/ai-smetchik' }}"
-            git fetch --prune origin main
+            git fetch --prune origin +refs/heads/*:refs/remotes/origin/*
             git restore deploy/nginx/default.conf || true
             git switch --detach "$DEPLOY_GIT_REF"
             df -h
