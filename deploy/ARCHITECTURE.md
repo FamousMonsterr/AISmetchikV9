@@ -50,17 +50,17 @@
 
 | Сервер | IP | Логин | Пароль | Доступ |
 |---|---|---|---|---|
-| **srv-web** | `5.35.88.53` | root | `YOUR_PASSWORD` | Публичный (SSH из интернета) |
-| **srv-api** | `10.16.0.2` | root | `YOUR_PASSWORD` | Приватный (через srv-web) |
-| **srv-db** | `10.16.0.3` | root | `YOUR_PASSWORD` | Приватный (через srv-web) |
-| **srv-db-logs** | `10.16.0.4` | root | `YOUR_PASSWORD` | Приватный (через srv-web) |
+| **srv-web** | `5.35.88.53` | root | `<YOUR_PASSWORD>` | Публичный (SSH из интернета) |
+| **srv-api** | `10.16.0.2` | root | `<YOUR_PASSWORD>` | Приватный (через srv-web) |
+| **srv-db** | `10.16.0.3` | root | `<YOUR_PASSWORD>` | Приватный (через srv-web) |
+| **srv-db-logs** | `10.16.0.4` | root | `<YOUR_PASSWORD>` | Приватный (через srv-web) |
 
 ### MongoDB
 
 | Сервер | Username | Password | Database |
 |---|---|---|---|
-| srv-db (10.16.0.3) | `aismetchik` | `MONGO_PASSWORD` | `aismetchik` |
-| srv-db-logs (10.16.0.4) | `aismetchik_logs` | `MONGO_LOGS_PASSWORD` | `aismetchik_logs` |
+| srv-db (10.16.0.3) | `aismetchik` | `<MONGO_PASSWORD>` | `aismetchik` |
+| srv-db-logs (10.16.0.4) | `aismetchik_logs` | `<MONGO_LOGS_PASSWORD>` | `aismetchik_logs` |
 
 ### Beget S3
 
@@ -68,8 +68,8 @@
 |---|---|
 | Endpoint | `https://s3.ru1.storage.beget.cloud` |
 | Bucket | `2812d8a1b1e1-aismetchiks3` |
-| Access Key | `S3_ACCESS_KEY` |
-| Secret Key | `S3_SECRET_KEY` |
+| Access Key | `<S3_ACCESS_KEY>` |
+| Secret Key | `<S3_SECRET_KEY>` |
 | Path style URL | `https://s3.ru1.storage.beget.cloud/2812d8a1b1e1-aismetchiks3` |
 | Virtual hosted URL | `https://2812d8a1b1e1-aismetchiks3.s3.ru1.storage.beget.cloud` |
 
@@ -216,8 +216,8 @@ ssh -J root@5.35.88.53 root@10.16.0.4
 | Провайдер | Beget S3 Object Storage |
 | Endpoint | `https://s3.ru1.storage.beget.cloud` |
 | Bucket | `2812d8a1b1e1-aismetchiks3` |
-| Access Key | `S3_ACCESS_KEY` |
-| Secret Key | `S3_SECRET_KEY` |
+| Access Key | `<S3_ACCESS_KEY>` |
+| Secret Key | `<S3_SECRET_KEY>` |
 
 **Подключение:**
 | Стиль | URL |
@@ -228,8 +228,8 @@ ssh -J root@5.35.88.53 root@10.16.0.4
 **Проверка через AWS CLI:**
 ```bash
 aws configure --profile beget
-# Access Key: S3_ACCESS_KEY
-# Secret Key: S3_SECRET_KEY
+# Access Key: <S3_ACCESS_KEY>
+# Secret Key: <S3_SECRET_KEY>
 # Region: ru-1
 # Output: json
 
@@ -573,8 +573,8 @@ MONGODB_LOGS_DB=aismetchik_logs
 
 # S3 (Beget)
 S3_STORAGE_ENABLED=true
-S3_ACCESS_KEY_ID=S3_ACCESS_KEY
-S3_SECRET_ACCESS_KEY=S3_SECRET_KEY
+S3_ACCESS_KEY_ID=<S3_ACCESS_KEY>
+S3_SECRET_ACCESS_KEY=<S3_SECRET_KEY>
 S3_ENDPOINT=https://s3.ru1.storage.beget.cloud
 S3_REGION=ru-1
 S3_BUCKET_NAME=2812d8a1b1e1-aismetchiks3
@@ -619,8 +619,8 @@ MONGODB_LOGS_DB=aismetchik_logs
 
 # S3 (Beget)
 S3_STORAGE_ENABLED=true
-S3_ACCESS_KEY_ID=S3_ACCESS_KEY
-S3_SECRET_ACCESS_KEY=S3_SECRET_KEY
+S3_ACCESS_KEY_ID=<S3_ACCESS_KEY>
+S3_SECRET_ACCESS_KEY=<S3_SECRET_KEY>
 S3_ENDPOINT=https://s3.ru1.storage.beget.cloud
 S3_REGION=ru-1
 S3_BUCKET_NAME=2812d8a1b1e1-aismetchiks3
