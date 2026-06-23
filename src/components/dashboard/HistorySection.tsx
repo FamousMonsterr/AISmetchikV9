@@ -27,7 +27,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { nanoid } from 'nanoid';
 import { saveAs } from 'file-saver';
-import { onSnapshot, collection, where, orderBy, DatabaseError, query, getDoc, doc, getDocs } from '@/lib/db-client';
+import { onSnapshot, collection, where, orderBy, DbClientError, query, getDoc, doc, getDocs } from '@/lib/db-client';
 import { db } from '@/lib/db';
 import { deleteRequest, archiveRequest, unarchiveRequest, updateRequest, reportRequest, returnCreditForFailedRequest, saveProjectVersion, restartProcessingRequestWithQueue } from '@/actions/userActions';
 import { runBatchPriceUpdate } from '@/actions/batchActions';
@@ -265,7 +265,7 @@ export function HistorySection({
             const historyList = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as HistoryRequest));
             applyHistorySnapshot(historyList);
             setIsLoadingHistory(false);
-        }, (error: DatabaseError) => {
+        }, (error: DbClientError) => {
             console.error("History fetch error:", error);
             if (error.code === 'failed-precondition' && error.message.includes('index')) {
                 toast({

@@ -128,7 +128,7 @@ export default function AdminPartnerRequestsPage() {
                         </SelectContent>
                     </Select>
                      <Button asChild variant="outline" size="sm">
-                        <a href={`mailto:${req.userEmail}?subject=Ваша заявка на партнерство AI Smetchik`}>
+                        <a href={`mailto:${req.userEmail}?subject=Ваша заявка на партнерство Montage HUB`}>
                             Написать
                         </a>
                      </Button>

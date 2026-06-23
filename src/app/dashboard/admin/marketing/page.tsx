@@ -17,7 +17,7 @@ const WidgetGenerator = ({ partnerId }: { partnerId: string }) => {
     const [height, setHeight] = useState('600px');
     const { toast } = useToast();
 
-    const baseUrl = typeof window !== 'undefined' ? `${window.location.origin}` : 'https://aismetchik.pro';
+    const baseUrl = typeof window !== 'undefined' ? `${window.location.origin}` : 'https://montagehub.ru';
     const widgetUrl = `${baseUrl}/?ref=${partnerId}`;
     
     const iframeCode = `<iframe src="${widgetUrl}" width="${width}" height="${height}" style="border:none; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);"></iframe>`;

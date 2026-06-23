@@ -5,18 +5,16 @@
 import { z } from 'zod';
 import { db } from '@/lib/db';
 import { collection, getDocs, doc, updateDoc, writeBatch, getDoc, serverTimestamp, query, where, orderBy, setDoc, deleteDoc, addDoc, limit, Timestamp } from '@/lib/db-server';
-import { type AppUser, type SystemRole, type UserPlan, type HistoryRequest, type Company, type Notification, type Survey, SurveyResponse, BannerConfig } from '@/contexts/AppContext';
+import { type AppUser, type UserPlan, type HistoryRequest, type Notification, type Survey, SurveyResponse, BannerConfig } from '@/contexts/AppContext';
 import { promises as fs } from 'fs';
 import path from 'path';
 import { MongoClient } from 'mongodb';
-import { getDb } from '@/lib/mongodb';
+import { getDb, getDbForCollection } from '@/lib/mongodb';
 import { LegalEntitySchema, type LegalEntity } from '@/ai/genkit-schemas';
 import TelegramBot from '@/lib/telegram/telegraf-compat';
-import { nanoid } from 'nanoid';
 import { XMLParser, XMLBuilder } from 'fast-xml-parser';
-import { S3Client, PutObjectCommand, GetObjectCommand, GetBucketCorsCommand, PutBucketCorsCommand, DeleteBucketCorsCommand, ListBucketsCommand, CreateBucketCommand, DeleteBucketCommand } from "@aws-sdk/client-s3";
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { logUserAction, logAiApiCall, type ActionType } from '@/lib/logger';
+import { S3Client, ListBucketsCommand, CreateBucketCommand, DeleteBucketCommand, HeadBucketCommand } from "@aws-sdk/client-s3";
+import { logUserAction } from '@/lib/logger';
 import { grantCredits, refundCredits } from '@/services/credits';
 import { startManagedBot, stopManagedBot, getBotRuntimeStatus, forceUnlockBot } from '@/server-functions/telegram/controller';
 import { registerTelegramWebhook, clearTelegramWebhook, resolveTelegramWebhookUrl, TELEGRAM_AUDIENCES, type TelegramAudience } from '@/server-functions/webhooks/telegram';
@@ -33,24 +31,24 @@ async function ensureAdminActor(currentUserId?: string): Promise<string> {
     const sessionUserId = session?.user?.id;
     const sessionRole = (session?.user as any)?.systemRole;
 
-    if (sessionUserId) {
-        if (!isAdminRole(sessionRole)) {
-            throw new Error('Недостаточно прав.');
-        }
+    // If session exists and JWT already has admin role — fast path
+    if (sessionUserId && isAdminRole(sessionRole)) {
         if (currentUserId && currentUserId !== sessionUserId) {
             throw new Error('Идентификатор администратора не совпадает с активной сессией.');
         }
         return sessionUserId;
     }
 
-    if (!currentUserId) {
+    // Fallback: check role in DB (JWT may be stale or missing systemRole)
+    const targetUserId = sessionUserId || currentUserId;
+    if (!targetUserId) {
         throw new Error('Не удалось определить администратора запроса.');
     }
-    const userDoc = await getDoc(doc(db, 'users', currentUserId));
+    const userDoc = await getDoc(doc(db, 'users', targetUserId));
     if (!isAdminRole(userDoc.data()?.systemRole)) {
         throw new Error('Недостаточно прав.');
     }
-    return currentUserId;
+    return targetUserId;
 }
 
 // Helper to get Super Admin Email from settings first, then env
@@ -59,15 +57,22 @@ async function getSuperAdminEmail(): Promise<string | undefined> {
     return envSettings.superAdminEmail || process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAIL;
 }
 
-export const getAllUsers = async (): Promise<AppUser[]> => {
+export const getAllUsers = async (options?: { page?: number; pageSize?: number }): Promise<{ users: AppUser[]; total: number }> => {
     await ensureAdminActor();
+    const { page = 1, pageSize = 50 } = options || {};
     const usersCollection = collection(db, 'users');
-    const userSnapshot = await getDocs(usersCollection);
-    const userList = userSnapshot.docs.map(doc => ({
+    // Get total count first
+    const allSnapshot = await getDocs(usersCollection);
+    const total = allSnapshot.docs.length;
+    // Sort and paginate in memory (cursor-based pagination would be better for very large sets)
+    const allUsers = allSnapshot.docs.map(doc => ({
         uid: doc.id,
         ...doc.data()
     })) as AppUser[];
-    return userList.sort((a, b) => (b.createdAt?.toDate?.()?.getTime() || 0) - (a.createdAt?.toDate?.()?.getTime() || 0));
+    allUsers.sort((a, b) => (b.createdAt?.toDate?.()?.getTime() || 0) - (a.createdAt?.toDate?.()?.getTime() || 0));
+    const start = (page - 1) * pageSize;
+    const users = allUsers.slice(start, start + pageSize);
+    return { users, total };
 };
 
 const UpdateUserPermissionsSchema = z.object({
@@ -122,6 +127,15 @@ export const updateUserPermissions = async (data: z.infer<typeof UpdateUserPermi
   // Prevent Super Admin from demoting themselves, but allow other self-edits.
   if (actorId === targetUid && 'systemRole' in updates && updates.systemRole !== 'Super Admin') {
       return { success: false, message: 'Супер-администратор не может понизить собственную роль.' };
+  }
+
+  // Prevent admins from promoting users to Super Admin (only Super Admins can do this)
+  if (updates.systemRole === 'Super Admin') {
+    const actorDoc = await getDoc(doc(db, 'users', actorId));
+    const actorRole = actorDoc.data()?.systemRole;
+    if (actorRole !== 'Super Admin') {
+      return { success: false, message: 'Только Супер-администратор может назначать роль Super Admin.' };
+    }
   }
 
 
@@ -390,8 +404,8 @@ export interface AppSettings {
     serverFunctionsMode: 'client' | 'server';
     serverFunctionsPaidOnly: boolean;
     serverFunctionsAllowedPlans?: UserPlan[];
-    analysisPipelineVersion: 'v1' | 'v2';
-    aiExecutionProvider: 'openrouter' | 'local_hf';
+    analysisPipelineVersion: 'v1' | 'v2' | 'v3' | 'xiaomi-vision';
+    aiExecutionProvider: 'openrouter' | 'local_hf' | 'xiaomi';
     localHfEnabled: boolean;
     backendBaseUrl?: string;
     frontendBaseUrl?: string;
@@ -406,8 +420,8 @@ const AppSettingsSchema = z.object({
     serverFunctionsMode: z.enum(['client', 'server']).optional().default('client'),
     serverFunctionsPaidOnly: z.boolean().optional().default(true),
     serverFunctionsAllowedPlans: z.array(z.enum(['Free', 'PRO', 'Business', 'Enterprise'])).optional(),
-    analysisPipelineVersion: z.enum(['v1', 'v2']).optional().default('v1'),
-    aiExecutionProvider: z.enum(['openrouter', 'local_hf']).optional().default('openrouter'),
+    analysisPipelineVersion: z.enum(['v1', 'v2', 'v3', 'xiaomi-vision']).optional().default('v1'),
+    aiExecutionProvider: z.enum(['openrouter', 'local_hf', 'xiaomi']).optional().default('openrouter'),
     localHfEnabled: z.boolean().optional().default(false),
     backendBaseUrl: z.string().url('Неверный URL backendBaseUrl.').optional().or(z.literal('')),
     frontendBaseUrl: z.string().url('Неверный URL frontendBaseUrl.').optional().or(z.literal('')),
@@ -651,7 +665,7 @@ export const updateLegalEntity = async (currentUserId: string, data: LegalEntity
 
 export const getTelegramUsers = async (): Promise<AppUser[]> => {
     try {
-        const session = await getServerSessionSafe();
+        const session = await getServerSession(authOptions);
         if (!session?.user?.id || !isAdminRole((session.user as any)?.systemRole)) {
             throw new Error('Недостаточно прав для просмотра Telegram-пользователей.');
         }
@@ -687,7 +701,7 @@ export const sendTelegramMessageToUser = async (data: z.infer<typeof SendTelegra
     return { success: false, message: error || 'Неверные данные.' };
   }
 
-  const session = await getServerSessionSafe();
+  const session = await getServerSession(authOptions);
   const sessionUserId = session?.user?.id;
   if (!sessionUserId || !isAdminRole((session.user as any)?.systemRole)) {
     return { success: false, message: 'Недостаточно прав для отправки сообщений.' };
@@ -698,7 +712,8 @@ export const sendTelegramMessageToUser = async (data: z.infer<typeof SendTelegra
   const actorId = sessionUserId;
 
   const envSettings = await getEnvSettings({ requesterId: actorId, requireAdmin: true });
-  const botToken = envSettings.telegramBotToken || process.env.TELEGRAM_BOT_TOKEN;
+  // Prefer user-audience token (consistent with notifications/telegram.ts)
+  const botToken = envSettings.telegramBotTokenUser || envSettings.telegramBotToken || process.env.TELEGRAM_BOT_TOKEN_USER || process.env.TELEGRAM_BOT_TOKEN;
 
   if (!botToken) {
     console.error("TELEGRAM_BOT_TOKEN is not configured.");
@@ -784,6 +799,14 @@ export interface AiPlanModelConfig {
 export interface AiAgentConfig {
   providers: Record<string, { name: string; baseUrl: string; pdfProcessingPriority?: ('native' | 'mistral-ocr' | 'pdf-text')[] }>;
   apiModels: any[];
+  /** Модель для OCR-этапа (извлечение текста из PDF) */
+  ocrModel?: string;
+  /** Провайдер для OCR-этапа */
+  ocrProvider?: string;
+  /** Модель для этапа анализа (финальный ответ) */
+  analysisModel?: string;
+  /** Провайдер для этапа анализа */
+  analysisProvider?: string;
   planModels?: {
     free?: AiPlanModelConfig;
     pro?: AiPlanModelConfig;
@@ -814,6 +837,36 @@ export const updateAiAgentConfig = async (currentUserId: string, newConfig: AiAg
     } catch (error) {
         console.error("Error writing AI config file:", error);
         return { success: false, message: 'Ошибка при сохранении конфигурации AI.' };
+    }
+};
+
+/**
+ * Прогрев индексов MongoDB для админ-панели.
+ * Выполняется как server action, чтобы не проходить через /api/db (avoid Forbidden).
+ */
+export const warmUpAdminIndexes = async (): Promise<void> => {
+    try {
+        const collections = ['user_logs', 'ai_api_logs', 'partner_requests', 'project_event_logs', 'credit_purchase_orders', 'pro_subscription_orders', 'service_requests'];
+        await Promise.allSettled(
+            collections.map(async (name) => {
+                try {
+                    const dbConn = await getDbForCollection(name);
+                    await dbConn.collection(name).findOne({});
+                } catch {}
+            })
+        );
+        // Also warm up requests with status filter
+        try {
+            const dbConn = await getDbForCollection('requests');
+            await dbConn.collection('requests').findOne({ status: 'reported' });
+        } catch {}
+        // And users with telegramChatId filter
+        try {
+            const dbConn = await getDbForCollection('users');
+            await dbConn.collection('users').findOne({ telegramChatId: { $ne: null } });
+        } catch {}
+    } catch {
+        // Silent — warm-up failures are non-critical
     }
 };
 
@@ -983,44 +1036,60 @@ export interface EnvSettings {
     serverFunctionsAllowedPlans?: UserPlan[];
 }
 
+/**
+ * Optional URL field: trims whitespace, allows empty string, validates URL format only if non-empty.
+ * This prevents "Неверный URL" errors from whitespace or accidental spaces in form fields.
+ */
+const optionalUrl = (errorMsg: string) =>
+  z.preprocess(
+    (v) => (typeof v === 'string' ? v.trim() : v),
+    z.string().url(errorMsg).optional().or(z.literal(''))
+  );
+
 const EnvSettingsSchema = z.object({
-    superAdminEmail: z.string().email('Неверный формат email.').optional().or(z.literal('')),
+    superAdminEmail: z.preprocess(
+      (v) => (typeof v === 'string' ? v.trim() : v),
+      z.string().email('Неверный формат email.').optional().or(z.literal(''))
+    ),
     telegramBotToken: z.string().optional().or(z.literal('')),
-    nextPublicTelegramBotUrl: z.string().url('Неверный URL.').optional().or(z.literal('')),
+    nextPublicTelegramBotUrl: optionalUrl('Неверный URL Telegram-бота. Укажите полный URL, например https://t.me/YourBot'),
     nextPublicTelegramBotUsername: z.string().optional().or(z.literal('')),
-    nextPublicTelegramWebappUrl: z.string().url('Неверный URL.').optional().or(z.literal('')),
+    nextPublicTelegramWebappUrl: optionalUrl('Неверный URL WebApp. Укажите полный URL, например https://lk.montagehub.ru'),
     telegramAuthEmailDomain: z.string().optional().or(z.literal('')),
     telegramBotEnabled: z.boolean().optional(),
     telegramBotMode: z.enum(['polling', 'webhook']).optional(),
-    telegramBotWebhookUrl: z.string().url('Неверный URL вебхука.').optional().or(z.literal('')),
+    telegramBotWebhookUrl: optionalUrl('Неверный URL вебхука. Укажите полный URL, например https://domain.ru/api/telegram/webhook'),
     telegramBotSecretToken: z.string().optional().or(z.literal('')),
     telegramBotTokenUser: z.string().optional().or(z.literal('')),
     telegramBotSecretTokenUser: z.string().optional().or(z.literal('')),
-    telegramBotWebhookUrlUser: z.string().url('Неверный URL вебхука (user).').optional().or(z.literal('')),
+    telegramBotWebhookUrlUser: optionalUrl('Неверный URL вебхука (user).'),
     telegramBotEnabledUser: z.boolean().optional(),
     telegramBotTokenPartner: z.string().optional().or(z.literal('')),
     telegramBotSecretTokenPartner: z.string().optional().or(z.literal('')),
-    telegramBotWebhookUrlPartner: z.string().url('Неверный URL вебхука (partner).').optional().or(z.literal('')),
+    telegramBotWebhookUrlPartner: optionalUrl('Неверный URL вебхука (partner).'),
     telegramBotEnabledPartner: z.boolean().optional(),
     telegramBotTokenManager: z.string().optional().or(z.literal('')),
     telegramBotSecretTokenManager: z.string().optional().or(z.literal('')),
-    telegramBotWebhookUrlManager: z.string().url('Неверный URL вебхука (manager).').optional().or(z.literal('')),
+    telegramBotWebhookUrlManager: optionalUrl('Неверный URL вебхука (manager).'),
     telegramBotEnabledManager: z.boolean().optional(),
     telegramBotTokenAdmin: z.string().optional().or(z.literal('')),
     telegramBotSecretTokenAdmin: z.string().optional().or(z.literal('')),
-    telegramBotWebhookUrlAdmin: z.string().url('Неверный URL вебхука (admin).').optional().or(z.literal('')),
+    telegramBotWebhookUrlAdmin: optionalUrl('Неверный URL вебхука (admin).'),
     telegramBotEnabledAdmin: z.boolean().optional(),
     vkAuthEmailDomain: z.string().optional().or(z.literal('')),
     vkIdClientId: z.string().optional().or(z.literal('')),
     vkIdClientSecret: z.string().optional().or(z.literal('')),
-    vkIdRedirectUri: z.string().url('Неверный VK redirect URL.').optional().or(z.literal('')),
+    vkIdRedirectUri: optionalUrl('Неверный VK redirect URL.'),
     vkBotEnabled: z.boolean().optional(),
     vkGroupId: z.string().optional().or(z.literal('')),
     vkAccessToken: z.string().optional().or(z.literal('')),
     vkCallbackSecret: z.string().optional().or(z.literal('')),
     vkConfirmationToken: z.string().optional().or(z.literal('')),
-    vkWebhookUrl: z.string().url('Неверный VK webhook URL.').optional().or(z.literal('')),
-    qaTestUserEmail: z.string().email('Неверный email QA пользователя.').optional().or(z.literal('')),
+    vkWebhookUrl: optionalUrl('Неверный VK webhook URL.'),
+    qaTestUserEmail: z.preprocess(
+      (v) => (typeof v === 'string' ? v.trim() : v),
+      z.string().email('Неверный email QA пользователя.').optional().or(z.literal(''))
+    ),
     qaTestUserPassword: z.string().optional().or(z.literal('')),
     qaTestUserPhone: z.string().optional().or(z.literal('')),
     qaProtectUser: z.boolean().optional(),
@@ -1030,20 +1099,20 @@ const EnvSettingsSchema = z.object({
     ozonBankApiToken: z.string().optional().or(z.literal('')),
     ozonBankSyncPath: z.string().optional().or(z.literal('')),
     openRouterApiKey: z.string().optional().or(z.literal('')),
-    localHfBaseUrl: z.string().url('Неверный URL для локальной HF модели.').optional().or(z.literal('')),
+    localHfBaseUrl: optionalUrl('Неверный URL для локальной HF модели.'),
     localHfModelId: z.string().optional().or(z.literal('')),
     localHfApiKey: z.string().optional().or(z.literal('')),
     defaultFallbackModel: z.string().optional().or(z.literal('')),
-    passkeyOrigin: z.string().url('Неверный PASSKEY_ORIGIN.').optional().or(z.literal('')),
+    passkeyOrigin: optionalUrl('Неверный PASSKEY_ORIGIN.'),
     passkeyRpId: z.string().optional().or(z.literal('')),
     passkeyRpName: z.string().optional().or(z.literal('')),
     passkeyTimeoutMs: z.number().int().min(1000).optional(),
     passkeyChallengeTtlMs: z.number().int().min(1000).optional(),
     passkeyUserVerification: z.enum(['required', 'preferred', 'discouraged']).optional(),
     passkeyAttestation: z.enum(['none', 'direct', 'indirect', 'enterprise']).optional(),
-    mongoUri: z.string().url('Неверный URL MongoDB.').optional().or(z.literal('')),
+    mongoUri: optionalUrl('Неверный URL MongoDB. Ожидается формат mongodb://host:27017/db'),
     mongoDbName: z.string().optional().or(z.literal('')),
-    mongoLogsUri: z.string().url('Неверный URL MongoDB для логов.').optional().or(z.literal('')),
+    mongoLogsUri: optionalUrl('Неверный URL MongoDB для логов.'),
     mongoLogsDbName: z.string().optional().or(z.literal('')),
     smtpEnabled: z.boolean().optional(),
     smtpHost: z.string().optional().or(z.literal('')),
@@ -1056,7 +1125,7 @@ const EnvSettingsSchema = z.object({
     s3StorageEnabled: z.boolean().optional(),
     s3AccessKeyId: z.string().optional().or(z.literal('')),
     s3SecretAccessKey: z.string().optional().or(z.literal('')),
-    s3Endpoint: z.string().url('Неверный URL.').optional().or(z.literal('')),
+    s3Endpoint: optionalUrl('Неверный URL S3. Укажите полный URL, например https://s3.example.com'),
     s3Region: z.string().optional().or(z.literal('')),
     s3BucketName: z.string().optional().or(z.literal('')),
     s3TenantId: z.string().optional().or(z.literal('')),
@@ -1297,13 +1366,23 @@ export type ConnectivityStatus = {
     openrouter: { ok: boolean; message: string };
 };
 
+let _envSettingsCache: { data: EnvSettings; expiresAt: number } | null = null;
+const ENV_SETTINGS_TTL_MS = 60_000; // 60 seconds
+
 export const getEnvSettings = async (options: GetEnvOptions = {}): Promise<EnvSettings> => {
     const { requesterId, requireAdmin, allowInternal, stripSecrets } = options;
 
     try {
+        // Use cache for non-admin requests (when no requesterId check needed)
         const settingsRef = doc(db, 'configs', 'envSettings');
-        const docSnap = await getDoc(settingsRef);
-        const data = docSnap.exists() ? (docSnap.data() as EnvSettings) : {};
+        let data: EnvSettings;
+        if (!requesterId && _envSettingsCache && Date.now() < _envSettingsCache.expiresAt) {
+            data = _envSettingsCache.data;
+        } else {
+            const docSnap = await getDoc(settingsRef);
+            data = docSnap.exists() ? (docSnap.data() as EnvSettings) : {};
+            _envSettingsCache = { data, expiresAt: Date.now() + ENV_SETTINGS_TTL_MS };
+        }
 
         let requesterIsAdmin = false;
         if (requesterId) {
@@ -1457,9 +1536,14 @@ export async function testConnectivity(options: { requesterId?: string; requireA
 export const updateEnvSettings = async (currentUserId: string, data: EnvSettings): Promise<{ success: boolean; message: string }> => {
     const validation = EnvSettingsSchema.safeParse(data);
     if (!validation.success) {
-        // Find the first error message to display
-        const firstError = Object.values(validation.error.flatten().fieldErrors)[0]?.[0];
-        return { success: false, message: firstError || 'Неверные данные.' };
+        // Find the first error message to display, include field name for clarity
+        const fieldErrors = validation.error.flatten().fieldErrors;
+        const firstField = Object.keys(fieldErrors)[0];
+        const firstMsg = firstField ? fieldErrors[firstField]?.[0] : null;
+        const message = firstField
+          ? `${firstMsg || 'Неверные данные'} (поле: ${firstField})`
+          : 'Неверные данные.';
+        return { success: false, message };
     }
     
     let actorId = currentUserId;
@@ -1470,9 +1554,10 @@ export const updateEnvSettings = async (currentUserId: string, data: EnvSettings
         await logUserAction(actorId, 'ADMIN_UPDATE_ENV_SETTINGS', {});
         await persistEnvFile(validation.data);
         return { success: true, message: 'Переменные окружения успешно обновлены. Изменения могут примениться не сразу.' };
-    } catch (error) {
-        console.error("Error updating env settings:", error);
-        return { success: false, message: 'Ошибка при обновлении переменных.' };
+    } catch (error: any) {
+        const detail = error?.message || String(error);
+        console.error("Error updating env settings:", detail, error);
+        return { success: false, message: `Ошибка при обновлении переменных: ${detail}` };
     }
 };
 
@@ -2031,7 +2116,7 @@ export const wipeAllData = async (currentUserId: string): Promise<{ success: boo
             const collectionRef = collection(db, collectionName);
             const snapshot = await getDocs(collectionRef);
             
-            const batch = writeBatch(db);
+            let batch = writeBatch(db);
             let batchSize = 0;
 
             for (const docSnap of snapshot.docs) {
@@ -2046,9 +2131,8 @@ export const wipeAllData = async (currentUserId: string): Promise<{ success: boo
 
                 if (batchSize >= 499) { // Safety limit for batched writes
                     await batch.commit();
-                    // batch = writeBatch(db); // Re-initialization is tricky inside a loop, for very large dbs a more robust solution would be needed
+                    batch = writeBatch(db); // Re-initialize batch for next chunk
                     batchSize = 0;
-                     // Re-initialization is tricky inside a loop, for very large dbs a more robust solution would be needed
                 }
             }
             
@@ -2220,6 +2304,7 @@ export async function getS3Client(
         bucketIsPublic?: boolean;
         presignedUrlExpiration?: number;
         provider?: string;
+        keyPrefix?: string;
     };
     presetId?: string;
 }> {
@@ -2250,35 +2335,41 @@ export async function getS3Client(
             return {
                 bucketName: cfg.bucketName,
                 bucketIsPublic: cfg.bucketIsPublic,
+                keyPrefix: 'analysis/',
             };
         }
         if (bucketType === 'personal') {
             return {
                 bucketName: settings.s3PersonalBucketName || cfg.bucketName,
                 bucketIsPublic: settings.s3PersonalBucketIsPublic ?? cfg.bucketIsPublic,
+                keyPrefix: 'personal/',
             };
         }
         if (bucketType === 'avatars') {
             return {
                 bucketName: settings.s3AvatarBucketName || settings.s3PersonalBucketName || cfg.bucketName,
                 bucketIsPublic: settings.s3AvatarBucketIsPublic ?? settings.s3PersonalBucketIsPublic ?? cfg.bucketIsPublic,
+                keyPrefix: 'avatars/',
             };
         }
         if (bucketType === 'user_docs') {
             return {
                 bucketName: settings.s3UserDocsBucketName || cfg.bucketName,
                 bucketIsPublic: settings.s3UserDocsBucketIsPublic ?? cfg.bucketIsPublic,
+                keyPrefix: 'user-docs/',
             };
         }
         if (bucketType === 'project_docs') {
             return {
                 bucketName: settings.s3ProjectDocsBucketName || cfg.bucketName,
                 bucketIsPublic: settings.s3ProjectDocsBucketIsPublic ?? cfg.bucketIsPublic,
+                keyPrefix: 'project-docs/',
             };
         }
         return {
             bucketName: cfg.bucketName,
             bucketIsPublic: cfg.bucketIsPublic,
+            keyPrefix: '',
         };
     };
 
@@ -2347,8 +2438,11 @@ export async function getS3Client(
             secretAccessKey: cfg.secretAccessKey,
           },
           forcePathStyle: true,
+          // Disable automatic checksum calculation to avoid 400 errors with presigned URLs
+          requestChecksumCalculation: 'WHEN_REQUIRED',
+          responseChecksumValidation: 'WHEN_REQUIRED',
         });
-        return { s3Client, presetId, settings, config: { ...cfg, bucketName, bucketIsPublic } };
+        return { s3Client, presetId, settings, config: { ...cfg, bucketName, bucketIsPublic, keyPrefix: resolvedBucket.keyPrefix } };
     };
 
     try {
@@ -2369,9 +2463,56 @@ export async function getS3Client(
 
 export const testS3Connection = async (presetId?: string): Promise<{ success: boolean; message: string; }> => {
     try {
-        const { s3Client } = await getS3Client(presetId, { allowBucketless: true });
-        await s3Client.send(new ListBucketsCommand({}));
-        return { success: true, message: "Соединение с S3 успешно установлено." };
+        const { s3Client, config } = await getS3Client(presetId, { allowBucketless: true });
+
+        // Try ListBuckets first (works if service account has folder-level permissions)
+        try {
+            const { Buckets } = await s3Client.send(new ListBucketsCommand({}));
+            const names = Buckets?.map(b => b.Name).filter(Boolean) || [];
+            return {
+                success: true,
+                message: `Соединение установлено. Найдено бакетов: ${names.length}${names.length ? " — " + names.join(", ") : ""}`,
+            };
+        } catch (listErr: any) {
+            // ListBuckets can fail with Access Denied if the key only has per-bucket permissions
+            // Try HeadBucket on the configured bucket as fallback
+            if (config.bucketName) {
+                try {
+                    await s3Client.send(new HeadBucketCommand({ Bucket: config.bucketName }));
+                    return {
+                        success: true,
+                        message: `Соединение установлено. Бакет "${config.bucketName}" доступен. (Список всех бакетов недоступен — нет прав на уровне каталога.)`,
+                    };
+                } catch (headErr: any) {
+                    return {
+                        success: false,
+                        message: `Ошибка: бакет "${config.bucketName}" недоступен (${headErr.message}). Проверьте имя бакета и права доступа.`,
+                    };
+                }
+            }
+
+            // No bucket configured — try the common bucket names as a hint
+            const probeNames = ["montagehub", "avatar-bucket", "user-docs-bucket", "project-docs-bucket"];
+            const found: string[] = [];
+            for (const name of probeNames) {
+                try {
+                    await s3Client.send(new HeadBucketCommand({ Bucket: name }));
+                    found.push(name);
+                } catch { /* skip */ }
+            }
+
+            if (found.length) {
+                return {
+                    success: true,
+                    message: `Соединение установлено. Доступные бакеты: ${found.join(", ")}. (Список всех бакетов недоступен — нет прав на уровне каталога.)`,
+                };
+            }
+
+            return {
+                success: false,
+                message: `Ошибка: нет доступа к бакетам (${listErr.message}). Проверьте права сервисного аккаунта — нужна роль storage.editor на каталог.`,
+            };
+        }
     } catch(e: any) {
         return { success: false, message: `Ошибка соединения: ${e.message}` };
     }
@@ -2380,10 +2521,26 @@ export const testS3Connection = async (presetId?: string): Promise<{ success: bo
 export const listBuckets = async (presetId?: string): Promise<{ success: boolean; message: string; buckets?: string[]; }> => {
     try {
         const { s3Client } = await getS3Client(presetId, { allowBucketless: true });
-        const { Buckets } = await s3Client.send(new ListBucketsCommand({}));
-        return { success: true, message: "Список бакетов получен.", buckets: Buckets?.map(b => b.Name || '') || [] };
+        try {
+            const { Buckets } = await s3Client.send(new ListBucketsCommand({}));
+            return { success: true, message: "Список бакетов получен.", buckets: Buckets?.map(b => b.Name || '') || [] };
+        } catch (listErr: any) {
+            // Fallback: probe known bucket names
+            const probeNames = ["montagehub", "avatar-bucket", "user-docs-bucket", "project-docs-bucket"];
+            const found: string[] = [];
+            for (const name of probeNames) {
+                try {
+                    await s3Client.send(new HeadBucketCommand({ Bucket: name }));
+                    found.push(name);
+                } catch { /* skip */ }
+            }
+            if (found.length) {
+                return { success: true, message: "Полный список недоступен (нет прав на уровне каталога). Найдены:", buckets: found };
+            }
+            return { success: false, message: `Ошибка: ${listErr.message}. Проверьте роль storage.editor на каталог.` };
+        }
     } catch (e: any) {
-        return { success: false, message: `Ошибка получения списка: ${e.message}` };
+        return { success: false, message: `Ошибка подключения: ${e.message}` };
     }
 };
 

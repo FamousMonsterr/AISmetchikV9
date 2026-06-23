@@ -11,8 +11,7 @@ import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Users, Ticket, Settings, Terminal, FileClock, Send, Library, LayoutDashboard, Bell, Bot, Handshake, Server, Palette, MessageSquareQuote, BarChart2, Palette as TemplateIcon, ServerCog, Activity, Search, ChevronDown, BadgeDollarSign } from "lucide-react";
-import { query, collection, getDocs, limit, where } from "@/lib/db-client";
-import { db } from "@/lib/db";
+import { warmUpAdminIndexes } from "@/actions/adminActions";
 import { motion, AnimatePresence } from "@/lib/motion";
 import { Input } from "@/components/ui/input";
 import { canAccessCrmSurface, canAccessPartnerSurface, resolveLandingUrl, resolveSurfaceUrl } from "@/lib/navigation";
@@ -88,30 +87,12 @@ const navGroups = [
 ];
 
 // This function runs on first admin layout mount to warm up database indexes.
+// Uses server action to avoid client-side /api/db Forbidden errors.
 const warmUpIndexes = async () => {
-    console.log("Warming up database indexes for admin panel...");
     try {
-        // These queries match the complex queries in the admin pages.
-        // We only fetch 1 document to minimize data transfer, the goal is just to trigger index creation.
-        const queries = [
-            query(collection(db, 'user_logs'), limit(1)),
-            query(collection(db, 'ai_api_logs'), limit(1)),
-            query(collection(db, 'partner_requests'), limit(1)),
-            query(collection(db, 'requests'), where('status', '==', 'reported'), limit(1)),
-            query(collection(db, 'users'), where('telegramChatId', '!=', null), limit(1)),
-            query(collection(db, 'project_event_logs'), limit(1)),
-            query(collection(db, 'credit_purchase_orders'), limit(1)),
-            query(collection(db, 'pro_subscription_orders'), limit(1)),
-            query(collection(db, 'service_requests'), limit(1)),
-        ];
-        // We run them, but we don't care about the result.
-        // The simple act of querying triggers the index creation on the backend if it doesn't exist.
-        await Promise.all(queries.map(q => getDocs(q)));
-        console.log("Database index warm-up queries sent.");
-    } catch (error) {
-        // We catch errors silently. If an index doesn't exist, the backend will start creating it.
-        // The user will see the error on the specific page, which is the expected behavior.
-        console.warn("An error occurred during index warm-up (this is often expected if indexes are being created):", error);
+        await warmUpAdminIndexes();
+    } catch {
+        // Silent — warm-up failures are non-critical
     }
 };
 
@@ -135,7 +116,7 @@ export default function AdminLayout({
 
   useEffect(() => {
     // Warm up indexes only once when the admin layout is first mounted.
-    if (user?.systemRole === 'Super Admin') {
+    if (user?.systemRole === 'Super Admin' || user?.systemRole === 'Admin') {
       warmUpIndexes();
     }
   }, [user]);
@@ -143,7 +124,7 @@ export default function AdminLayout({
 
   useEffect(() => {
     // If user data is loaded and the user is not a Super Admin, redirect them.
-    if (user && user.systemRole !== 'Super Admin') {
+    if (user && user.systemRole !== 'Super Admin' && user.systemRole !== 'Admin') {
       window.location.replace(resolveLandingUrl());
     }
   }, [user, router]);
@@ -178,7 +159,7 @@ export default function AdminLayout({
   }
 
   // If user is not Super Admin after loading, show an access denied message before redirecting.
-  if (user.systemRole !== 'Super Admin') {
+  if (user.systemRole !== 'Super Admin' && user.systemRole !== 'Admin') {
     return (
        <div className="flex h-full items-center justify-center p-4">
         <Alert variant="destructive" className="max-w-md">
@@ -196,10 +177,10 @@ export default function AdminLayout({
   return (
     <div className="w-full">
         <main className={cn(
-            'transition-opacity duration-300 rounded-xl border border-border bg-card/70 dark:bg-secondary/50 shadow-sm p-3 sm:p-5 flex flex-col gap-3 overflow-hidden',
+            'transition-opacity duration-300 rounded-xl border border-border bg-card shadow-sm p-3 sm:p-5 flex flex-col gap-3 overflow-hidden',
             isNavigating ? 'opacity-50' : 'opacity-100'
         )}>
-            <div className="sticky top-0 z-20 mb-0 pb-3 border-b border-border/60 bg-card/95 dark:bg-secondary/80 backdrop-blur-sm px-2 sm:px-4 pt-3 rounded-t-xl shadow-sm">
+            <div className="sticky top-0 z-20 mb-0 pb-3 border-b border-border/60 bg-card px-2 sm:px-4 pt-3 rounded-t-xl shadow-sm">
                 <div className="flex items-center gap-2 flex-wrap">
                     {navGroups.map((group) => {
                         const isActive = activeGroup === group.id;
@@ -277,7 +258,7 @@ export default function AdminLayout({
                         exit={{ opacity: 0, y: -10 }}
                         className="absolute inset-x-0 top-2 mx-4 z-30"
                     >
-                        <div className="rounded-xl border border-border bg-card/95 dark:bg-secondary/80 shadow-lg p-4 space-y-3">
+                        <div className="rounded-xl border border-border bg-card shadow-lg p-4 space-y-3">
                             <div className="flex items-center gap-2">
                                 <Search className="h-4 w-4 text-muted-foreground" />
                                 <Input

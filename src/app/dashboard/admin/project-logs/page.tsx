@@ -635,7 +635,7 @@ export default function ProjectLogsPage() {
           <div className="flex gap-2 text-sm text-muted-foreground">
             <div className="flex items-center gap-1"><AlertCircle className="h-4 w-4 text-destructive" />{stats.byStatus.error || 0}</div>
             <div className="flex items-center gap-1"><TriangleAlert className="h-4 w-4 text-yellow-500" />{stats.byStatus.warning || 0}</div>
-            <div className="flex items-center gap-1"><CheckCircle className="h-4 w-4 text-green-500" />{stats.byStatus.success || 0}</div>
+            <div className="flex items-center gap-1"><CheckCircle className="h-4 w-4 text-success" />{stats.byStatus.success || 0}</div>
           </div>
         </CardHeader>
         <CardContent className="space-y-3">

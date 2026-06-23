@@ -7,8 +7,18 @@ import { readAiConfig } from '@/lib/ai-config-runtime';
 import promoConfig from '@/lib/promo-config.json';
 import { grantCredits } from '@/services/credits';
 import { normalizeEmail, normalizePhone } from '@/lib/auth-identifiers';
+import { enforceRateLimit } from '@/lib/rate-limit';
 
 export async function POST(req: Request) {
+  // Rate limit: 5 registrations per IP per hour
+  const rateLimitResponse = enforceRateLimit({
+    request: req as any,
+    scope: 'auth:register',
+    max: 5,
+    windowMs: 3600000,
+  });
+  if (rateLimitResponse) return rateLimitResponse;
+
   const body = await req.json().catch(() => null);
   if (!body?.email || !body?.password) {
     return NextResponse.json({ message: 'Email and password are required.' }, { status: 400 });
@@ -53,7 +63,7 @@ export async function POST(req: Request) {
     phone,
     phoneNormalized,
     phoneVerified: false,
-    displayName: email.split('@')[0] || 'Пользователь',
+    displayName: (email.split('@')[0] || 'Пользователь').substring(0, 50),
     telegramUsername: '',
     telegramChatId: null,
     telegramLinkedAt: null,

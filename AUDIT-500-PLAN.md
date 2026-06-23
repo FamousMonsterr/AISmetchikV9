@@ -1,0 +1,584 @@
+# AISmetchikV9 — 500+ Check Plan
+
+## Исключения
+- ❌ AI анализ файлов (S3 в настройке)
+- ❌ Telegram/VK вебхуки (локальный сервис)
+
+---
+
+## A. UI/UX & Дизайн (100 проверок)
+### A1. Баннеры и попапы (20)
+- A1.01 — Cookie banner не перекрывает контент
+- A1.02 — Cookie banner закрывается корректно
+- A1.03 — Cookie banner не появляется повторно после принятия
+- A1.04 — Success toast не перекрывает навигацию
+- A1.05 — Error toast не перекрывает формы
+- A1.06 — Warning toast имеет читаемый текст
+- A1.07 — Toast auto-dismiss (3-5 сек)
+- A1.08 — Toast закрытие по клику на X
+- A1.09 — Toast стакается корректно (max 3-5)
+- A1.10 — Modal overlay блокирует скролл body
+- A1.11 — Modal закрытие по Escape
+- A1.12 — Modal закрытие по клику на overlay
+- A1.13 — Modal фокус trap (tab cycling)
+- A1.14 — Confirm dialog не теряет фокус
+- A1.15 — Alert banners не наезжают друг на друга
+- A1.16 — Нет z-index конфликтов между попапами
+- A1.17 — Popover/Dropdown не выходит за viewport
+- A1.18 — Tooltip не обрезается на краях экрана
+- A1.19 — Loading spinner не блокирует UI без необходимости
+- A1.20 — Skeleton loader соответствует реальному контенту
+
+### A2. Навигация (20)
+- A2.01 — Sidebar линки все кликабельны
+- A2.02 — Sidebar активный пункт подсвечен
+- A2.03 — Sidebar скролл при длинном списке
+- A2.04 — Mobile hamburger menu открывается/закрывается
+- A2.05 — Mobile menu закрывается при выборе пункта
+- A2.06 — Breadcrumbs отображаются корректно
+- A2.07 — Breadcrumbs кликабельные ссылки
+- A2.08 — Back button работает на всех страницах
+- A2.09 — Tab navigation (keyboard) работает
+- A2.10 — Skip to content link для accessibility
+- A2.11 — 404 страница существует и работает
+- A2.12 — 500 страница существует и работает
+- A2.13 — Навигация не ломается при быстром переключении
+- A2.14 — Active state сохраняется при refresh
+- A2.15 — Хлебные крошки на мобильном не ломают верстку
+- A2.16 — Нет мёртвых ссылок в навигации
+- A2.17 — Logo ведёт на главную
+- A2.18 — Навигация доступна без JS (progressive enhancement)
+- A2.19 — Sidebar collapse/expand работает
+- A2.20 — Навигация не мерцает при загрузке
+
+### A3. Формы (30)
+- A3.01 — Все обязательные поля помечены *
+- A3.02 — Валидация на пустые поля
+- A3.03 — Валидация email формат
+- A3.04 — Валидация телефона формат
+- A3.05 — Валидация числовых полей (не NaN)
+- A3.06 — Минимальная длина пароля
+- A3.07 — Максимальная длина полей (защита от overflow)
+- A3.08 — Placeholder текст читаемый
+- A3.09 — Label привязан к input (htmlFor)
+- A3.10 — Error message рядом с полем, не в тосте
+- A3.11 — Error message исчезает при исправлении
+- A3.12 — Submit disabled при loading
+- A3.13 — Double-submit prevention
+- A3.14 — Form reset работает
+- A3.15 — Select dropdown открывается/закрывается
+- A3.16 — Multi-select работает корректно
+- A3.17 — Date picker открывается и выбирает дату
+- A3.18 — File upload drag & drop работает
+- A3.19 — File upload клик работает
+- A3.20 — File size limit показывает ошибку
+- A3.21 — File type restriction работает
+- A3.22 — Multi-file upload работает
+- A3.23 — Form сохраняет draft при навигации (optional)
+- A3.24 — Autocomplete/autosuggest работает
+- A3.25 — Input mask (phone, inn) работает
+- A3.26 — Textarea auto-resize
+- A3.27 — Checkbox/radio toggle работает
+- A3.28 — Form submission feedback (loading → success/error)
+- A3.29 — Поля не перекрываются на маленьких экранах
+- A3.30 — Поля доступны с клавиатуры
+
+### A30. Адаптивность (30)
+- A30.01 — 320px (iPhone SE) — все читаемо
+- A30.02 — 375px (iPhone 12/13) — все читаемо
+- A30.03 — 390px (iPhone 14) — все читаемо
+- A30.04 — 428px (iPhone 14 Plus) — все читаемо
+- A30.05 — 768px (iPad) — layout корректен
+- A30.06 — 1024px (iPad landscape) — layout корректен
+- A30.07 — 1280px (laptop) — layout корректен
+- A30.08 — 1440px (desktop) — layout корректен
+- A30.09 — 1920px (full HD) — layout корректен
+- A30.10 — 2560px (ultrawide) — контент не растягивается
+- A30.11 — Sidebar не перекрывает контент на мобильном
+- A30.12 — Таблицы скроллятся горизонтально на мобильном
+- A30.13 — Кнопки не сжимаются до нечитаемого размера
+- A30.14 — Текст не обрезается в карточках
+- A30.15 — Изображения масштабируются корректно
+- A30.16 — Modal адаптируется под мобильный экран
+- A30.17 — Dropdown меню не выходит за экран
+- A30.18 — Навигация мобильная работает
+- A30.19 — Формы на мобильном — поля не слишком мелкие
+- A30.20 — Таблицы: нет horizontal overflow без скролла
+- A30.21 — Карточки перестраиваются в столбец на мобильном
+- A30.22 — Footer не наезжает на контент
+- A30.23 — Header не перекрывает контент при скролле
+- A30.24 — Touch target минимум 44x44px
+- A30.25 — Нет горизонтального скролла на мобильном
+- A30.26 — Шрифт минимум 14px на мобильном
+- A30.27 — Отступы адаптивные (не фиксированные px)
+- A30.28 — Grid колонки адаптируются
+- A30.29 — Hero секция не ломается на мобильном
+- A30.30 — Нет перекрытия элементов при повороте экрана
+
+## B. Производительность (80 проверок)
+### B1. Загрузка страниц (25)
+- B1.01 — FCP < 1.8s на localhost
+- B1.02 — LCP < 2.5s на localhost
+- B1.03 — CLS < 0.1
+- B1.04 — FID < 100ms
+- B1.05 — TTI < 3.8s
+- B1.06 — TTFB < 800ms
+- B1.07 — Нет layout shift при загрузке шрифтов
+- B1.08 — Нет layout shift при загрузке изображений
+- B1.09 — Нет render-blocking ресурсов
+- B1.10 — CSS bundle < 100KB (gzipped)
+- B1.11 — JS bundle < 300KB (gzipped)
+- B1.12 — Нет unused CSS > 50%
+- B1.13 — Нет unused JS > 50%
+- B1.14 — Изображения в WebP/AVIF
+- B1.15 — Lazy loading для изображений ниже fold
+- B1.16 — Preload для критических ресурсов
+- B1.17 — Prefetch для следующих страниц
+- B1.18 — Compression (gzip/brotli) включена
+- B1.19 — Кеширование статических ресурсов
+- B1.20 — Нет дублирующихся запросов
+- B1.21 — API ответы < 500ms
+- B1.22 — Нет waterfall запросов (sequential → parallel)
+- B1.23 — Skeleton screen вместо пустого экрана
+- B1.24 — Streaming SSR где возможно
+- B1.25 — Нет лишних re-renders в React
+
+### B2. Масштабируемость (25)
+- B2.01 — Таблицы с 100+ строк не лагают
+- B2.02 — Таблицы с 1000+ строк: пагинация/виртуализация
+- B2.03 — Списки с 500+ элементов: виртуализация
+- B2.04 — Поиск по большим данным не блокирует UI
+- B2.05 — Фильтрация не вызывает лишних re-renders
+- B2.06 — Debounce на поисковых запросах
+- B2.07 — Throttle на scroll обработчиках
+- B2.08 — AbortController для отмены запросов
+- B2.09 — Memory leaks в useEffect cleanup
+- B2.10 — Event listeners cleanup в useEffect
+- B2.11 — WebSocket reconnect при потере связи
+- B2.12 — Infinite scroll не деградирует
+- B2.13 — Кеш API ответов (stale-while-revalidate)
+- B2.14 — Оптимистичные обновления UI
+- B2.15 — Batch запросы где возможно
+- B2.16 — Lazy loading компонентов (dynamic import)
+- B2.17 — Code splitting по маршрутам
+- B2.18 — Tree shaking работает
+- B2.19 — Нет циклических зависимостей
+- B2.20 — Bundle analyzer показывает оптимальный размер
+- B2.21 — Service worker для кеширования (PWA)
+- B2.22 — Offline fallback страница
+- B2.23 — Prefetch данных при hover на ссылку
+- B2.24 — Image optimization (responsive srcset)
+- B2.25 — Font subsetting (не загружать все глифы)
+
+### B3. API и данные (30)
+- B3.01 — Loading state для каждого API вызова
+- B3.02 — Error state для каждого API вызова
+- B3.03 — Empty state когда данных нет
+- B3.04 — Retry логика для failed запросов
+- B3.05 — Timeout для API запросов (30s max)
+- B3.06 — Pagination API корректно работает
+- B3.07 — Сортировка API корректно работает
+- B3.08 — Фильтрация API корректно работает
+- B3.09 — Поиск API с debounce
+- B3.10 — Нет N+1 запросов
+- B3.11 — Индексы MongoDB для частых запросов
+- B3.12 — Агрегация pipelines оптимизированы
+- B3.13 — Кеш для статических данных
+- B3.14 — Rate limiting на API
+- B3.15 — Input validation на сервере
+- B3.16 — Output sanitization
+- B3.17 — Нет утечки данных в ошибках
+- B3.18 — CORS настроен корректно
+- B3.19 — Content-Type заголовки корректны
+- B3.20 — ETag/Last-Modified для кеширования
+- B3.21 — Gzip compression для API
+- B3.22 — Streaming для больших ответов
+- B3.23 — Cursor-based pagination где нужно
+- B3.24 — Transaction для мульти-запросов
+- B3.25 — Connection pooling настроен
+- B3.26 — Health check endpoint работает
+- B3.27 — Graceful shutdown
+- B3.28 — Error logging (не в консоль)
+- B3.29 — Request ID tracking
+- B3.30 — API versioning (v1, v2)
+
+## C. Доступность (50 проверок)
+### C1. Accessibility (50)
+- C1.01 — Все изображения имеют alt текст
+- C1.02 — Все иконки имеют aria-label
+- C1.03 — Контрастность текста ≥ 4.5:1
+- C1.04 — Контрастность large text ≥ 3:1
+- C1.05 — Focus visible на всех интерактивных элементах
+- C1.06 — Focus order логичен
+- C1.07 — Skip navigation link
+- C1.08 — ARIA landmarks (main, nav, aside)
+- C1.09 — ARIA roles корректны
+- C1.10 — ARIA states обновляются
+- C1.11 — Screen reader: формы описаны
+- C1.12 — Screen reader: таблицы описаны
+- C1.13 — Screen reader: модалки announced
+- C1.14 — Screen reader: ошибки announced
+- C1.15 — Screen reader: загрузка announced
+- C1.16 — Keyboard: Tab доступ ко всем элементам
+- C1.17 — Keyboard: Enter/Space активирует кнопки
+- C1.18 — Keyboard: Escape закрывает модалки
+- C1.19 — Keyboard: Arrow keys в меню/табах
+- C1.20 — Keyboard: Home/End в списках
+- C1.21 — Reduced motion: анимации отключаются
+- C1.22 — High contrast mode работает
+- C1.23 — Zoom 200% — всё читаемо
+- C1.24 — Zoom 400% — контент доступен
+- C1.25 — Нет автовоспроизведения видео/аудио
+- C1.26 — Время сессии не обрывается внезапно
+- C1.27 — Ошибки формы описаны текстом
+- C1.28 — Ошибки формы связаны с полями (aria-describedby)
+- C1.29 — Индикатор загрузки текстовый (не только визуальный)
+- C1.30 — Нет мигающего контента (> 3 раз/сек)
+- C1.31 — Текст выделяется (не user-select: none на всём)
+- C1.32 — Ссылки отличаются от текста (не только цвет)
+- C1.33 — Кнопки имеют минимум 44x44px touch target
+- C1.34 — Формы: label + input связь
+- C1.35 — Таблицы: th и scope
+- C1.36 — Таблицы: caption или aria-label
+- C1.37 — Навигация: текущая страница indicated
+- C1.38 — Модалки: фокус возвращается после закрытия
+- C1.39 — Модалки: фокус внутри модалки
+- C1.40 — Drag & drop: альтернатива для keyboard
+- C1.41 — Charts: текстовое описание данных
+- C1.42 — Charts: цвет не единственный индикатор
+- C1.43 — Video: субтитры
+- C1.44 — Audio: транскрипт
+- C1.45 — PDF: accessibility tags
+- C1.46 — Dark mode: все цвета адаптированы
+- C1.47 — Print styles существуют
+- C1.48 — lang атрибут на html
+- C1.49 — page title уникальна для каждой страницы
+- C1.50 — meta description для каждой страницы
+
+## D. Безопасность (60 проверок)
+### D1. Client-side (30)
+- D1.01 — Нет dangerouslySetInnerHTML без санитизации
+- D1.02 — Нет eval() или Function()
+- D1.03 — Нет innerHTML без санитизации
+- D1.04 — CSP заголовки настроены
+- D1.05 — X-Frame-Options: DENY
+- D1.06 — X-Content-Type-Options: nosniff
+- D1.07 — Referrer-Policy настроен
+- D1.08 — Permissions-Policy настроен
+- D1.09 — Нет sensitive data в localStorage
+- D1.10 — Нет API ключей в client bundle
+- D1.11 — HttpOnly cookies для сессий
+- D1.12 — Secure cookies (в production)
+- D1.13 — SameSite cookies настроены
+- D1.14 — CSRF protection
+- D1.15 — XSS protection в формах
+- D1.16 — SQL injection protection (MongoDB)
+- D1.17 — Path traversal protection
+- D1.18 — Нет open redirect
+- D1.19 — Rate limiting на login
+- D1.20 — Account lockout после N попыток
+- D1.21 — Password strength meter
+- D1.22 — Нет verbose ошибок в production
+- D1.23 — Нет stack trace в production
+- D1.24 — Source maps отключены в production
+- D1.25 — Нет debug endpoints в production
+- D1.26 — Нет test endpoints в production
+- D1.27 — Нет hardcoded credentials
+- D1.28 — Environment variables не в коде
+- D1.29 — Нет sensitive data в URL params
+- D1.30 — Нет sensitive data в logs
+
+### D2. Server-side (30)
+- D2.01 — Auth middleware на всех защищённых маршрутах
+- D2.02 — Role-based access control работает
+- D2.03 — Session invalidation при logout
+- D2.04 — Session timeout настроен
+- D2.05 — Нет mass assignment уязвимостей
+- D2.06 — Input validation на сервере
+- D2.07 — Output encoding
+- D2.08 — Нет directory listing
+- D2.09 — Нет file inclusion vulnerabilities
+- D2.10 — Нет SSRF vulnerabilities
+- D2.11 — Нет XXE vulnerabilities
+- D2.12 — Нет deserialization vulnerabilities
+- D2.13 — Нет race conditions
+- D2.14 — Нет integer overflow
+- D2.15 — Нет buffer overflow
+- D2.16 — Нет timing attacks
+- D2.17 — Нет information disclosure
+- D2.18 — Нет clickjacking
+- D2.19 — Нет host header injection
+- D2.20 — Нет HTTP request smuggling
+- D2.21 — Нет cache poisoning
+- D2.22 — Нет subdomain takeover
+- D2.23 — Нет DNS rebinding
+- D2.24 — Нет prototype pollution
+- D2.25 — Нет ReDoS
+- D2.26 — Нет log injection
+- D2.27 — Нет email injection
+- D2.28 — Нет header injection
+- D2.29 — Нет CRLF injection
+- D2.30 — Нет template injection
+
+## E. Код (80 проверок)
+### E1. TypeScript (30)
+- E1.01 — Нет `any` типов (кроме обоснованных)
+- E1.02 — Нет @ts-ignore
+- E1.03 — Нет @ts-nocheck
+- E1.04 — Strict mode в tsconfig
+- E1.05 — Нет implicit any
+- E1.06 — Return types указаны
+- E1.07 — Props типизированы
+- E1.08 — Event handlers типизированы
+- E1.09 — API response типизирован
+- E1.10 — Error types определены
+- E1.11 — Enum usage вместо magic strings
+- E1.12 — Utility types используются
+- E1.13 — Generics используются где нужно
+- E1.14 — Discriminated unions для state
+- E1.15 — Readonly для immutable данных
+- E1.16 — Null checks везде
+- E1.17 — Optional chaining используется
+- E1.18 — Nullish coalescing используется
+- E1.19 — Type guards где нужно
+- E1.20 — Assertion functions где нужно
+- E1.21 — Template literal types где нужно
+- E1.22 — Mapped types где нужно
+- E1.23 — Conditional types где нужно
+- E1.24 — Branded types для ID
+- E1.25 — Zod/runtime validation для API
+- E1.26 — Нет type assertions без обоснования
+- E1.27 — Exhaustive switch/case
+- E1.28 — Never type для unreachable code
+- E1.29 — Const assertions где нужно
+- E1.30 — Satisfies operator где нужно
+
+### E2. React Best Practices (25)
+- E2.01 — Key prop в списках (не index)
+- E2.02 — useEffect cleanup
+- E2.03 — useMemo для дорогих вычислений
+- E2.04 — useCallback для передаваемых колбэков
+- E2.05 — React.memo для чистых компонентов
+- E2.06 — Lazy loading компонентов
+- E2.07 — Error boundaries на страницах
+- E2.08 — Suspense с fallback
+- E2.09 — Нет лишних state обновлений
+- E2.10 — Нет derived state (вычисляемое из props)
+- E2.11 — Нет side effects в render
+- E2.12 — Context не вызывает лишних re-renders
+- E2.13 — Custom hooks для логики
+- E2.14 — Хуки в правильном порядке
+- E2.15 — Нет conditional hooks
+- E2.16 — Portal для модалок/тултипов
+- E2.17 — Fragment вместо лишних div
+- E2.18 — Children prop передаётся корректно
+- E2.19 — Refs используются корректно
+- E2.20 — ForwardRef где нужно
+- E2.21 — displayName для debugging
+- E2.22 — PropTypes или TypeScript для props
+- E2.23 — Нет проп drilling (context или composition)
+- E2.24 — Компоненты < 300 строк
+- E2.25 — Файлы < 500 строк
+
+### E3. CSS/Styling (25)
+- E3.01 — Нет !important (кроме обоснованных)
+- E3.02 — Нет inline styles (кроме динамических)
+- E3.03 — CSS modules или Tailwind (не глобальные стили)
+- E3.04 — Нет specificity wars
+- E3.05 — Нет дублирования стилей
+- E3.06 — Нет unused стилей
+- E3.07 — CSS variables для тем
+- E3.08 — Consistent spacing (4px grid)
+- E3.09 — Consistent typography scale
+- E3.10 — Consistent color palette
+- E3.11 — Dark mode поддержка
+- E3.12 — Print styles
+- E3.13 — Анимации на transform/opacity (GPU)
+- E3.14 — Нет layout-triggering animations
+- E3.15 — will-change используется правильно
+- E3.16 — Нет repaint/reflow storms
+- E3.17 — Font-display: swap
+- E3.18 — Нет FOUT (flash of unstyled text)
+- E3.19 — Нет FOUC (flash of unstyled content)
+- E3.20 — z-index система организована
+- E3.21 — Нет z-index > 9999
+- E3.22 — Overflow:hidden не обрезает контент
+- E3.23 — Scrollbar styling (необязательно, но приятно)
+- E3.24 — Selection styling
+- E3.25 — Focus styling (не outline: none без замены)
+
+## F. Legacy и технический долг (50 проверок)
+### F1. Legacy Code (50)
+- F1.01 — Нет устаревших зависимостей (npm audit)
+- F1.02 — Нет deprecated API usage
+- F1.03 — Нет console.log в production коде
+- F1.04 — Нет закомментированного кода
+- F1.05 — Нет TODO/FIXME/HACK без тикета
+- F1.06 — Нет мёртвого кода (unreachable)
+- F1.07 — Нет unused imports
+- F1.08 — Нет unused variables
+- F1.09 — Нет unused функций
+- F1.10 — Нет unused компонентов
+- F1.11 — Нет дублирования кода (DRY)
+- F1.12 — Нет magic numbers/strings
+- F1.13 — Нет hardcoded URLs
+- F1.14 — Нет hardcoded путей
+- F1.15 — Нет copy-paste кода
+- F1.16 — Нет длинных функций (> 50 строк)
+- F1.17 — Нет глубокой вложенности (> 4 уровня)
+- F1.18 — Нет сложных условий (> 3 операторов)
+- F1.19 — Нет God objects/classes
+- F1.20 — Нет circular dependencies
+- F1.21 — Нет barrel файлов (index.ts re-export всего)
+- F1.22 — Нет default exports (prefer named)
+- F1.23 — Нет side effects в модулях
+- F1.24 — Нет глобального состояния без необходимости
+- F1.25 — Нет прямого DOM manipulation
+- F1.26 — Нет jQuery или других legacy библиотек
+- F1.27 — Нет Promise без обработки ошибок
+- F1.28 — Нет async без await
+- F1.29 — Нет try/catch без обработки
+- F1.30 — Нет пустых catch блоков
+- F1.31 — Консистентное именование (camelCase для JS)
+- F1.32 — Консистентное именование (PascalCase для компонентов)
+- F1.33 — Консистентное именование (kebab-case для файлов)
+- F1.34 — Консистентное именование (UPPER_CASE для констант)
+- F1.35 — Файлы организованы по feature, не по type
+- F1.36 — Нет слишком глубоких путей (> 4 уровня)
+- F1.37 — Нет слишком длинных импортов
+- F1.38 — Нет relative path hell (../../..)
+- F1.39 — Алиасы для импортов (@/)
+- F1.40 — Consistent file naming pattern
+- F1.41 — README актуален
+- F1.42 — CONTRIBUTING guide существует
+- F1.43 — Changelog существует
+- F1.44 — License файл существует
+- F1.45 — .gitignore полный
+- F1.46 — .env.example существует
+- F1.47 — Dockerfile оптимизирован
+- F1.48 — CI/CD pipeline работает
+- F1.49 — Tests существуют и проходят
+- F1.50 — Coverage > 50%
+
+## G. Docker & Инфраструктура (30 проверок)
+### G1. Docker (30)
+- G1.01 — MongoDB контейнер здоров
+- G1.02 — MinIO контейнер здоров
+- G1.03 — mongo-logs контейнер здоров
+- G1.04 — Нет zombie процессов
+- G1.05 — Нет restart loops
+- G1.06 — Volume mounts корректны
+- G1.07 — Network connectivity между контейнерами
+- G1.08 — Port mapping корректен
+- G1.09 — Environment variables переданы
+- G1.10 — Health checks настроены
+- G1.11 — Resource limits настроены
+- G1.12 — Logging настроено
+- G1.13 — Backup стратегия существует
+- G1.14 — Multi-stage build для production
+- G1.15 — Не root user в контейнере
+- G1.16 — Нет sensitive data в образе
+- G1.17 — .dockerignore существует
+- G1.18 — Нет лишних файлов в образе
+- G1.19 — Layer caching оптимизировано
+- G1.20 — Нет latest тегов (фиксированные версии)
+- G1.21 — Alpine образы где возможно
+- G1.22 — Нет vulnerabilities в образах
+- G1.23 — Graceful shutdown обработан
+- G1.24 — Нет hardcoded портов в коде
+- G1.25 — Нет hardcoded hostnames в коде
+- G1.26 — Configuration через env vars
+- G1.27 — Нет монолитных образов
+- G1.28 — Нет избыточных зависимостей
+- G1.29 — Нет dev зависимостей в production
+- G1.30 — Build cache работает
+
+## H. Тестирование (30 проверок)
+### H1. Existing Tests (30)
+- H1.01 — Playwright тесты проходят
+- H1.02 — Нет flaky тестов
+- H1.03 — Нет skipped тестов без причины
+- H1.04 — Тесты покрывают критические пути
+- H1.05 — Тесты для login flow
+- H1.06 — Тесты для register flow
+- H1.07 — Тесты для dashboard
+- H1.08 — Тесты для file upload
+- H1.09 — Тесты для billing
+- H1.10 — Тесты для profile
+- H1.11 — Тесты для calculator
+- H1.12 — Тесты для price-base
+- H1.13 — Тесты для companies
+- H1.14 — Тесты для support
+- H1.15 — Тесты для tickets
+- H1.16 — Тесты для training
+- H1.17 — Тесты для partner
+- H1.18 — Тесты для crm
+- H1.19 — Тесты для admin
+- H1.20 — Тесты для API endpoints
+- H1.21 — Тесты для error handling
+- H1.22 — Тесты для edge cases
+- H1.23 — Тесты для accessibility
+- H1.24 — Тесты для performance
+- H1.25 — Тесты для security
+- H1.26 — Тесты для mobile viewport
+- H1.27 — Тесты для dark mode
+- H1.28 — Тесты для offline
+- H1.29 — Тесты для slow network
+- H1.30 — Тесты для concurrent users
+
+## I. Дизайн-система (40 проверок)
+### I1. Consistency (40)
+- I1.01 — Все кнопки одного стиля
+- I1.02 — Все input поля одного стиля
+- I1.03 — Все карточки одного стиля
+- I1.04 — Все модалки одного стиля
+- I1.05 — Все таблицы одного стиля
+- I1.06 — Typography scale консистентна
+- I1.07 — Color palette консистентна
+- I1.08 — Spacing консистентен (4px grid)
+- I1.09 — Border radius консистентен
+- I1.10 — Shadow консистентен
+- I1.11 — Transition консистентен
+- I1.12 — Hover states консистентны
+- I1.13 — Active states консистентны
+- I1.14 — Focus states консистентны
+- I1.15 — Disabled states консистентны
+- I1.16 — Loading states консистентны
+- I1.17 — Error states консистентны
+- I1.18 — Empty states консистентны
+- I1.19 — Success states консистентны
+- I1.20 — Warning states консистентны
+- I1.21 — Иконки одного стиля (не mix)
+- I1.22 — Иконки одного размера
+- I1.23 — Иконки выровнены с текстом
+- I1.24 — Кнопки: primary, secondary, ghost, danger
+- I1.25 — Кнопки: размеры S, M, L
+- I1.26 — Кнопки: loading state
+- I1.27 — Кнопки: disabled state
+- I1.28 — Кнопки: icon + text alignment
+- I1.29 — Input: default, error, disabled, focused
+- I1.30 — Input: с иконкой
+- I1.31 — Input: с helper text
+- I1.32 — Input: с counter
+- I1.33 — Card: default, hover, selected
+- I1.34 — Card: с изображением
+- I1.35 — Card: с actions
+- I1.36 — Badge: варианты цветов
+- I1.37 — Badge: размеры
+- I1.38 — Avatar: размеры
+- I1.39 — Avatar: fallback
+- I1.40 — Skeleton: для каждого типа контента
+
+---
+
+## ИТОГО: 500+ проверок
+- A. UI/UX & Дизайн: 100
+- B. Производительность: 80
+- C. Доступность: 50
+- D. Безопасность: 60
+- E. Код: 80
+- F. Legacy: 50
+- G. Docker: 30
+- H. Тестирование: 30
+- I. Дизайн-система: 40
+- **Всего: 520 проверок**

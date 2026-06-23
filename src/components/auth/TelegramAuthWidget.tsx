@@ -57,5 +57,9 @@ export function TelegramAuthWidget({
     };
   }, [botUsername, callbackId, cornerRadius, onAuth, requestWriteAccess, size]);
 
+  if (!botUsername) {
+    return null;
+  }
+
   return <div ref={containerRef} className={className} />;
 }

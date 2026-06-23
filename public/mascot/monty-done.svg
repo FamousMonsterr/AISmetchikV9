@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <style>
+    .thumb { animation: thumb 0.5s ease-out; transform-origin: 150px 90px; }
+    @keyframes thumb { 0%{transform:scale(0) rotate(-30deg)} 60%{transform:scale(1.2) rotate(5deg)} 100%{transform:scale(1) rotate(0)} }
+    .check { animation: check 0.6s ease-out 0.2s both; }
+    @keyframes check { 0%{transform:scale(0);opacity:0} 100%{transform:scale(1);opacity:1} }
+    .confetti { animation: confetti 1.5s ease-out infinite; }
+    @keyframes confetti { 0%{transform:translateY(0) rotate(0);opacity:1} 100%{transform:translateY(-40px) rotate(360deg);opacity:0} }
+  </style>
+  <ellipse cx="100" cy="185" rx="45" ry="8" fill="rgba(0,0,0,0.15)"/>
+  <rect x="78" y="150" width="16" height="30" rx="6" fill="#1E40AF"/>
+  <rect x="106" y="150" width="16" height="30" rx="6" fill="#1E40AF"/>
+  <rect x="74" y="172" width="24" height="12" rx="6" fill="#78350F"/>
+  <rect x="102" y="172" width="24" height="12" rx="6" fill="#78350F"/>
+  <rect x="72" y="95" width="56" height="60" rx="12" fill="#3B82F6"/>
+  <rect x="72" y="120" width="56" height="4" rx="2" fill="#FCD34D" opacity="0.9"/>
+  <rect x="72" y="135" width="56" height="4" rx="2" fill="#FCD34D" opacity="0.9"/>
+  <rect x="52" y="100" width="20" height="12" rx="6" fill="#3B82F6"/>
+  <circle cx="50" cy="106" r="8" fill="#FDE68A"/>
+  <g class="thumb">
+    <rect x="128" y="100" width="20" height="12" rx="6" fill="#3B82F6"/>
+    <circle cx="150" cy="106" r="8" fill="#FDE68A"/>
+    <text x="143" y="100" font-size="20">👍</text>
+  </g>
+  <circle cx="100" cy="70" r="30" fill="#FDE68A"/>
+  <path d="M65 65 Q100 25 135 65 L130 70 Q100 40 70 70 Z" fill="#F59E0B"/>
+  <rect x="65" y="65" width="70" height="8" rx="4" fill="#D97706"/>
+  <rect x="95" y="52" width="10" height="8" rx="2" fill="#FBBF24"/>
+  <circle cx="88" cy="72" r="5" fill="white"/>
+  <circle cx="112" cy="72" r="5" fill="white"/>
+  <circle cx="88" cy="72" r="3" fill="#1E293B"/>
+  <circle cx="112" cy="72" r="3" fill="#1E293B"/>
+  <path d="M86 84 Q100 96 114 84" stroke="#92400E" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+  <g class="check">
+    <circle cx="100" cy="42" r="12" fill="#22C55E"/>
+    <path d="M92 42 L98 48 L110 36" stroke="white" stroke-width="3" fill="none" stroke-linecap="round"/>
+  </g>
+  <text x="70" y="45" font-size="10" class="confetti">✨</text>
+  <text x="125" y="50" font-size="8" class="confetti" style="animation-delay:0.3s">⭐</text>
+</svg>

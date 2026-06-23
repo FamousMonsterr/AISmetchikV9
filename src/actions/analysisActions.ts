@@ -32,7 +32,7 @@ export async function runDetailedProjectAnalysis(input: any): Promise<any> {
     //    - Point out potential incompatibilities.
     // 5. The function would call the Gemini API with this new prompt and return the structured analysis.
     
-    console.log("runDetailedProjectAnalysis called. This is a placeholder for future functionality.");
+    // Placeholder for future functionality
     
     return {
         warnings: ["Эта функция находится в разработке."],

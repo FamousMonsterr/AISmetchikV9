@@ -25,7 +25,7 @@ export type OpenRouterModel = {
     [key: string]: any;
 };
 
-export type PdfEngine = 'auto' | 'native' | 'mistral-ocr' | 'pdf-text';
+export type PdfEngine = 'auto' | 'native' | 'mistral-ocr' | 'pdf-text' | 'cloudflare-ai';
 
 interface OpenRouterParams {
     prompt: string;
@@ -112,8 +112,8 @@ async function tryGenerateWithEngine({
     const headers: HeadersInit = {
         'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
-        'HTTP-Referer': 'https://aismetchik.pro',
-        'X-Title': 'AI Smetchik',
+        'HTTP-Referer': 'https://montagehub.ru',
+        'X-Title': 'Montage HUB',
     };
     
     const body: any = {
@@ -130,7 +130,6 @@ async function tryGenerateWithEngine({
             file: {
                 filename: sanitizeProviderFilename(file.fileName),
                 file_data: file.fileUri,
-                fileData: file.fileUri,
             },
         });
     }
@@ -161,27 +160,49 @@ async function tryGenerateWithEngine({
          body.response_format = { type: 'json_object' };
     }
 
-    const response = await fetch(baseUrl, { method: 'POST', headers, body: JSON.stringify(body) });
-
-    const requestId = response.headers.get('x-openrouter-request-id');
-    const contentType = response.headers.get('content-type');
-    
-    if (!response.ok) {
-        const errorBody = await response.text();
-        const errorMessage = `[${engine}] OpenRouter API Error: Status ${response.status}. Request ID: ${requestId || 'N/A'}. Body: ${errorBody}`;
-        throw new Error(errorMessage, { cause: { body: errorBody, status: response.status, requestId } });
+    // Диагностический лог: что отправляем
+    const bodyForLog = JSON.stringify(body);
+    const fileUriPreview = file?.fileUri ? file.fileUri.substring(0, 100) + (file.fileUri.length > 100 ? '...' : '') : 'none';
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`[OpenRouter→${engine}] model=${body.model} | engine=${engine}`);
     }
+
+    // Retry with exponential backoff for transient 5xx errors
+    let response: Response;
+    let lastError: Error | null = null;
+    const maxRetries = 3;
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+        response = await fetch(baseUrl, { method: 'POST', headers, body: bodyForLog });
+        if (response.ok || (response.status < 500 && response.status !== 429)) break;
+        const errBody = await response.text().catch(() => '');
+        lastError = new Error(`[${engine}] OpenRouter API Error: Status ${response.status}. Body: ${errBody}`);
+        console.warn(`[OpenRouter→${engine}] Попытка ${attempt + 1}/${maxRetries + 1} — ${response.status}. Body: ${errBody.substring(0, 300)}`);
+        if (attempt < maxRetries) {
+            const delayMs = Math.min(1000 * Math.pow(2, attempt), 8000) + Math.random() * 500;
+            await new Promise(r => setTimeout(r, delayMs));
+        }
+    }
+    if (!response!.ok) {
+        const requestId = response!.headers.get('x-openrouter-request-id');
+        const errorBody = await response!.text().catch(() => '');
+        console.error(`[OpenRouter→${engine}] ИТОГ: ${response!.status} | RequestID=${requestId || 'N/A'} | Body: ${errorBody.substring(0, 500)}`);
+        const errorMessage = `[${engine}] OpenRouter API Error: Status ${response!.status}. Request ID: ${requestId || 'N/A'}. Body: ${errorBody}`;
+        throw new Error(errorMessage, { cause: { body: errorBody, status: response!.status, requestId } });
+    }
+
+    const requestId = response!.headers.get('x-openrouter-request-id');
+    const contentType = response!.headers.get('content-type');
     
     const expectedStreamType = 'text/event-stream';
     const isStreamCorrect = stream && contentType?.includes(expectedStreamType);
 
     if (stream && !isStreamCorrect) {
-        const errorBody = await response.text();
+        const errorBody = await response!.text();
         const errorMessage = `[${engine}] OpenRouter returned unexpected Content-Type: '${contentType}'. Expected '${expectedStreamType}'. Request ID: ${requestId || 'N/A'}. Body: ${errorBody}`;
-        throw new Error(errorMessage, { cause: { body: errorBody, status: response.status, requestId } });
+        throw new Error(errorMessage, { cause: { body: errorBody, status: response!.status, requestId } });
     }
     
-    return response;
+    return response!;
 }
 
 /**

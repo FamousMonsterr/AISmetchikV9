@@ -26,7 +26,9 @@ export const filterTemplatesForPlan = (
 ) => {
   const key = planKey(plan);
   const filteredByType = templates.filter((tpl) => tpl.docType === docType);
-  if (key === 'Free') {
+  // For Free plan, show all templates (read-only)
+  // For other plans, filter by availability settings
+  if (key === 'Free' || !settings?.availability) {
     return filteredByType;
   }
 

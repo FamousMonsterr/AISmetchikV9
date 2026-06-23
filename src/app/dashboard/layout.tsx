@@ -24,6 +24,7 @@ import {
   Monitor,
   Handshake,
   Waypoints,
+  Network,
 } from "lucide-react";
 import { useAppContext } from "@/contexts/AppContext";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -40,6 +41,7 @@ import {
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useEngagementTracking } from "@/hooks/use-engagement-tracking";
 import { SupportChatProvider } from "@/contexts/SupportChatContext";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { canAccessAdminSurface, canAccessCrmSurface, canAccessPartnerSurface, resolveLandingUrl, resolveSurfaceUrl } from "@/lib/navigation";
 
 const NotificationCenter = dynamic(
@@ -127,6 +129,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   const lkProfileUrl = resolveSurfaceUrl('lk', '/dashboard/profile');
   const menuItems = [
       { href: "/dashboard", label: "Проекты", icon: <Home className="h-5 w-5 shrink-0" /> },
+      { href: "/dashboard/hub", label: "Хаб", icon: <Network className="h-5 w-5 shrink-0" /> },
       { href: "/dashboard/mobile-panel", label: "Пульт", icon: <Waypoints className="h-5 w-5 shrink-0" />, mobileOnly: true },
       { href: "/dashboard/bonus", label: "Партнерам", icon: <Handshake className="h-5 w-5 shrink-0" /> },
       ...(canAccessTraining
@@ -235,7 +238,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                          <div className="flex h-full items-center justify-center">
                             <Loader2 className="h-12 w-12 animate-spin text-primary" />
                         </div>
-                    ) : children}
+                    ) : <ErrorBoundary>{children}</ErrorBoundary>}
                 </main>
             </div>
             <FloatingSupportChat />

@@ -75,7 +75,7 @@ export const logUserAction = async (userId: string, action: ActionType, details:
 interface AiApiLogParams {
     userId: string;
     model: string;
-    provider: 'openrouter' | 'local_hf';
+    provider: 'openrouter' | 'local_hf' | 'xiaomi';
     status: 'success' | 'error';
     errorMessage?: string;
     promptTokens?: number;

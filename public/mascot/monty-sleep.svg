@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <style>
+    .zzz { animation: zzz 2s ease-in-out infinite; }
+    @keyframes zzz { 0%{transform:translate(0,0) scale(0.5);opacity:0} 50%{opacity:1} 100%{transform:translate(15px,-25px) scale(1.2);opacity:0} }
+    .sway { animation: sway 3s ease-in-out infinite; transform-origin: 100px 180px; }
+    @keyframes sway { 0%,100%{transform:rotate(-2deg)} 50%{transform:rotate(2deg)} }
+    .eyes-closed { display: none; }
+    .eyes-open { display: block; }
+  </style>
+  <g class="sway">
+    <ellipse cx="100" cy="185" rx="45" ry="8" fill="rgba(0,0,0,0.15)"/>
+    <rect x="78" y="150" width="16" height="30" rx="6" fill="#1E40AF"/>
+    <rect x="106" y="150" width="16" height="30" rx="6" fill="#1E40AF"/>
+    <rect x="74" y="172" width="24" height="12" rx="6" fill="#78350F"/>
+    <rect x="102" y="172" width="24" height="12" rx="6" fill="#78350F"/>
+    <rect x="72" y="95" width="56" height="60" rx="12" fill="#3B82F6"/>
+    <rect x="72" y="120" width="56" height="4" rx="2" fill="#FCD34D" opacity="0.9"/>
+    <rect x="72" y="135" width="56" height="4" rx="2" fill="#FCD34D" opacity="0.9"/>
+    <rect x="52" y="100" width="20" height="12" rx="6" fill="#3B82F6"/>
+    <circle cx="50" cy="106" r="8" fill="#FDE68A"/>
+    <rect x="128" y="100" width="20" height="12" rx="6" fill="#3B82F6"/>
+    <circle cx="150" cy="106" r="8" fill="#FDE68A"/>
+    <circle cx="100" cy="70" r="30" fill="#FDE68A"/>
+    <path d="M65 65 Q100 25 135 65 L130 70 Q100 40 70 70 Z" fill="#F59E0B"/>
+    <rect x="65" y="65" width="70" height="8" rx="4" fill="#D97706"/>
+    <rect x="95" y="52" width="10" height="8" rx="2" fill="#FBBF24"/>
+    <!-- Закрытые глаза -->
+    <path d="M83 72 Q88 68 93 72" stroke="#1E293B" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    <path d="M107 72 Q112 68 117 72" stroke="#1E293B" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    <path d="M92 86 Q100 86 108 86" stroke="#92400E" stroke-width="2" fill="none" stroke-linecap="round"/>
+  </g>
+  <text x="120" y="60" font-size="14" fill="#6366F1" font-weight="bold" class="zzz">Z</text>
+  <text x="135" y="45" font-size="11" fill="#818CF8" font-weight="bold" class="zzz" style="animation-delay:0.5s">z</text>
+  <text x="148" y="32" font-size="9" fill="#A5B4FC" font-weight="bold" class="zzz" style="animation-delay:1s">z</text>
+</svg>

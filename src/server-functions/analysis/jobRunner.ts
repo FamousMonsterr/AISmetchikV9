@@ -16,12 +16,58 @@ import { SERVER_STAGE_LABELS, type ServerStageKey } from '@/lib/server-analysis-
 import { reportUserBug } from '@/actions/adminActions';
 import { logProjectEvent } from '@/lib/logger';
 import { dispatchNotification } from '@/server-functions/notifications/dispatch';
-import { isPdfLikeFile, parseNonPdfFileForModel, type ParsedModelImage } from './non-pdf-parser';
+import { isPdfLikeFile, parseNonPdfFileForModel, parseNonPdfBufferForModel, type ParsedModelImage } from './non-pdf-parser';
 import type { PdfEngine } from '@/services/openrouter';
 import { isOpenRouterPrivacyRestrictionError, toUserFacingAnalysisError } from '@/lib/analysis-errors';
+import { readAiConfig } from '@/lib/ai-config-runtime';
+import { generateXiaomiContent } from '@/services/xiaomi';
+import { getS3Client } from '@/actions/adminActions';
+import { GetObjectCommand } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
-type PipelineVersion = 'v1' | 'v2';
-type ExecutionProvider = 'openrouter' | 'local_hf';
+type PipelineVersion = 'v1' | 'v2' | 'v3' | 'xiaomi-vision';
+type ExecutionProvider = 'openrouter' | 'local_hf' | 'xiaomi';
+
+/**
+ * Downloads a file from S3 with automatic URL refresh on 403/401 errors.
+ * Returns the file buffer.
+ */
+async function downloadFileWithRefresh(
+  fileUri: string,
+  objectKey?: string | null,
+  bucketType: string = 'analysis'
+): Promise<Buffer> {
+  // First attempt with the original URL
+  let response = await fetch(fileUri);
+  
+  // If we get a 403 or 401, try to refresh the URL
+  if ((response.status === 403 || response.status === 401) && objectKey) {
+    console.log(`[downloadFileWithRefresh] Got ${response.status}, refreshing URL for objectKey: ${objectKey}`);
+    
+    try {
+      const { s3Client, config } = await getS3Client(undefined, { bucketType });
+      const expiration = config.presignedUrlExpiration ?? 900;
+      const getCommand = new GetObjectCommand({
+        Bucket: config.bucketName,
+        Key: objectKey,
+      });
+      const freshUrl = await getSignedUrl(s3Client, getCommand, { expiresIn: expiration });
+      
+      // Retry with the fresh URL
+      response = await fetch(freshUrl);
+    } catch (refreshError) {
+      console.error('[downloadFileWithRefresh] Failed to refresh URL:', refreshError);
+      // Continue with the original response (which will fail)
+    }
+  }
+  
+  if (!response.ok) {
+    throw new Error(`Не удалось скачать файл: ${response.status} ${response.statusText}`);
+  }
+  
+  const arrayBuffer = await response.arrayBuffer();
+  return Buffer.from(arrayBuffer);
+}
 
 const ANALYSIS_CACHE_COLLECTION = 'file_analysis_cache';
 const OCR_MARKDOWN_CACHE_COLLECTION = 'file_markdown_cache';
@@ -35,10 +81,13 @@ function pickPromptById(promptId: string): string {
 }
 
 function normalizePipelineVersion(version?: string | null): PipelineVersion {
+  if (version === 'xiaomi-vision') return 'xiaomi-vision';
+  if (version === 'v3') return 'v3';
   return version === 'v2' ? 'v2' : 'v1';
 }
 
 function resolveMainExecutionProvider(job: ServerAnalysisJob, pipelineVersion: PipelineVersion): ExecutionProvider {
+  if (pipelineVersion === 'xiaomi-vision') return 'xiaomi';
   if (pipelineVersion === 'v1') {
     return 'openrouter';
   }
@@ -79,7 +128,15 @@ function normalizeMarkdownText(markdown: string): string {
 }
 
 function isCompatibleCacheVersion(cacheVersion: unknown, targetVersion: PipelineVersion): boolean {
-  const normalizedCacheVersion = cacheVersion === 'v2' ? 'v2' : 'v1';
+  const normalizedCacheVersion = cacheVersion === 'xiaomi-vision' ? 'xiaomi-vision' : cacheVersion === 'v3' ? 'v3' : cacheVersion === 'v2' ? 'v2' : 'v1';
+  // v2 and v3 are functionally identical (two-stage OCR → analysis), so they are compatible with each other
+  if ((normalizedCacheVersion === 'v2' || normalizedCacheVersion === 'v3') && (targetVersion === 'v2' || targetVersion === 'v3')) {
+    return true;
+  }
+  // xiaomi-vision is only compatible with itself
+  if (targetVersion === 'xiaomi-vision' || normalizedCacheVersion === 'xiaomi-vision') {
+    return normalizedCacheVersion === targetVersion;
+  }
   return normalizedCacheVersion === targetVersion;
 }
 
@@ -210,24 +267,29 @@ function extractMarkdownFromOcrResult(text: unknown): string {
 }
 
 async function runOcrMarkdown(job: ServerAnalysisJob, prompt: string): Promise<OcrMarkdownRunResult> {
-  const enginesToTry: PdfEngine[] = ['mistral-ocr', 'pdf-text', 'native'];
+  // Используем OCR-модель и провайдер из конфига
+  const aiConfig = await readAiConfig();
+  const ocrModel = aiConfig.ocrModel || 'google/gemini-2.5-flash-lite';
+  const ocrProvider = aiConfig.ocrProvider || 'openrouter';
+
+  const enginesToTry: PdfEngine[] = ['cloudflare-ai', 'native', 'mistral-ocr'];
   const attemptErrors: string[] = [];
   const fileSizeBytes = await resolveRemoteFileSize(job.fileUri);
 
   for (const engine of enginesToTry) {
-    if (engine === 'pdf-text' && fileSizeBytes && fileSizeBytes > PDF_TEXT_ENGINE_MAX_BYTES) {
-      attemptErrors.push(`[pdf-text] skipped: file size ${fileSizeBytes} bytes exceeds ${PDF_TEXT_ENGINE_MAX_BYTES} bytes limit`);
+    if (engine === 'cloudflare-ai' && fileSizeBytes && fileSizeBytes > PDF_TEXT_ENGINE_MAX_BYTES) {
+      attemptErrors.push(`[cloudflare-ai] skipped: file size ${fileSizeBytes} bytes exceeds ${PDF_TEXT_ENGINE_MAX_BYTES} bytes limit`);
       continue;
     }
     try {
       const aiResult = await generateJson({
         prompt,
-        model: job.model,
+        model: ocrModel,
         file: { fileUri: job.fileUri, mimeType: job.mimeType, fileName: job.fileName },
         temperature: 0,
         includeThoughts: false,
         userId: job.userId,
-        providerOverride: 'openrouter',
+        providerOverride: ocrProvider as any,
         responseMimeType: 'text/plain',
         pdfEngine: engine,
       });
@@ -475,7 +537,7 @@ export async function runServerAnalysisJob(jobId: string, options: { alreadyClai
     let aiOutput: ExtractProjectSpecificationsOutput;
     const isPdfInput = isPdfLikeFile(job.mimeType, job.fileName);
 
-    if (pipelineVersion === 'v2') {
+    if (pipelineVersion === 'v2' || pipelineVersion === 'v3') {
       let ocrMarkdown = '';
       let parsedImages: ParsedModelImage[] = [];
 
@@ -504,15 +566,16 @@ export async function runServerAnalysisJob(jobId: string, options: { alreadyClai
         } else {
           await ensureNotCancelled();
           await setStage('ocr_markdown', 'OCR документа в markdown');
-          await appendJobLog(jobId, 'Запуск OCR этапа (Mistral OCR)', 'ocr_markdown');
+          const ocrConfigForLog = await readAiConfig();
+          await appendJobLog(jobId, `Запуск OCR этапа (модель: ${ocrConfigForLog.ocrModel || 'google/gemini-2.5-flash-lite'}, ${ocrConfigForLog.ocrProvider || 'openrouter'})`, 'ocr_markdown');
           const ocrPrompt = pickPromptById('ocrMarkdownPrompt');
           const ocrResult = await runOcrMarkdown(job, ocrPrompt);
           ocrMarkdown = ocrResult.markdown;
           aiCallCount += 1;
-          if (ocrResult.engine !== 'mistral-ocr') {
+          if (ocrResult.engine !== 'cloudflare-ai') {
             await appendJobLog(
               jobId,
-              `Mistral OCR недоступен, использован fallback engine: ${ocrResult.engine}`,
+              `Cloudflare AI недоступен, использован fallback engine: ${ocrResult.engine}`,
               'ocr_markdown'
             );
           }
@@ -529,8 +592,9 @@ export async function runServerAnalysisJob(jobId: string, options: { alreadyClai
         await ensureNotCancelled();
         await setStage('ocr_markdown', 'Парсинг не-PDF файла (текст + base64 изображений)');
         await appendJobLog(jobId, 'Для non-PDF отключаем OCR-плагин и парсим текст/изображения локально', 'ocr_markdown');
-        const parsed = await parseNonPdfFileForModel({
-          fileUri: job.fileUri,
+        const fileBuffer = await downloadFileWithRefresh(job.fileUri, job.objectKey);
+        const parsed = await parseNonPdfBufferForModel({
+          fileBuffer,
           fileName: job.fileName,
           mimeType: job.mimeType,
         });
@@ -548,6 +612,78 @@ export async function runServerAnalysisJob(jobId: string, options: { alreadyClai
       const promptV2 = pickPromptById('mainAnalysisV2');
       aiOutput = await runAnalysisFromMarkdown(job, promptV2, ocrMarkdown, mainExecutionProvider, parsedImages);
       aiCallCount += 1;
+    } else if (pipelineVersion === 'xiaomi-vision') {
+      // ─── Xiaomi Vision Pipeline ───
+      // Stage 1: Extract text + images from file
+      // Stage 2: Analyze images via vision model (mimo-v2.5)
+      // Stage 3: Final analysis via analysis model (mimo-v2.5-pro)
+      const aiConfig = await readAiConfig();
+      const visionModel = aiConfig.visionModel || 'mimo-v2.5';
+      const analysisModel = aiConfig.analysisModel || 'mimo-v2.5-pro';
+
+      let ocrMarkdown = '';
+      let parsedImages: ParsedModelImage[] = [];
+
+      // Stage 1: Extract content
+      await ensureNotCancelled();
+      await setStage('ocr_markdown', 'Извлечение текста и изображений');
+      if (isPdfInput) {
+        ocrMarkdown = await loadCachedOcrMarkdown(job.fileSha1) || '';
+        if (!ocrMarkdown) {
+          // Use OCR to extract text from PDF
+          const ocrPrompt = pickPromptById('ocrMarkdownPrompt');
+          const ocrResult = await runOcrMarkdown(job, ocrPrompt);
+          ocrMarkdown = ocrResult.markdown;
+          await saveCachedOcrMarkdown(job, ocrMarkdown);
+          aiCallCount += 1;
+        }
+        await appendJobLog(jobId, `Текст извлечён: ${ocrMarkdown.length} символов`, 'ocr_markdown');
+      } else {
+        const fileBuffer = await downloadFileWithRefresh(job.fileUri, job.objectKey);
+        const parsed = await parseNonPdfBufferForModel({ fileBuffer, fileName: job.fileName, mimeType: job.mimeType });
+        ocrMarkdown = parsed.markdown;
+        parsedImages = parsed.images;
+        await appendJobLog(jobId, `Non-PDF парсинг: text=${parsed.rawTextLength}, images=${parsed.images.length}`, 'ocr_markdown');
+      }
+
+      // Stage 2: Vision analysis (images → mimo-v2.5)
+      let visionDescription = '';
+      if (parsedImages.length > 0) {
+        await ensureNotCancelled();
+        await setStage('vision_analysis', `Анализ ${parsedImages.length} изображений через ${visionModel}`);
+        await appendJobLog(jobId, `Запуск vision анализа: ${visionModel}, ${parsedImages.length} изображений`, 'vision_analysis');
+
+        const visionResult = await generateXiaomiContent({
+          prompt: `Ты — эксперт по анализу строительной и проектной документации.
+Проанализируй все прикреплённые изображения и опиши подробно что на них изображено.
+Для каждого изображения укажи: тип документа, все текстовые надписи, числа, размеры, маркировки, технические детали.
+Будь максимально точным. Извлеки ВСЕ текстовые данные из изображений.`,
+          modelInfo: { value: visionModel },
+          temperature: 0.1,
+          userId: job.userId,
+          images: parsedImages.map(img => ({ dataUri: img.dataUri, mimeType: img.mimeType })),
+          stream: false,
+          responseMimeType: 'text/plain',
+        });
+        visionDescription = visionResult.text || '';
+        aiCallCount += 1;
+        await appendJobLog(jobId, `Vision анализ завершён: ${visionDescription.length} символов`, 'vision_analysis');
+      } else {
+        await appendJobLog(jobId, 'Нет изображений для vision анализа, пропускаем этап', 'vision_analysis');
+      }
+
+      // Stage 3: Final analysis (text + vision → mimo-v2.5-pro)
+      await ensureNotCancelled();
+      await setStage('analysis', `Финальный анализ через ${analysisModel}`);
+      await appendJobLog(jobId, `Запуск финального анализа: ${analysisModel}`, 'analysis');
+
+      const promptV2 = pickPromptById('mainAnalysisV2');
+      const enhancedPrompt = visionDescription
+        ? `${promptV2}\n\n## АНАЛИЗ ИЗОБРАЖЕНИЙ\n${visionDescription}`
+        : promptV2;
+
+      aiOutput = await runAnalysisFromMarkdown(job, enhancedPrompt, ocrMarkdown, mainExecutionProvider, parsedImages);
+      aiCallCount += 1;
     } else {
       const promptText = pickPromptById('mainAnalysis');
       if (isPdfInput) {
@@ -556,8 +692,9 @@ export async function runServerAnalysisJob(jobId: string, options: { alreadyClai
         await ensureNotCancelled();
         await setStage('ocr_markdown', 'Парсинг не-PDF файла (текст + base64 изображений)');
         await appendJobLog(jobId, 'V1 non-PDF: OCR-плагин не используется, запускаем локальный парсинг', 'ocr_markdown');
-        const parsed = await parseNonPdfFileForModel({
-          fileUri: job.fileUri,
+        const fileBuffer = await downloadFileWithRefresh(job.fileUri, job.objectKey);
+        const parsed = await parseNonPdfBufferForModel({
+          fileBuffer,
           fileName: job.fileName,
           mimeType: job.mimeType,
         });

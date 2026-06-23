@@ -12,8 +12,6 @@ export class DbServerError extends Error {
   }
 }
 
-export { DbServerError as FirebaseError };
-
 export class Timestamp {
   private readonly value: Date;
   constructor(seconds: number, nanoseconds: number) {

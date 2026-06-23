@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Save, Bot, BrainCircuit, Link, Trash2, PlusCircle, DownloadCloud, Info, FileJson, Edit, ChevronsUpDown } from "lucide-react";
+import { Loader2, Save, Bot, BrainCircuit, Link, Trash2, PlusCircle, DownloadCloud, Info, FileJson, Edit, ChevronsUpDown, FileText, ArrowRight, Sparkles } from "lucide-react";
 import { getAiAgentConfig, updateAiAgentConfig, type AiAgentConfig } from '@/actions/adminActions';
 import { useAppContext } from '@/contexts/AppContext';
 import { Switch } from '@/components/ui/switch';
@@ -19,6 +19,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { Checkbox } from '@/components/ui/checkbox';
+import XiaomiProviderPanel from '@/components/admin/XiaomiProviderPanel';
 
 
 export default function AdminAiAgentPage() {
@@ -32,7 +33,10 @@ export default function AdminAiAgentPage() {
   const [modelToEdit, setModelToEdit] = useState<{ model: any; index: number } | null>(null);
   const [isAddFromProviderDialogOpen, setIsAddFromProviderDialogOpen] = useState(false);
   const loadedForUserRef = useRef<string | null>(null);
-  
+
+  /** Активный провайдер — определяет контекст для диалогов */
+  const [activeProvider, setActiveProvider] = useState<string>('openrouter');
+
   const hasUnsavedChanges = useMemo(() => {
     if (!config) {
       return false;
@@ -99,7 +103,7 @@ const handlePdfPriorityChange = (newOrder: ('native' | 'mistral-ocr' | 'pdf-text
 
 const moveEngine = (engine: string, direction: 'up' | 'down') => {
     if (!config?.providers.openrouter.pdfProcessingPriority) return;
-    
+
     const currentPriority = [...config.providers.openrouter.pdfProcessingPriority];
     const index = currentPriority.indexOf(engine as any);
 
@@ -113,7 +117,7 @@ const moveEngine = (engine: string, direction: 'up' | 'down') => {
     handlePdfPriorityChange(currentPriority);
 };
 
-  
+
   const handleModelConfigChange = (modelIndex: number, key: string, value: any) => {
     setConfig(prev => {
         if (!prev) return null;
@@ -123,23 +127,31 @@ const moveEngine = (engine: string, direction: 'up' | 'down') => {
     });
   };
 
+  /**
+   * Сервисная модель — глобально одна.
+   * Привязка по value, а не по индексу, чтобы не сбивалась при перестроении массива.
+   */
   const handleSetServiceModel = (modelIndex: number, enabled: boolean) => {
+    const modelValue = config?.apiModels[modelIndex]?.value;
+    if (!modelValue) return;
     setConfig(prev => {
       if (!prev) return null;
-      const newApiModels = prev.apiModels.map((model: any, index: number) => ({
+      const newApiModels = prev.apiModels.map((model: any) => ({
         ...model,
-        isServiceModel: index === modelIndex ? enabled : false,
+        isServiceModel: model.value === modelValue ? enabled : false,
       }));
       return { ...prev, apiModels: newApiModels };
     });
   };
 
   const handleSetVoiceModel = (modelIndex: number, enabled: boolean) => {
+    const modelValue = config?.apiModels[modelIndex]?.value;
+    if (!modelValue) return;
     setConfig(prev => {
       if (!prev) return null;
-      const newApiModels = prev.apiModels.map((model: any, index: number) => ({
+      const newApiModels = prev.apiModels.map((model: any) => ({
         ...model,
-        isVoiceModel: index === modelIndex ? enabled : false,
+        isVoiceModel: model.value === modelValue ? enabled : false,
       }));
       return { ...prev, apiModels: newApiModels };
     });
@@ -154,8 +166,8 @@ const moveEngine = (engine: string, direction: 'up' | 'down') => {
             const oldModel = newModels[index];
             newModels[index] = { ...oldModel, ...modelData };
         } else {
-            // Adding new model
-             newModels.push({
+            // Adding new model — provider приходит из modelData
+            newModels.push({
                 ...modelData,
                 temperature: 0.2,
                 supportsThoughts: false,
@@ -166,12 +178,16 @@ const moveEngine = (engine: string, direction: 'up' | 'down') => {
         return { ...prev, apiModels: newModels };
     });
   };
-  
+
+  /**
+   * Добавление моделей из каталога провайдера.
+   * provider берётся из activeProvider (контекст текущего таба).
+   */
   const handleAddMultipleModels = (models: { id: string, name: string }[]) => {
       const newModels = models.map(m => ({
           value: m.id,
           label: m.name,
-          provider: 'openrouter',
+          provider: activeProvider,
           temperature: 0.2,
           supportsThoughts: false,
           canGenerateImages: false,
@@ -299,7 +315,10 @@ const moveEngine = (engine: string, direction: 'up' | 'down') => {
       <div className="grid gap-2">
         {modelOptions.map((model: any) => (
           <label key={`${planKey}-${field}-${model.value}`} className="flex items-center justify-between rounded-md border p-2">
-            <span className="text-sm">{model.label}</span>
+            <div className="flex flex-col">
+              <span className="text-sm">{model.label}</span>
+              <span className="text-xs text-muted-foreground">{model.provider}</span>
+            </div>
             <Checkbox
               checked={selectedValues.includes(model.value)}
               onCheckedChange={() => togglePlanModelList(planKey, field, model.value)}
@@ -363,16 +382,20 @@ const moveEngine = (engine: string, direction: 'up' | 'down') => {
         onSave={handleSaveModel}
         initialData={modelToEdit?.model}
         editIndex={modelToEdit?.index}
+        provider={activeProvider}
     />
     <AddModelFromProviderDialog
         isOpen={isAddFromProviderDialogOpen}
         onClose={handleCloseAddFromProviderDialog}
         onAddModels={handleAddMultipleModels}
         existingModels={config.apiModels}
+        provider={activeProvider as 'openrouter' | 'xiaomi'}
     />
     <div className="space-y-6">
-      {/** приоритет openrouter по умолчанию */}
-      <Tabs defaultValue={config.providers.openrouter ? "openrouter" : Object.keys(config.providers)[0]}>
+      <Tabs
+        defaultValue={config.providers.openrouter ? "openrouter" : Object.keys(config.providers)[0]}
+        onValueChange={(value) => setActiveProvider(value)}
+      >
         <div className="flex items-center justify-between gap-2 flex-wrap">
             <TabsList className="grid w-full sm:w-auto grid-cols-2 sm:grid-cols-4">
                 {Object.entries(config.providers)
@@ -381,9 +404,6 @@ const moveEngine = (engine: string, direction: 'up' | 'down') => {
                         <TabsTrigger key={providerId} value={providerId}>{providerConfig.name}</TabsTrigger>
                     ))}
             </TabsList>
-            <Button type="button" variant="outline" size="icon" onClick={() => setIsAddFromProviderDialogOpen(true)}>
-                <PlusCircle className="h-4 w-4" />
-            </Button>
         </div>
          {Object.entries(config.providers).map(([providerId, providerConfig]) => (
             <TabsContent key={providerId} value={providerId}>
@@ -397,6 +417,15 @@ const moveEngine = (engine: string, direction: 'up' | 'down') => {
                             <Label htmlFor={`base-url-${providerId}`} className="flex items-center gap-2"><Link className="h-4 w-4"/>Базовый URL</Label>
                             <Input id={`base-url-${providerId}`} value={providerConfig.baseUrl} onChange={(e) => handleProviderConfigChange(providerId, 'baseUrl', e.target.value)} disabled={isPending}/>
                         </div>
+
+                        {/* Xiaomi: Endpoints, API Keys, Stats */}
+                        {providerId === 'xiaomi' && (
+                            <div className="pt-2">
+                                <Separator className="mb-4" />
+                                <XiaomiProviderPanel />
+                                <Separator className="mt-4" />
+                            </div>
+                        )}
 
                          {providerId === 'openrouter' && (
                              <div className="space-y-4 pt-4">
@@ -418,18 +447,30 @@ const moveEngine = (engine: string, direction: 'up' | 'down') => {
                                         </div>
                                     ))}
                                 </div>
-                                <Separator />
-                                <Button type="button" variant="outline" onClick={() => setIsAddFromProviderDialogOpen(true)}>
-                                    <DownloadCloud className="mr-2 h-4 w-4" />
-                                    Загрузить и добавить модели из OpenRouter
-                                </Button>
                             </div>
                         )}
                         <Separator/>
+
+                        {/* Кнопки управления моделями — привязаны к текущему провайдеру */}
+                        <div className="flex flex-wrap gap-2 pt-2">
+                            <Button type="button" variant="outline" onClick={() => setIsAddFromProviderDialogOpen(true)}>
+                                <DownloadCloud className="mr-2 h-4 w-4" />
+                                Загрузить модели из {providerConfig.name}
+                            </Button>
+                            <Button type="button" variant="outline" onClick={() => { setModelToEdit(null); setIsModelDialogOpen(true); }}>
+                                <PlusCircle className="mr-2 h-4 w-4" />
+                                Добавить модель вручную
+                            </Button>
+                        </div>
+
+                        <Separator/>
                         <h4 className="text-md font-semibold pt-2">Модели этого провайдера</h4>
                         <div className="space-y-4">
-                            {config.apiModels.filter(model => model.provider === providerId).map((model, index) => {
-                                const originalIndex = config.apiModels.findIndex(m => m.value === model.value);
+                            {config.apiModels.filter(model => model.provider === providerId).length === 0 && (
+                                <p className="text-sm text-muted-foreground py-4">Нет моделей для этого провайдера. Добавьте модели через кнопки выше.</p>
+                            )}
+                            {config.apiModels.filter(model => model.provider === providerId).map((model) => {
+                                const originalIndex = config.apiModels.findIndex(m => m.value === model.value && m.provider === model.provider);
                                 return renderModelSettings(model, originalIndex);
                             })}
                         </div>
@@ -438,6 +479,189 @@ const moveEngine = (engine: string, direction: 'up' | 'down') => {
             </TabsContent>
         ))}
       </Tabs>
+
+      {/* Two-Stage Pipeline Configuration */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-primary" />
+            Двухэтапный пайплайн обработки PDF
+          </CardTitle>
+          <CardDescription>
+            PDF → S3 → URL → <strong>Этап 1:</strong> извлечение текста (OCR/Markdown) → <strong>Этап 2:</strong> финальный анализ.
+            Каждый этап использует свою модель и провайдер.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+
+          {/* Visual pipeline flow */}
+          <div className="flex items-center justify-center gap-2 flex-wrap text-sm text-muted-foreground py-2">
+            <span className="rounded-md bg-muted px-2 py-1 font-medium">PDF файл</span>
+            <ArrowRight className="h-4 w-4" />
+            <span className="rounded-md bg-muted px-2 py-1 font-medium">S3 хранилище</span>
+            <ArrowRight className="h-4 w-4" />
+            <span className="rounded-md bg-blue-500/10 text-blue-600 dark:text-blue-400 px-2 py-1 font-medium border border-blue-500/20">
+              Этап 1: OCR
+            </span>
+            <ArrowRight className="h-4 w-4" />
+            <span className="rounded-md bg-muted px-2 py-1 font-medium">Markdown</span>
+            <ArrowRight className="h-4 w-4" />
+            <span className="rounded-md bg-green-500/10 text-green-600 dark:text-green-400 px-2 py-1 font-medium border border-green-500/20">
+              Этап 2: Анализ
+            </span>
+            <ArrowRight className="h-4 w-4" />
+            <span className="rounded-md bg-muted px-2 py-1 font-medium">JSON ответ</span>
+          </div>
+
+          <Separator />
+
+          {/* Stage 1: OCR */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <div className="h-7 w-7 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center text-sm font-bold border border-blue-500/20">1</div>
+              <div>
+                <h4 className="text-sm font-semibold">Этап 1 — Извлечение текста (OCR)</h4>
+                <p className="text-xs text-muted-foreground">PDF → текст/Markdown. Рекомендуется бесплатная модель.</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 ml-9">
+              <div className="space-y-2">
+                <Label htmlFor="ocr-provider">Провайдер</Label>
+                <Select
+                  value={config.ocrProvider || 'openrouter'}
+                  onValueChange={(value) => {
+                    setConfig(prev => {
+                      if (!prev) return null;
+                      // Сбросить модель OCR при смене провайдера
+                      return { ...prev, ocrProvider: value, ocrModel: '' };
+                    });
+                  }}
+                  disabled={isPending}
+                >
+                  <SelectTrigger id="ocr-provider">
+                    <SelectValue placeholder="Выберите провайдер" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(config.providers).map(([id, prov]) => (
+                      <SelectItem key={`ocr-prov-${id}`} value={id}>{prov.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="ocr-model">Модель</Label>
+                <Select
+                  value={config.ocrModel || ''}
+                  onValueChange={(value) => setConfig(prev => prev ? { ...prev, ocrModel: value } : null)}
+                  disabled={isPending}
+                >
+                  <SelectTrigger id="ocr-model">
+                    <SelectValue placeholder="Выберите модель" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {config.apiModels
+                      .filter(m => m.provider === (config.ocrProvider || 'openrouter'))
+                      .map((model: any) => (
+                        <SelectItem key={`ocr-${model.value}`} value={model.value}>
+                          {model.label}
+                        </SelectItem>
+                      ))}
+                    {config.apiModels.filter(m => m.provider === (config.ocrProvider || 'openrouter')).length === 0 && (
+                      <SelectItem value="__none__" disabled>Нет моделей для этого провайдера</SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Текущая: <code>{config.ocrModel || 'не выбрана'}</code>
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* Stage 2: Analysis */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <div className="h-7 w-7 rounded-full bg-green-500/10 text-green-600 dark:text-green-400 flex items-center justify-center text-sm font-bold border border-green-500/20">2</div>
+              <div>
+                <h4 className="text-sm font-semibold">Этап 2 — Финальный анализ</h4>
+                <p className="text-xs text-muted-foreground">Markdown → JSON результат. Рекомендуется мощная модель.</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 ml-9">
+              <div className="space-y-2">
+                <Label htmlFor="analysis-provider">Провайдер</Label>
+                <Select
+                  value={config.analysisProvider || 'xiaomi'}
+                  onValueChange={(value) => {
+                    setConfig(prev => {
+                      if (!prev) return null;
+                      return { ...prev, analysisProvider: value, analysisModel: '' };
+                    });
+                  }}
+                  disabled={isPending}
+                >
+                  <SelectTrigger id="analysis-provider">
+                    <SelectValue placeholder="Выберите провайдер" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(config.providers).map(([id, prov]) => (
+                      <SelectItem key={`analysis-prov-${id}`} value={id}>{prov.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="analysis-model">Модель</Label>
+                <Select
+                  value={config.analysisModel || ''}
+                  onValueChange={(value) => setConfig(prev => prev ? { ...prev, analysisModel: value } : null)}
+                  disabled={isPending}
+                >
+                  <SelectTrigger id="analysis-model">
+                    <SelectValue placeholder="Выберите модель" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {config.apiModels
+                      .filter(m => m.provider === (config.analysisProvider || 'xiaomi'))
+                      .map((model: any) => (
+                        <SelectItem key={`analysis-${model.value}`} value={model.value}>
+                          {model.label}
+                        </SelectItem>
+                      ))}
+                    {config.apiModels.filter(m => m.provider === (config.analysisProvider || 'xiaomi')).length === 0 && (
+                      <SelectItem value="__none__" disabled>Нет моделей для этого провайдера</SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Текущая: <code>{config.analysisModel || 'не выбрана'}</code>
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* Info box */}
+          <div className="rounded-lg border bg-muted/50 p-4">
+            <div className="flex gap-2">
+              <Info className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
+              <div className="text-sm text-muted-foreground space-y-1">
+                <p><strong>Как работает пайплайн:</strong></p>
+                <ol className="list-decimal list-inside space-y-1">
+                  <li>PDF загружается в S3 хранилище и получает публичный URL</li>
+                  <li><strong>Этап 1:</strong> URL отправляется в OCR модель для извлечения текста в формате Markdown</li>
+                  <li>Markdown передаётся во второй этап (при необходимости кешируется)</li>
+                  <li><strong>Этап 2:</strong> Markdown + промпт отправляются в модель анализа для получения JSON ответа</li>
+                </ol>
+                <p className="pt-1">Пайплайн активируется автоматически когда выбрана Xiaomi модель для анализа и загружен PDF файл.</p>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
@@ -461,7 +685,7 @@ const moveEngine = (engine: string, direction: 'up' | 'down') => {
                   <SelectContent>
                     {modelOptions.map((model: any) => (
                       <SelectItem key={`free-default-${model.value}`} value={model.value}>
-                        {model.label}
+                        {model.label} ({model.provider})
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -488,7 +712,7 @@ const moveEngine = (engine: string, direction: 'up' | 'down') => {
                   <SelectContent>
                     {modelOptions.map((model: any) => (
                       <SelectItem key={`pro-default-${model.value}`} value={model.value}>
-                        {model.label}
+                        {model.label} ({model.provider})
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -522,18 +746,6 @@ const moveEngine = (engine: string, direction: 'up' | 'down') => {
         </CardContent>
       </Card>
 
-        <Card>
-            <CardHeader>
-                <CardTitle>Управление моделями</CardTitle>
-            </CardHeader>
-            <CardContent>
-                 <Button type="button" variant="outline" onClick={() => { setModelToEdit(null); setIsModelDialogOpen(true); }}>
-                    <PlusCircle className="mr-2 h-4 w-4" />
-                    Добавить модель вручную
-                </Button>
-            </CardContent>
-        </Card>
-      
       <div className="sticky bottom-6">
           <Card>
               <CardFooter className="pt-6">

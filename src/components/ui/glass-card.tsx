@@ -39,7 +39,7 @@ export const GlassCard = ({
       transition={{ duration: 0.3 }}
     >
       {interactive && (
-        <div className="absolute inset-0 rounded-2xl bg-white/[0.03] opacity-0 transition-opacity pointer-events-none group-hover:opacity-100" />
+        <div className="absolute inset-0 rounded-2xl bg-foreground/[0.03] opacity-0 transition-opacity pointer-events-none group-hover:opacity-100" />
       )}
 
 

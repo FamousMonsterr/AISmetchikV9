@@ -4,7 +4,15 @@
             "name": "OpenRouter",
             "baseUrl": "https://openrouter.ai/api/v1/chat/completions",
             "pdfProcessingPriority": [
-                "mistral-ocr",
+                "cloudflare-ai",
+                "native",
+                "mistral-ocr"
+            ]
+        },
+        "xiaomi": {
+            "name": "Xiaomi MiMo",
+            "baseUrl": "https://token-plan-sgp.xiaomimimo.com/v1",
+            "pdfProcessingPriority": [
                 "pdf-text",
                 "native"
             ]
@@ -12,77 +20,56 @@
     },
     "apiModels": [
         {
-            "value": "openai/gpt-4o-mini",
-            "label": "GPT-4o Mini",
+            "value": "xiaomi/mimo-v2.5-pro",
+            "label": "Xiaomi MiMo V2 Pro",
             "provider": "openrouter",
             "temperature": 0.2,
-            "supportsThoughts": false,
+            "supportsThoughts": true,
             "canGenerateImages": false,
             "canProcessAudio": false,
+            "isServiceModel": false,
+            "isVoiceModel": false,
             "pdfEngineOverride": "none",
-            "isDefault": true,
-            "isServiceModel": false,
-            "isVoiceModel": false
+            "isDefault": false
         },
         {
-            "value": "bytedance-seed/seed-1.6",
-            "label": "ByteDance Seed: Seed 1.6",
-            "provider": "openrouter",
-            "temperature": 0.2,
-            "supportsThoughts": false,
-            "canGenerateImages": false,
-            "canProcessAudio": false,
-            "isServiceModel": true,
-            "isVoiceModel": false
-        },
-        {
-            "value": "google/gemini-3-flash-preview",
-            "label": "Google: Gemini 3 Flash Preview",
-            "provider": "openrouter",
-            "temperature": 0.2,
-            "supportsThoughts": false,
-            "canGenerateImages": false,
-            "canProcessAudio": false,
-            "pdfEngineOverride": "mistral-ocr",
-            "isServiceModel": false,
-            "isVoiceModel": false
-        },
-        {
-            "value": "google/gemini-3-pro-preview",
-            "label": "Google: Gemini 3 Pro Preview",
-            "provider": "openrouter",
+            "value": "mimo-v2.5",
+            "label": "mimo-v2.5",
+            "provider": "xiaomi",
             "temperature": 0.2,
             "supportsThoughts": false,
             "canGenerateImages": false,
             "canProcessAudio": false,
             "isServiceModel": false,
-            "isVoiceModel": false
+            "isVoiceModel": false,
+            "pdfEngineOverride": "none",
+            "isDefault": false
         },
         {
-            "value": "google/gemini-2.5-flash-lite",
-            "label": "Google: Gemini 2.5 Flash Lite",
-            "provider": "openrouter",
+            "value": "mimo-v2.5-pro",
+            "label": "mimo-v2.5-pro",
+            "provider": "xiaomi",
             "temperature": 0.2,
             "supportsThoughts": false,
             "canGenerateImages": false,
             "canProcessAudio": false,
             "isServiceModel": false,
-            "isVoiceModel": false
+            "isVoiceModel": false,
+            "pdfEngineOverride": "none",
+            "isDefault": false
         },
         {
-            "value": "google/gemini-2.5-pro",
-            "label": "Google: Gemini 2.5 Pro",
+            "value": "nex-agi/nex-n2-pro:free",
+            "label": "Nex AGI: Nex-N2-Pro (free)",
             "provider": "openrouter",
             "temperature": 0.2,
-            "supportsThoughts": false,
+            "supportsThoughts": true,
             "canGenerateImages": false,
-            "canProcessAudio": false,
-            "isServiceModel": false,
-            "isVoiceModel": false
+            "canProcessAudio": false
         },
         {
-            "value": "qwen/qwen3-next-80b-a3b-instruct:free",
-            "label": "Qwen: Qwen3 Next 80B A3B Instruct (free)",
+            "value": "qwen/qwen3.7-plus",
+            "label": "Qwen: Qwen3.7 Plus",
             "provider": "openrouter",
             "temperature": 0.2,
             "supportsThoughts": false,
@@ -90,35 +77,33 @@
             "canProcessAudio": false
         }
     ],
+    "ocrModel": "nex-agi/nex-n2-pro:free",
+    "ocrProvider": "openrouter",
+    "analysisModel": "mimo-v2.5-pro",
+    "analysisProvider": "xiaomi",
+    "visionModel": "mimo-v2.5",
+    "visionProvider": "xiaomi",
     "planModels": {
         "free": {
-            "defaultModel": "qwen/qwen3-next-80b-a3b-instruct:free",
-            "abTestModels": []
+            "defaultModel": "mimo-v2.5-pro",
+            "abTestModels": [
+                "mimo-v2.5",
+                "mimo-v2.5-pro",
+                "nex-agi/nex-n2-pro:free",
+                "qwen/qwen3.7-plus",
+                "xiaomi/mimo-v2.5-pro"
+            ]
         },
         "pro": {
-            "defaultModel": "qwen/qwen3-next-80b-a3b-instruct:free",
+            "defaultModel": "",
             "abTestModels": []
         },
         "business": {
-            "availableModels": [
-                "openai/gpt-4o-mini",
-                "bytedance-seed/seed-1.6",
-                "google/gemini-3-flash-preview",
-                "google/gemini-3-pro-preview",
-                "google/gemini-2.5-flash-lite",
-                "google/gemini-2.5-pro"
-            ],
+            "availableModels": [],
             "defaultModel": ""
         },
         "enterprise": {
-            "availableModels": [
-                "openai/gpt-4o-mini",
-                "bytedance-seed/seed-1.6",
-                "google/gemini-3-flash-preview",
-                "google/gemini-3-pro-preview",
-                "google/gemini-2.5-flash-lite",
-                "google/gemini-2.5-pro"
-            ],
+            "availableModels": [],
             "defaultModel": ""
         }
     }

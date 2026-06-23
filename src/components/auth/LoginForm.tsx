@@ -236,32 +236,32 @@ export function LoginForm({
   const showTelegramWidget = telegramWebAuthEnabled && !!telegramBotUsername && !showTelegramMiniAppButton;
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[#07111b] text-slate-100">
+    <div className="relative min-h-screen overflow-hidden bg-[#07111b] text-foreground">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(56,189,248,0.16),_transparent_28%),radial-gradient(circle_at_80%_15%,_rgba(34,197,94,0.16),_transparent_24%),linear-gradient(180deg,#06101a_0%,#09131d_50%,#07111b_100%)]" />
       <div className="absolute inset-0 opacity-[0.2] [background-image:linear-gradient(rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.05)_1px,transparent_1px)] [background-size:56px_56px]" />
 
       <div className="relative mx-auto flex min-h-screen w-full max-w-4xl items-center justify-center px-4 py-10">
         <div className="grid w-full gap-6 lg:grid-cols-[0.9fr_1.1fr]">
-          <section className="hidden rounded-[32px] border border-white/10 bg-white/5 p-8 shadow-[0_32px_120px_rgba(0,0,0,0.35)] backdrop-blur-xl lg:flex lg:flex-col lg:justify-center">
-            <Logo href="/" className="px-0 text-slate-100" />
+          <section className="hidden rounded-[32px] border border-border bg-muted/50 p-8 shadow-[0_32px_120px_rgba(0,0,0,0.35)] backdrop-blur-xl lg:flex lg:flex-col lg:justify-center">
+            <Logo href="/" className="px-0 text-foreground" />
             <div className="mt-6 space-y-3">
               <p className="text-xs uppercase tracking-[0.35em] text-cyan-300/80">Авторизация</p>
-              <h1 className="text-4xl font-semibold leading-tight text-white">Вход в AI Сметчик</h1>
-              <p className="text-sm leading-6 text-slate-300">
+              <h1 className="text-4xl font-semibold leading-tight text-foreground">Вход в Montage HUB</h1>
+              <p className="text-sm leading-6 text-muted-foreground">
                 Email или телефон, пароль и быстрые способы входа.
               </p>
             </div>
           </section>
 
           <div className="space-y-4">
-            <Card className="border-white/10 bg-slate-950/70 text-slate-100 shadow-[0_24px_80px_rgba(0,0,0,0.35)] backdrop-blur-xl">
+            <Card className="border-border bg-background/70 text-foreground shadow-[0_24px_80px_rgba(0,0,0,0.35)] backdrop-blur-xl">
               <CardHeader className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <Logo href="/" className="px-0 text-slate-100 lg:hidden" />
+                  <Logo href="/" className="px-0 text-foreground lg:hidden" />
                 </div>
                 <div className="space-y-1">
-                  <CardTitle className="text-2xl text-white">Вход</CardTitle>
-                  <CardDescription className="text-slate-300">Введите данные для входа.</CardDescription>
+                  <CardTitle className="text-2xl text-foreground">Вход</CardTitle>
+                  <CardDescription className="text-muted-foreground">Введите данные для входа.</CardDescription>
                 </div>
               </CardHeader>
               <CardContent className="space-y-5">
@@ -274,7 +274,7 @@ export function LoginForm({
 
                 <form className="space-y-4" onSubmit={handleCredentialsLogin}>
                   <div className="space-y-2">
-                    <Label htmlFor="login-identifier" className="text-slate-200">
+                    <Label htmlFor="login-identifier" className="text-foreground">
                       Email или телефон
                     </Label>
                     <Input
@@ -284,12 +284,12 @@ export function LoginForm({
                       placeholder="name@company.ru или +7 999 123-45-67"
                       autoComplete="username"
                       disabled={isBusy}
-                      className="border-white/10 bg-white/5 text-white placeholder:text-slate-500"
+                      className="border-border bg-muted/50 text-foreground placeholder:text-muted-foreground"
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="login-password" className="text-slate-200">
+                    <Label htmlFor="login-password" className="text-foreground">
                       Пароль
                     </Label>
                     <div className="relative">
@@ -300,13 +300,13 @@ export function LoginForm({
                         onChange={(event) => setPassword(event.target.value)}
                         autoComplete="current-password"
                         disabled={isBusy}
-                        className="border-white/10 bg-white/5 pr-12 text-white placeholder:text-slate-500"
+                        className="border-border bg-muted/50 pr-12 text-foreground placeholder:text-muted-foreground"
                       />
                       <Button
                         type="button"
                         variant="ghost"
                         size="icon"
-                        className="absolute right-1 top-1/2 h-8 w-8 -translate-y-1/2 text-slate-300 hover:text-white"
+                        className="absolute right-1 top-1/2 h-8 w-8 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                         onClick={() => setShowPassword((prev) => !prev)}
                       >
                         {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -337,7 +337,7 @@ export function LoginForm({
                   </div>
 
                   {showTelegramWidget && (
-                    <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
+                    <div className="rounded-2xl border border-border bg-muted/50 p-3">
                       <TelegramAuthWidget
                         botUsername={telegramBotUsername}
                         onAuth={handleTelegramWebLogin}
@@ -356,12 +356,12 @@ export function LoginForm({
                   onAuthenticationSuccess={finalizeSuccessfulLogin}
                 />
 
-                <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-slate-300">
-                  <Button type="button" variant="link" className="px-0 text-slate-300" onClick={handlePasswordReset} disabled={isResetPending}>
+                <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-muted-foreground">
+                  <Button type="button" variant="link" className="px-0 text-muted-foreground" onClick={handlePasswordReset} disabled={isResetPending}>
                     {isResetPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                     Сбросить пароль
                   </Button>
-                  <Link href="/auth/register" className="text-slate-100 underline underline-offset-4">
+                  <Link href="/auth/register" className="text-foreground underline underline-offset-4">
                     Создать аккаунт
                   </Link>
                 </div>

@@ -6,6 +6,9 @@ import {
   Sparkles,
   Bot,
   AppWindow,
+  Network,
+  Search,
+  Plus,
 } from "lucide-react";
 import dynamic from "next/dynamic";
 import { Button } from "@/components/ui/button";
@@ -19,6 +22,7 @@ import {
 } from "@/components/ui/card";
 import { useAppContext } from "@/contexts/AppContext";
 import { useToast } from "@/hooks/use-toast";
+import { useRouter } from "next/navigation";
 import { useState, useCallback, useEffect, useMemo } from "react";
 import { useDropzone } from "react-dropzone";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
@@ -85,7 +89,7 @@ const PwaPrompt = () => {
             <AppWindow className="h-4 w-4" />
             <AlertTitle>Установите приложение!</AlertTitle>
             <AlertDescription>
-                Установите AI Smetchik на главный экран, чтобы отправлять файлы на анализ напрямую из WhatsApp, Telegram или Почты через меню "Поделиться".
+                Установите Montage HUB на главный экран, чтобы отправлять файлы на анализ напрямую из WhatsApp, Telegram или Почты через меню "Поделиться".
                 <div className="mt-2 text-xs">
                   (Нажмите "Меню" в браузере → "Установить приложение")
                 </div>
@@ -103,6 +107,7 @@ export default function DashboardPage() {
     effectivePlan,
   } = useAppContext();
   const { toast } = useToast();
+  const router = useRouter();
   const isMobile = useIsMobile();
   
   const [isProcessingDialogOpen, setIsProcessingDialogOpen] = useState(false);
@@ -223,7 +228,7 @@ export default function DashboardPage() {
           <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                   <Bot className="h-6 w-6 text-primary"/>
-                  Добро пожаловать в AI Smetchik!
+                  Добро пожаловать в Montage HUB!
               </DialogTitle>
               <DialogDescription>
                   Рады видеть вас! Вот краткая инструкция для начала работы.
@@ -320,7 +325,39 @@ export default function DashboardPage() {
             </CardFooter>
         </Card>
       </div>
-      
+
+      {/* Hub Quick Access */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <Card
+          className="bg-card/50 cursor-pointer hover:shadow-md transition-shadow border-primary/20 hover:border-primary/40"
+          onClick={() => router.push('/dashboard/hub/new')}
+        >
+          <CardContent className="flex items-center gap-4 py-4">
+            <div className="flex items-center justify-center h-12 w-12 rounded-xl bg-primary/10">
+              <Plus className="h-6 w-6 text-primary" />
+            </div>
+            <div>
+              <p className="font-semibold">Разместить заказ в Хабе</p>
+              <p className="text-sm text-muted-foreground">Загрузите проект — AI рассчитает смету, исполнители найдутся сами</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card
+          className="bg-card/50 cursor-pointer hover:shadow-md transition-shadow hover:border-primary/40"
+          onClick={() => router.push('/dashboard/hub?tab=work')}
+        >
+          <CardContent className="flex items-center gap-4 py-4">
+            <div className="flex items-center justify-center h-12 w-12 rounded-xl bg-secondary">
+              <Search className="h-6 w-6 text-foreground" />
+            </div>
+            <div>
+              <p className="font-semibold">Найти работу</p>
+              <p className="text-sm text-muted-foreground">Просматривайте доступные заказы и откликайтесь</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
       {/* History Section */}
       <HistorySection />
 

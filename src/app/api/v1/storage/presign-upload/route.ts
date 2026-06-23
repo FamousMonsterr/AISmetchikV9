@@ -15,7 +15,8 @@ export async function POST(request: NextRequest) {
   }
 
   const { s3Client, config } = await getS3Client(presetId, { bucketType });
-  const objectKey = `${nanoid()}-${encodeURIComponent(fileName)}`;
+  const prefix = config.keyPrefix || '';
+  const objectKey = `${prefix}${nanoid()}-${fileName}`;
 
   const putCommand = new PutObjectCommand({
     Bucket: config.bucketName,

@@ -19,7 +19,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 
 const getStatusIcon = (status?: ItemStatus) => {
     switch (status) {
-        case 'Утверждено': return <CheckCircle className="text-green-500" />;
+        case 'Утверждено': return <CheckCircle className="text-success" />;
         case 'На утверждение': return <Search className="text-yellow-500" />;
         case 'Уточнить': return <AlertTriangle className="text-red-500" />;
         default: return <CheckCircle className="text-gray-400" />;

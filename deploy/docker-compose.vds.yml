@@ -27,7 +27,7 @@ x-web: &web_base
 services:
   web_landing:
     <<: *web_base
-    image: ai-smetchik-web:latest
+    image: montagehub-web:latest
     environment:
       NODE_ENV: production
       PORT: 3000
@@ -36,7 +36,7 @@ services:
 
   web_admin:
     <<: *web_base
-    image: ai-smetchik-web:latest
+    image: montagehub-web:latest
     environment:
       NODE_ENV: production
       PORT: 3000
@@ -45,7 +45,7 @@ services:
 
   web_lk:
     <<: *web_base
-    image: ai-smetchik-web:latest
+    image: montagehub-web:latest
     environment:
       NODE_ENV: production
       PORT: 3000
@@ -54,7 +54,7 @@ services:
 
   web_crm:
     <<: *web_base
-    image: ai-smetchik-web:latest
+    image: montagehub-web:latest
     environment:
       NODE_ENV: production
       PORT: 3000
@@ -63,7 +63,7 @@ services:
 
   web_partner:
     <<: *web_base
-    image: ai-smetchik-web:latest
+    image: montagehub-web:latest
     environment:
       NODE_ENV: production
       PORT: 3000
@@ -72,7 +72,7 @@ services:
 
   web_mobile:
     <<: *web_base
-    image: ai-smetchik-web:latest
+    image: montagehub-web:latest
     environment:
       NODE_ENV: production
       PORT: 3000
@@ -81,7 +81,7 @@ services:
 
   worker:
     <<: *app_base
-    image: ai-smetchik-worker:latest
+    image: montagehub-worker:latest
     build:
       context: ..
       dockerfile: Dockerfile

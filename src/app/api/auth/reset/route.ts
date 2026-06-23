@@ -3,8 +3,18 @@ import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { createHash } from 'crypto';
 import { getDb } from '@/lib/mongodb';
+import { enforceRateLimit } from '@/lib/rate-limit';
 
 export async function POST(req: Request) {
+  // Rate limit: 3 password resets per IP per hour
+  const rateLimitResponse = enforceRateLimit({
+    request: req as any,
+    scope: 'auth:password-reset',
+    max: 3,
+    windowMs: 3600000,
+  });
+  if (rateLimitResponse) return rateLimitResponse;
+
   const body = await req.json().catch(() => null);
   if (!body?.token || !body?.password) {
     return NextResponse.json({ message: 'Token and password are required.' }, { status: 400 });

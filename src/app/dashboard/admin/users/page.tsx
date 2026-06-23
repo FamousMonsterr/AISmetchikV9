@@ -44,7 +44,7 @@ export default function AdminUsersPage() {
     if (!currentUser || currentUser.systemRole !== 'Super Admin') return;
     setIsLoading(true);
     try {
-      const userList = await getAllUsers();
+      const { users: userList } = await getAllUsers();
       setUsers(userList);
     } catch (error) {
       toast({ title: "Ошибка", description: "Не удалось загрузить список пользователей.", variant: "destructive" });

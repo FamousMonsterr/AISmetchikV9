@@ -146,6 +146,7 @@ export const SidebarLink = ({
          <motion.div
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
+          aria-label={`${link.notificationCount} уведомлений`}
           className={cn(
             "absolute flex items-center justify-center h-4 w-4 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold",
             open ? "top-1.5 right-1.5" : "top-0.5 right-0.5"

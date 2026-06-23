@@ -5,12 +5,12 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Loader2, Link2, MessageCircle, RefreshCw, ShieldCheck, Unlink2 } from 'lucide-react';
+import { Loader2, Link2, MessageCircle, RefreshCw, ShieldCheck, Unlink2, Send, Copy, Check } from 'lucide-react';
 import type { AppUser } from '@/contexts/AppContext';
 import { useToast } from '@/hooks/use-toast';
 import { TelegramAuthWidget } from '@/components/auth/TelegramAuthWidget';
 import { deriveTelegramBotUsername } from '@/lib/telegram-web';
-import { linkTelegramAccount, syncTelegramChatId, unlinkTelegramAccount } from '@/actions/telegramActions';
+import { linkTelegramAccount, syncTelegramChatId, unlinkTelegramAccount, generateTelegramLinkCode } from '@/actions/telegramActions';
 import { unlinkVkAccount } from '@/actions/vkActions';
 
 type LinkedAuthAccountsProps = {
@@ -33,6 +33,8 @@ export function LinkedAuthAccounts({
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [linkCode, setLinkCode] = useState<string | null>(null);
+  const [codeCopied, setCodeCopied] = useState(false);
   const resolvedBotUsername = useMemo(
     () => deriveTelegramBotUsername(botUsername || botUrl || ''),
     [botUrl, botUsername],
@@ -52,12 +54,34 @@ export function LinkedAuthAccounts({
   }, [resolvedBotUrl, resolvedBotUsername, user.uid]);
   const telegramInitData = typeof window !== 'undefined' ? (window as any)?.Telegram?.WebApp?.initData || '' : '';
 
+  const handleGenerateLinkCode = () => {
+    startTransition(async () => {
+      const result = await generateTelegramLinkCode();
+      if (result.success && result.code) {
+        setLinkCode(result.code);
+        setCodeCopied(false);
+        toast({ title: 'Код сгенерирован', description: 'Введите этот код в боте @MontageHubBot' });
+      } else {
+        toast({ title: 'Ошибка', description: result.message, variant: 'destructive' });
+      }
+    });
+  };
+
+  const copyCode = () => {
+    if (linkCode) {
+      navigator.clipboard.writeText(linkCode);
+      setCodeCopied(true);
+      toast({ title: 'Скопировано', description: 'Код скопирован в буфер обмена' });
+      setTimeout(() => setCodeCopied(false), 2000);
+    }
+  };
+
   const openTelegramBot = () => {
-    if (!resolvedBotStartUrl) {
+    if (!resolvedBotUrl) {
       toast({ title: 'Telegram', description: 'Публичная ссылка на бота не настроена.', variant: 'destructive' });
       return;
     }
-    window.open(resolvedBotStartUrl, '_blank', 'noopener,noreferrer');
+    window.open(resolvedBotUrl, '_blank', 'noopener,noreferrer');
   };
 
   const handleTelegramWidgetAuth = async (payload: Record<string, unknown>) => {
@@ -225,11 +249,47 @@ export function LinkedAuthAccounts({
                   Отвязать Telegram
                 </Button>
               )}
-              {!user.telegramChatId && resolvedBotUrl && (
-                <Button type="button" variant="outline" onClick={openTelegramBot} disabled={isPending}>
-                  <MessageCircle className="mr-2 h-4 w-4" />
-                  Открыть бота
-                </Button>
+              {!user.telegramChatId && (
+                <div className="space-y-3 w-full">
+                  {!linkCode ? (
+                    <>
+                      <Button type="button" className="w-full" onClick={handleGenerateLinkCode} disabled={isPending}>
+                        {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+                        Привязать Telegram
+                      </Button>
+                      {resolvedBotUrl && (
+                        <Button type="button" variant="outline" className="w-full" onClick={openTelegramBot} disabled={isPending}>
+                          <MessageCircle className="mr-2 h-4 w-4" />
+                          Открыть бота @MontageHubBot
+                        </Button>
+                      )}
+                    </>
+                  ) : (
+                    <div className="rounded-lg border bg-muted/50 p-4 space-y-3">
+                      <p className="text-sm font-medium">Ваш код для привязки:</p>
+                      <div className="flex items-center gap-2">
+                        <code className="text-2xl font-bold tracking-[0.3em] bg-background px-4 py-2 rounded border">{linkCode}</code>
+                        <Button type="button" variant="ghost" size="icon" onClick={copyCode}>
+                          {codeCopied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+                        </Button>
+                      </div>
+                      <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
+                        <li>Откройте бота <a href={resolvedBotUrl || '#'} target="_blank" rel="noopener" className="underline font-medium">@MontageHubBot</a></li>
+                        <li>Отправьте ему этот код: <strong>{linkCode}</strong></li>
+                        <li>Бот подтвердит привязку</li>
+                      </ol>
+                      {resolvedBotUrl && (
+                        <Button type="button" className="w-full" onClick={openTelegramBot}>
+                          <MessageCircle className="mr-2 h-4 w-4" />
+                          Открыть бота и ввести код
+                        </Button>
+                      )}
+                      <Button type="button" variant="ghost" size="sm" className="w-full" onClick={() => setLinkCode(null)}>
+                        Сгенерировать новый код
+                      </Button>
+                    </div>
+                  )}
+                </div>
               )}
               {!user.telegramChatId && telegramInitData && (
                 <Button type="button" onClick={handleMiniAppLink} disabled={isPending}>
@@ -238,19 +298,16 @@ export function LinkedAuthAccounts({
                 </Button>
               )}
               {!user.telegramChatId && (
-                <Button type="button" variant="ghost" onClick={handleTelegramSync} disabled={isPending}>
+                <Button type="button" variant="ghost" size="sm" onClick={handleTelegramSync} disabled={isPending}>
                   <RefreshCw className="mr-2 h-4 w-4" />
-                  Проверить после /start
+                  Проверить привязку
                 </Button>
               )}
             </div>
 
             {!telegramInitData && !user.telegramChatId && resolvedBotUsername && (
               <div className="rounded-lg border border-dashed p-3">
-                <p className="mb-2 text-xs uppercase tracking-[0.24em] text-muted-foreground">Telegram</p>
-                <p className="mb-3 text-sm text-muted-foreground">
-                  Нажмите кнопку бота, выполните `/start`, затем вернитесь и нажмите «Проверить после /start».
-                </p>
+                <p className="mb-2 text-xs uppercase tracking-[0.24em] text-muted-foreground">Или через виджет Telegram</p>
                 <TelegramAuthWidget
                   botUsername={resolvedBotUsername}
                   onAuth={handleTelegramWidgetAuth}

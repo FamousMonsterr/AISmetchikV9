@@ -10,16 +10,37 @@ import { Loader2, Search, PlusCircle, BrainCircuit, ArrowRightLeft, File as File
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { getOpenRouterModels, type OpenRouterModel } from '@/services/openrouter';
+import { getXiaomiModels, type XiaomiModel } from '@/services/xiaomi';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Table, TableBody, TableCell, TableHeader, TableHead, TableRow } from '@/components/ui/table';
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+
+// Unified model type for the dialog (compatible with both providers)
+type CatalogModel = {
+  id: string;
+  name: string;
+  description: string;
+  pricing: {
+    prompt: string;
+    completion: string;
+    request: string;
+    image: string;
+  };
+  context_length: number;
+  architecture?: {
+    modality: string;
+  };
+  [key: string]: any;
+};
 
 interface AddModelFromProviderDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onAddModels: (models: { id: string, name: string }[]) => void;
   existingModels: any[];
+  /** Текущий провайдер: определяет откуда загружать каталог и какой provider ставить */
+  provider: 'openrouter' | 'xiaomi';
 }
 
 type SortField =
@@ -32,9 +53,9 @@ type SortField =
   | 'capabilities';
 type CapabilityFilter = 'all' | 'vision' | 'audio' | 'reasoning';
 
-export function AddModelFromProviderDialog({ isOpen, onClose, onAddModels, existingModels }: AddModelFromProviderDialogProps) {
+export function AddModelFromProviderDialog({ isOpen, onClose, onAddModels, existingModels, provider }: AddModelFromProviderDialogProps) {
   const [isLoading, startLoading] = useTransition();
-  const [allModels, setAllModels] = useState<OpenRouterModel[]>([]);
+  const [allModels, setAllModels] = useState<CatalogModel[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedModels, setSelectedModels] = useState<Set<string>>(new Set());
   const [expandedModelId, setExpandedModelId] = useState<string | null>(null);
@@ -44,15 +65,28 @@ export function AddModelFromProviderDialog({ isOpen, onClose, onAddModels, exist
   const [onlyRussianMention, setOnlyRussianMention] = useState(false);
   const { toast } = useToast();
 
+  const providerName = provider === 'xiaomi' ? 'Xiaomi MiMo' : 'OpenRouter';
+
   const loadModels = (closeOnError = true) => {
     startLoading(async () => {
       try {
-        const models = await getOpenRouterModels();
+        let models: CatalogModel[];
+        if (provider === 'xiaomi') {
+          models = await getXiaomiModels();
+          if (models.length === 0) {
+            toast({
+              title: "Информация",
+              description: "Xiaomi API не поддерживает каталог моделей. Добавляйте модели вручную.",
+            });
+          }
+        } else {
+          models = await getOpenRouterModels();
+        }
         setAllModels(models);
       } catch (error: any) {
         toast({
           title: "Ошибка",
-          description: `Не удалось загрузить модели от OpenRouter: ${error.message}`,
+          description: `Не удалось загрузить модели от ${providerName}: ${error.message}`,
           variant: "destructive",
         });
         if (closeOnError) {
@@ -68,13 +102,13 @@ export function AddModelFromProviderDialog({ isOpen, onClose, onAddModels, exist
     }
   }, [isOpen]);
 
-  function getModelCapabilities(model: OpenRouterModel) {
+  function getModelCapabilities(model: CatalogModel) {
       const capabilities = {
           vision: false,
           audio: false,
           reasoning: false
       };
-      
+
       const lowerId = model.id.toLowerCase();
       const arch = model.architecture?.modality;
 
@@ -84,14 +118,14 @@ export function AddModelFromProviderDialog({ isOpen, onClose, onAddModels, exist
       if (lowerId.includes('audio') || lowerId.includes('speech')) {
           capabilities.audio = true;
       }
-      if (lowerId.includes('claude') || lowerId.includes('gpt-4') || lowerId.includes('gemini')) {
+      if (lowerId.includes('claude') || lowerId.includes('gpt-4') || lowerId.includes('gemini') || lowerId.includes('mimo')) {
           capabilities.reasoning = true;
       }
-      
+
       return capabilities;
   }
 
-  function hasEnglishRussianMention(model: OpenRouterModel) {
+  function hasEnglishRussianMention(model: CatalogModel) {
     const corpus = [
       model.description || '',
       model.name || '',
@@ -102,22 +136,24 @@ export function AddModelFromProviderDialog({ isOpen, onClose, onAddModels, exist
       .join(' ')
       .toLowerCase();
 
-    // Ищем упоминания русского языка в англоязычном виде.
     return /\brussian(?:\s+language)?\b|\bcyrillic\b|\bsupports?\s+russian\b|\brussian\s+support\b/.test(corpus);
   }
-  
+
   const parsePriceValue = (value?: string | null) => {
     const parsed = Number(value);
     return Number.isFinite(parsed) ? parsed : null;
   };
 
-  const getCapabilityScore = (model: OpenRouterModel) => {
+  const getCapabilityScore = (model: CatalogModel) => {
     const capabilities = getModelCapabilities(model);
     return Number(capabilities.vision) + Number(capabilities.audio) + Number(capabilities.reasoning);
   };
 
   const filteredAndSortedModels = useMemo(() => {
-      const existingModelIds = new Set(existingModels.map(m => m.value));
+      // Фильтруем только по моделям ТЕКУЩЕГО провайдера (не глобально)
+      const existingModelIds = new Set(
+        existingModels.filter(m => m.provider === provider).map(m => m.value)
+      );
       const search = searchTerm.trim().toLowerCase();
       const filtered = allModels
         .filter(model => !existingModelIds.has(model.id))
@@ -185,7 +221,7 @@ export function AddModelFromProviderDialog({ isOpen, onClose, onAddModels, exist
         }
         return String(left ?? '').localeCompare(String(right ?? ''), 'ru', { sensitivity: 'base' }) * directionMultiplier;
       });
-  }, [allModels, searchTerm, existingModels, sortField, sortDirection, capabilityFilter, onlyRussianMention]);
+  }, [allModels, searchTerm, existingModels, sortField, sortDirection, capabilityFilter, onlyRussianMention, provider]);
 
   const handleSelectionChange = (modelId: string) => {
     setSelectedModels(prev => {
@@ -203,11 +239,11 @@ export function AddModelFromProviderDialog({ isOpen, onClose, onAddModels, exist
       const modelsToAdd = allModels.filter(m => selectedModels.has(m.id)).map(m => ({ id: m.id, name: m.name }));
       if (modelsToAdd.length > 0) {
           onAddModels(modelsToAdd);
-          toast({ title: "Модели добавлены", description: `Добавлено ${modelsToAdd.length} новых моделей.`});
+          toast({ title: "Модели добавлены", description: `Добавлено ${modelsToAdd.length} новых моделей в ${providerName}.`});
       }
       onClose();
   };
-  
+
   useEffect(() => {
       if (!isOpen) {
           setAllModels([]);
@@ -218,7 +254,7 @@ export function AddModelFromProviderDialog({ isOpen, onClose, onAddModels, exist
           setOnlyRussianMention(false);
       }
   }, [isOpen]);
-  
+
   const formatPrice = (price: string) => {
     const value = Number(price);
     if (!Number.isFinite(value)) return '—';
@@ -229,9 +265,9 @@ export function AddModelFromProviderDialog({ isOpen, onClose, onAddModels, exist
     setExpandedModelId(prev => (prev === modelId ? null : modelId));
   };
 
-  const addSingleModel = (model: OpenRouterModel) => {
+  const addSingleModel = (model: CatalogModel) => {
     onAddModels([{ id: model.id, name: model.name }]);
-    toast({ title: "Модель добавлена", description: `Добавлена модель ${model.name}.`});
+    toast({ title: "Модель добавлена", description: `Добавлена модель ${model.name} в ${providerName}.`});
   };
 
   const handleSelectAllFiltered = () => {
@@ -251,7 +287,7 @@ export function AddModelFromProviderDialog({ isOpen, onClose, onAddModels, exist
     setSortDirection('asc');
   };
 
-  const renderModelDetails = (model: OpenRouterModel) => {
+  const renderModelDetails = (model: CatalogModel) => {
     return (
       <div className="space-y-3">
         {model.description && (
@@ -261,7 +297,7 @@ export function AddModelFromProviderDialog({ isOpen, onClose, onAddModels, exist
           </div>
         )}
         <div>
-          <p className="text-sm font-medium">Параметры модели (OpenRouter)</p>
+          <p className="text-sm font-medium">Параметры модели ({providerName})</p>
           <pre className="mt-2 max-h-64 w-full max-w-full overflow-y-auto overflow-x-hidden whitespace-pre-wrap break-words break-all rounded-md bg-muted p-3 text-xs">
             {JSON.stringify(model, null, 2)}
           </pre>
@@ -274,9 +310,9 @@ export function AddModelFromProviderDialog({ isOpen, onClose, onAddModels, exist
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="w-[min(96vw,1400px)] max-w-[96vw] h-[85vh] overflow-hidden flex flex-col">
         <DialogHeader>
-          <DialogTitle>Добавить модели из OpenRouter</DialogTitle>
+          <DialogTitle>Добавить модели из {providerName}</DialogTitle>
           <DialogDescription>
-            Выберите модели из списка для добавления. Уже добавленные модели отфильтрованы.
+            Выберите модели из списка для добавления. Уже добавленные модели в этом провайдере отфильтрованы.
           </DialogDescription>
         </DialogHeader>
         <div className="flex flex-wrap items-center gap-3">
@@ -351,6 +387,11 @@ export function AddModelFromProviderDialog({ isOpen, onClose, onAddModels, exist
             <div className="flex justify-center items-center h-full">
                 <Loader2 className="h-8 w-8 animate-spin text-primary"/>
             </div>
+        ) : allModels.length === 0 ? (
+            <div className="flex flex-col justify-center items-center h-full gap-2 text-muted-foreground">
+                <p className="text-sm">Каталог моделей {providerName} недоступен.</p>
+                <p className="text-xs">Используйте кнопку «Добавить модель вручную» для ручного добавления.</p>
+            </div>
         ) : (
              <Table>
                  <TableHeader className="sticky top-0 bg-secondary z-10">
@@ -398,7 +439,7 @@ export function AddModelFromProviderDialog({ isOpen, onClose, onAddModels, exist
                                 </TableCell>
                                 <TableCell className="text-center text-sm font-mono">{(model.context_length / 1000).toFixed(0)}k</TableCell>
                                 <TableCell className="text-xs font-mono">
-                                    <div className="flex items-center justify-end gap-1"><ArrowRightLeft className="h-3 w-3 text-green-500" /> <span>{formatPrice(pricing.prompt)}</span></div>
+                                    <div className="flex items-center justify-end gap-1"><ArrowRightLeft className="h-3 w-3 text-success" /> <span>{formatPrice(pricing.prompt)}</span></div>
                                     <div className="flex items-center justify-end gap-1"><ArrowRightLeft className="h-3 w-3 text-blue-500" /> <span>{formatPrice(pricing.completion)}</span></div>
                                 </TableCell>
                                  <TableCell className="text-center">

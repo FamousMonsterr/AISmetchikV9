@@ -1,8 +1,8 @@
 FROM node:24-alpine AS deps
 WORKDIR /app
-RUN apk add --no-cache libc6-compat
+RUN apk add --no-cache libc6-compat python3 make g++ cairo-dev jpeg-dev pango-dev giflib-dev pixman-dev
 COPY package.json package-lock.json ./
-RUN npm ci
+RUN npm ci --legacy-peer-deps
 
 FROM node:24-alpine AS builder
 WORKDIR /app

@@ -29,7 +29,7 @@ import { motion } from '@/lib/motion';
 
 const agreementText = `
 ### 1. Предмет Соглашения
-1.1. Лицензиар предоставляет Партнеру право на привлечение новых пользователей (Клиентов) для использования Программного Обеспечения "AI Сметчик" (далее - ПО).
+1.1. Лицензиар предоставляет Партнеру право на привлечение новых пользователей (Клиентов) для использования Программного Обеспечения "Montage HUB" (далее - ПО).
 1.2. Партнер получает вознаграждение за каждого привлеченного Клиента, совершившего первую оплату, а также процент от последующих платежей в соответствии с его партнерским статусом.
 
 ### 2. Статусы и Вознаграждение
@@ -197,7 +197,7 @@ const PartnerLevels = ({ currentStatus }: { currentStatus?: string }) => {
                   </CardContent>
                   <CardFooter className="flex flex-wrap gap-2">
                      {isCurrent && (
-                        <Badge variant="secondary"><CheckCircle className="mr-2 h-4 w-4 text-green-500"/>Ваш текущий статус</Badge>
+                        <Badge variant="secondary"><CheckCircle className="mr-2 h-4 w-4 text-success"/>Ваш текущий статус</Badge>
                       )}
                      {isNextLevel && (
                         <Button variant="outline" onClick={() => handleOpenModal(level.name as 'Silver' | 'Gold' | 'Platinum')}>
@@ -504,7 +504,7 @@ export default function BonusPage() {
         try {
             const result = await agreeToPartnerTerms({ userId: user.uid });
             if (result.success) {
-                toast({ title: "Поздравляем!", description: "Вы официально стали партнером AI Сметчик!" });
+                toast({ title: "Поздравляем!", description: "Вы официально стали партнером Montage HUB!" });
                 // The user object will be updated by the onSnapshot listener in AppContext
             } else {
                 throw new Error(result.message);

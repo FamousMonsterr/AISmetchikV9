@@ -1,0 +1,54 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - main [ref=e3]:
+    - generic [ref=e8]:
+      - generic [ref=e9]:
+        - link "AI Сметчик" [ref=e10] [cursor=pointer]:
+          - /url: /
+          - generic [ref=e11]: AI
+          - generic [ref=e12]: Сметчик
+        - generic [ref=e13]:
+          - paragraph [ref=e14]: Авторизация
+          - heading "Вход в AI Сметчик" [level=1] [ref=e15]
+          - paragraph [ref=e16]: Email или телефон, пароль и быстрые способы входа.
+      - generic [ref=e18]:
+        - generic [ref=e20]:
+          - heading "Вход" [level=3] [ref=e21]
+          - paragraph [ref=e22]: Введите данные для входа.
+        - generic [ref=e23]:
+          - generic [ref=e24]:
+            - generic [ref=e25]:
+              - text: Email или телефон
+              - textbox "Email или телефон" [disabled] [ref=e26]:
+                - /placeholder: name@company.ru или +7 999 123-45-67
+                - text: admin@example.com
+            - generic [ref=e27]:
+              - text: Пароль
+              - generic [ref=e28]:
+                - textbox "Пароль" [disabled] [ref=e29]: changeme123
+                - button [ref=e30]:
+                  - img [ref=e31]
+            - button "Войти" [disabled]:
+              - img
+              - text: Войти
+          - iframe [ref=e37]:
+            - generic [active] [ref=f38e1]: Bot domain invalid
+          - generic [ref=e39]:
+            - generic [ref=e41]:
+              - img [ref=e42]
+              - generic [ref=e45]: Ключ доступа
+            - button "Войти по ключу доступа" [ref=e47]:
+              - img [ref=e48]
+              - text: Войти по ключу доступа
+          - generic [ref=e51]:
+            - button "Сбросить пароль" [ref=e52]
+            - link "Создать аккаунт" [ref=e53] [cursor=pointer]:
+              - /url: /auth/register
+  - region "Notifications (F8)":
+    - list
+  - button "Open Next.js Dev Tools" [ref=e59] [cursor=pointer]:
+    - img [ref=e60]
+  - alert [ref=e63]
+```

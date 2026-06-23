@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { handleTelegramWebhookUpdate, TELEGRAM_AUDIENCES, verifyTelegramWebhookSecret, type TelegramAudience } from '@/server-functions/webhooks/telegram';
+import { enforceRateLimit } from '@/lib/rate-limit';
 
 function isAudience(value: string): value is TelegramAudience {
   return (TELEGRAM_AUDIENCES as readonly string[]).includes(value);
@@ -9,6 +10,15 @@ export async function POST(
   request: NextRequest,
   context: { params: Promise<{ audience: string }> }
 ) {
+  // Rate limit: 100 requests per IP per minute
+  const rateLimitResponse = enforceRateLimit({
+    request,
+    scope: 'telegram:webhook:audience',
+    max: 100,
+    windowMs: 60_000,
+  });
+  if (rateLimitResponse) return rateLimitResponse;
+
   try {
     const { audience } = await context.params;
     if (!isAudience(audience)) {

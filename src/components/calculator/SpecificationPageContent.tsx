@@ -17,7 +17,7 @@ import { RefineProjectDialog } from '@/components/RefineProjectDialog';
 import { FindMissingDialog } from '@/components/FindMissingDialog';
 import { PrivatePriceDialog } from '@/components/PrivatePriceDialog';
 import { UpgradeAccountDialog } from '@/components/UpgradeAccountDialog';
-import { isEqual } from 'lodash';
+import isEqual from 'lodash/isEqual';
 import { collection, getDocs, query, where, doc, onSnapshot, orderBy, getDoc } from '@/lib/db-client';
 import { db } from '@/lib/db';
 import { ProjectUpdateDialog } from '@/components/ProjectUpdateDialog';
@@ -154,6 +154,16 @@ export default function SpecificationPageContent({ onBackToProjects, variant = '
   );
 
   const canUsePrivatePriceBase = user ? user.canUsePrivatePriceBase : false;
+
+  // Cleanup MediaRecorder and stream on unmount
+  useEffect(() => {
+    return () => {
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+        mediaRecorderRef.current.stop();
+      }
+      aiEditStreamRef.current?.getTracks().forEach(track => track.stop());
+    };
+  }, []);
 
   useEffect(() => {
     if (!isGroupMode && isGroupWorkEnabled) {
@@ -1887,7 +1897,7 @@ export default function SpecificationPageContent({ onBackToProjects, variant = '
                     </div>
                   </div>
                   <Tabs value={resolvedActiveProjectId} onValueChange={handleProjectTabChange}>
-                    <TabsList className="w-full flex-wrap gap-1">
+                    <TabsList className="w-full flex-wrap gap-2">
                       {currentGroup?.map((project) => (
                         <TabsTrigger
                           key={project.id}

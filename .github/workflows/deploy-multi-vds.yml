@@ -1,0 +1,174 @@
+name: Deploy Multi-VDS (Beget)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-multi-vds
+  cancel-in-progress: true
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  # ──────────────────────────────────────────────────────────
+  # Stage 1: Build & Push Docker images
+  # ──────────────────────────────────────────────────────────
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    outputs:
+      web-tag: ${{ steps.meta-web.outputs.tags }}
+      api-tag: ${{ steps.meta-api.outputs.tags }}
+      worker-tag: ${{ steps.meta-worker.outputs.tags }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build & Push Web (runner)
+        uses: docker/build-push-action@v5
+        id: build-web
+        with:
+          context: .
+          target: runner
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-web:latest
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-web:${{ github.sha }}
+
+      - name: Build & Push API (runner)
+        uses: docker/build-push-action@v5
+        id: build-api
+        with:
+          context: .
+          target: runner
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-api:latest
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-api:${{ github.sha }}
+          build-args: |
+            APP_SURFACE=api
+
+      - name: Build & Push Worker
+        uses: docker/build-push-action@v5
+        id: build-worker
+        with:
+          context: .
+          target: worker
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-worker:latest
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-worker:${{ github.sha }}
+
+      - name: Image tags
+        id: meta-web
+        run: echo "tags=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-web:latest" >> "$GITHUB_OUTPUT"
+
+  # ──────────────────────────────────────────────────────────
+  # Stage 2: Deploy to all servers
+  # ──────────────────────────────────────────────────────────
+  deploy-srv-web:
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment: production
+
+    steps:
+      - name: Deploy to srv-web
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SRV_WEB_HOST }}
+          username: root
+          key: ${{ secrets.SRV_WEB_SSH_KEY }}
+          command_timeout: 10m
+          script: |
+            set -e
+            cd /opt/ais-smetchik
+
+            # Login to GHCR
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+            # Pull latest images
+            docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-web:latest
+
+            # Restart containers
+            docker compose down || true
+            docker compose up -d
+
+            # Wait for health
+            sleep 10
+            docker compose ps
+
+  deploy-srv-api:
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment: production
+
+    steps:
+      - name: Deploy to srv-api
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SRV_WEB_HOST }}
+          username: root
+          key: ${{ secrets.SRV_WEB_SSH_KEY }}
+          command_timeout: 10m
+          script: |
+            set -e
+            # SSH to srv-api via jump host
+            ssh -o StrictHostKeyChecking=no root@10.16.0.2 "
+              cd /opt/ais-smetchik
+
+              # Login to GHCR
+              echo '${{ secrets.GITHUB_TOKEN }}' | docker login ghcr.io -u '${{ github.actor }}' --password-stdin
+
+              # Pull latest images
+              docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-api:latest
+              docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-worker:latest
+
+              # Restart containers
+              docker compose down || true
+              docker compose up -d
+
+              # Wait for health
+              sleep 10
+              docker compose ps
+            "
+
+  # ──────────────────────────────────────────────────────────
+  # Stage 3: Smoke test
+  # ──────────────────────────────────────────────────────────
+  smoke-test:
+    needs: [deploy-srv-web, deploy-srv-api]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+
+    steps:
+      - name: Health check
+        run: |
+          for i in {1..12}; do
+            status=$(curl -s -o /dev/null -w '%{http_code}' https://${{ secrets.VDS_DOMAIN }}/api/healthz 2>/dev/null || echo "000")
+            if [ "$status" = "200" ]; then
+              echo "✅ Health check passed"
+              exit 0
+            fi
+            echo "⏳ Attempt $i/12: status=$status"
+            sleep 10
+          done
+          echo "❌ Health check failed after 2 minutes"
+          exit 1

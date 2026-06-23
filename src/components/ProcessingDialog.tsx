@@ -97,6 +97,11 @@ export function ProcessingDialog({ isOpen, onClose, file, model, temperature, in
     const [stage, setStage] = useState<StageKey>('idle');
     const [isCreditsDialogOpen, setIsCreditsDialogOpen] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
+    const [pipelineLog, setPipelineLog] = useState<Array<{
+        stage: string; engine?: string; model?: string; provider?: string; endpoint?: string;
+        fileMode?: string; status: string; requestSummary?: string; responseSummary?: string;
+        error?: string; durationMs?: number; timestamp: string;
+    }>>([]);
     const [serverSettings, setServerSettings] = useState<AppSettings | null>(null);
     const [serverSettingsLoaded, setServerSettingsLoaded] = useState(false);
     const [processingProjectId, setProcessingProjectId] = useState<string | null>(null);
@@ -136,6 +141,7 @@ export function ProcessingDialog({ isOpen, onClose, file, model, temperature, in
     const resetState = () => {
         setStage('idle');
         setErrorMessage(null);
+        setPipelineLog([]);
         processingStarted.current = false;
         cancelRequested.current = false;
         setProcessingProjectId(null);
@@ -268,8 +274,26 @@ export function ProcessingDialog({ isOpen, onClose, file, model, temperature, in
                 setStage('processing_response');
                 abortIfCancelled();
 
+                // Захватываем лог пайплайна из ответа (и при успехе, и при ошибке)
+                if (resultJson._pipelineLog && Array.isArray(resultJson._pipelineLog)) {
+                    setPipelineLog(resultJson._pipelineLog);
+                }
+
                 if (!response.ok) {
                     throw new Error(resultJson.error || `Analysis request failed: ${response.status}.`);
+                }
+
+                // Сохраняем OCR markdown в проект для будущего использования
+                if (resultJson._ocrMarkdown && draftId) {
+                    try {
+                        await updateDoc(doc(db, 'requests', draftId), {
+                            ocrMarkdown: resultJson._ocrMarkdown,
+                            ocrModel: resultJson._ocrModel || null,
+                            ocrUpdatedAt: serverTimestamp(),
+                        } as any);
+                    } catch (e) {
+                        console.warn('Не удалось сохранить OCR markdown в проект:', e);
+                    }
                 }
                 
                 return resultJson as ExtractProjectSpecificationsOutput;
@@ -333,56 +357,82 @@ export function ProcessingDialog({ isOpen, onClose, file, model, temperature, in
                 abortIfCancelled();
                 
                 let fileUri: string | undefined;
+                let s3Available = true;
 
-                setStage('checking_s3_cache');
-                await setProjectStage('s3_cache');
-                const s3CacheRef = doc(db, 's3_file_cache', fileHash);
-                const s3CacheSnap = await getDoc(s3CacheRef);
+                try {
+                    setStage('checking_s3_cache');
+                    await setProjectStage('s3_cache');
+                    const s3CacheRef = doc(db, 's3_file_cache', fileHash);
+                    const s3CacheSnap = await getDoc(s3CacheRef);
 
-                if (s3CacheSnap.exists()) {
-                    const data = s3CacheSnap.data();
-                    objectKey = data.objectKey;
-                    if (draftId) {
-                        await updateDoc(doc(db, 'requests', draftId), { fileSha1: fileHash, s3ObjectKey: objectKey || null } as any);
-                    }
-                    const expirationDate = (() => {
-                      const value = data.urlExpirationTimestamp;
-                      if (!value) return null;
-                      if (typeof value?.toDate === 'function') return value.toDate();
-                      if (value instanceof Date) return value;
-                      if (typeof value === 'number' || typeof value === 'string') return new Date(value);
-                      return null;
-                    })();
-                    const isExpired = !expirationDate || expirationDate < new Date();
-                    if (isExpired) {
-                       const refreshResponse = await fetch("/api/s3-refresh-url", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ objectKey: data.objectKey, bucketType: 'analysis' }), });
-                       if (!refreshResponse.ok) throw new Error("Не удалось обновить ссылку на S3 файл.");
-                       const { newAccessUrl, newExpirationTimestamp } = await refreshResponse.json();
-                       await updateDoc(s3CacheRef, { accessUrl: newAccessUrl, urlExpirationTimestamp: new Timestamp(Math.floor(newExpirationTimestamp / 1000), 0) });
-                       fileUri = newAccessUrl;
+                    if (s3CacheSnap.exists()) {
+                        const data = s3CacheSnap.data();
+                        objectKey = data.objectKey;
+                        if (draftId) {
+                            await updateDoc(doc(db, 'requests', draftId), { fileSha1: fileHash, s3ObjectKey: objectKey || null } as any);
+                        }
+                        const expirationDate = (() => {
+                          const value = data.urlExpirationTimestamp;
+                          if (!value) return null;
+                          if (typeof value?.toDate === 'function') return value.toDate();
+                          if (value instanceof Date) return value;
+                          if (typeof value === 'number' || typeof value === 'string') return new Date(value);
+                          return null;
+                        })();
+                        const isExpired = !expirationDate || expirationDate < new Date();
+                        if (isExpired) {
+                           const refreshResponse = await fetch("/api/s3-refresh-url", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ objectKey: data.objectKey, bucketType: 'analysis' }), });
+                           if (!refreshResponse.ok) {
+                             const errBody = await refreshResponse.json().catch(() => ({}));
+                             throw new Error(errBody.error || "Не удалось обновить ссылку на S3 файл.");
+                           }
+                           const { newAccessUrl, newExpirationTimestamp } = await refreshResponse.json();
+                           await updateDoc(s3CacheRef, { accessUrl: newAccessUrl, urlExpirationTimestamp: new Timestamp(Math.floor(newExpirationTimestamp / 1000), 0) });
+                           fileUri = newAccessUrl;
+                        } else {
+                           fileUri = data.accessUrl;
+                        }
+                        if (draftId && fileUri) {
+                            await updateDoc(doc(db, 'requests', draftId), { fileUri, updatedAt: serverTimestamp() } as any);
+                        }
                     } else {
-                       fileUri = data.accessUrl;
-                    }
-                    if (draftId && fileUri) {
-                        await updateDoc(doc(db, 'requests', draftId), { fileUri, updatedAt: serverTimestamp() } as any);
-                    }
-                } else {
-                    setStage('getting_s3_url');
-                    await setProjectStage('s3_upload');
-                    const presignedUrlResponse = await fetch("/api/s3-upload", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ fileName: file.name, fileType: file.type, bucketType: 'analysis' }) });
-                    if (!presignedUrlResponse.ok) throw new Error((await presignedUrlResponse.json()).error || "Не удалось получить ссылку для загрузки в S3.");
-                    const { uploadUrl, accessUrl, objectKey: uploadObjectKey, urlExpirationTimestamp } = await presignedUrlResponse.json();
+                        setStage('getting_s3_url');
+                        await setProjectStage('s3_upload');
+                        const presignedUrlResponse = await fetch("/api/s3-upload", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ fileName: file.name, fileType: file.type, bucketType: 'analysis' }) });
+                        if (!presignedUrlResponse.ok) throw new Error((await presignedUrlResponse.json()).error || "Не удалось получить ссылку для загрузки в S3.");
+                        const { uploadUrl, accessUrl, objectKey: uploadObjectKey, urlExpirationTimestamp } = await presignedUrlResponse.json();
 
-                    setStage('uploading_to_s3');
-                    await axios.put(uploadUrl, file, { headers: { 'Content-Type': file.type } });
-                    
-                    await setDoc(s3CacheRef, { fileSha1: fileHash, objectKey: uploadObjectKey, accessUrl, urlExpirationTimestamp: new Timestamp(Math.floor(urlExpirationTimestamp/1000), 0), createdAt: serverTimestamp(), fileName: file.name });
-                    fileUri = accessUrl;
-                    objectKey = uploadObjectKey;
-                    await ensureDraftExists(fileHash, fileUri, objectKey);
-                    if (draftId) {
-                        await updateDoc(doc(db, 'requests', draftId), { fileUri, s3ObjectKey: objectKey || null, fileSha1: fileHash, updatedAt: serverTimestamp() } as any);
+                        setStage('uploading_to_s3');
+                        await axios.put(uploadUrl, file, { headers: { 'Content-Type': file.type } });
+
+                        await setDoc(s3CacheRef, { fileSha1: fileHash, objectKey: uploadObjectKey, accessUrl, urlExpirationTimestamp: new Timestamp(Math.floor(urlExpirationTimestamp/1000), 0), createdAt: serverTimestamp(), fileName: file.name });
+                        fileUri = accessUrl;
+                        objectKey = uploadObjectKey;
+                        await ensureDraftExists(fileHash, fileUri, objectKey);
+                        if (draftId) {
+                            await updateDoc(doc(db, 'requests', draftId), { fileUri, s3ObjectKey: objectKey || null, fileSha1: fileHash, updatedAt: serverTimestamp() } as any);
+                        }
                     }
+                } catch (s3Error: any) {
+                    console.warn('S3 недоступен, используется base64 fallback:', s3Error.message);
+                    s3Available = false;
+                }
+
+                // Fallback: если S3 недоступен, конвертируем файл в base64 data URI
+                if (!fileUri) {
+                    setStage('preparing_request');
+                    await setProjectStage('preparing', 'S3 недоступен, подготовка файла...');
+                    const base64 = await new Promise<string>((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onload = () => {
+                            const result = reader.result as string;
+                            resolve(result);
+                        };
+                        reader.onerror = () => reject(new Error('Не удалось прочитать файл'));
+                        reader.readAsDataURL(file);
+                    });
+                    fileUri = base64;
+                    await ensureDraftExists(fileHash);
                 }
                 
                 abortIfCancelled();
@@ -392,7 +442,7 @@ export function ProcessingDialog({ isOpen, onClose, file, model, temperature, in
                 const analysisCacheRef = doc(db, 'file_analysis_cache', fileHash);
                 const analysisCacheSnap = await getDoc(analysisCacheRef);
                 const cachedPipelineVersion = analysisCacheSnap.exists()
-                    ? ((analysisCacheSnap.data()?.pipelineVersion as 'v1' | 'v2' | undefined) || 'v1')
+                    ? ((analysisCacheSnap.data()?.pipelineVersion as 'v1' | 'v2' | 'v3' | 'xiaomi-vision' | undefined) || 'v1')
                     : null;
                 const isCompatiblePipelineCache = cachedPipelineVersion
                     ? cachedPipelineVersion === selectedPipelineVersion
@@ -449,6 +499,8 @@ export function ProcessingDialog({ isOpen, onClose, file, model, temperature, in
                 if (selectedPipelineVersion === 'v2') {
                     throw new Error('Пайплайн V2 доступен только в серверном режиме. Включите серверные функции в админке.');
                 }
+                // V3: двухэтапный пайплайн (OCR → Markdown → Анализ) — работает в клиентском режиме
+                // main-analysis API сам определяет нужен ли OCR pipeline (PDF + анализатор из analysisProvider)
 
 
                 setStage('preparing_request');
@@ -564,18 +616,109 @@ export function ProcessingDialog({ isOpen, onClose, file, model, temperature, in
                                     </AlertDescription>
                                 </Alert>
                             )}
-                            {stages.map((s, index) => {
-                                const isDone = currentStageIndex > index;
-                                const isCurrent = s.key === stage;
-                                const StageIcon = s.icon;
-                                return (
-                                    <div key={s.key} className={cn("flex items-center gap-3 transition-all", isDone ? "text-green-600" : "text-muted-foreground", isCurrent && "text-primary font-semibold")}>
-                                        {isDone ? <CheckCircle className="h-5 w-5" /> : (isCurrent ? <Loader2 className="h-5 w-5 animate-spin" /> : <StageIcon className="h-5 w-5" />)}
-                                        <span>{s.text}</span>
+
+                            {/* === БАРАБАН ЭТАПОВ === */}
+                            <div className="relative py-2">
+                                {/* Вертикальная линия */}
+                                <div className="absolute left-[18px] top-0 bottom-0 w-0.5 bg-border" />
+
+                                {stages.map((s, index) => {
+                                    const isDone = currentStageIndex > index;
+                                    const isCurrent = s.key === stage;
+                                    const isError = stage === 'error' && isCurrent;
+                                    const isPrev = index === currentStageIndex - 1;
+                                    const isNext = index === currentStageIndex + 1;
+                                    const StageIcon = s.icon;
+
+                                    // Скрываем далеко-далёкие этапы для эффекта барабана
+                                    const distanceFromCurrent = Math.abs(index - currentStageIndex);
+                                    if (distanceFromCurrent > 2 && !isDone && stage !== 'error') return null;
+
+                                    return (
+                                        <div
+                                            key={s.key}
+                                            className={cn(
+                                                "relative flex items-center gap-3 py-2.5 transition-all duration-300",
+                                                // Прозрачность: текущий 100%, соседи 60%, остальные 30%
+                                                isCurrent ? "opacity-100" : isPrev || isNext ? "opacity-60" : isDone ? "opacity-80" : "opacity-30",
+                                                // Масштаб: текущий чуть крупнее
+                                                isCurrent && "scale-[1.03] origin-left",
+                                            )}
+                                        >
+                                            {/* Иконка */}
+                                            <div className={cn(
+                                                "relative z-10 flex items-center justify-center w-9 h-9 rounded-full border-2 transition-colors",
+                                                isError ? "bg-destructive/10 border-destructive text-destructive" :
+                                                isDone ? "bg-green-100 dark:bg-green-900/30 border-green-500 text-green-600" :
+                                                isCurrent ? "bg-primary/10 border-primary text-primary" :
+                                                "bg-muted border-muted-foreground/30 text-muted-foreground"
+                                            )}>
+                                                {isError ? <AlertTriangle className="h-4 w-4" /> :
+                                                 isDone ? <CheckCircle className="h-4 w-4" /> :
+                                                 isCurrent ? <Loader2 className="h-4 w-4 animate-spin" /> :
+                                                 <StageIcon className="h-3.5 w-3.5" />}
+                                            </div>
+
+                                            {/* Текст */}
+                                            <span className={cn(
+                                                "text-sm transition-colors",
+                                                isError ? "text-destructive font-semibold" :
+                                                isCurrent ? "text-primary font-semibold" :
+                                                isDone ? "text-green-600 dark:text-green-400" :
+                                                "text-muted-foreground"
+                                            )}>
+                                                {s.text}
+                                            </span>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+
+                            {errorMessage && (<Alert variant="destructive"><AlertTriangle className="h-4 w-4" /><AlertTitle>Произошла ошибка</AlertTitle><AlertDescription>{errorMessage}</AlertDescription></Alert>)}
+
+                            {/* === КОМПАКТНЫЙ ЛОГ ПАЙПЛАЙНА (только при ошибке) === */}
+                            {stage === 'error' && pipelineLog.length > 0 && (
+                                <details className="mt-2">
+                                    <summary className="text-xs font-medium text-muted-foreground cursor-pointer hover:text-foreground transition-colors">
+                                        Детали пайплайна ({pipelineLog.length} шагов)
+                                    </summary>
+                                    <div className="mt-2 space-y-1 max-h-[200px] overflow-y-auto">
+                                        {pipelineLog.map((entry, i) => {
+                                            // Пропускаем промежуточные "попытка" — показываем только итоги
+                                            const isAttempt = entry.stage.includes('попытка [');
+                                            const isInit = entry.stage === 'Инициализация пайплайна';
+                                            if (isAttempt) return null;
+
+                                            return (
+                                                <div
+                                                    key={i}
+                                                    className={cn(
+                                                        "text-xs flex items-start gap-2 px-2 py-1.5 rounded",
+                                                        entry.status === 'error' ? "bg-red-50/80 dark:bg-red-950/20" : ""
+                                                    )}
+                                                >
+                                                    <span className="shrink-0 mt-0.5">
+                                                        {entry.status === 'ok' ? '✓' : entry.status === 'error' ? '✗' : '–'}
+                                                    </span>
+                                                    <div className="min-w-0 flex-1">
+                                                        <div className="flex items-center gap-1.5">
+                                                            <span className="font-medium">{entry.stage.replace(/^OCR: /, '')}</span>
+                                                            {entry.engine && <span className="text-muted-foreground">({entry.engine})</span>}
+                                                            {entry.durationMs && <span className="text-muted-foreground ml-auto shrink-0">{(entry.durationMs / 1000).toFixed(1)}s</span>}
+                                                        </div>
+                                                        {entry.error && (
+                                                            <p className="text-red-500 mt-0.5 break-all text-[11px]">{entry.error}</p>
+                                                        )}
+                                                        {!entry.error && entry.responseSummary && !isInit && (
+                                                            <p className="text-muted-foreground mt-0.5 text-[11px]">{entry.responseSummary}</p>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
                                     </div>
-                                )
-                            })}
-                             {errorMessage && (<Alert variant="destructive"><AlertTriangle className="h-4 w-4" /><AlertTitle>Произошла ошибка</AlertTitle><AlertDescription>{errorMessage}</AlertDescription></Alert>)}
+                                </details>
+                            )}
                         </div>
                     </div>
                      <DialogFooter className="flex flex-col sm:flex-row sm:items-center sm:justify-between">

@@ -82,10 +82,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Недостаточно кредитов для запуска серверного анализа.' }, { status: 402 });
     }
 
-    const pipelineVersion = appSettings.analysisPipelineVersion || 'v1';
-    const executionProvider = pipelineVersion === 'v1'
-      ? 'openrouter'
-      : (appSettings.aiExecutionProvider || 'openrouter');
+    const pipelineVersion = (appSettings.analysisPipelineVersion || 'v1') as string;
+    const executionProvider = pipelineVersion === 'xiaomi-vision'
+      ? 'xiaomi' as const
+      : pipelineVersion === 'v1'
+        ? 'openrouter' as const
+        : ((appSettings.aiExecutionProvider || 'openrouter') as 'openrouter' | 'local_hf' | 'xiaomi');
 
     const idempotencyKey = createHash('sha256')
       .update(`${auth.user.id}:${payload.projectId}:${payload.fileSha1}:${pipelineVersion}`)
@@ -94,7 +96,7 @@ export async function POST(request: NextRequest) {
     const job = await createServerAnalysisJob({
       ...payload,
       userId: auth.user.id,
-      pipelineVersion,
+      pipelineVersion: pipelineVersion as any,
       executionProvider,
       userPlan: plan,
       idempotencyKey,

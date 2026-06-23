@@ -64,7 +64,7 @@ export function CookieConsentDialog() {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-background/98 shadow-lg">
+    <div role="dialog" aria-modal="true" aria-label="Настройки cookie" className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-background/98 shadow-lg">
       <div className="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-4 md:px-6">
         <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
           <div className="max-w-3xl">

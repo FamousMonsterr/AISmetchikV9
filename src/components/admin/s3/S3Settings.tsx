@@ -25,6 +25,7 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { Database, Eye, EyeOff, Loader2, RefreshCw, Server, Shield, Trash2 } from "lucide-react";
 import { nanoid } from "nanoid";
+import S3TestBench from "./S3TestBench";
 
 type PasswordInputProps = {
   id: string;
@@ -60,7 +61,7 @@ function PasswordInput({ id, value, onChange, placeholder, disabled }: PasswordI
   );
 }
 
-type ProviderKind = "cloudru" | "beget" | "yandex" | "custom";
+type ProviderKind = "cloudru" | "beget" | "yandex" | "r2" | "custom";
 type BucketRouteKey = "analysis" | "avatars" | "user_docs" | "project_docs";
 type ResultState = {
   tone: "default" | "destructive";
@@ -73,6 +74,7 @@ const PROVIDER_DEFAULTS: Record<Exclude<ProviderKind, "custom">, { endpoint: str
   cloudru: { endpoint: "https://s3.cloud.ru", region: "ru-central-1" },
   beget: { endpoint: "https://storage.beget.com", region: "ru-msk" },
   yandex: { endpoint: "https://storage.yandexcloud.net", region: "ru-central1" },
+  r2: { endpoint: "", region: "auto" },
 };
 
 const BUCKET_ROUTES: Array<{
@@ -137,6 +139,7 @@ function inferProviderFromEndpoint(endpoint?: string): ProviderKind {
   if (endpoint.includes("cloud.ru")) return "cloudru";
   if (endpoint.includes("beget")) return "beget";
   if (endpoint.includes("yandexcloud")) return "yandex";
+  if (endpoint.includes("r2.cloudflarestorage.com")) return "r2";
   return "custom";
 }
 
@@ -599,7 +602,7 @@ export function S3Settings({
             onClick={() =>
               setBucketCorsDrafts((prev) => ({
                 ...prev,
-                [route.key]: buildCorsXml(typeof window !== "undefined" ? window.location.origin : "https://aismetchik.ru"),
+                [route.key]: buildCorsXml(typeof window !== "undefined" ? window.location.origin : "https://montagehub.ru"),
               }))
             }
           >
@@ -685,6 +688,9 @@ export function S3Settings({
                   </Button>
                   <Button size="sm" variant="outline" onClick={() => createProviderPreset("yandex")} disabled={isPending}>
                     Yandex
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => createProviderPreset("r2")} disabled={isPending}>
+                    R2
                   </Button>
                   <Button size="sm" variant="outline" onClick={() => createProviderPreset("custom")} disabled={isPending}>
                     Custom
@@ -801,6 +807,7 @@ export function S3Settings({
                         <SelectItem value="cloudru">Cloud.ru</SelectItem>
                         <SelectItem value="beget">Beget</SelectItem>
                         <SelectItem value="yandex">Yandex Cloud</SelectItem>
+                        <SelectItem value="r2">Cloudflare R2</SelectItem>
                         <SelectItem value="custom">Custom</SelectItem>
                       </SelectContent>
                     </Select>
@@ -815,24 +822,150 @@ export function S3Settings({
                       <Label>Region</Label>
                       <Input value={selectedPreset.config?.s3Region || ""} onChange={(e) => updateSelectedPreset({ s3Region: e.target.value })} disabled={isPending} />
                     </div>
-                    <div className="space-y-2">
-                      <Label>Access Key ID</Label>
-                      <Input value={selectedPreset.config?.s3AccessKeyId || ""} onChange={(e) => updateSelectedPreset({ s3AccessKeyId: e.target.value })} disabled={isPending} />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Secret Access Key</Label>
-                      <PasswordInput
-                        id="selected-s3-secret"
-                        value={selectedPreset.config?.s3SecretAccessKey || ""}
-                        onChange={(e) => updateSelectedPreset({ s3SecretAccessKey: e.target.value })}
-                        placeholder="••••••••••"
-                        disabled={isPending}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Tenant ID</Label>
-                      <Input value={selectedPreset.config?.s3TenantId || ""} onChange={(e) => updateSelectedPreset({ s3TenantId: e.target.value })} disabled={isPending} />
-                    </div>
+
+                    {(() => {
+                      const currentProvider = (selectedPreset.provider || inferProviderFromEndpoint(selectedPreset.config?.s3Endpoint)) as ProviderKind;
+                      if (currentProvider === "cloudru") {
+                        return (
+                          <>
+                            <div className="space-y-2">
+                              <Label>Tenant ID</Label>
+                              <Input
+                                value={selectedPreset.config?.s3TenantId || ""}
+                                onChange={(e) => updateSelectedPreset({ s3TenantId: e.target.value })}
+                                placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                                disabled={isPending}
+                              />
+                              <p className="text-xs text-muted-foreground">ID тенанта из Cloud.ru → IAM</p>
+                            </div>
+                            <div className="space-y-2">
+                              <Label>Access Key ID</Label>
+                              <Input
+                                value={selectedPreset.config?.s3AccessKeyId || ""}
+                                onChange={(e) => updateSelectedPreset({ s3AccessKeyId: e.target.value })}
+                                placeholder="仅 access key ID (без tenant:)"
+                                disabled={isPending}
+                              />
+                              <p className="text-xs text-muted-foreground">Статический ключ доступа. Tenant добавится автоматически.</p>
+                            </div>
+                          </>
+                        );
+                      }
+                      if (currentProvider === "yandex") {
+                        return (
+                          <>
+                            <div className="space-y-2">
+                              <Label>Access Key ID (key_id)</Label>
+                              <Input
+                                value={selectedPreset.config?.s3AccessKeyId || ""}
+                                onChange={(e) => updateSelectedPreset({ s3AccessKeyId: e.target.value })}
+                                placeholder="ajeisdq..."
+                                disabled={isPending}
+                              />
+                              <p className="text-xs text-muted-foreground">Статический ключ из Yandex Cloud → IAM → Сервисные аккаунты</p>
+                            </div>
+                            <div className="space-y-2">
+                              <Label>Secret Access Key</Label>
+                              <PasswordInput
+                                id="selected-s3-secret"
+                                value={selectedPreset.config?.s3SecretAccessKey || ""}
+                                onChange={(e) => updateSelectedPreset({ s3SecretAccessKey: e.target.value })}
+                                placeholder="••••••••••"
+                                disabled={isPending}
+                              />
+                              <p className="text-xs text-muted-foreground">Секретная часть ключа. Показывается только при создании.</p>
+                            </div>
+                          </>
+                        );
+                      }
+                      if (currentProvider === "beget") {
+                        return (
+                          <>
+                            <div className="space-y-2">
+                              <Label>Access Key ID</Label>
+                              <Input
+                                value={selectedPreset.config?.s3AccessKeyId || ""}
+                                onChange={(e) => updateSelectedPreset({ s3AccessKeyId: e.target.value })}
+                                placeholder="Логин S3-хостинга"
+                                disabled={isPending}
+                              />
+                              <p className="text-xs text-muted-foreground">Из панели Beget → S3-хостинг → Доступы</p>
+                            </div>
+                            <div className="space-y-2">
+                              <Label>Secret Access Key</Label>
+                              <PasswordInput
+                                id="selected-s3-secret"
+                                value={selectedPreset.config?.s3SecretAccessKey || ""}
+                                onChange={(e) => updateSelectedPreset({ s3SecretAccessKey: e.target.value })}
+                                placeholder="Пароль S3-хостинга"
+                                disabled={isPending}
+                              />
+                              <p className="text-xs text-muted-foreground">Пароль из панели Beget → S3-хостинг</p>
+                            </div>
+                          </>
+                        );
+                      }
+                      if (currentProvider === "r2") {
+                        return (
+                          <>
+                            <div className="space-y-2">
+                              <Label>Account ID</Label>
+                              <Input
+                                value={(() => {
+                                  const ep = selectedPreset.config?.s3Endpoint || "";
+                                  const m = ep.match(/^https?:\/\/([^.]+)\.r2\.cloudflarestorage\.com/);
+                                  return m ? m[1] : "";
+                                })()}
+                                onChange={(e) => {
+                                  const accountId = e.target.value.trim();
+                                  updateSelectedPreset({
+                                    s3Endpoint: accountId ? `https://${accountId}.r2.cloudflarestorage.com` : "",
+                                    s3Region: "auto",
+                                  });
+                                }}
+                                placeholder="18906fd7e8503e4b91c6406d97ad6c5d"
+                                disabled={isPending}
+                              />
+                              <p className="text-xs text-muted-foreground">Cloudflare → R2 → Overview → Account ID</p>
+                            </div>
+                            <div className="space-y-2">
+                              <Label>Access Key ID</Label>
+                              <Input
+                                value={selectedPreset.config?.s3AccessKeyId || ""}
+                                onChange={(e) => updateSelectedPreset({ s3AccessKeyId: e.target.value })}
+                                placeholder="0ce8ab1121225af26ebd880284b1cff1"
+                                disabled={isPending}
+                              />
+                              <p className="text-xs text-muted-foreground">Cloudflare → R2 → Manage R2 API Tokens → S3 Credentials</p>
+                            </div>
+                          </>
+                        );
+                      }
+                      // custom
+                      return (
+                        <>
+                          <div className="space-y-2">
+                            <Label>Access Key ID</Label>
+                            <Input
+                              value={selectedPreset.config?.s3AccessKeyId || ""}
+                              onChange={(e) => updateSelectedPreset({ s3AccessKeyId: e.target.value })}
+                              disabled={isPending}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Secret Access Key</Label>
+                            <PasswordInput
+                              id="selected-s3-secret"
+                              value={selectedPreset.config?.s3SecretAccessKey || ""}
+                              onChange={(e) => updateSelectedPreset({ s3SecretAccessKey: e.target.value })}
+                              placeholder="••••••••••"
+                              disabled={isPending}
+                            />
+                          </div>
+                        </>
+                      );
+                    })()}
+
                     <div className="space-y-2">
                       <Label>Default bucket in preset</Label>
                       <Input value={selectedPreset.config?.s3BucketName || ""} onChange={(e) => updateSelectedPreset({ s3BucketName: e.target.value })} disabled={isPending} />
@@ -969,6 +1102,9 @@ export function S3Settings({
           </Tabs>
         </CardContent>
       </Card>
+
+      {/* === Тестирование S3 + AI === */}
+      <S3TestBench />
     </div>
   );
 }

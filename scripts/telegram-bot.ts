@@ -4,6 +4,7 @@ import './bootstrap';
 export {};
 
 require('dotenv/config');
+require('dotenv').config({ path: '.env.local' });
 const { startManagedBot } = require('../src/server-functions/telegram/controller');
 
 async function main() {

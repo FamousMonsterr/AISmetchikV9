@@ -200,7 +200,7 @@ export function EnvSettings() {
                   type="url"
                   value={settings.passkeyOrigin || ''}
                   onChange={(e) => setSettings({ ...settings, passkeyOrigin: e.target.value })}
-                  placeholder="https://lk.aismetchik.ru"
+                  placeholder="https://lk.montagehub.ru"
                   disabled={isPending}
                 />
                 <p className="text-xs text-muted-foreground">
@@ -213,7 +213,7 @@ export function EnvSettings() {
                   id="passkeyRpId"
                   value={settings.passkeyRpId || ''}
                   onChange={(e) => setSettings({ ...settings, passkeyRpId: e.target.value })}
-                  placeholder="aismetchik.ru"
+                  placeholder="montagehub.ru"
                   disabled={isPending}
                 />
               </div>
@@ -223,7 +223,7 @@ export function EnvSettings() {
                   id="passkeyRpName"
                   value={settings.passkeyRpName || ''}
                   onChange={(e) => setSettings({ ...settings, passkeyRpName: e.target.value })}
-                  placeholder="AI Smetchik"
+                  placeholder="Montage HUB"
                   disabled={isPending}
                 />
               </div>
@@ -292,11 +292,11 @@ export function EnvSettings() {
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="telegramBotUsername">Публичный username бота</Label>
-                    <Input id="telegramBotUsername" value={settings.nextPublicTelegramBotUsername || ''} onChange={(e) => setSettings({ ...settings, nextPublicTelegramBotUsername: e.target.value })} placeholder="AI_Smetchik_Bot" disabled={isPending} />
+                    <Input id="telegramBotUsername" value={settings.nextPublicTelegramBotUsername || ''} onChange={(e) => setSettings({ ...settings, nextPublicTelegramBotUsername: e.target.value })} placeholder="MontageHubBot" disabled={isPending} />
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="telegramWebappUrl">Telegram WebApp URL</Label>
-                    <Input id="telegramWebappUrl" type="url" value={settings.nextPublicTelegramWebappUrl || ''} onChange={(e) => setSettings({ ...settings, nextPublicTelegramWebappUrl: e.target.value })} placeholder="https://lk.aismetchik.ru" disabled={isPending} />
+                    <Input id="telegramWebappUrl" type="url" value={settings.nextPublicTelegramWebappUrl || ''} onChange={(e) => setSettings({ ...settings, nextPublicTelegramWebappUrl: e.target.value })} placeholder="https://lk.montagehub.ru" disabled={isPending} />
                     <p className="text-xs text-muted-foreground">Используется кнопкой «Открыть приложение» внутри Telegram-бота.</p>
                 </div>
                 <div className="space-y-2">
@@ -401,7 +401,7 @@ export function EnvSettings() {
                   type="url"
                   value={settings.vkIdRedirectUri || ''}
                   onChange={(e) => setSettings({ ...settings, vkIdRedirectUri: e.target.value })}
-                  placeholder="https://aismetchik.ru/api/auth/callback/vk"
+                  placeholder="https://montagehub.ru/api/auth/callback/vk"
                   disabled={isPending}
                 />
               </div>
@@ -452,7 +452,7 @@ export function EnvSettings() {
                   type="url"
                   value={settings.vkWebhookUrl || ''}
                   onChange={(e) => setSettings({ ...settings, vkWebhookUrl: e.target.value })}
-                  placeholder="https://aismetchik.ru/api/vk/webhook"
+                  placeholder="https://montagehub.ru/api/vk/webhook"
                   disabled={isPending}
                 />
               </div>
@@ -575,7 +575,7 @@ export function EnvSettings() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="mongoDbName">MONGODB_DB</Label>
-                <Input id="mongoDbName" value={settings.mongoDbName || ''} onChange={(e) => setSettings({ ...settings, mongoDbName: e.target.value })} placeholder="aismetchik" disabled={isPending} />
+                <Input id="mongoDbName" value={settings.mongoDbName || ''} onChange={(e) => setSettings({ ...settings, mongoDbName: e.target.value })} placeholder="montagehub" disabled={isPending} />
               </div>
             </div>
             <div className="grid gap-4 lg:grid-cols-2">
@@ -585,7 +585,7 @@ export function EnvSettings() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="mongoLogsDbName">MONGODB_LOGS_DB</Label>
-                <Input id="mongoLogsDbName" value={settings.mongoLogsDbName || ''} onChange={(e) => setSettings({ ...settings, mongoLogsDbName: e.target.value })} placeholder="aismetchik_logs" disabled={isPending} />
+                <Input id="mongoLogsDbName" value={settings.mongoLogsDbName || ''} onChange={(e) => setSettings({ ...settings, mongoLogsDbName: e.target.value })} placeholder="montagehub_logs" disabled={isPending} />
               </div>
             </div>
             <div className="rounded-md border p-3 text-xs text-muted-foreground space-y-1">
@@ -674,7 +674,7 @@ export function EnvSettings() {
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="smtpFrom">SMTP From</Label>
-                    <Input id="smtpFrom" value={settings.smtpFrom || ''} onChange={(e) => setSettings({ ...settings, smtpFrom: e.target.value })} placeholder="AI Smetchik <noreply@example.com>" disabled={isPending} />
+                    <Input id="smtpFrom" value={settings.smtpFrom || ''} onChange={(e) => setSettings({ ...settings, smtpFrom: e.target.value })} placeholder="Montage HUB <noreply@example.com>" disabled={isPending} />
                 </div>
             </CardContent>
         </Card>

@@ -40,6 +40,11 @@ export async function validateFileUriAgainstAllowlist(fileUri: string): Promise<
   host?: string;
   allowedHosts?: string[];
 }> {
+  // data: URI (base64) — разрешены всегда, это fallback когда S3 недоступен
+  if (fileUri.startsWith('data:')) {
+    return { ok: true, host: 'data-uri' };
+  }
+
   let parsed: URL;
   try {
     parsed = new URL(fileUri);

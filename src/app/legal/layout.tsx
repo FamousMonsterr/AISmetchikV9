@@ -32,7 +32,7 @@ export default function LegalLayout({
       </main>
       <footer className="py-8 border-t mt-8">
         <div className="container mx-auto text-center text-muted-foreground text-sm">
-            <p>© {new Date().getFullYear()} AI Сметчик. Все права защищены.</p>
+            <p>© {new Date().getFullYear()} Montage HUB. Все права защищены.</p>
         </div>
       </footer>
     </div>

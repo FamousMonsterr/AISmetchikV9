@@ -661,7 +661,7 @@ export default function ProfileTab() {
                 disabled={!canEditTemplates}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Выберите шаблон" />
+                  <SelectValue placeholder={templateOptions.proposal.length ? "Выберите шаблон" : "Нет доступных шаблонов"} />
                 </SelectTrigger>
                 <SelectContent>
                   {templateOptions.proposal.map((item) => (
@@ -680,7 +680,7 @@ export default function ProfileTab() {
                 disabled={!canEditTemplates}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Выберите шаблон" />
+                  <SelectValue placeholder={templateOptions.invoice.length ? "Выберите шаблон" : "Нет доступных шаблонов"} />
                 </SelectTrigger>
                 <SelectContent>
                   {templateOptions.invoice.map((item) => (
@@ -699,7 +699,7 @@ export default function ProfileTab() {
                 disabled={!canEditTemplates}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Выберите шаблон" />
+                  <SelectValue placeholder={templateOptions.contract.length ? "Выберите шаблон" : "Нет доступных шаблонов"} />
                 </SelectTrigger>
                 <SelectContent>
                   {templateOptions.contract.map((item) => (

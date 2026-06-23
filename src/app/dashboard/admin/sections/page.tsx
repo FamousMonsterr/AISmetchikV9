@@ -121,38 +121,42 @@ export default function AdminSectionsPage() {
         <Button onClick={handleAddNewSection}><PlusCircle className="mr-2 h-4 w-4" />Добавить раздел</Button>
          <Accordion type="multiple" className="w-full space-y-4">
             {sections.map((sec, index) => (
-                <AccordionItem value={sec.id} key={sec.id} className="border rounded-md">
+                <AccordionItem value={sec.id} key={sec.id} className="border rounded-md relative">
                     <AccordionTrigger className="px-4 py-2 hover:no-underline">
                         <div className="text-left flex items-start gap-3 w-full">
                             <Library className="h-5 w-5 mt-1 text-muted-foreground"/>
                             <div className="flex-grow">
-                                <Input 
-                                    value={sec.section}
-                                    onChange={(e) => handleUpdate(sec.id, 'section', e.target.value)}
-                                    className="text-base font-semibold border-none focus-visible:ring-0 shadow-none p-0 h-auto bg-transparent"
-                                    onClick={e => e.stopPropagation()}
-                                />
+                                <span className="text-base font-semibold">{sec.section}</span>
                                 <p className="text-sm text-muted-foreground">{sec.hashtags.length} хештегов</p>
                             </div>
-                            <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                    <Button variant="ghost" size="icon" onClick={e => e.stopPropagation()}><Trash2 className="h-4 w-4 text-destructive"/></Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                        <AlertDialogTitle>Вы уверены?</AlertDialogTitle>
-                                        <AlertDialogDescription>Вы хотите удалить раздел "{sec.section}"? Это действие нельзя будет отменить.</AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                        <AlertDialogCancel>Отмена</AlertDialogCancel>
-                                        <AlertDialogAction className="bg-destructive" onClick={() => handleDeleteSection(sec.id)}>Удалить</AlertDialogAction>
-                                    </AlertDialogFooter>
-                                </AlertDialogContent>
-                            </AlertDialog>
                         </div>
                     </AccordionTrigger>
+                    <div className="absolute right-12 top-1/2 -translate-y-1/2 z-10">
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="icon" onClick={e => e.stopPropagation()}><Trash2 className="h-4 w-4 text-destructive"/></Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Вы уверены?</AlertDialogTitle>
+                                    <AlertDialogDescription>Вы хотите удалить раздел "{sec.section}"? Это действие нельзя будет отменить.</AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Отмена</AlertDialogCancel>
+                                    <AlertDialogAction className="bg-destructive" onClick={() => handleDeleteSection(sec.id)}>Удалить</AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    </div>
                     <AccordionContent className="px-4">
-                         <div className="space-y-2">
+                         <div className="space-y-4">
+                            <div className="space-y-2">
+                                <Label>Название раздела</Label>
+                                <Input
+                                    value={sec.section}
+                                    onChange={(e) => handleUpdate(sec.id, 'section', e.target.value)}
+                                />
+                            </div>
                             <Label>Хештеги</Label>
                             <div className="flex flex-wrap gap-2 p-2 border rounded-md bg-muted/50">
                                 {sec.hashtags.map(tag => (

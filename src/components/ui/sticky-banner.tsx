@@ -62,6 +62,8 @@ export const StickyBanner = ({
     <AnimatePresence>
       {isVisible && (
         <motion.div
+          role="banner"
+          aria-live="polite"
           initial={{ opacity: 0, height: 0 }}
           animate={{ opacity: 1, height: 'auto' }}
           exit={{ opacity: 0, height: 0 }}

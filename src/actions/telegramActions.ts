@@ -1,5 +1,4 @@
 // src/actions/telegramActions.ts
-// @ts-nocheck
 'use server';
 
 import { z } from 'zod';
@@ -225,5 +224,35 @@ export async function syncTelegramChatId(): Promise<{ success: boolean; message:
   } catch (error: any) {
     console.error('Ошибка синхронизации chat_id:', error?.message || error);
     return { success: false, message: error?.message || 'Не удалось привязать chat_id.' };
+  }
+}
+
+/**
+ * Generate a one-time code for Telegram bot linking.
+ * User enters this code in the bot to link their account.
+ */
+export async function generateTelegramLinkCode(): Promise<{ success: boolean; code?: string; message: string }> {
+  const session = await getServerSession(authOptions);
+  const userId = session?.user?.id;
+  if (!userId) {
+    return { success: false, message: 'Требуется аутентификация.' };
+  }
+
+  try {
+    // Generate a 6-digit code
+    const code = String(Math.floor(100000 + Math.random() * 900000));
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+    const userRef = doc(db, 'users', userId);
+    await updateDoc(userRef, {
+      telegramLinkCode: code,
+      telegramLinkCodeExpiresAt: expiresAt,
+      updatedAt: new Date(),
+    });
+
+    return { success: true, code, message: 'Код сгенерирован. Введите его в боте.' };
+  } catch (error: any) {
+    console.error('Ошибка генерации кода привязки:', error?.message || error);
+    return { success: false, message: 'Не удалось сгенерировать код.' };
   }
 }

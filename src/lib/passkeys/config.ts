@@ -1,6 +1,6 @@
 import type { PasskeyRelyingPartyConfig } from '@/types/passkey';
 
-const DEFAULT_RP_NAME = 'AI Smetchik';
+const DEFAULT_RP_NAME = 'Montage HUB';
 const DEFAULT_TIMEOUT_MS = 60_000;
 const DEFAULT_CHALLENGE_TTL_MS = 5 * 60_000;
 

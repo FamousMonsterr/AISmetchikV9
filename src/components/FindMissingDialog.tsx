@@ -124,7 +124,7 @@ export function FindMissingDialog({ isOpen, onClose, project, selectedModel, onA
                             </ScrollArea>
                         </div>
                         <div className="space-y-2">
-                           <h3 className="font-semibold flex items-center gap-2"><CheckCircle className={foundItems.length > 0 ? "text-green-500" : ""}/> Найдено AI</h3>
+                           <h3 className="font-semibold flex items-center gap-2"><CheckCircle className={foundItems.length > 0 ? "text-success" : ""}/> Найдено AI</h3>
                            <ScrollArea className="h-40 border rounded-md p-2">
                                 {isProcessing ? (
                                     <div className="flex items-center justify-center h-full text-muted-foreground">

@@ -129,21 +129,21 @@ export function RegistrationDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-h-[min(92vh,720px)] max-w-md overflow-y-auto border-white/10 bg-slate-950 p-4 text-slate-100 sm:p-6">
+      <DialogContent className="max-h-[min(92vh,720px)] max-w-md overflow-y-auto border-border bg-background p-4 text-foreground sm:p-6">
         <DialogHeader className="space-y-2 text-left">
-          <DialogTitle className="text-xl text-white">Создать аккаунт</DialogTitle>
+          <DialogTitle className="text-xl text-foreground">Создать аккаунт</DialogTitle>
         </DialogHeader>
 
         {error && (
-          <Alert variant="destructive" className="border-rose-500/40 bg-rose-500/10 text-rose-100">
-            <AlertTitle className="text-rose-50">Ошибка регистрации</AlertTitle>
-            <AlertDescription className="text-rose-100">{error}</AlertDescription>
+          <Alert variant="destructive" className="border-destructive bg-destructive/10 text-destructive-foreground">
+            <AlertTitle className="text-destructive-foreground">Ошибка регистрации</AlertTitle>
+            <AlertDescription className="text-destructive-foreground">{error}</AlertDescription>
           </Alert>
         )}
 
         <form className="space-y-4" onSubmit={handleRegister}>
           <div className="space-y-2">
-            <Label htmlFor="register-email-modal" className="text-slate-200">
+            <Label htmlFor="register-email-modal" className="text-foreground">
               Email
             </Label>
             <Input
@@ -155,12 +155,12 @@ export function RegistrationDialog({
               onChange={(event) => setEmail(event.target.value)}
               disabled={isPending}
               autoComplete="email"
-              className="border-white/10 bg-white/5 text-slate-100 placeholder:text-slate-500"
+              className="border-border bg-muted/50 text-foreground placeholder:text-muted-foreground"
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="register-phone-modal" className="text-slate-200">
+            <Label htmlFor="register-phone-modal" className="text-foreground">
               Телефон
             </Label>
             <Input
@@ -172,12 +172,12 @@ export function RegistrationDialog({
               onChange={(event) => setPhone(event.target.value)}
               disabled={isPending}
               autoComplete="tel"
-              className="border-white/10 bg-white/5 text-slate-100 placeholder:text-slate-500"
+              className="border-border bg-muted/50 text-foreground placeholder:text-muted-foreground"
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="register-password-modal" className="text-slate-200">
+            <Label htmlFor="register-password-modal" className="text-foreground">
               Пароль
             </Label>
             <Input
@@ -189,7 +189,7 @@ export function RegistrationDialog({
               onChange={(event) => setPassword(event.target.value)}
               disabled={isPending}
               autoComplete="new-password"
-              className="border-white/10 bg-white/5 text-slate-100 placeholder:text-slate-500"
+              className="border-border bg-muted/50 text-foreground placeholder:text-muted-foreground"
             />
           </div>
 
@@ -202,13 +202,13 @@ export function RegistrationDialog({
                 value={promoCode}
                 onChange={(event) => setPromoCode(event.target.value)}
                 disabled={isPending || !!initialPromoCode}
-                className="border-white/10 bg-white/5 text-slate-100 placeholder:text-slate-500"
+                className="border-border bg-muted/50 text-foreground placeholder:text-muted-foreground"
               />
             ) : (
               <Button
                 type="button"
                 variant="ghost"
-                className="h-11 w-full justify-start rounded-2xl border border-white/10 bg-white/[0.04] px-4 text-sm text-slate-200 hover:bg-white/10 hover:text-white"
+                className="h-11 w-full justify-start rounded-2xl border border-border bg-muted/30 px-4 text-sm text-foreground hover:bg-muted hover:text-foreground"
                 onClick={() => setShowPromoInput(true)}
               >
                 У меня есть промокод
@@ -216,7 +216,7 @@ export function RegistrationDialog({
             )}
 
             {initialPromoCode && (
-              <div className="rounded-2xl border border-emerald-400/20 bg-emerald-400/10 p-3 text-sm text-emerald-100">
+              <div className="rounded-2xl border border-emerald-400/20 bg-primary/10 p-3 text-sm text-emerald-100">
                 По приглашению друга вы получите доступ к PRO на{" "}
                 {promoConfig.referralProgram.refereeBonus.proTrialDays} дней.
               </div>
@@ -224,18 +224,18 @@ export function RegistrationDialog({
           </div>
 
           <div className="space-y-3">
-            <div className="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/5 p-3">
+            <div className="flex items-start gap-3 rounded-2xl border border-border bg-muted/50 p-3">
               <Checkbox
                 id="privacy-modal"
                 checked={agreedToPrivacy}
                 onCheckedChange={(value) => setAgreedToPrivacy(!!value)}
               />
-              <Label htmlFor="privacy-modal" className="text-xs leading-6 text-slate-300">
+              <Label htmlFor="privacy-modal" className="text-xs leading-6 text-muted-foreground">
                 Принимаю{" "}
                 <Link
                   href="/legal/privacy-policy"
                   target="_blank"
-                  className="underline underline-offset-4 hover:text-white"
+                  className="underline underline-offset-4 hover:text-foreground"
                 >
                   политику обработки персональных данных
                 </Link>
@@ -243,18 +243,18 @@ export function RegistrationDialog({
               </Label>
             </div>
 
-            <div className="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/5 p-3">
+            <div className="flex items-start gap-3 rounded-2xl border border-border bg-muted/50 p-3">
               <Checkbox
                 id="terms-modal"
                 checked={agreedToTerms}
                 onCheckedChange={(value) => setAgreedToTerms(!!value)}
               />
-              <Label htmlFor="terms-modal" className="text-xs leading-6 text-slate-300">
+              <Label htmlFor="terms-modal" className="text-xs leading-6 text-muted-foreground">
                 Даю{" "}
                 <Link
                   href="/legal/consent"
                   target="_blank"
-                  className="underline underline-offset-4 hover:text-white"
+                  className="underline underline-offset-4 hover:text-foreground"
                 >
                   согласие на обработку персональных данных
                 </Link>
@@ -262,24 +262,24 @@ export function RegistrationDialog({
               </Label>
             </div>
 
-            <div className="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/5 p-3">
+            <div className="flex items-start gap-3 rounded-2xl border border-border bg-muted/50 p-3">
               <Checkbox
                 id="marketing-modal"
                 checked={agreedToMarketing}
                 onCheckedChange={(value) => setAgreedToMarketing(!!value)}
               />
-              <Label htmlFor="marketing-modal" className="text-xs leading-6 text-slate-300">
+              <Label htmlFor="marketing-modal" className="text-xs leading-6 text-muted-foreground">
                 Согласен получать рассылки.
               </Label>
             </div>
 
-            <div className="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/5 p-3">
+            <div className="flex items-start gap-3 rounded-2xl border border-border bg-muted/50 p-3">
               <Checkbox
                 id="third-party-modal"
                 checked={agreedToThirdParty}
                 onCheckedChange={(value) => setAgreedToThirdParty(!!value)}
               />
-              <Label htmlFor="third-party-modal" className="text-xs leading-6 text-slate-300">
+              <Label htmlFor="third-party-modal" className="text-xs leading-6 text-muted-foreground">
                 Согласен на передачу данных сервисным партнёрам.
               </Label>
             </div>
@@ -291,7 +291,7 @@ export function RegistrationDialog({
             </Button>
             <Button
               type="submit"
-              className="w-full bg-emerald-400 text-slate-950 hover:bg-emerald-300 sm:w-auto"
+              className="w-full bg-primary text-primary-foreground hover:bg-primary/90 sm:w-auto"
               disabled={isPending || !agreedToTerms || !agreedToPrivacy}
             >
               {isPending ? (

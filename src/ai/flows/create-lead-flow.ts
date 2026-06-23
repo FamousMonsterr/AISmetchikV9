@@ -28,7 +28,7 @@ export type CreateLeadOutput = z.infer<typeof CreateLeadOutputSchema>;
  * @returns A promise that resolves with the output data, including the shareable link.
  */
 export async function createLeadFlow(input: CreateLeadInput): Promise<CreateLeadOutput> {
-  console.log("createLeadFlow called for projectId:", input.projectId);
+  if (process.env.NODE_ENV === "development") console.log("[createLeadFlow] projectId:", input.projectId);
   
   // This is a simple implementation. It generates a unique, non-guessable link.
   // In a real application, you would store this link and its association

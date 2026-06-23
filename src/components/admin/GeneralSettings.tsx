@@ -225,8 +225,9 @@ export function GeneralSettings() {
                 <SelectValue placeholder="Выберите версию" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="v1">V1 (текущий)</SelectItem>
-                <SelectItem value="v2">V2 (OCR markdown + единый проход)</SelectItem>
+                <SelectItem value="v1">V1 — стандартный (один проход)</SelectItem>
+                <SelectItem value="v3">V3 — двухэтапный (OCR → Markdown → Анализ)</SelectItem>
+                <SelectItem value="xiaomi-vision">Xiaomi Vision — 3-этапный (OCR → Vision → Анализ)</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -244,6 +245,7 @@ export function GeneralSettings() {
               <SelectContent>
                 <SelectItem value="openrouter">OpenRouter (основной)</SelectItem>
                 <SelectItem value="local_hf">Local HF (будущее)</SelectItem>
+                <SelectItem value="xiaomi">Xiaomi MiMo (прямой)</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -348,7 +350,7 @@ export function GeneralSettings() {
                 id="jwtIssuer"
                 value={settings.jwtIssuer || ''}
                 onChange={(e) => setSettings({ ...settings, jwtIssuer: e.target.value })}
-                placeholder="ai-smetchik-backend"
+                placeholder="montagehub-backend"
                 disabled={isPending}
               />
             </div>
@@ -358,7 +360,7 @@ export function GeneralSettings() {
                 id="jwtAudience"
                 value={settings.jwtAudience || ''}
                 onChange={(e) => setSettings({ ...settings, jwtAudience: e.target.value })}
-                placeholder="ai-smetchik-frontend"
+                placeholder="montagehub-frontend"
                 disabled={isPending}
               />
             </div>

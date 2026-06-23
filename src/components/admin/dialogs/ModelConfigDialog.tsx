@@ -16,19 +16,21 @@ type PdfEngineOverride = 'none' | 'native' | 'mistral-ocr';
 interface ModelConfigDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (model: { value: string; label: string; provider: 'openrouter'; pdfEngineOverride?: PdfEngineOverride; isDefault?: boolean }, index?: number) => void;
-  initialData?: { value: string; label: string; provider: 'openrouter'; pdfEngineOverride?: PdfEngineOverride; isDefault?: boolean };
+  onSave: (model: { value: string; label: string; provider: string; pdfEngineOverride?: PdfEngineOverride; isDefault?: boolean }, index?: number) => void;
+  initialData?: { value: string; label: string; provider?: string; pdfEngineOverride?: PdfEngineOverride; isDefault?: boolean };
   editIndex?: number;
+  /** Текущий провайдер (для новых моделей) */
+  provider?: string;
 }
 
-export function ModelConfigDialog({ isOpen, onClose, onSave, initialData, editIndex }: ModelConfigDialogProps) {
+export function ModelConfigDialog({ isOpen, onClose, onSave, initialData, editIndex, provider = 'openrouter' }: ModelConfigDialogProps) {
   const [modelId, setModelId] = useState('');
   const [modelLabel, setModelLabel] = useState('');
   const [pdfEngineOverride, setPdfEngineOverride] = useState<PdfEngineOverride>('none');
   const [isDefault, setIsDefault] = useState(false);
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
-  
+
   const isEditMode = initialData !== undefined && editIndex !== undefined;
 
   useEffect(() => {
@@ -56,11 +58,15 @@ export function ModelConfigDialog({ isOpen, onClose, onSave, initialData, editIn
       return;
     }
     startTransition(() => {
-        onSave({ value: modelId, label: modelLabel, provider: 'openrouter', pdfEngineOverride, isDefault }, isEditMode ? editIndex : undefined);
+        // В режиме редактирования сохраняем исходный provider, в режиме добавления — текущий
+        const modelProvider = isEditMode ? (initialData?.provider || provider) : provider;
+        onSave({ value: modelId, label: modelLabel, provider: modelProvider, pdfEngineOverride, isDefault }, isEditMode ? editIndex : undefined);
         toast({ title: isEditMode ? "Модель обновлена" : "Модель добавлена" });
         onClose();
     });
   };
+
+  const providerLabel = provider === 'xiaomi' ? 'Xiaomi MiMo' : 'OpenRouter';
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -68,7 +74,7 @@ export function ModelConfigDialog({ isOpen, onClose, onSave, initialData, editIn
         <DialogHeader>
           <DialogTitle>{isEditMode ? 'Редактировать модель' : 'Добавить новую модель'}</DialogTitle>
           <DialogDescription>
-            Введите данные для AI-модели.
+            {isEditMode ? 'Редактирование модели.' : `Добавление модели в провайдер ${providerLabel}.`}
           </DialogDescription>
         </DialogHeader>
         <div className="py-4 space-y-4">
@@ -78,7 +84,7 @@ export function ModelConfigDialog({ isOpen, onClose, onSave, initialData, editIn
               id="model-id"
               value={modelId}
               onChange={(e) => setModelId(e.target.value)}
-              placeholder="например, openai/gpt-4o-mini"
+              placeholder={provider === 'xiaomi' ? "например, mimo-v2-pro" : "например, openai/gpt-4o-mini"}
               disabled={isPending}
             />
           </div>
@@ -88,7 +94,7 @@ export function ModelConfigDialog({ isOpen, onClose, onSave, initialData, editIn
               id="model-label"
               value={modelLabel}
               onChange={(e) => setModelLabel(e.target.value)}
-              placeholder="например, GPT-4o Mini"
+              placeholder={provider === 'xiaomi' ? "например, MiMo V2 Pro" : "например, GPT-4o Mini"}
               disabled={isPending}
             />
           </div>

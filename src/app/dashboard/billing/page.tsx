@@ -148,7 +148,7 @@ export default function BillingPage() {
                                     )}
                                     {pkg.features.map(feature => (
                                     <li key={feature} className="flex items-center">
-                                        <Check className="h-4 w-4 mr-2 text-green-500" />
+                                        <Check className="h-4 w-4 mr-2 text-success" />
                                         {feature}
                                     </li>
                                     ))}

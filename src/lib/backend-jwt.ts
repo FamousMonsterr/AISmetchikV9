@@ -23,8 +23,8 @@ const REFRESH_TTL = '30d';
 
 async function resolveJwtConfig() {
   const appSettings = await getAppSettings().catch(() => null);
-  const issuer = appSettings?.jwtIssuer || process.env.BACKEND_JWT_ISSUER || 'ai-smetchik-backend';
-  const audience = appSettings?.jwtAudience || process.env.BACKEND_JWT_AUDIENCE || 'ai-smetchik-frontend';
+  const issuer = appSettings?.jwtIssuer || process.env.BACKEND_JWT_ISSUER || 'montagehub-backend';
+  const audience = appSettings?.jwtAudience || process.env.BACKEND_JWT_AUDIENCE || 'montagehub-frontend';
   const secret = process.env.BACKEND_JWT_SECRET || process.env.NEXTAUTH_SECRET;
   if (!secret) {
     throw new Error('JWT secret is not configured (BACKEND_JWT_SECRET/NEXTAUTH_SECRET).');

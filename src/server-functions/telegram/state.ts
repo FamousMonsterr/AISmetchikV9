@@ -6,8 +6,8 @@ export type ManagerBotState = 'offline' | 'online' | 'busy' | 'sla_risk' | 'onca
 export type AdminBotState = 'normal' | 'degraded' | 'incident';
 
 export const TELEGRAM_AUDIENCE_COMMANDS: Record<TelegramAudience, string[]> = {
-  default: ['/start', '/help', '/profile', '/new', '/history', '/pay', '/ping'],
-  user: ['/start', '/help', '/profile', '/new', '/history', '/pay', '/support', '/link', '/unlink', '/ping'],
+  default: ['/start', '/help', '/profile', '/new', '/upload', '/history', '/pay', '/ping'],
+  user: ['/start', '/help', '/profile', '/new', '/upload', '/history', '/pay', '/support', '/link', '/unlink', '/ping'],
   partner: ['/start', '/help', '/profile', '/ref', '/stats', '/clients', '/attestation', '/payout', '/support', '/ping'],
   manager: ['/start', '/help', '/queue', '/take', '/done', '/reassign', '/sla', '/client', '/note', '/ping'],
   admin: ['/start', '/help', '/health', '/alerts', '/deploy', '/workers', '/payments', '/tickets', '/webhooks', '/ping'],

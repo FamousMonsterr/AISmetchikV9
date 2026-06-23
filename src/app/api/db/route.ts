@@ -56,6 +56,7 @@ const adminCollections = new Set([
   'survey_responses',
   'knowledge_base_articles',
   'project_event_logs',
+  'engagement_events',
 ]);
 
 const userOwnedCollections = new Set([
@@ -65,6 +66,7 @@ const userOwnedCollections = new Set([
   'invoices',
   'partner_requests',
   'bug_reports',
+  'user_notifications',
 ]);
 
 const sharedCollections = new Set([
@@ -72,6 +74,8 @@ const sharedCollections = new Set([
   's3_file_cache',
   'notifications',
 ]);
+
+const ALLOWED_FIELD_PATTERN = /^[a-zA-Z_][a-zA-Z0-9_.]*$/;
 
 function buildMongoFilter(filters: WhereFilter[]) {
   const mongoFilter: Record<string, any> = {};
@@ -85,6 +89,14 @@ function buildMongoFilter(filters: WhereFilter[]) {
   };
 
   for (const filter of filters) {
+    // Prevent NoSQL injection — reject MongoDB operator keys
+    if (!ALLOWED_FIELD_PATTERN.test(filter.field)) {
+      throw new Error(`Invalid filter field: ${filter.field}`);
+    }
+    // Reject object values that could be MongoDB operators
+    if (filter.value && typeof filter.value === 'object' && !Array.isArray(filter.value) && !(filter.value instanceof Date)) {
+      throw new Error('Filter value cannot be an object');
+    }
     switch (filter.op) {
       case '==':
         mongoFilter[filter.field] = filter.value;
@@ -145,8 +157,33 @@ function splitUpdateOps(data: Record<string, any>) {
   return update;
 }
 
-function isAdmin(session: any) {
+function isAdminJwt(session: any) {
   return session?.user?.systemRole === 'Admin' || session?.user?.systemRole === 'Super Admin';
+}
+
+// Cache admin status per userId to avoid DB lookups on every request
+const adminStatusCache = new Map<string, { ok: boolean; expiresAt: number }>();
+const ADMIN_CACHE_TTL_MS = 60_000; // 1 minute
+
+async function isAdmin(session: any): Promise<boolean> {
+  if (isAdminJwt(session)) return true;
+
+  // Fallback: check role in DB (JWT may be stale or missing systemRole)
+  const userId = session?.user?.id;
+  if (!userId) return false;
+
+  const cached = adminStatusCache.get(userId);
+  if (cached && cached.expiresAt > Date.now()) return cached.ok;
+
+  try {
+    const db = await getDbForCollection('users');
+    const userDoc = await db.collection('users').findOne({ _id: userId }, { projection: { systemRole: 1 } });
+    const ok = userDoc?.systemRole === 'Admin' || userDoc?.systemRole === 'Super Admin';
+    adminStatusCache.set(userId, { ok, expiresAt: Date.now() + ADMIN_CACHE_TTL_MS });
+    return ok;
+  } catch {
+    return false;
+  }
 }
 
 function hasUserFilter(filters: WhereFilter[] | undefined, userId: string) {
@@ -276,7 +313,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ message: 'Missing operation' }, { status: 400 });
   }
 
-  const admin = isAdmin(session);
+  const admin = await isAdmin(session);
   const userId = session.user.id;
 
   const { op } = body;

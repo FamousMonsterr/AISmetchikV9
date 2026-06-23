@@ -12,11 +12,14 @@ export function NavigationLoader({ className }: { className?: string } = {}) {
     <AnimatePresence>
       {isNavigating && (
         <motion.div
+          role="status"
+          aria-live="polite"
+          aria-label="Загрузка страницы"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           className={cn(
-            "fixed inset-0 z-[120] flex items-center justify-center bg-background/70 backdrop-blur-sm",
+            "fixed inset-0 z-[var(--z-loader)] flex items-center justify-center bg-background/70 backdrop-blur-sm",
             className
           )}
         >

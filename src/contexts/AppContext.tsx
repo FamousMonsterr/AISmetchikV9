@@ -240,7 +240,7 @@ export interface HistoryRequest {
   // Server orchestration
   serverJobId?: string | null;
   s3ObjectKey?: string | null;
-  pipelineVersion?: 'v1' | 'v2' | null;
+  pipelineVersion?: 'v1' | 'v2' | 'v3' | 'xiaomi-vision' | null;
   processingStage?: string | null;
   processingStageMessage?: string | null;
   processingStageUpdatedAt?: any;
@@ -253,7 +253,7 @@ export interface HistoryRequest {
     model?: string | null;
     temperature?: number | null;
     includeThoughts?: boolean | null;
-    pipelineVersion?: 'v1' | 'v2' | null;
+    pipelineVersion?: 'v1' | 'v2' | 'v3' | 'xiaomi-vision' | null;
     objectId?: string | null;
     objectName?: string | null;
   } | null;
@@ -711,10 +711,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             const userChanged = !isSameUserSnapshot(userRef.current, userData);
             if (userChanged) {
                 setUser(userData);
-            }
 
-            if (userChanged) {
-                checkUserPlan(userData);
+                // Only check plan expiry if user has a temporary plan
+                if (userData.planExpiresAt) {
+                    checkUserPlan(userData);
+                }
 
                 if (typeof window !== 'undefined') {
                     const isPwa = window.matchMedia('(display-mode: standalone)').matches;
@@ -800,7 +801,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setActionHistory(prev => [newAction, ...prev].slice(0, 10));
   }, []);
 
-  const value: AppState = {
+  const value = useMemo<AppState>(() => ({
     user,
     setUser,
     isLoading,
@@ -824,7 +825,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     resetChangeCounter,
     useFileUpload,
     resetAppContextState,
-  };
+  }), [
+    user, isLoading, effectivePlan, effectiveRole, userAvailableModels,
+    currentProject, currentGroup, showTimeoutWarning, telegram, telegramUser,
+    isNavigating, actionHistory, changeCounter,
+  ]);
 
   return (
     <AppContext.Provider value={value}>

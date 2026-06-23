@@ -76,9 +76,11 @@ export async function POST(request: NextRequest) {
     }
 
     const pipelineVersion = appSettings.analysisPipelineVersion || 'v1';
-    const executionProvider = pipelineVersion === 'v1'
-      ? 'openrouter'
-      : (appSettings.aiExecutionProvider || 'openrouter');
+    const executionProvider = pipelineVersion === 'xiaomi-vision'
+      ? 'xiaomi'
+      : pipelineVersion === 'v1'
+        ? 'openrouter'
+        : (appSettings.aiExecutionProvider || 'openrouter');
     const idempotencyKey = createHash('sha256')
       .update(`${auth.user.id}:${payload.projectId}:${payload.fileSha1}:${pipelineVersion}`)
       .digest('hex');

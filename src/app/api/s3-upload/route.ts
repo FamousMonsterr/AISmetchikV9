@@ -32,7 +32,8 @@ export async function POST(request: NextRequest) {
     const { s3Client, config } = await getS3Client(presetId, { bucketType });
     
     // Correctly encode the filename and generate a unique key
-    const objectKey = `${nanoid()}-${encodeURIComponent(fileName)}`;
+    const prefix = config.keyPrefix || '';
+    const objectKey = `${prefix}${nanoid()}-${fileName}`;
 
     const putCommand = new PutObjectCommand({
       Bucket: config.bucketName,
@@ -40,8 +41,13 @@ export async function POST(request: NextRequest) {
       ContentType: fileType,
     });
     const uploadUrl = await getSignedUrl(s3Client, putCommand, {
-      expiresIn: 3600, // 1 hour for upload
+      expiresIn: 3600,
     });
+    
+        // Debug log only in development
+        if (process.env.NODE_ENV === 'development') {
+          console.log('S3 Upload URL generated:', { objectKey, fileType });
+        }
     
     let accessUrl: string;
     let urlExpirationTimestamp: number;

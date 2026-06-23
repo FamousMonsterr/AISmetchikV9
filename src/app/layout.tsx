@@ -1,46 +1,24 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
+import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { RootClientShell } from "@/components/layout/RootClientShell";
 
-const inter = localFont({
-  src: [
-    {
-      path: "../../public/fonts/Inter-Regular.woff2",
-      weight: "400",
-      style: "normal",
-    },
-    {
-      path: "../../public/fonts/Inter-Medium.woff2",
-      weight: "500",
-      style: "normal",
-    },
-    {
-      path: "../../public/fonts/Inter-SemiBold.woff2",
-      weight: "600",
-      style: "normal",
-    },
-    {
-      path: "../../public/fonts/Inter-Bold.woff2",
-      weight: "700",
-      style: "normal",
-    },
-  ],
+const inter = Inter({
+  subsets: ["latin", "cyrillic"],
   variable: "--font-sans",
   display: "swap",
   fallback: ["-apple-system", "BlinkMacSystemFont", "Segoe UI", "sans-serif"],
 });
 
-const jetbrainsMono = localFont({
-  src: "../../public/fonts/JetBrainsMono-Regular.woff2",
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ["latin", "cyrillic"],
   variable: "--font-mono",
-  weight: "400",
-  style: "normal",
   display: "swap",
   fallback: ["monospace"],
 });
 
-// Legacy fonts support (keep for backward compatibility)
+// Legacy fonts support — only Regular + Bold (others unused)
 const montserrat = localFont({
   src: [
     {
@@ -49,49 +27,9 @@ const montserrat = localFont({
       style: "normal",
     },
     {
-      path: "../../public/fonts/Montserrat-Italic.woff2",
-      weight: "400",
-      style: "italic",
-    },
-    {
-      path: "../../public/fonts/Montserrat-Medium.woff2",
-      weight: "500",
-      style: "normal",
-    },
-    {
-      path: "../../public/fonts/Montserrat-MediumItalic.woff2",
-      weight: "500",
-      style: "italic",
-    },
-    {
-      path: "../../public/fonts/Montserrat-SemiBold.woff2",
-      weight: "600",
-      style: "normal",
-    },
-    {
-      path: "../../public/fonts/Montserrat-SemiBoldItalic.woff2",
-      weight: "600",
-      style: "italic",
-    },
-    {
       path: "../../public/fonts/Montserrat-Bold.woff2",
       weight: "700",
       style: "normal",
-    },
-    {
-      path: "../../public/fonts/Montserrat-BoldItalic.woff2",
-      weight: "700",
-      style: "italic",
-    },
-    {
-      path: "../../public/fonts/Montserrat-Black.woff2",
-      weight: "900",
-      style: "normal",
-    },
-    {
-      path: "../../public/fonts/Montserrat-BlackItalic.woff2",
-      weight: "900",
-      style: "italic",
     },
   ],
   variable: "--font-montserrat",
@@ -109,12 +47,12 @@ const bebasNeue = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "AI Сметчик",
+  title: "Montage HUB",
   description: "AI-помощник для профессиональных сметчиков и монтажников.",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "AI Сметчик",
+    title: "Montage HUB",
   },
 };
 
@@ -131,7 +69,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ru" suppressHydrationWarning>
+    <html lang="ru" suppressHydrationWarning data-scroll-behavior="smooth">
       <head>
         <link rel="manifest" href="/manifest.json" crossOrigin="use-credentials" />
         <meta name="mobile-web-app-capable" content="yes" />

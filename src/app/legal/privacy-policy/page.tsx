@@ -17,7 +17,7 @@ async function getLicensorData(): Promise<LegalEntity> {
     bik: '[БИК]',
     ceoName: '[ФИО]',
     contactPhone: '[ТЕЛЕФОН]',
-    contactEmail: 'support@aismetchik.pro',
+    contactEmail: 'support@montagehub.ru',
   };
 }
 
@@ -28,14 +28,14 @@ export default async function PrivacyPolicyPage() {
     <Card className="max-w-4xl mx-auto">
       <CardHeader>
         <CardTitle className="text-2xl text-center">Политика обработки персональных данных</CardTitle>
-        <CardDescription className="text-center">в сервисе «AI Сметчик»</CardDescription>
+        <CardDescription className="text-center">в сервисе «Montage HUB»</CardDescription>
       </CardHeader>
       <CardContent className="prose prose-sm max-w-none">
         <h4>1. Общие положения</h4>
         <ol>
             <li>Настоящая Политика обработки персональных данных (далее – Политика) разработана в соответствии с Федеральным законом от 27.07.2006 г. № 152-ФЗ «О персональных данных».</li>
             <li>Оператором, осуществляющим обработку персональных данных, является: {licensor.name} (ИНН: {licensor.inn}, адрес: {licensor.legalAddress}), далее – Оператор.</li>
-            <li>Политика определяет порядок и условия обработки персональных данных пользователей сервиса «AI Сметчик» (далее – Сервис) и устанавливает процедуры, направленные на предотвращение и выявление нарушений законодательства Российской Федерации в области персональных данных.</li>
+            <li>Политика определяет порядок и условия обработки персональных данных пользователей сервиса «Montage HUB» (далее – Сервис) и устанавливает процедуры, направленные на предотвращение и выявление нарушений законодательства Российской Федерации в области персональных данных.</li>
         </ol>
 
         <h4>2. Цели обработки персональных данных</h4>

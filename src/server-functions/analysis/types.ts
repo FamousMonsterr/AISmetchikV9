@@ -14,8 +14,8 @@ export interface ServerAnalysisJob {
   mimeType: string;
   objectKey?: string;
   model: string;
-  pipelineVersion?: 'v1' | 'v2';
-  executionProvider?: 'openrouter' | 'local_hf';
+  pipelineVersion?: 'v1' | 'v2' | 'v3' | 'xiaomi-vision';
+  executionProvider?: 'openrouter' | 'local_hf' | 'xiaomi';
   userPlan?: UserPlan;
   idempotencyKey?: string;
   temperature?: number;
@@ -43,8 +43,8 @@ export interface CreateServerAnalysisJobInput {
   mimeType: string;
   objectKey?: string;
   model: string;
-  pipelineVersion?: 'v1' | 'v2';
-  executionProvider?: 'openrouter' | 'local_hf';
+  pipelineVersion?: 'v1' | 'v2' | 'v3' | 'xiaomi-vision';
+  executionProvider?: 'openrouter' | 'local_hf' | 'xiaomi';
   userPlan?: UserPlan;
   idempotencyKey?: string;
   temperature?: number;

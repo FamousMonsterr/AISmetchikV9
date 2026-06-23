@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <style>
+    .lens { animation: lens 2s ease-in-out infinite; }
+    @keyframes lens { 0%,100%{transform:translate(0,0)} 25%{transform:translate(5px,-3px)} 75%{transform:translate(-5px,3px)} }
+    .sparkle { animation: sparkle 1.5s ease-in-out infinite; }
+    @keyframes sparkle { 0%,100%{opacity:0;transform:scale(0.5)} 50%{opacity:1;transform:scale(1)} }
+  </style>
+  <ellipse cx="100" cy="185" rx="45" ry="8" fill="rgba(0,0,0,0.15)"/>
+  <rect x="78" y="150" width="16" height="30" rx="6" fill="#1E40AF"/>
+  <rect x="106" y="150" width="16" height="30" rx="6" fill="#1E40AF"/>
+  <rect x="74" y="172" width="24" height="12" rx="6" fill="#78350F"/>
+  <rect x="102" y="172" width="24" height="12" rx="6" fill="#78350F"/>
+  <rect x="72" y="95" width="56" height="60" rx="12" fill="#3B82F6"/>
+  <rect x="72" y="120" width="56" height="4" rx="2" fill="#FCD34D" opacity="0.9"/>
+  <rect x="72" y="135" width="56" height="4" rx="2" fill="#FCD34D" opacity="0.9"/>
+  <rect x="52" y="100" width="20" height="12" rx="6" fill="#3B82F6"/>
+  <circle cx="50" cy="106" r="8" fill="#FDE68A"/>
+  <g class="lens">
+    <rect x="128" y="95" width="20" height="12" rx="6" fill="#3B82F6"/>
+    <circle cx="150" cy="95" r="8" fill="#FDE68A"/>
+    <circle cx="158" cy="78" r="14" fill="none" stroke="#94A3B8" stroke-width="3"/>
+    <circle cx="158" cy="78" r="10" fill="white" opacity="0.3"/>
+    <line x1="168" y1="88" x2="178" y2="98" stroke="#94A3B8" stroke-width="4" stroke-linecap="round"/>
+  </g>
+  <circle cx="100" cy="70" r="30" fill="#FDE68A"/>
+  <path d="M65 65 Q100 25 135 65 L130 70 Q100 40 70 70 Z" fill="#F59E0B"/>
+  <rect x="65" y="65" width="70" height="8" rx="4" fill="#D97706"/>
+  <rect x="95" y="52" width="10" height="8" rx="2" fill="#FBBF24"/>
+  <circle cx="88" cy="72" r="5" fill="white"/>
+  <circle cx="112" cy="72" r="5" fill="white"/>
+  <circle cx="91" cy="72" r="3" fill="#1E293B"/>
+  <circle cx="115" cy="72" r="3" fill="#1E293B"/>
+  <path d="M92 86 Q100 88 108 86" stroke="#92400E" stroke-width="2" fill="none" stroke-linecap="round"/>
+  <text x="170" y="65" font-size="8" class="sparkle">✨</text>
+  <text x="145" y="55" font-size="6" class="sparkle" style="animation-delay:0.5s">⭐</text>
+</svg>

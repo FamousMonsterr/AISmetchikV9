@@ -143,7 +143,7 @@ async function handleMessageNew(event: VkMessageEvent) {
     }).catch(() => null);
   }
 
-  const webAppUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL || 'https://aismetchik.ru';
+  const webAppUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL || 'https://montagehub.ru';
   const lower = text.toLowerCase();
   if (lower === '/ping') {
     await sendVkMessage({ peerId: message.peer_id, message: `pong ✅ ${new Date().toLocaleString()}` });
@@ -166,7 +166,7 @@ async function handleMessageNew(event: VkMessageEvent) {
   if (lower.startsWith('/start') || lower.includes('начать')) {
     await sendVkMessage({
       peerId: message.peer_id,
-      message: `VK бот AI Сметчик готов. Откройте приложение: ${webAppUrl}`,
+      message: `VK бот Montage HUB готов. Откройте приложение: ${webAppUrl}`,
     });
   }
 }
@@ -236,14 +236,14 @@ export async function registerVkCallbackServer() {
       group_id: config.groupId,
       server_id: serverId,
       url: config.webhookUrl,
-      title: 'AI Smetchik',
+      title: 'Montage HUB',
       secret_key: config.callbackSecret || undefined,
     });
   } else {
     const created = await vkApi('groups.addCallbackServer', {
       group_id: config.groupId,
       url: config.webhookUrl,
-      title: 'AI Smetchik',
+      title: 'Montage HUB',
       secret_key: config.callbackSecret || undefined,
     });
     serverId = created?.server_id || created?.id;

@@ -15,6 +15,9 @@ import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { canAccessAdminSurface, canAccessCrmSurface, resolvePostAuthRedirectUrl, resolveSurfaceUrl } from '@/lib/navigation';
 
+// NOTE: Partner portal redirects to dashboard. Partner features are integrated into the dashboard.
+// If you need to re-enable the separate partner portal, remove the redirect below.
+
 function formatDate(value: any) {
   const date = value?.toDate ? value.toDate() : value ? new Date(value) : null;
   if (!date || Number.isNaN(date.getTime())) return '—';
@@ -22,6 +25,23 @@ function formatDate(value: any) {
 }
 
 export default function PartnerPage() {
+  const { user, setNavigating } = useAppContext();
+  const router = useRouter();
+
+  // Redirect partner portal to dashboard — partner features are integrated
+  useEffect(() => {
+    router.replace('/dashboard');
+  }, [router]);
+
+  return (
+    <div className="flex items-center justify-center min-h-screen">
+      <Loader2 className="h-8 w-8 animate-spin text-accent" />
+    </div>
+  );
+}
+
+// Original partner page code below (disabled)
+function OriginalPartnerPage() {
   const { user, setNavigating } = useAppContext();
   const router = useRouter();
   const { toast } = useToast();

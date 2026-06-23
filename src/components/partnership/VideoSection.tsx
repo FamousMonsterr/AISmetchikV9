@@ -26,14 +26,14 @@ export const VideoSection = () => {
                     <p className="text-sm">
                       Секция готова под Sora-видео для партнёрской страницы. Ожидаемый файл:
                     </p>
-                    <p className="mt-2 font-mono text-xs">/public/media/ai-smetchik-partnership-32s.mp4</p>
+                    <p className="mt-2 font-mono text-xs">/public/media/montagehub-partnership-32s.mp4</p>
                   </div>
                 </div>
               ) : (
                 <video
                   className="h-full w-full object-cover"
-                  src="/media/ai-smetchik-partnership-32s.mp4"
-                  poster="/media/ai-smetchik-partnership-poster.png"
+                  src="/media/montagehub-partnership-32s.mp4"
+                  poster="/media/montagehub-partnership-poster.png"
                   autoPlay
                   muted
                   loop

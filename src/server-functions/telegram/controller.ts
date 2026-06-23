@@ -2,7 +2,8 @@
 // Manages lifecycle of Telegram bot instance for admin controls.
 
 import type TelegramBot from '@/lib/telegram/telegraf-compat';
-import { startTelegramBot } from './bot';
+import { startTelegramBot, registerAllBotCommands } from './bot';
+import { registerTelegramWebhook } from '@/server-functions/webhooks/telegram';
 import { doc, getDoc, setDoc, deleteDoc, serverTimestamp } from '@/lib/db-server';
 import { db } from '@/lib/db';
 
@@ -131,9 +132,18 @@ export async function startManagedBot(): Promise<BotRuntimeSafe> {
   const mode = settings.telegramBotMode || 'polling';
   try {
     if (mode === 'webhook') {
-      // Webhook mode requires external HTTPS endpoint. Not started automatically here.
-      log('info', 'Webhook mode selected. Configure webhook endpoint separately.');
-      runtime.status = 'stopped';
+      log('info', 'Webhook mode selected. Registering webhook...');
+      try {
+        const result = await registerTelegramWebhook({ audience: 'default' });
+        log('info', `Webhook registered: ${result.webhookUrl}`);
+        runtime.status = 'running';
+        runtime.lastStartedAt = new Date();
+      } catch (err: any) {
+        const msg = err?.message || String(err);
+        log('error', `Webhook registration failed: ${msg}`);
+        runtime.status = 'error';
+        runtime.lastError = msg;
+      }
       return toSafeRuntime();
     }
     const lockData = await readLock();
@@ -250,4 +260,14 @@ export async function getBotRuntimeStatus(): Promise<BotRuntimeSafe> {
       : null,
     lockFresh: lockData ? isLockFresh(lockData) : false,
   };
+}
+
+/**
+ * Register webhook for a specific audience.
+ * Used by admin panel and startup initialization.
+ */
+export async function registerWebhookForAudience(audience: 'default' | 'user' | 'partner' | 'manager' | 'admin' = 'default') {
+  const result = await registerTelegramWebhook({ audience });
+  log('info', `Webhook registered for audience="${audience}": ${result.webhookUrl}`);
+  return result;
 }

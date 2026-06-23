@@ -18,7 +18,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { useDropzone } from 'react-dropzone';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { onSnapshot, query, collection, where, DatabaseError } from '@/lib/db-client';
+import { onSnapshot, query, collection, where, DbClientError } from '@/lib/db-client';
 import { db } from '@/lib/db';
 import { exportPriceBaseToExcel, parseExcelRowsFromArrayBuffer } from '@/services/excel/browserExcel';
 
@@ -72,7 +72,7 @@ export default function PriceBasePage() {
             );
             setBaseItems(items);
             setIsLoading(false);
-        }, (error: DatabaseError) => {
+        }, (error: DbClientError) => {
             console.error("Error fetching price base:", error);
             if (error.code === 'failed-precondition' && error.message.includes('index')) {
                 toast({
@@ -117,7 +117,7 @@ export default function PriceBasePage() {
                 "Наименование": item.name, "Модель/Артикул": item.model || '', "Бренд": item.brand || '', "Ед. изм.": item.unit,
                 "Цена материала (средняя)": item.avgMaterialPrice, "Цена монтажа (средняя)": item.avgInstallationPrice, "Раздел": item.section || ''
             }));
-            await exportPriceBaseToExcel(dataToExport, "AI Smetchik_PriceBase.xlsx");
+            await exportPriceBaseToExcel(dataToExport, "Montage HUB_PriceBase.xlsx");
             toast({ title: "Экспорт завершен", description: "Ваша база цен сохранена в Excel." });
         } catch (error: any) {
             toast({

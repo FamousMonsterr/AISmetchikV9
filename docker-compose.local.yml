@@ -1,0 +1,62 @@
+# Local Development Stack
+# docker compose -f docker-compose.local.yml up -d
+
+services:
+  mongo:
+    image: mongo:7
+    container_name: montagehub-mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    environment:
+      MONGO_INITDB_DATABASE: montagehub
+
+  mongo-logs:
+    image: mongo:7
+    container_name: montagehub-mongo-logs
+    ports:
+      - "27018:27017"
+    volumes:
+      - mongo_logs_data:/data/db
+    environment:
+      MONGO_INITDB_DATABASE: montagehub_logs
+
+  minio:
+    image: minio/minio:latest
+    container_name: montagehub-minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+      MINIO_API_CORS_ALLOW_ORIGIN: "*"
+    command: server /data --console-address ":9001"
+
+  # Auto-create buckets on startup
+  minio-setup:
+    image: minio/mc:latest
+    container_name: montagehub-minio-setup
+    depends_on:
+      - minio
+    entrypoint: >
+      /bin/sh -c "
+      sleep 5;
+      mc alias set local http://minio:9000 minioadmin minioadmin;
+      mc mb --ignore-existing local/montagehub;
+      mc mb --ignore-existing local/montagehub-personal;
+      mc mb --ignore-existing local/montagehub-avatars;
+      mc mb --ignore-existing local/montagehub-user-docs;
+      mc mb --ignore-existing local/montagehub-project-docs;
+      mc anonymous set download local/montagehub;
+      mc anonymous set download local/montagehub-avatars;
+      echo 'Buckets created';
+      "
+
+volumes:
+  mongo_data:
+  mongo_logs_data:
+  minio_data:

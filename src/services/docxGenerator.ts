@@ -248,7 +248,7 @@ export const generateDocx = async ({
     });
 
     const doc = new Document({
-        creator: "AI Smetchik",
+        creator: "Montage HUB",
         title: "Коммерческое предложение",
         description: `Коммерческое предложение для объекта ${analysisDetails?.objectName || ''}`,
         styles: {

@@ -368,7 +368,7 @@ const widgetContent: Record<WidgetId, { title: string; description: string; rend
                 <div className="grid grid-cols-2 gap-3 h-full">
                     <div className="flex flex-col gap-2">
                         {stats.rolesForPieChart?.map((role: any) => (
-                            <div key={role.name} className="flex items-center justify-between rounded-lg border border-border/70 px-3 py-2 bg-secondary/40">
+                            <div key={role.name} className="flex items-center justify-between rounded-lg border border-border/70 px-3 py-2 bg-secondary">
                                 <div className="flex items-center gap-2">
                                     <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: role.fill }} />
                                     <span className="text-sm">{role.name}</span>
@@ -422,7 +422,7 @@ const widgetContent: Record<WidgetId, { title: string; description: string; rend
                     </div>
                     <div className="space-y-2">
                         {['PRO','Business','Enterprise','Free'].map(plan => (
-                            <div key={plan} className="flex items-center justify-between rounded-lg border border-border/70 px-3 py-2 bg-secondary/40">
+                            <div key={plan} className="flex items-center justify-between rounded-lg border border-border/70 px-3 py-2 bg-secondary">
                                 <span className="text-sm">{plan}</span>
                                 <span className="font-semibold text-sm">{formatNumber(stats.usersByPlan?.[plan] || 0)}</span>
                             </div>
@@ -437,7 +437,7 @@ const widgetContent: Record<WidgetId, { title: string; description: string; rend
             render: () => (
                 <div className="flex flex-col gap-3">
                     <MiniStat icon={AlertTriangle} label="Жалобы" value={formatNumber(stats.reportedTickets)} href="/dashboard/admin/tickets" />
-                    <div className="flex items-center justify-between rounded-xl border border-border/70 px-3 py-2 bg-secondary/30">
+                    <div className="flex items-center justify-between rounded-xl border border-border/70 px-3 py-2 bg-secondary">
                         <div className="text-sm text-muted-foreground">Новые тикеты →</div>
                         <Link href="/dashboard/admin/tickets" className="text-sm font-semibold text-primary hover:underline">Открыть</Link>
                     </div>
@@ -451,11 +451,11 @@ const widgetContent: Record<WidgetId, { title: string; description: string; rend
                 <div className="grid grid-cols-2 gap-3">
                     <MiniStat icon={Sparkles} label="Связанные TG" value={formatNumber(stats.telegramUsers)} />
                     <MiniStat icon={Users} label="Доля" value={`${Math.round((stats.telegramUsers || 0) / Math.max(stats.totalUsers || 1,1) * 100)}%`} />
-                    <div className="col-span-2 rounded-lg border border-border/70 bg-secondary/30 p-3 text-sm text-muted-foreground">
+                    <div className="col-span-2 rounded-lg border border-border/70 bg-secondary p-3 text-sm text-muted-foreground">
                         Советуем отправить пуш в мини-приложение, чтобы вернуть пользователей к анализу.
                     </div>
                     {stats.engagementEvents?.length ? (
-                        <div className="col-span-2 space-y-2 max-h-40 overflow-y-auto rounded-lg border border-border/70 bg-secondary/20 p-2">
+                        <div className="col-span-2 space-y-2 max-h-40 overflow-y-auto rounded-lg border border-border/70 bg-secondary p-2">
                             {stats.engagementEvents.map((e: any) => (
                                 <div key={`${e.userId}-${e.createdAt}-${e.type}`} className="flex items-center justify-between text-xs">
                                     <span className="text-muted-foreground truncate">{e.type === 'tg_open' ? 'Открытие TG' : 'PWA'}</span>
@@ -474,11 +474,11 @@ const widgetContent: Record<WidgetId, { title: string; description: string; rend
                 <div className="grid grid-cols-2 gap-3">
                     <MiniStat icon={Star} label="Установки PWA" value={formatNumber(stats.pwaUsers)} />
                     <MiniStat icon={FileText} label="Конверсия" value={`${Math.round((stats.pwaUsers || 0) / Math.max(stats.totalUsers || 1,1) * 100)}%`} />
-                    <div className="col-span-2 rounded-lg border border-border/70 bg-secondary/30 p-3 text-sm text-muted-foreground">
+                    <div className="col-span-2 rounded-lg border border-border/70 bg-secondary p-3 text-sm text-muted-foreground">
                         Подсказка: добавьте баннер «Установите приложение» для новых пользователей.
                     </div>
                     {stats.engagementEvents?.length ? (
-                        <div className="col-span-2 space-y-2 max-h-40 overflow-y-auto rounded-lg border border-border/70 bg-secondary/20 p-2">
+                        <div className="col-span-2 space-y-2 max-h-40 overflow-y-auto rounded-lg border border-border/70 bg-secondary p-2">
                             {stats.engagementEvents
                                 .filter((e: any) => e.type === 'pwa_install')
                                 .map((e: any) => (
@@ -522,7 +522,7 @@ const widgetContent: Record<WidgetId, { title: string; description: string; rend
                     </div>
                     <div className="flex flex-col gap-2 max-h-44 overflow-y-auto">
                         {(stats.engagementEvents || []).slice(0, 30).map((e: any) => (
-                            <div key={e.id || `${e.userId}-${e.createdAt}`} className="flex items-center justify-between rounded-lg border border-border/70 px-3 py-2 bg-secondary/30 text-xs">
+                            <div key={e.id || `${e.userId}-${e.createdAt}`} className="flex items-center justify-between rounded-lg border border-border/70 px-3 py-2 bg-secondary text-xs">
                                 <div className="flex items-center gap-2">
                                     <span className={cn("h-2 w-2 rounded-full", e.type === 'tg_open' ? "bg-blue-500" : "bg-emerald-500")} />
                                     <span className="truncate">{e.type === 'tg_open' ? 'Telegram' : 'PWA'}</span>
@@ -599,7 +599,7 @@ const widgetContent: Record<WidgetId, { title: string; description: string; rend
                             }}
                             onDragEnd={() => { setDraggingId(null); setDragOverId(null); setDragSizePreview(null); }}
                             className={cn(
-                                "relative overflow-hidden group border-border/80 bg-card/80 dark:bg-secondary/60 transition-shadow cursor-grab active:cursor-grabbing",
+                                "relative overflow-hidden group border-border/80 bg-card transition-shadow cursor-grab active:cursor-grabbing",
                                 colClass,
                                 draggingId === widget.id ? "opacity-60 ring-2 ring-primary/40" : "",
                                 draggingId && dragOverId === widget.id ? "ring-2 ring-primary/60 shadow-lg" : ""
@@ -616,7 +616,7 @@ const widgetContent: Record<WidgetId, { title: string; description: string; rend
                                     </div>
                                 </div>
                             )}
-                            <div className="absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-100 bg-white/5 dark:bg-white/5 backdrop-blur-sm transition-opacity" />
+                            <div className="absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-100 bg-white/5 dark:bg-white/5 transition-opacity" />
                             <CardHeader className="flex flex-row items-start justify-between gap-2">
                                 <div className="min-w-0">
                                     <CardTitle className="truncate">{def.title}</CardTitle>
@@ -660,7 +660,7 @@ const widgetContent: Record<WidgetId, { title: string; description: string; rend
 
 const MiniStat = ({ icon: Icon, label, value, href, hint }: { icon: any, label: string, value: string | number, href?: string, hint?: string }) => {
     const content = (
-        <div className="flex items-center gap-3 rounded-lg border border-border/70 bg-secondary/40 px-3 py-2">
+        <div className="flex items-center gap-3 rounded-lg border border-border/70 bg-secondary px-3 py-2">
             <div className="h-9 w-9 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0">
                 <Icon className="h-4 w-4" />
             </div>

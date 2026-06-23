@@ -369,7 +369,7 @@ export const sendPasswordReset = async (data: z.infer<typeof PasswordResetSchema
         await mailer.sendMail({
           from,
           to: email,
-          subject: 'Сброс пароля AI Сметчик',
+          subject: 'Сброс пароля Montage HUB',
           text: `Чтобы сбросить пароль, перейдите по ссылке: ${resetLink}`,
         });
 
@@ -1047,7 +1047,7 @@ const CreateProcessingRequestSchema = z.object({
     fileUri: z.string().optional(),
     s3ObjectKey: z.string().optional(),
     serverJobId: z.string().optional(),
-    pipelineVersion: z.enum(['v1', 'v2']).optional(),
+    pipelineVersion: z.enum(['v1', 'v2', 'v3', 'xiaomi-vision']).optional(),
     objectId: z.string().nullable().optional(),
     objectName: z.string().nullable().optional(),
 });
@@ -1180,7 +1180,7 @@ const FinalizeProcessingRequestSchema = z.object({
     importantExtractionNotes: z.array(z.string()).nullable().optional(),
     aiCallCount: z.number().optional(),
     s3ObjectKey: z.string().nullable().optional(),
-    pipelineVersion: z.enum(['v1', 'v2']).optional(),
+    pipelineVersion: z.enum(['v1', 'v2', 'v3', 'xiaomi-vision']).optional(),
     initialAiResponse: z.any().optional(),
 });
 
@@ -1579,9 +1579,11 @@ export const restartProcessingRequestWithQueue = async (data: z.infer<typeof Res
         }
 
         const pipelineVersion = nextSource.pipelineVersion || appSettings.analysisPipelineVersion || 'v1';
-        const executionProvider = pipelineVersion === 'v1'
-            ? 'openrouter'
-            : (appSettings.aiExecutionProvider || 'openrouter');
+        const executionProvider = pipelineVersion === 'xiaomi-vision'
+            ? 'xiaomi'
+            : pipelineVersion === 'v1'
+                ? 'openrouter'
+                : (appSettings.aiExecutionProvider || 'openrouter');
         const idempotencyKey = createHash('sha256')
             .update(`${userId}:${projectId}:${nextSource.fileSha1}:${pipelineVersion}`)
             .digest('hex');

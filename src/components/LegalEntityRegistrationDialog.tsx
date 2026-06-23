@@ -207,7 +207,7 @@ export function LegalEntityRegistrationDialog({ isOpen, onClose, isRegistration 
             {selectedCompany && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                     <div className="p-3 border rounded-lg bg-secondary/50 space-y-1">
-                        <p className="font-semibold text-sm flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500"/>Выбрана компания:</p>
+                        <p className="font-semibold text-sm flex items-center gap-2"><CheckCircle className="h-4 w-4 text-success"/>Выбрана компания:</p>
                         <p className="font-bold">{selectedCompany.value}</p>
                         <p className="text-xs text-muted-foreground">ИНН: {selectedCompany.data.inn}</p>
                         <p className="text-xs text-muted-foreground">Адрес: {selectedCompany.data.address?.value}</p>

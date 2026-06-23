@@ -1,0 +1,284 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e1]:
+  - main [ref=e3]:
+    - generic [ref=e4]:
+      - navigation [ref=e5]:
+        - generic [ref=e6]:
+          - generic [ref=e7]:
+            - link "АИ" [ref=e9] [cursor=pointer]:
+              - /url: /dashboard
+              - generic [ref=e11]: АИ
+            - generic [ref=e12]:
+              - link [ref=e13] [cursor=pointer]:
+                - /url: /dashboard
+                - img [ref=e14]
+              - link [ref=e17] [cursor=pointer]:
+                - /url: /dashboard/bonus
+                - img [ref=e18]
+          - generic [ref=e23]:
+            - generic [ref=e24]:
+              - button [ref=e25]:
+                - img [ref=e26]
+              - button "Открыть уведомления" [ref=e28]:
+                - img [ref=e29]
+            - link "QA Test User" [ref=e32] [cursor=pointer]:
+              - /url: http://localhost:3000/dashboard/profile
+              - img "QA Test User" [ref=e34]
+            - link [ref=e35] [cursor=pointer]:
+              - /url: "#"
+              - img [ref=e36]
+      - main [ref=e40]:
+        - generic [ref=e41]:
+          - generic [ref=e42]:
+            - generic [ref=e43]:
+              - generic [ref=e44]:
+                - generic [ref=e45]: Профиль
+                - generic [ref=e46]: Аккаунт, оплата, компании и документы
+              - generic [ref=e47]:
+                - heading "Профиль и настройки" [level=3] [ref=e48]
+                - paragraph [ref=e49]: Здесь открыт основной профиль пользователя. Остальные разделы вынесены в отдельные страницы, чтобы не смешивать настройки с тяжёлыми списками и загрузками.
+            - generic [ref=e51]:
+              - link "Баланс и тарифы Пополнение кредитов, апгрейд плана, история оплат." [ref=e52] [cursor=pointer]:
+                - /url: /dashboard/billing
+                - generic [ref=e53]:
+                  - generic [ref=e54]:
+                    - img [ref=e55]
+                    - img [ref=e57]
+                  - generic [ref=e60]:
+                    - paragraph [ref=e61]: Баланс и тарифы
+                    - paragraph [ref=e62]: Пополнение кредитов, апгрейд плана, история оплат.
+              - link "Мои тикеты История обращений и статусы жалоб по проектам." [ref=e63] [cursor=pointer]:
+                - /url: /dashboard/tickets
+                - generic [ref=e64]:
+                  - generic [ref=e65]:
+                    - img [ref=e66]
+                    - img [ref=e68]
+                  - generic [ref=e71]:
+                    - paragraph [ref=e72]: Мои тикеты
+                    - paragraph [ref=e73]: История обращений и статусы жалоб по проектам.
+              - link "Мои компании Юрлица, контрагенты и реквизиты для документов." [ref=e74] [cursor=pointer]:
+                - /url: /dashboard/companies
+                - generic [ref=e75]:
+                  - generic [ref=e76]:
+                    - img [ref=e77]
+                    - img [ref=e81]
+                  - generic [ref=e84]:
+                    - paragraph [ref=e85]: Мои компании
+                    - paragraph [ref=e86]: Юрлица, контрагенты и реквизиты для документов.
+              - link "База цен Справочник цен с импортом и ручной корректировкой." [ref=e87] [cursor=pointer]:
+                - /url: /dashboard/price-base
+                - generic [ref=e88]:
+                  - generic [ref=e89]:
+                    - img [ref=e90]
+                    - img [ref=e93]
+                  - generic [ref=e96]:
+                    - paragraph [ref=e97]: База цен
+                    - paragraph [ref=e98]: Справочник цен с импортом и ручной корректировкой.
+          - generic [ref=e99]:
+            - generic [ref=e100]:
+              - generic [ref=e101]:
+                - img [ref=e102]
+                - heading "Основные настройки" [level=3] [ref=e114]
+              - paragraph [ref=e115]: Подключение Telegram, подписи, аватара, шаблонов и удаление аккаунта.
+            - generic [ref=e117]:
+              - generic [ref=e118]:
+                - generic [ref=e120]:
+                  - generic [ref=e121]:
+                    - heading "Профиль" [level=3] [ref=e122]
+                    - paragraph [ref=e123]: Ваши данные и настройки аккаунта.
+                  - generic [ref=e124]:
+                    - img "QA Test User" [ref=e126]
+                    - generic [ref=e128] [cursor=pointer]: Загрузить
+                - generic [ref=e129]:
+                  - generic [ref=e130]:
+                    - generic [ref=e131]: Никнейм
+                    - textbox "Никнейм" [ref=e132]:
+                      - /placeholder: Ваш никнейм
+                      - text: QA Free User
+                  - generic [ref=e133]:
+                    - generic [ref=e134]: Телефон
+                    - textbox "Телефон" [active] [ref=e135]:
+                      - /placeholder: +7 999 123-45-67
+                      - text: +7 999 111-11-11
+                  - generic [ref=e136]:
+                    - generic [ref=e137]: Email
+                    - textbox [disabled] [ref=e138]: qa@example.com
+                  - generic [ref=e139]:
+                    - text: Роль
+                    - generic [ref=e141]: User
+                  - generic [ref=e142]:
+                    - generic [ref=e143]: Уникальный ID пользователя
+                    - generic [ref=e144]:
+                      - textbox [disabled] [ref=e145]: qa_1781528371386
+                      - button "Скопировать ID пользователя" [ref=e146]:
+                        - img [ref=e147]
+                  - generic [ref=e150]:
+                    - generic [ref=e151]: Кредиты
+                    - textbox [disabled] [ref=e152]: "10"
+                  - generic [ref=e153]:
+                    - text: Следующий тариф
+                    - button "Перейти на PRO" [ref=e154]:
+                      - img [ref=e155]
+                      - text: Перейти на PRO
+                - button "Сохранить изменения" [ref=e158]:
+                  - img [ref=e159]
+                  - text: Сохранить изменения
+              - generic [ref=e163]:
+                - generic [ref=e164]:
+                  - heading "Рассылки и бонусы" [level=3] [ref=e165]
+                  - paragraph [ref=e166]: Управляйте подпиской на рассылку и бонусными кредитами.
+                - generic [ref=e168]:
+                  - generic [ref=e169]:
+                    - paragraph [ref=e170]: Подписка на рассылку
+                    - paragraph [ref=e171]: Активная подписка дает +10 бонусных кредитов в месяц на Free и PRO. Отключение вступит в силу со следующего периода.
+                  - switch [ref=e172] [cursor=pointer]
+              - generic [ref=e173]:
+                - generic [ref=e174]:
+                  - heading "Настройки темы" [level=3] [ref=e175]
+                  - paragraph [ref=e176]: Выберите предпочтительную цветовую схему интерфейса.
+                - radiogroup [ref=e178]:
+                  - generic [ref=e179]:
+                    - radio "Светлая" [ref=e181]
+                    - generic [ref=e182]:
+                      - img [ref=e183]
+                      - text: Светлая
+                  - generic [ref=e189]:
+                    - radio "Темная" [checked] [ref=e191]:
+                      - img [ref=e193]
+                    - generic [ref=e195]:
+                      - img [ref=e196]
+                      - text: Темная
+                  - generic [ref=e198]:
+                    - radio "Системная" [ref=e200]
+                    - generic [ref=e201]:
+                      - img [ref=e202]
+                      - text: Системная
+              - generic [ref=e204]:
+                - generic [ref=e206]:
+                  - img [ref=e207]
+                  - heading "Ключ доступа" [level=3] [ref=e210]
+                - generic [ref=e212]:
+                  - button "Войти по ключу доступа" [ref=e214]:
+                    - img [ref=e215]
+                    - text: Войти по ключу доступа
+                  - button "Подключить ключ доступа" [ref=e219]:
+                    - img [ref=e220]
+                    - text: Подключить ключ доступа
+                  - generic [ref=e223]:
+                    - generic [ref=e224]:
+                      - generic [ref=e225]: Сохранённые ключи
+                      - generic [ref=e226]: "0"
+                    - generic [ref=e227]: Ключи доступа ещё не подключены.
+              - generic [ref=e228]:
+                - generic [ref=e229]:
+                  - heading "Связанные аккаунты" [level=3] [ref=e230]:
+                    - img [ref=e231]
+                    - text: Связанные аккаунты
+                  - paragraph [ref=e234]: Telegram и VK используются для входа, уведомлений и доставки файлов.
+                - generic [ref=e236]:
+                  - generic [ref=e237]:
+                    - generic [ref=e238]:
+                      - generic [ref=e239]:
+                        - paragraph [ref=e240]: Telegram
+                        - paragraph [ref=e241]: Аккаунт ещё не связан.
+                      - generic [ref=e242]: Не подключен
+                    - generic [ref=e243]:
+                      - generic [ref=e244]: "Username: @—"
+                      - generic [ref=e245]: "Связан: —"
+                    - generic [ref=e246]:
+                      - generic [ref=e247]:
+                        - button "Привязать Telegram" [ref=e248]:
+                          - img [ref=e249]
+                          - text: Привязать Telegram
+                        - button "Открыть бота @Estimate_GPT_bot" [ref=e252]:
+                          - img [ref=e253]
+                          - text: Открыть бота @Estimate_GPT_bot
+                      - button "Проверить привязку" [ref=e255]:
+                        - img [ref=e256]
+                        - text: Проверить привязку
+                  - generic [ref=e261]:
+                    - generic [ref=e262]:
+                      - generic [ref=e263]:
+                        - paragraph [ref=e264]: VK
+                        - paragraph [ref=e265]: Аккаунт ещё не связан.
+                      - generic [ref=e266]: Не подключен
+                    - generic [ref=e267]:
+                      - generic [ref=e268]: "Username: —"
+                      - generic [ref=e269]: "Связан: —"
+                    - button "Подключить VK" [ref=e271]:
+                      - img [ref=e272]
+                      - text: Подключить VK
+              - generic [ref=e275]:
+                - generic [ref=e276]:
+                  - heading "Опасная зона" [level=3] [ref=e277]
+                  - paragraph [ref=e278]: Удаление аккаунта для очистки тестовых данных и регистрации.
+                - button "Удалить аккаунт" [ref=e280]
+              - generic [ref=e281]:
+                - generic [ref=e282]:
+                  - heading "Шаблоны документов" [level=3] [ref=e283]
+                  - paragraph [ref=e284]: Выберите шаблоны по умолчанию для документов.
+                - generic [ref=e285]:
+                  - alert [ref=e286]:
+                    - heading "Недоступно на Free" [level=5] [ref=e287]
+                    - generic [ref=e288]:
+                      - generic [ref=e289]: Настройка шаблонов доступна на PRO и выше.
+                      - generic [ref=e290]: PRO
+                  - generic [ref=e291]:
+                    - generic [ref=e292]:
+                      - text: КП
+                      - combobox [disabled] [ref=e293]:
+                        - generic: Базовый шаблон КП
+                        - img [ref=e294]
+                    - generic [ref=e296]:
+                      - text: Счет
+                      - combobox [disabled] [ref=e297]:
+                        - generic: Счет (формат 1С)
+                        - img [ref=e298]
+                    - generic [ref=e300]:
+                      - text: Договор
+                      - combobox [disabled] [ref=e301]:
+                        - generic: Базовый договор подряда
+                        - img [ref=e302]
+              - generic [ref=e304]:
+                - generic [ref=e305]:
+                  - heading "Конструктор КП" [level=3] [ref=e306]
+                  - paragraph [ref=e307]: Создавайте фирменные шаблоны коммерческого предложения.
+                - alert [ref=e309]:
+                  - heading "Доступно на PRO и выше" [level=5] [ref=e310]
+                  - generic [ref=e311]:
+                    - generic [ref=e312]: Конструктор шаблонов — PRO функция.
+                    - generic [ref=e313]: PRO
+              - generic [ref=e314]:
+                - generic [ref=e315]:
+                  - heading "Подпись и печать" [level=3] [ref=e316]
+                  - paragraph [ref=e317]: Добавьте изображение подписи и печати для документов.
+                - generic [ref=e318]:
+                  - alert [ref=e319]:
+                    - heading "Недоступно на Free" [level=5] [ref=e320]
+                    - generic [ref=e321]:
+                      - generic [ref=e322]: Загрузка подписи и печати доступна на PRO и выше.
+                      - generic [ref=e323]: PRO
+                  - generic [ref=e324]:
+                    - generic [ref=e325]:
+                      - text: Подпись
+                      - button "Choose File" [disabled] [ref=e326]
+                    - generic [ref=e327]:
+                      - text: Печать
+                      - button "Choose File" [disabled] [ref=e328]
+          - link "К проектам" [ref=e330] [cursor=pointer]:
+            - /url: /dashboard
+      - button "Открыть чат" [ref=e332]:
+        - img [ref=e333]
+  - region "Notifications (F8)":
+    - list
+  - button "Open Next.js Dev Tools" [ref=e340] [cursor=pointer]:
+    - generic [ref=e343]:
+      - text: Compiling
+      - generic [ref=e344]:
+        - generic [ref=e345]: .
+        - generic [ref=e346]: .
+        - generic [ref=e347]: .
+  - alert [ref=e348]
+```
